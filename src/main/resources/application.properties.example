@@ -32,7 +32,7 @@ app.security.permit-all-paths=/api/auth/dev-tokens,/api/auth/login,/api/auth/log
 # 파일 저장(SCR-MYP-010). 저장 루트 폴더(git 제외 uploads 권장, 개인 PC 경로는 커밋하지 않는다). 업로드 상한은 SYS_STNG.FILE_MAX_SZ(10MB)와 맞춘다
 app.file.root-dir=uploads
 spring.servlet.multipart.max-file-size=10MB
-spring.servlet.multipart.max-request-size=10MB
+spring.servlet.multipart.max-request-size=100MB
 # 캐릭터 생성기. 외부 API가 정해지기 전에는 fake(가짜 성공), 실패 시험은 fake-fail
 app.character.generator=fake
 
