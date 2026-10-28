@@ -10,7 +10,7 @@
 | GET | /expenses/months | 지출이 한 건 이상 있는 연월 목록(월 피커) | MYP-030-16 | SJM | - | List<ExpenseMonthSummary> |
 | GET | /expenses/statistics | 월 통계. 쿼리 `yearMonth`. 총 지출·월 한도·지난달 대비·일자별 합계와 건수·카테고리별·반려동물별(공용 별도)·금액 상위 3건 | MYP-001-03, MYP-030-01·02·04~06·14 | SJM | - | ExpenseStatisticsResponse |
 | GET | /expenses/totals | 조건별 건수·합계 금액. 쿼리는 GET /expenses와 같음(페이지 제외) | MYP-030-09·17~19 | SJM | - | ExpenseTotalResponse |
-| POST | /expenses | 지출 등록. 날짜·카테고리·내용 공통, 반려동물·금액 줄 여러 개(영수증 마리별 분할), 영수증 연결(`recptSn`, 인식 실패 후 직접 입력도 연결하고 영수증은 저장완료). 처음 201, 모든 줄의 `idmptDmndId`가 이미 있으면 200과 기존 지출. 저장 뒤 이번 달 합계가 한도 90%·100%를 처음 넘으면 한도 알림 | MYP-031-02·03·05, MYP-030-08 | MYP-031-02·03 | SJM | ExpenseCreateRequest | List<ExpenseResponse> |
+| POST | /expenses | 지출 등록. 날짜·카테고리·내용 공통, 반려동물·금액 줄 여러 개(영수증 마리별 분할), 영수증 연결(`recptSn`, 인식 실패 후 직접 입력도 연결하고 영수증은 저장완료). 처음 201, 모든 줄의 `idmptDmndId`가 이미 있으면 200과 기존 지출. 저장 뒤 이번 달 합계가 한도 90%·100%를 처음 넘으면 한도 알림 | MYP-031-02·03·05, MYP-030-08 | SJM | ExpenseCreateRequest | List<ExpenseResponse> |
 | POST | /expenses/duplicate-check | 저장 전 중복 지출 확인. 같은 날짜·카테고리·금액에 반려동물이 같은 내 지출(공용 줄은 공용 지출끼리). 사용처·내용은 보지 않는다. 저장하지 않는다 | MYP-031-06 | SJM | ExpenseCreateRequest | List<ExpenseSummary> |
 | PUT | /members/me/expense-limit | 월 지출 한도 저장(계정 전체 한 개). 처음 저장하면 한도 알림 수신을 켬 | MYP-030-13 | SJM | ExpenseLimitSaveRequest | ExpenseLimitResponse |
 | PATCH | /expenses/{expndSn} | 지출 수정 | MYP-030-03·12 | SJM | ExpenseUpdateRequest | ExpenseResponse |
