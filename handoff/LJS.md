@@ -4,6 +4,12 @@
 
 SCR-MYP-010 파일 저장 외부 디렉토리·OS별 기본 경로·서빙 — 끝 (2026-10-27, `/start`·`/impl` 검증 2회차 통과, 사람 확인). 프론트 LJS 세션 요청. 저장 루트는 `app.file.root-dir`, 비우면 Windows는 프로젝트 드라이브 루트 아래·Mac은 `/Users/Shared` 아래(`FileRootResolver`, 시작 로그 `[FileRoot]` 한 줄, prod는 쓸 수 없으면 시작 실패). 공개 파일은 `public/` 아래에 저장하고 `GET /api/files/public/{atchFileSn}`로 로그인 없이 연다(게시글 사진·생성 캐릭터 PNG). 기획과 다른 점: 요청한 정적 리소스 핸들러·`WebConfig`·비공개 범용 `/api/files/{fileSn}` 대신 번호 방식 컨트롤러(응답에 경로가 없고 `global`은 소유 검사를 못 해서). 비공개는 각 도메인 API가 준다.
 
+### 추가 요청
+
+| ID | 바꿀 파일 | 완료 조건 | 요청 |
+| --- | --- | --- | --- |
+| 추가-1 | `global/file/FileRootResolver`, `global/log/LogDirEnvironmentPostProcessor`(새), `META-INF/spring.factories`, `logback-spring.xml`, `application.properties.example`, 테스트 | 명령: `./gradlew build -q` 종료 코드 0. 화면: bootRun 시 Windows는 `C:\home\ggorilab\logs\application.log`에 로그가 쌓인다 | 요청 2026-10-28 10:20 "개발 시에도 home/ggorilab/logs에 로그가 쌓여야 한다, FileRootResolver처럼" |
+
 ## 다음에 할 것
 
 - 프론트 연결(frontend 세션 회신 완료): 공통 파일 이미지 컴포넌트(공개 `/api/files/public/{atchFileSn}` + 비공개 blob 훅)를 프론트가 만든다. 캐릭터 번호가 필요하다고 하면 응답에 번호 추가를 추가 요청으로 받는다
