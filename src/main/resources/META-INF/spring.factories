@@ -1,0 +1,2 @@
+# logback 이 뜨기 전에 로그 폴더(app.log.dir) 기본값을 채운다
+org.springframework.boot.EnvironmentPostProcessor=com.nyangmeong.global.log.LogDirEnvironmentPostProcessor
