@@ -1,7 +1,7 @@
 # SJM 핸드오프
 
 ## 지금 하는 것
-SCR-MYP-031 가계부 등록/수정 — 기획 (시작 2026-10-28 10:46)
+SCR-MYP-031 가계부 등록/수정 — 구현 중 (승인 2026-10-28 02:05, 시작 2026-10-28 10:46)
 - 기준: 마이페이지_기능명세서_v0.4_20261025, 마이페이지_화면설계서_v0.6_20261025 (DMS). FN-MYP-031-01·04는 화면만이라 서버 일 없음
 - 결정1 지출은 회원별이다(issues 마이페이지 10번): 중복 확인·한도 합계 모두 `EXPND.MBR_SN = 나`만 본다. 근거는 한도가 "계정 전체 총액 하나"(FN-MYP-030-13)이고, LJS의 `ExpenseFake.findDuplicates(mbrSn, …)`도 회원 기준이다. 2026-10-28 SJM 확정: 같은 동물이라도 주양육자↔공동양육자, 공동양육자끼리 모두 서로의 지출을 보지 않는다. 각자 자기가 등록한 지출만 본다(SCR-MYP-030 목록·통계도 같은 기준). issues 10번에 이 결정을 적는다
 - 결정2 중복 확인은 따로 연다(issues 마이페이지 9번): 초안은 `GET /expenses` 필터로 중복을 확인한다고 적었지만 금액 조건이 없고, 마리별 여러 줄을 한 번에 확인할 수 없다. 그래서 `POST /expenses/duplicate-check`(본문 `ExpenseCreateRequest`, 저장하지 않음) → `List<ExpenseSummary>`(겹치는 기존 지출만, 줄 순서·`EXPND_SN` 오름차순)를 둔다. LJS의 `/receipts/{recptSn}/save-check`와 같은 모양이다. 기준은 같은 회원·날짜·카테고리·금액에 반려동물이 같은 것이고, 공용 줄(`petSn` null)은 공용 지출(`PET_SN IS NULL`)끼리 비교한다. 사용처·내용은 보지 않는다(FN-MYP-031-06). `DEL_YN='N'`. 구현 전에 docs/api/expense.md에 행을 넣고 `GET /expenses`의 MYP-031-06을 지운다
