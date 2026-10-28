@@ -2,21 +2,16 @@
 
 ## 지금 하는 것
 
-SCR-MYP-010 파일 저장 외부 디렉토리·OS별 기본 경로·서빙 — 끝 (2026-10-27, `/start`·`/impl` 검증 2회차 통과, 사람 확인). 프론트 LJS 세션 요청. 저장 루트는 `app.file.root-dir`, 비우면 Windows는 프로젝트 드라이브 루트 아래·Mac은 `/Users/Shared` 아래(`FileRootResolver`, 시작 로그 `[FileRoot]` 한 줄, prod는 쓸 수 없으면 시작 실패). 공개 파일은 `public/` 아래에 저장하고 `GET /api/files/public/{atchFileSn}`로 로그인 없이 연다(게시글 사진·생성 캐릭터 PNG). 기획과 다른 점: 요청한 정적 리소스 핸들러·`WebConfig`·비공개 범용 `/api/files/{fileSn}` 대신 번호 방식 컨트롤러(응답에 경로가 없고 `global`은 소유 검사를 못 해서). 비공개는 각 도메인 API가 준다.
-
-### 추가 요청
-
-| ID | 바꿀 파일 | 완료 조건 | 요청 |
-| --- | --- | --- | --- |
-| 추가-1 | `global/file/FileRootResolver`, `global/log/LogDirEnvironmentPostProcessor`(새), `META-INF/spring.factories`, `logback-spring.xml`, `application.properties.example`, 테스트 | 명령: `./gradlew build -q` 종료 코드 0. 화면: bootRun 시 Windows는 `C:\home\ggorilab\logs\application.log`에 로그가 쌓인다 | 요청 2026-10-28 10:20 "개발 시에도 home/ggorilab/logs에 로그가 쌓여야 한다, FileRootResolver처럼" |
+SCR-AIM-002 검색 질문·응답 (AI 서버 연결: 답변 저장 길이·AI 설정값 조회) — 끝 (2026-10-28, `/impl` 검증 2회차 통과, 사람 확인). 메시지 추가는 사용자 1,000자·AI 10,000자(역할별, DB 변경 없음), 새 내부 API `GET /internal/ai/settings` → `{aiTknUplmtCnt, aiCnvrsTurnCnt}`(설정 행 없으면 4500·6). `cmptnYn` 저장·반환은 AIM-011에서 이미 구현. `docs/api/ai.md` 갱신, 미완료 PATCH는 두지 않음
 
 ## 다음에 할 것
 
+- SCR-AIM-002 연결 남음: FN-AIM-002-02·11 (Python AI 서버가 `GET /internal/ai/settings`를 붙인다, ai 세션). PR을 올리면 ai 세션에 PR 번호와 계약(경로·응답 `AiSettingResponse`)을 알린다(ai 저장소 `docs/api/internal.md`와 같은 때 병합)
+- `.github/workflows/build.yml` 변경(PR·main CI 트리거 제거, 커밋하지 않음)이 작업 폴더와 `git stash`("build.yml CI 트리거 변경")에 있다. 의도한 것인지 정해 따로 다룬다
 - 프론트 연결(frontend 세션 회신 완료): 공통 파일 이미지 컴포넌트(공개 `/api/files/public/{atchFileSn}` + 비공개 blob 훅)를 프론트가 만든다. 캐릭터 번호가 필요하다고 하면 응답에 번호 추가를 추가 요청으로 받는다
 - 팀에 알린다(파일 저장): 각자 `application.properties`의 `app.security.permit-all-paths`에 `/api/files/public/**` 추가, 기존 `uploads/` 파일은 새 경로로 옮기거나 `seedFiles` 다시. 공용 DB(`pawever`)는 옛 시드라 `public/` 행이 없어 시드 사진이 404 → 다음에 공용 시드를 넣을 때 반영
 - 운영(사람): 서버에 저장 폴더와 쓰기 권한, nginx `client_max_body_size` 10m 이상. SJM에게 공개·비공개 분류 확인(반려동물·캐릭터를 공동양육자에게만 보이게 할지)
 - AIM-011 연결(ai 세션): Python이 쿠키·`X-Requested-With`를 그대로 넘겨 이 API를 부른 뒤 실제 연결 확인. 이때 탈퇴 보관일수 경계 SQL(`MemberMapper.xml` `selectExpiredWithdrawnMbrSns`)은 mock 테스트라 실제 DB에서 아직 실행하지 않았다
-- AIM-011 후속: 미완료 메시지를 완료로 바꾸는 `PATCH …/messages/{aiCnvrsMsgSn}`는 설계만(`docs/api/ai.md`). SCR-AIM-002·012에서 필요해지면 추가
 - `app.seed.password` 필수값 제외(2026-10-26 사람 요청, 범위 미정): (가) `/start` 설정 키 경고에서만 빼기(`scripts/start-check.sh:51` 제외 목록) (나) `seedData`도 값 없이(기본 비밀번호가 공개 저장소에 들어감). 추천 (가)
 - 팀에 알린다(2026-10-26): 공용 DB(`pawever`) 시드를 `seedClean`→`seedData`로 다시 넣었다(팀원 테스트 데이터 삭제됨, 원인 판단 착오로 불필요했던 작업). 예전 시드는 지금 디스코드 키와 다른 AES 키로 암호화돼 있었다. 각 PC는 `./gradlew seedFiles`를 다시. 로컬 서버는 `spring.profiles.default=local`이라 로컬 DB를 쓴다(로컬 데이터가 예전 키면 `seedData -Ptarget=local -Preset`)
 - 디스코드 공유 `application.properties`에 `app.seed.password`(새 값) 추가, `app.internal.*` 줄은 지운다(서버 간 키 제거, 사람). 각 PC 로컬 파일의 `app.internal.inbound-key`도 지운다
