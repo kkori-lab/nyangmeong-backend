@@ -48,7 +48,8 @@ SCR-CMU-001 펫이야기 — 끝남 (승인 2026-10-26 17:06, 시작 2026-10-26 
 새 의존성: 없음
 
 ## 다음에 할 것
-- 다음 작업(`/start`로 기획): 첨부 이미지 조회 API. 범위는 1:1 문의(`support`)와 펫이야기(`community`). 프론트가 `InquiryImageSummary`·`PostImageSummary`의 `atchFileSn`으로 부를 주소가 없다(범용 파일 조회 API는 LJS가 두지 않기로 함, 영수증·아이템처럼 도메인별 `GET .../image`). 후보 경로 `GET /api/inquiries/{otoInqrySn}/images/{atchFileSn}`(본인 문의만), `GET /api/posts/{pstSn}/images/{atchFileSn}`(정상 글만). 실종센터·돌봄 등 다른 커뮤니티도 PST_IMG를 쓰므로 게시판 코드로 막지 않는 형태로 설계하고, 같은 PR에서 `docs/api/support.md`·`community.md`의 "첨부파일 API로 만든다" 문구를 고친다
+- 다음 작업(`/start`로 기획): 1:1 문의 첨부 이미지 조회 API(`support`). 문의 사진은 비공개(`FileStore.store`)라 번호만으로 못 연다. 후보 `GET /api/inquiries/{otoInqrySn}/images/{atchFileSn}`(본인 문의만, 그 문의의 삭제되지 않은 사진만, `FileStore.load`)
+- 펫이야기 사진은 이미 해결: develop의 `PostService`가 `storePublic`으로 저장하고 `GET /api/files/public/{atchFileSn}`(로그인 불필요)로 연다. 실종센터·돌봄 등 다른 커뮤니티도 같은 방식. 같은 PR에서 `docs/api/support.md`·`community.md`의 "첨부파일 API로 만든다" 문구를 고치고, 공개로 바꾸기 전에 `store`로 올린 펫이야기 글 사진(`public/` 아님)은 공개 API가 404일 수 있어 확인한다
 - 연결 남음: FN-CMU-001-14·09·11 작성·좋아요·댓글 뒤 케어미션·포인트 반영 (`pet` service에 메서드가 생기면 붙인다, SJM)
 - 연결 남음: FN-CMU-001-01~11 비로그인 열람 (`SecurityPathProperties`가 메서드를 구분하지 않아 `GET /api/posts/**`만 열 수 없음, 담당 미정)
 - 연결 남음: FN-CMU-001-05 오늘의 이야기 자정 배치, FN-CMU-001-07 건강팁 관리자 선정 (관리자·배치 마일스톤, 담당 미정). FN-CMU-001-12 공유하기는 화면만
