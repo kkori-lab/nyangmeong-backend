@@ -26,7 +26,7 @@
 - 연결 남음: FN-MYP-020-08 (검진기록 등록·영수증 빠른 등록에서 `earnCheckupPoint` 호출, JAJ)
 - 연결 남음: FN-MYP-020-04·06 (건강 일지 기록·케어리스트 기본 항목 체크·일정·관찰 기록 → `reflect` JAJ, 관찰 중 반려동물 조회 JAJ, 펫이야기 글·댓글 → `reflectRepresentative` KSJ, 가계부 지출 → `reflect` 가계부 담당, 아이템 구매 `PointFake` → `PointService.use` LJS)
 
-## SCR-MYP-031 가계부 등록/수정 — 대기
+## SCR-MYP-031 가계부 등록/수정 — 진행
 - 기능: FN-MYP-031-02 직접 입력 폼, FN-MYP-031-03 인식 결과 확인·수정, FN-MYP-031-05 영수증 업로드(인식 실패 후 직접 입력 저장의 영수증 연결), FN-MYP-031-06 중복 지출 확인, FN-MYP-030-08 한도 알림(화면은 SCR-MYP-030)
 - API가 남의 것: FN-MYP-031-03·05 영수증 업로드·분석 (LJS, `expense` 영수증 API 재사용)
 - 함께 만드는 것: 지출 생성·중복 확인 service 메서드(영수증 저장 LJS가 부름)
