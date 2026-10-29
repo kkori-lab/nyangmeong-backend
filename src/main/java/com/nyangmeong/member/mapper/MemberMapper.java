@@ -56,6 +56,12 @@ public interface MemberMapper {
             @Param("actorId") String actorId);
 
     /**
+     * 비밀번호 해시 변경, 탈퇴 회원은 바꾸지 않는다
+     */
+    int updatePassword(@Param("mbrSn") Long mbrSn, @Param("pswdHash") String pswdHash,
+            @Param("withdrawnSttsCd") String withdrawnSttsCd, @Param("actorId") String actorId);
+
+    /**
      * 최종 로그인 일시 갱신
      */
     int updateLastLogin(@Param("mbrSn") Long mbrSn, @Param("actorId") String actorId);

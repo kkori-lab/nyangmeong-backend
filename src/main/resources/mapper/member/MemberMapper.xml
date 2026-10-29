@@ -124,6 +124,16 @@
          WHERE MBR_SN = #{mbrSn}
     </update>
 
+    <update id="updatePassword">
+        /* 비밀번호 해시 변경(재설정) */
+        UPDATE MBR
+           SET PSWD_HASH = #{pswdHash}
+             , MDFR_ID = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE MBR_SN = #{mbrSn}
+           AND MBR_STTS_CD != #{withdrawnSttsCd}
+    </update>
+
     <update id="updateLastLogin">
         /* 최근 로그인 일시 갱신 */
         UPDATE MBR

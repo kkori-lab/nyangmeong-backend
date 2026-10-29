@@ -31,6 +31,7 @@ public class SecurityPathProperties {
             "/api/email-certifications",
             "/api/email-certifications/*/verify",
             "/api/email-certifications/*/invalidate",
+            "/api/email-certifications/*/password-reset",
             "/api/members",
             "/api/members/nickname-availability",
             "/api/members/phone-availability",

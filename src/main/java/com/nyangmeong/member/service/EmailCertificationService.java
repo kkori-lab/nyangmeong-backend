@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,10 +15,12 @@ import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.notification.CertificationMailEvent;
 import com.nyangmeong.global.notification.EventPublisher;
 import com.nyangmeong.global.security.crypto.FieldCryptoService;
+import com.nyangmeong.global.security.session.LoginSessionManager;
 import com.nyangmeong.member.domain.EmailCertPurpose;
 import com.nyangmeong.member.domain.EmailCertification;
 import com.nyangmeong.member.dto.EmailCertificationCreateRequest;
 import com.nyangmeong.member.dto.EmailCertificationInvalidateRequest;
+import com.nyangmeong.member.dto.EmailCertificationPasswordResetRequest;
 import com.nyangmeong.member.dto.EmailCertificationResponse;
 import com.nyangmeong.member.dto.EmailCertificationResult;
 import com.nyangmeong.member.dto.EmailCertificationVerifyRequest;
@@ -31,6 +34,7 @@ import lombok.RequiredArgsConstructor;
  * - 가입용·비밀번호 찾기용 인증번호 발송·재전송·확인, 가입 때 인증 검사와 사용 처리
  * - 인증번호 원문은 저장하지 않고 이메일 HMAC 가 섞인 해시만 저장한다
  * - 비밀번호 찾기는 회원 조회 없이 발송하고 확인 때 계정을 가려 재설정 대상에게만 토큰을 준다
+ * - 재설정 권한 토큰으로 비밀번호를 바꾸고 그 회원의 기존 로그인을 모두 끝낸다
  * - 복구(USRC0012) 목적은 해당 마일스톤에서 연다
  */
 @Service
@@ -47,6 +51,8 @@ public class EmailCertificationService {
     private final FieldCryptoService fieldCryptoService;
     private final EventPublisher eventPublisher;
     private final EmailCertProperties properties;
+    private final PasswordEncoder passwordEncoder;
+    private final LoginSessionManager loginSessionManager;
 
     /**
      * 인증번호 발송·재전송 : 이전 번호는 무효, 간격·횟수 제한에 걸리면 재시도 가능 시각을 돌려준다
@@ -134,6 +140,33 @@ public class EmailCertificationService {
         if (cert.getCertInvldDt() == null && cert.getCertUseCmptnDt() == null) {
             emailCertificationMapper.updateInvalidate(emlCertSn, LocalDateTime.now());
         }
+    }
+
+    /**
+     * 비밀번호 재설정 : 입력 검증 → 권한 확인 → 저장 순서, 권한 문제는 이유를 가리지 않고 한 오류로 답한다
+     * - 사용 처리가 먼저 1행을 잡아야 해서 같은 토큰을 동시에 써도 한 요청만 바뀌고, 하나라도 실패하면 모두 롤백한다
+     */
+    @Transactional
+    public void resetPassword(Long emlCertSn, EmailCertificationPasswordResetRequest req) {
+        if (!req.pswd().equals(req.pswdCnfrm())) {
+            throw new CustomException(ErrorCode.PASSWORD_MISMATCH);
+        }
+        EmailCertification cert = emailCertificationMapper.selectBySn(emlCertSn);
+        if (cert == null || !EmailCertPurpose.PASSWORD_RESET.is(cert.getEmlCertPrpsCd())) {
+            throw new CustomException(ErrorCode.PASSWORD_RESET_NOT_AVAILABLE);
+        }
+        PasswordResetAccount account = memberService.resolvePasswordResetAccount(cert.getCertTrgtEmlHmac());
+        if (!account.resettable()) {
+            throw new CustomException(ErrorCode.PASSWORD_RESET_NOT_AVAILABLE);
+        }
+        int claimed = emailCertificationMapper.updatePasswordResetUsed(emlCertSn,
+                EmailCertPurpose.PASSWORD_RESET.getCode(), fieldCryptoService.hmac("pswdinit:" + req.pswdInitTkn()),
+                LocalDateTime.now());
+        if (claimed != 1) {
+            throw new CustomException(ErrorCode.PASSWORD_RESET_NOT_AVAILABLE);
+        }
+        memberService.changePassword(account.mbrSn(), passwordEncoder.encode(req.pswd()));
+        loginSessionManager.revokeAll(account.mbrSn());
     }
 
     /**

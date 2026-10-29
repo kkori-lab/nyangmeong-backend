@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.member.dto.EmailCertificationCreateRequest;
 import com.nyangmeong.member.dto.EmailCertificationInvalidateRequest;
+import com.nyangmeong.member.dto.EmailCertificationPasswordResetRequest;
 import com.nyangmeong.member.dto.EmailCertificationResponse;
 import com.nyangmeong.member.dto.EmailCertificationResult;
 import com.nyangmeong.member.dto.EmailCertificationVerifyRequest;
@@ -22,7 +23,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * [이메일 인증 컨트롤러]
- * - POST /api/email-certifications, POST /api/email-certifications/{emlCertSn}/verify·invalidate, 로그인 없이 열려 있다
+ * - POST /api/email-certifications, POST /api/email-certifications/{emlCertSn}/verify·invalidate·password-reset, 로그인 없이 열려 있다
  * - 재전송 제한은 4xx 이고 data 에 재시도 가능 시각이 실린다
  */
 @RestController
@@ -57,6 +58,14 @@ public class EmailCertificationController {
     public ResponseEntity<ApiResponse<Void>> invalidate(@PathVariable Long emlCertSn,
             @Valid @RequestBody EmailCertificationInvalidateRequest req) {
         emailCertificationService.invalidate(emlCertSn, req);
+        return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    @Operation(summary = "비밀번호 재설정(재설정 권한 토큰)")
+    @PostMapping("/{emlCertSn}/password-reset")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@PathVariable Long emlCertSn,
+            @Valid @RequestBody EmailCertificationPasswordResetRequest req) {
+        emailCertificationService.resetPassword(emlCertSn, req);
         return ResponseEntity.ok(ApiResponse.success());
     }
 }
