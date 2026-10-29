@@ -76,4 +76,133 @@
                #{inspNvlSn}
         </foreach>
     </update>
+
+    <resultMap id="inspectionValueResultMap" type="com.nyangmeong.health.domain.InspectionValue">
+        <id     column="INSP_NVL_SN"              property="inspNvlSn" />
+        <result column="CKUP_RCD_SN"              property="ckupRcdSn" />
+        <result column="INSP_ARTCL_CD"            property="inspArtclCd" />
+        <result column="INSP_ARTCL_DRCT_INPT_NM"  property="inspArtclDrctInptNm" />
+        <result column="UNIT_NM"                  property="unitNm" />
+        <result column="RSLT_NVL"                 property="rsltNvl" />
+        <result column="REF_LLMT_NVL"             property="refLlmtNvl" />
+        <result column="REF_UPLMT_NVL"            property="refUplmtNvl" />
+        <result column="MEMO_CN"                  property="memoCn" />
+        <result column="SORT_SEQ"                 property="sortSeq" />
+        <result column="DEL_YN"                   property="delYn" />
+        <result column="REG_DT"                   property="regDt" />
+        <result column="MDFCN_DT"                 property="mdfcnDt" />
+        <result column="RGTR_ID"                  property="rgtrId" />
+        <result column="MDFR_ID"                  property="mdfrId" />
+    </resultMap>
+
+    <sql id="valueColumns">
+        SELECT INSP_NVL_SN
+             , CKUP_RCD_SN
+             , INSP_ARTCL_CD
+             , INSP_ARTCL_DRCT_INPT_NM
+             , UNIT_NM
+             , RSLT_NVL
+             , REF_LLMT_NVL
+             , REF_UPLMT_NVL
+             , MEMO_CN
+             , SORT_SEQ
+             , DEL_YN
+             , REG_DT
+             , MDFCN_DT
+             , RGTR_ID
+             , MDFR_ID
+    </sql>
+
+    <select id="selectValue" resultMap="inspectionValueResultMap">
+        /* 검사 수치 조회 */
+        <include refid="valueColumns" />
+          FROM INSP_NVL
+         WHERE INSP_NVL_SN = #{inspNvlSn}
+           AND DEL_YN = 'N'
+    </select>
+
+    <select id="selectValueByArticle" resultMap="inspectionValueResultMap">
+        /* 검진기록의 같은 항목 검사 수치 조회 */
+        <include refid="valueColumns" />
+          FROM INSP_NVL
+         WHERE CKUP_RCD_SN = #{ckupRcdSn}
+           AND INSP_ARTCL_CD = #{inspArtclCd}
+           AND INSP_ARTCL_DRCT_INPT_NM = #{inspArtclDrctInptNm}
+           AND DEL_YN = 'N'
+    </select>
+
+    <select id="selectMaxSortSeq" resultType="int">
+        /* 검진기록의 정렬순서 최댓값 */
+        SELECT COALESCE(MAX(SORT_SEQ), 0)
+          FROM INSP_NVL
+         WHERE CKUP_RCD_SN = #{ckupRcdSn}
+           AND DEL_YN = 'N'
+    </select>
+
+    <insert id="insertValue" parameterType="com.nyangmeong.health.domain.InspectionValue"
+            useGeneratedKeys="true" keyProperty="inspNvlSn" keyColumn="INSP_NVL_SN">
+        /* 검사 수치 등록 */
+        INSERT INTO INSP_NVL
+             ( CKUP_RCD_SN
+             , INSP_ARTCL_CD
+             , INSP_ARTCL_DRCT_INPT_NM
+             , UNIT_NM
+             , RSLT_NVL
+             , REF_LLMT_NVL
+             , REF_UPLMT_NVL
+             , MEMO_CN
+             , SORT_SEQ
+             , DEL_YN
+             , REG_DT
+             , MDFCN_DT
+             , RGTR_ID
+             , MDFR_ID )
+        VALUES
+             ( #{ckupRcdSn}
+             , #{inspArtclCd}
+             , #{inspArtclDrctInptNm}
+             , #{unitNm}
+             , #{rsltNvl}
+             , #{refLlmtNvl}
+             , #{refUplmtNvl}
+             , #{memoCn}
+             , #{sortSeq}
+             , 'N'
+             , NOW()
+             , NOW()
+             , #{rgtrId}
+             , #{mdfrId} )
+    </insert>
+
+    <update id="restoreValue">
+        /* 삭제된 같은 항목 검사 수치 복구 (UK_INSP_NVL_1) */
+        UPDATE INSP_NVL
+           SET UNIT_NM       = #{value.unitNm}
+             , RSLT_NVL      = #{value.rsltNvl}
+             , REF_LLMT_NVL  = #{value.refLlmtNvl}
+             , REF_UPLMT_NVL = #{value.refUplmtNvl}
+             , MEMO_CN       = #{value.memoCn}
+             , SORT_SEQ      = #{value.sortSeq}
+             , DEL_YN        = 'N'
+             , MDFR_ID       = #{actorId}
+             , MDFCN_DT      = NOW()
+         WHERE CKUP_RCD_SN = #{value.ckupRcdSn}
+           AND INSP_ARTCL_CD = #{value.inspArtclCd}
+           AND INSP_ARTCL_DRCT_INPT_NM = #{value.inspArtclDrctInptNm}
+           AND DEL_YN = 'Y'
+    </update>
+
+    <update id="updateValue">
+        /* 검사 수치 수정 (검사 항목 변경 불가) */
+        UPDATE INSP_NVL
+           SET UNIT_NM       = #{value.unitNm}
+             , RSLT_NVL      = #{value.rsltNvl}
+             , REF_LLMT_NVL  = #{value.refLlmtNvl}
+             , REF_UPLMT_NVL = #{value.refUplmtNvl}
+             , MEMO_CN       = #{value.memoCn}
+             , MDFR_ID       = #{actorId}
+             , MDFCN_DT      = NOW()
+         WHERE INSP_NVL_SN = #{value.inspNvlSn}
+           AND DEL_YN = 'N'
+    </update>
 </mapper>
