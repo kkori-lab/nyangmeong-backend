@@ -62,6 +62,28 @@ public class CheckupService {
     }
 
     /**
+     * 검진기록 상세 조회
+     */
+    @Transactional(readOnly = true)
+    public CheckupResponse getCheckup(Long mbrSn, Long petSn, Long ckupRcdSn) {
+        petAuthorizer.checkCaregiver(mbrSn, petSn);
+        return getOwn(petSn, ckupRcdSn);
+    }
+
+    /**
+     * 반려동물의 완료 상태 검진기록 여부
+     * - 첨부·처방약 등 하위 기록 소유 확인용 : 반려동물 권한은 호출하는 쪽에서 검사
+     */
+    @Transactional(readOnly = true)
+    public boolean existsCheckup(Long petSn, Long ckupRcdSn) {
+        if (ckupRcdSn == null) {
+            return false;
+        }
+        CheckupResponse response = checkupMapper.selectDetail(ckupRcdSn, CheckupStatus.COMPLETED.getCode());
+        return response != null && petSn.equals(response.getPetSn());
+    }
+
+    /**
      * 검진기록 직접 등록
      */
     @Transactional

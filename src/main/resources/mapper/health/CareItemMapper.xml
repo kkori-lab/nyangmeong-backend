@@ -227,7 +227,9 @@
             useGeneratedKeys="true" keyProperty="careArtclSn" keyColumn="CARE_ARTCL_SN">
         /* 케어 항목 등록 */
         INSERT INTO CARE_ARTCL
-             ( PET_SN
+             ( PRSC_SN
+             , REPT_PRVNT_MNG_SN
+             , PET_SN
              , CARE_ZONE_CD
              , CARE_CYCLE_CD
              , CYCLE_DRCT_INPT_DAY_CNT
@@ -244,7 +246,9 @@
              , RGTR_ID
              , MDFR_ID )
         VALUES
-             ( #{petSn}
+             ( #{prscSn}
+             , #{reptPrvntMngSn}
+             , #{petSn}
              , #{careZoneCd}
              , #{careCycleCd}
              , #{cycleDrctInptDayCnt}
@@ -455,6 +459,48 @@
         SELECT DAY_MDCN_NMTM
           FROM PRSC
          WHERE PRSC_SN = #{prscSn}
+           AND DEL_YN = 'N'
+    </select>
+
+    <select id="existsPrescriptionItem" resultType="boolean">
+        /* 처방약 연동 투약 항목 존재 여부 */
+        SELECT EXISTS (
+               SELECT 1
+                 FROM CARE_ARTCL
+                WHERE PRSC_SN = #{prscSn}
+                  AND DEL_YN = 'N'
+               )
+    </select>
+
+    <update id="deletePrescriptionItems">
+        /* 처방약 연동 투약 항목 삭제(완료 기록은 유지) */
+        UPDATE CARE_ARTCL
+           SET DEL_YN        = 'Y'
+             , MAIN_EXPSR_YN = 'N'
+             , MAIN_SORT_SEQ = 0
+             , MDFR_ID       = #{actorId}
+             , MDFCN_DT      = NOW()
+         WHERE PRSC_SN = #{prscSn}
+           AND DEL_YN = 'N'
+    </update>
+
+    <update id="deleteRepeatPreventionItems">
+        /* 반복 예방 연동 케어 항목 삭제(완료 기록은 유지) */
+        UPDATE CARE_ARTCL
+           SET DEL_YN        = 'Y'
+             , MAIN_EXPSR_YN = 'N'
+             , MAIN_SORT_SEQ = 0
+             , MDFR_ID       = #{actorId}
+             , MDFCN_DT      = NOW()
+         WHERE REPT_PRVNT_MNG_SN = #{reptPrvntMngSn}
+           AND DEL_YN = 'N'
+    </update>
+
+    <select id="selectRepeatPreventionBgngYmd" resultType="java.time.LocalDate">
+        /* 반복 예방 시작일 */
+        SELECT BGNG_YMD
+          FROM REPT_PRVNT_MNG
+         WHERE REPT_PRVNT_MNG_SN = #{reptPrvntMngSn}
            AND DEL_YN = 'N'
     </select>
 </mapper>

@@ -1,0 +1,48 @@
+package com.nyangmeong.health.mapper;
+
+import java.util.List;
+
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import com.nyangmeong.health.domain.CheckupAttachment;
+import com.nyangmeong.health.dto.CheckupAttachmentSearchCond;
+import com.nyangmeong.health.dto.CheckupAttachmentSummary;
+
+/**
+ * [검진기록 첨부 매퍼]
+ * - CKUP_RCD_ATCH
+ */
+@Mapper
+public interface CheckupAttachmentMapper {
+
+    /**
+     * 검진기록 첨부 목록 조회
+     */
+    List<CheckupAttachmentSummary> selectList(@Param("cond") CheckupAttachmentSearchCond cond);
+
+    /**
+     * 검진기록 첨부 단건 조회 (목록 행 형태)
+     */
+    CheckupAttachmentSummary selectSummary(Long ckupRcdAtchSn);
+
+    /**
+     * 검진기록 첨부 조회
+     */
+    CheckupAttachment selectAttachment(Long ckupRcdAtchSn);
+
+    /**
+     * 검진기록 첨부 등록
+     */
+    int insertAttachment(CheckupAttachment attachment);
+
+    /**
+     * 검진기록 첨부 수정
+     */
+    int updateAttachment(@Param("attachment") CheckupAttachment attachment, @Param("actorId") String actorId);
+
+    /**
+     * 검진기록 첨부 삭제
+     */
+    int deleteAttachment(@Param("ckupRcdAtchSn") Long ckupRcdAtchSn, @Param("actorId") String actorId);
+}
