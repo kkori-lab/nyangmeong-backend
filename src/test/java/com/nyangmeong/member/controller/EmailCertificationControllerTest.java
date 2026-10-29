@@ -33,6 +33,7 @@ import com.nyangmeong.global.security.jwt.JwtProperties;
 import com.nyangmeong.global.security.jwt.JwtTokenProvider;
 import com.nyangmeong.global.security.jwt.TokenCookies;
 import com.nyangmeong.member.dto.EmailCertificationCreateRequest;
+import com.nyangmeong.member.dto.EmailCertificationInvalidateRequest;
 import com.nyangmeong.member.dto.EmailCertificationResponse;
 import com.nyangmeong.member.dto.EmailCertificationResult;
 import com.nyangmeong.member.dto.EmailCertificationVerifyRequest;
@@ -66,6 +67,13 @@ class EmailCertificationControllerTest {
 
     private MockHttpServletRequestBuilder verifyRequest(String body) {
         return post("/api/email-certifications/3/verify")
+                .header("X-Requested-With", "XMLHttpRequest")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body);
+    }
+
+    private MockHttpServletRequestBuilder invalidateRequest(String body) {
+        return post("/api/email-certifications/3/invalidate")
                 .header("X-Requested-With", "XMLHttpRequest")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body);
@@ -158,5 +166,38 @@ class EmailCertificationControllerTest {
                 .andExpect(jsonPath("$.data[0].field").value("certNo"));
 
         verify(emailCertificationService, never()).verify(any(), any());
+    }
+
+    @Test
+    void 비밀번호_찾기_확인은_계정_결과와_재설정_토큰을_준다() throws Exception {
+        when(emailCertificationService.verify(eq(3L), any(EmailCertificationVerifyRequest.class)))
+                .thenReturn(new EmailCertificationResponse(3L, "USRC0011", null, null,
+                        LocalDateTime.of(2026, 10, 27, 12, 2, 0), EmailCertificationResponse.PASSWORD_RESET_READY, null,
+                        "tkn", LocalDateTime.of(2026, 10, 27, 12, 32, 0)));
+
+        mockMvc.perform(verifyRequest("{\"certNo\":\"123456\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.certRslt").value("PASSWORD_RESET_READY"))
+                .andExpect(jsonPath("$.data.pswdInitTkn").value("tkn"))
+                .andExpect(jsonPath("$.data.initAuthrtExpryDt").value("2026-10-27T12:32:00"));
+    }
+
+    @Test
+    void 무효화는_로그인_없이_200이다() throws Exception {
+        mockMvc.perform(invalidateRequest("{\"certTrgtEml\":\"newbie@example.com\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"));
+
+        verify(emailCertificationService).invalidate(eq(3L), any(EmailCertificationInvalidateRequest.class));
+    }
+
+    @Test
+    void 무효화_이메일이_비면_400이고_서비스를_부르지_않는다() throws Exception {
+        mockMvc.perform(invalidateRequest("{\"certTrgtEml\":\"\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT_VALUE"))
+                .andExpect(jsonPath("$.data[0].field").value("certTrgtEml"));
+
+        verify(emailCertificationService, never()).invalidate(any(), any());
     }
 }

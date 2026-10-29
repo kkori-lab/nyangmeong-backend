@@ -3,9 +3,11 @@ package com.nyangmeong.pet.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -25,6 +27,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
+import com.nyangmeong.global.error.CustomException;
+import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.error.GlobalExceptionHandler;
 import com.nyangmeong.global.log.SensitiveDataMasker;
 import com.nyangmeong.global.security.AuthMemberMapper;
@@ -36,12 +40,13 @@ import com.nyangmeong.global.security.handler.RestAuthenticationEntryPoint;
 import com.nyangmeong.global.security.jwt.JwtProperties;
 import com.nyangmeong.global.security.jwt.JwtTokenProvider;
 import com.nyangmeong.global.security.jwt.TokenCookies;
+import com.nyangmeong.pet.dto.CaregiverSummary;
 import com.nyangmeong.pet.dto.PetResponse;
 import com.nyangmeong.pet.dto.PetSummary;
 import com.nyangmeong.pet.service.PetService;
 
 /**
- * [검사 - 반려동물 목록·상세·등록·수정·대표 지정 API]
+ * [검사 - 반려동물 목록·상세·등록·수정·대표 지정·양육자 목록·연동 해제 API]
  */
 @WebMvcTest(controllers = PetController.class)
 @Import({SecurityConfig.class, JwtTokenProvider.class, JwtProperties.class, TokenCookies.class,
@@ -173,6 +178,60 @@ class PetControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.httpCode").value(200));
         verify(petService).designateRepresentative(1L, 10L);
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 양육자_목록은_역할과_연동일을_돌려준다() throws Exception {
+        CaregiverSummary primary = new CaregiverSummary();
+        primary.setBrupRelSn(5L);
+        primary.setMbrSn(9L);
+        primary.setMbrNcnm("김주인");
+        primary.setBrupRoleCd("PETC0018");
+        primary.setLinkYmd(LocalDate.of(2026, 6, 1));
+        CaregiverSummary me = new CaregiverSummary();
+        me.setBrupRelSn(6L);
+        me.setMbrSn(1L);
+        me.setMbrNcnm("이서연");
+        me.setBrupRoleCd("PETC0019");
+        me.setLinkYmd(LocalDate.of(2026, 7, 2));
+        when(petService.searchCaregivers(1L, 10L)).thenReturn(List.of(primary, me));
+
+        mockMvc.perform(get("/api/pets/10/caregivers"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].brupRoleCd").value("PETC0018"))
+                .andExpect(jsonPath("$.data[0].mbrNcnm").value("김주인"))
+                .andExpect(jsonPath("$.data[1].brupRelSn").value(6))
+                .andExpect(jsonPath("$.data[1].linkYmd").value("2026-07-02"));
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 양육관계가_없는_반려동물의_양육자_목록은_403() throws Exception {
+        when(petService.searchCaregivers(1L, 10L)).thenThrow(new CustomException(ErrorCode.PET_ACCESS_DENIED));
+
+        mockMvc.perform(get("/api/pets/10/caregivers"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.httpCode").value(403));
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 연동_해제는_200() throws Exception {
+        mockMvc.perform(delete("/api/pets/10/caregivers/6").header("X-Requested-With", "XMLHttpRequest"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.httpCode").value(200));
+        verify(petService).unlinkCaregiver(1L, 10L, 6L);
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 없는_연동의_해제는_404() throws Exception {
+        doThrow(new CustomException(ErrorCode.CAREGIVER_NOT_FOUND)).when(petService).unlinkCaregiver(1L, 10L, 6L);
+
+        mockMvc.perform(delete("/api/pets/10/caregivers/6").header("X-Requested-With", "XMLHttpRequest"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.httpCode").value(404));
     }
 
     private MockHttpServletRequestBuilder json(MockHttpServletRequestBuilder builder, String body) {

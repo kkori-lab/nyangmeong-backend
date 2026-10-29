@@ -13,7 +13,7 @@
 | GET | /members/me/points | 보유 포인트, 이번 달 적립·사용 합계와 건수, 오늘 미션 요약(주양육 반려동물 전체) | MYP-001-03·04, MYP-011-05, MYP-020-01·09 | SJM | - | PointResponse |
 | GET | /pets | 내 반려동물 목록(주양육·공동양육, 역할·대표 여부·공동양육 인원 포함) | MYP-001-01, MYP-002-01~03, MYP-005-02, MYP-006-04, MYP-020-03 | SJM | - | List<PetSummary> |
 | GET | /pets/{petSn} | 반려동물 프로필 상세(수정 모달 채우기, 양육자 목록). 체중 잠금은 화면이 건강기록 API로 판단(`issues.md` API의 마이페이지 2번) | MYP-002-04, MYP-003-01 | SJM | - | PetResponse |
-| GET | /pets/{petSn}/caregivers | 공동양육자 목록. 주양육자에게는 전원, 공동양육자에게는 본인 1건 | MYP-004-01·03·04, MYP-006-04 | SJM | - | List<CaregiverSummary> |
+| GET | /pets/{petSn}/caregivers | 공동양육자 목록. 주양육자가 첫 줄. 주양육자에게는 전원, 공동양육자에게는 주양육자와 본인 | MYP-004-01·03·04, MYP-006-04 | SJM | - | List<CaregiverSummary> |
 | GET | /pets/{petSn}/character-image | 캐릭터 이미지 `?part=full`(전신, 기본)·`face`(얼굴). 미생성·오류 확인 중이면 종별 기본 캐릭터 | MYP-001-01, MYP-002-02, MYP-010-12·23 | LJS | - | 이미지 파일 |
 | GET | /pets/{petSn}/daily-missions | 그날의 케어미션 8개와 진행 상태. 쿼리 `msnCrtrYmd` | MYP-020-03·04 | SJM | - | List<DailyMissionSummary> |
 | GET | /pixel-characters | 내 캐릭터·공동양육 캐릭터 목록(캐릭터 없는 반려동물 포함, 생성 상태·오류 확인 중 표시) | MYP-010-02·03·07·12·23 | LJS | - | List<PixelCharacterSummary> |
@@ -83,13 +83,14 @@
 
 ### CaregiverSummary
 쓰는 API: GET /pets/{petSn}/caregivers
-`PetResponse.caregivers[]`와 같은 모양(GET /pets/{petSn}). 주양육자에게는 전원, 공동양육자에게는 본인 1건.
+`PetResponse.caregivers[]`와 같은 모양(GET /pets/{petSn}). 주양육자가 첫 줄, 공동양육자는 연동한 순서. 주양육자에게는 연동 중인 전원, 공동양육자에게는 주양육자와 본인(다른 공동양육자는 빼고, MYP-004-03·04). 권한("조회+수정")은 역할로 정해져 필드를 두지 않는다.
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | brupRelSn | Long | Y | 연동 해제 경로 변수 | BRUP_REL.BRUP_REL_SN, MYP-004-01, MYP-006-02 |
 | mbrSn | Long | Y | | BRUP_REL.MBR_SN |
 | mbrNcnm | String | Y | | MBR.MBR_NCNM |
 | brupRoleCd | String | Y | 주양육자 줄 구분(PETG05) | BRUP_REL.BRUP_ROLE_CD, MYP-004-03 |
+| linkYmd | LocalDate | Y | 연동일. 마지막 초대 수락 연동(PETC0024) 이력의 등록일, 이력이 없으면(주양육자) 양육관계 등록일 | BRUP_LINK_STTS_HSTRY.REG_DT, BRUP_REL.REG_DT, MYP-004-01 |
 
 ### DailyMissionSummary
 쓰는 API: GET /pets/{petSn}/daily-missions
@@ -187,6 +188,7 @@
 | caregivers[].mbrSn | Long | Y | | BRUP_REL.MBR_SN |
 | caregivers[].mbrNcnm | String | Y | | MBR.MBR_NCNM |
 | caregivers[].brupRoleCd | String | Y | | BRUP_REL.BRUP_ROLE_CD |
+| caregivers[].linkYmd | LocalDate | Y | 연동일(CaregiverSummary와 같음) | BRUP_LINK_STTS_HSTRY.REG_DT, BRUP_REL.REG_DT |
 
 ### PetSummary
 쓰는 API: GET /pets

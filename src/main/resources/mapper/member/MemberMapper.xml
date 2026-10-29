@@ -13,6 +13,7 @@
         <result column="PSWD_HASH"          property="pswdHash" />
         <result column="MBR_NCNM"           property="mbrNcnm" />
         <result column="LAST_LGN_DT"        property="lastLgnDt" />
+        <result column="WHDWL_DT"           property="whdwlDt" />
         <result column="NCNM_STNG_CMPTN_YN" property="ncnmStngCmptnYn" />
     </resultMap>
 
@@ -28,6 +29,7 @@
              , PSWD_HASH
              , MBR_NCNM
              , LAST_LGN_DT
+             , WHDWL_DT
              , NCNM_STNG_CMPTN_YN
           FROM MBR
          WHERE ACNT_EML_HMAC = #{acntEmlHmac}

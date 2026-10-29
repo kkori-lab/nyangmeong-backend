@@ -12,6 +12,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -25,10 +26,14 @@ import com.nyangmeong.global.security.crypto.CryptoProperties;
 import com.nyangmeong.global.security.crypto.FieldCryptoService;
 import com.nyangmeong.global.security.domain.MemberAuthority;
 import com.nyangmeong.global.security.domain.MemberStatus;
+import com.nyangmeong.global.setting.SystemSetting;
+import com.nyangmeong.global.setting.SystemSettingService;
 import com.nyangmeong.member.domain.JoinPath;
 import com.nyangmeong.member.domain.Member;
 import com.nyangmeong.member.dto.MemberNicknameUpdateRequest;
 import com.nyangmeong.member.dto.MemberResponse;
+import com.nyangmeong.member.dto.EmailCertificationResponse;
+import com.nyangmeong.member.dto.PasswordResetAccount;
 import com.nyangmeong.member.mapper.MemberMapper;
 
 /**
@@ -41,8 +46,9 @@ class MemberServiceTest {
     private static final String PHONE = "01012345678";
 
     private final MemberMapper memberMapper = mock(MemberMapper.class);
+    private final SystemSettingService systemSettingService = mock(SystemSettingService.class);
     private final FieldCryptoService crypto = cryptoService();
-    private final MemberService service = new MemberService(memberMapper, crypto);
+    private final MemberService service = new MemberService(memberMapper, crypto, systemSettingService);
 
     /** Mockito 는 Long 반환을 0으로 채우므로 "쓰는 회원 없음"을 null 로 명시 */
     @BeforeEach
@@ -288,5 +294,61 @@ class MemberServiceTest {
         assertThat(response.snsAcntLinks().get(0).snsOffrCd()).isEqualTo(JoinPath.KAKAO.getCode());
         assertThat(response.joinPathCd()).isEqualTo(JoinPath.EMAIL.getCode());
         verify(memberMapper).selectSnsOffrCds(eq(5L));
+    }
+
+    @Test
+    void 비밀번호_찾기_없는_이메일은_미가입이다() {
+        assertThat(service.resolvePasswordResetAccount(crypto.hmac(EMAIL)).certRslt())
+                .isEqualTo(EmailCertificationResponse.MEMBER_NOT_FOUND);
+    }
+
+    @Test
+    void 비밀번호_찾기_비밀번호가_있는_회원은_재설정_대상이다() {
+        Member member = stored(1L, MemberStatus.NORMAL.getCode(), "냥멍", "Y");
+        member.setPswdHash("hash");
+        when(memberMapper.selectByEmailHmac(crypto.hmac(EMAIL))).thenReturn(member);
+
+        PasswordResetAccount account = service.resolvePasswordResetAccount(crypto.hmac(EMAIL));
+
+        assertThat(account.resettable()).isTrue();
+        assertThat(account.snsOffrCds()).isNull();
+    }
+
+    @Test
+    void 비밀번호_찾기_정지_회원도_재설정_대상이다() {
+        Member member = stored(1L, MemberStatus.SUSPENDED.getCode(), "냥멍", "Y");
+        member.setPswdHash("hash");
+        when(memberMapper.selectByEmailHmac(crypto.hmac(EMAIL))).thenReturn(member);
+
+        assertThat(service.resolvePasswordResetAccount(crypto.hmac(EMAIL)).resettable()).isTrue();
+    }
+
+    @Test
+    void 비밀번호_찾기_비밀번호가_없는_회원은_연결된_SNS만_안내한다() {
+        Member member = stored(1L, MemberStatus.NORMAL.getCode(), "냥멍", "Y");
+        member.setJoinPathCd(JoinPath.KAKAO.getCode());
+        when(memberMapper.selectByEmailHmac(crypto.hmac(EMAIL))).thenReturn(member);
+        when(memberMapper.selectSnsOffrCds(1L)).thenReturn(List.of(JoinPath.KAKAO.getCode()));
+
+        PasswordResetAccount account = service.resolvePasswordResetAccount(crypto.hmac(EMAIL));
+
+        assertThat(account.certRslt()).isEqualTo(EmailCertificationResponse.SNS_ONLY);
+        assertThat(account.snsOffrCds()).containsExactly(JoinPath.KAKAO.getCode());
+    }
+
+    @Test
+    void 비밀번호_찾기_탈퇴_보관_기간_안이면_복구_안내_지나면_미가입이다() {
+        when(systemSettingService.get()).thenReturn(new SystemSetting());
+        Member keeping = stored(1L, MemberStatus.WITHDRAWN.getCode(), "냥멍", "Y");
+        keeping.setWhdwlDt(LocalDateTime.now().minusDays(29));
+        when(memberMapper.selectByEmailHmac(crypto.hmac(EMAIL))).thenReturn(keeping);
+        assertThat(service.resolvePasswordResetAccount(crypto.hmac(EMAIL)).certRslt())
+                .isEqualTo(EmailCertificationResponse.MEMBER_WITHDRAWN);
+
+        Member expired = stored(1L, MemberStatus.WITHDRAWN.getCode(), "냥멍", "Y");
+        expired.setWhdwlDt(LocalDateTime.now().minusDays(31));
+        when(memberMapper.selectByEmailHmac(crypto.hmac(EMAIL))).thenReturn(expired);
+        assertThat(service.resolvePasswordResetAccount(crypto.hmac(EMAIL)).certRslt())
+                .isEqualTo(EmailCertificationResponse.MEMBER_NOT_FOUND);
     }
 }

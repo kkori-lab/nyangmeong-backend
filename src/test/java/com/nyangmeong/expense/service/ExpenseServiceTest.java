@@ -31,10 +31,13 @@ import com.nyangmeong.expense.domain.ExpenseCategory;
 import com.nyangmeong.expense.domain.ExpenseInputMethod;
 import com.nyangmeong.expense.domain.Receipt;
 import com.nyangmeong.expense.domain.ReceiptStatus;
+import com.nyangmeong.expense.dto.ExpenseBulkDeleteRequest;
 import com.nyangmeong.expense.dto.ExpenseCreateCommand;
 import com.nyangmeong.expense.dto.ExpenseCreateRequest;
 import com.nyangmeong.expense.dto.ExpenseLineRequest;
+import com.nyangmeong.expense.dto.ExpenseSearchCond;
 import com.nyangmeong.expense.dto.ExpenseSummary;
+import com.nyangmeong.expense.dto.ExpenseUpdateRequest;
 import com.nyangmeong.expense.mapper.ExpenseMapper;
 import com.nyangmeong.expense.mapper.ReceiptMapper;
 import com.nyangmeong.global.auth.PetAuthorizer;
@@ -50,7 +53,7 @@ import com.nyangmeong.pet.service.CareMissionService;
 import com.nyangmeong.pet.service.PetService;
 
 /**
- * [검사 - 가계부 지출 등록·중복 확인·한도 알림]
+ * [검사 - 가계부 지출 등록·중복 확인·한도 알림·수정·삭제]
  * - 영수증 상태 변경은 실제 ReceiptService 로 확인
  */
 class ExpenseServiceTest {
@@ -392,5 +395,147 @@ class ExpenseServiceTest {
                 "E.EXPND_CLSF_CD = #{expndClsfCd}", "E.PET_SN &lt;=&gt; #{line.petSn}",
                 "E.EXPND_AMT = #{line.expndAmt}");
         assertThat(where).doesNotContain("EXPND_PLCUS_NM", "DTL_MTTR");
+    }
+
+    private Expense saved(Long petSn, String clsfCd) {
+        Expense expense = new Expense();
+        expense.setExpndSn(5L);
+        expense.setMbrSn(MBR);
+        expense.setPetSn(petSn);
+        expense.setExpndClsfCd(clsfCd);
+        expense.setExpndAmt(10_000L);
+        expense.setDtlMttr("사료");
+        expense.setExpndPlcusNm("펫마트");
+        expense.setExpndYmd(today);
+        when(expenseMapper.selectMine(MBR, 5L)).thenReturn(expense);
+        when(expenseMapper.selectSummary(MBR, 5L)).thenReturn(new ExpenseSummary());
+        return expense;
+    }
+
+    private static ExpenseUpdateRequest update(String clsfCd, Long petSn, Boolean common, Long amt, String dtlMttr) {
+        return new ExpenseUpdateRequest(null, clsfCd, petSn, common, amt, dtlMttr, null);
+    }
+
+    @Test
+    void 남의_지출이거나_없는_지출은_수정할_수_없다() {
+        when(expenseMapper.selectMine(MBR, 5L)).thenReturn(null);
+
+        assertThatThrownBy(() -> service.update(MBR, 5L, update(null, null, null, 1L, null)))
+                .isInstanceOf(CustomException.class).extracting("errorCode").isEqualTo(ErrorCode.EXPENSE_NOT_FOUND);
+        verify(expenseMapper, never()).update(any());
+    }
+
+    @Test
+    void 보낸_필드만_바꾸고_빈_문자열이면_비운다() {
+        Expense expense = saved(10L, FOOD);
+
+        service.update(MBR, 5L, update(null, null, null, 20_000L, ""));
+
+        verify(expenseMapper).update(expense);
+        assertThat(expense.getExpndAmt()).isEqualTo(20_000L);
+        assertThat(expense.getDtlMttr()).isNull();
+        assertThat(expense.getExpndPlcusNm()).isEqualTo("펫마트");
+        assertThat(expense.getPetSn()).isEqualTo(10L);
+        verify(petAuthorizer, never()).checkCaregiver(any(), any());
+        verify(eventPublisher, never()).publish(any(NotificationEvent.class));
+    }
+
+    @Test
+    void 공용으로_바꿀_수_있고_병원은_공용이_될_수_없다() {
+        Expense food = saved(10L, FOOD);
+        service.update(MBR, 5L, update(null, null, true, null, null));
+        assertThat(food.getPetSn()).isNull();
+
+        saved(10L, HOSPITAL);
+        assertThatThrownBy(() -> service.update(MBR, 5L, update(null, null, true, null, null)))
+                .isInstanceOf(CustomException.class).extracting("errorCode")
+                .isEqualTo(ErrorCode.EXPENSE_PET_REQUIRED);
+
+        saved(null, FOOD);
+        assertThatThrownBy(() -> service.update(MBR, 5L, update(HOSPITAL, null, null, null, null)))
+                .isInstanceOf(CustomException.class).extracting("errorCode")
+                .isEqualTo(ErrorCode.EXPENSE_PET_REQUIRED);
+    }
+
+    @Test
+    void 반려동물과_공용을_함께_보내거나_없는_카테고리면_400이다() {
+        saved(10L, FOOD);
+
+        assertThatThrownBy(() -> service.update(MBR, 5L, update(null, 11L, true, null, null)))
+                .isInstanceOf(CustomException.class).extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+        assertThatThrownBy(() -> service.update(MBR, 5L, update("MYPC9999", null, null, null, null)))
+                .isInstanceOf(CustomException.class).extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+        verify(expenseMapper, never()).update(any());
+    }
+
+    @Test
+    void 반려동물을_바꿀_때만_연동을_검사한다() {
+        saved(10L, FOOD);
+        doThrow(new CustomException(ErrorCode.PET_ACCESS_DENIED)).when(petAuthorizer).checkCaregiver(MBR, 99L);
+
+        assertThatThrownBy(() -> service.update(MBR, 5L, update(null, 99L, null, null, null)))
+                .isInstanceOf(CustomException.class).extracting("errorCode").isEqualTo(ErrorCode.PET_ACCESS_DENIED);
+        verify(expenseMapper, never()).update(any());
+
+        service.update(MBR, 5L, update(null, 10L, null, null, null));
+        verify(petAuthorizer, never()).checkCaregiver(MBR, 10L);
+    }
+
+    @Test
+    void 삭제는_하나라도_내_지출이_아니면_모두_거절한다() {
+        when(expenseMapper.deleteMine(MBR, List.of(1L, 2L))).thenReturn(1);
+
+        assertThatThrownBy(() -> service.delete(MBR, List.of(1L, 2L, 1L)))
+                .isInstanceOf(CustomException.class).extracting("errorCode").isEqualTo(ErrorCode.EXPENSE_NOT_FOUND);
+        assertThatThrownBy(() -> service.delete(MBR, List.of())).isInstanceOf(CustomException.class);
+    }
+
+    @Test
+    void 삭제는_모두_내_지출이면_지운다() {
+        when(expenseMapper.deleteMine(MBR, List.of(3L))).thenReturn(1);
+
+        service.delete(MBR, List.of(3L));
+
+        verify(expenseMapper).deleteMine(MBR, List.of(3L));
+    }
+
+    @Test
+    void 조건_삭제는_건수가_다르면_지우지_않는다() {
+        when(expenseMapper.selectCount(eq(MBR), any())).thenReturn(4);
+
+        assertThatThrownBy(() -> service.bulkDelete(MBR,
+                new ExpenseBulkDeleteRequest(3, null, null, 10L, null, null)))
+                .isInstanceOf(CustomException.class).extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+        verify(expenseMapper, never()).deleteByCond(any(), any());
+    }
+
+    @Test
+    void 조건_삭제는_여러_달_범위와_필터를_같은_조건으로_지운다() {
+        when(expenseMapper.selectCount(eq(MBR), any())).thenReturn(3);
+        LocalDate aug = LocalDate.of(2026, 8, 1);
+        LocalDate oct = LocalDate.of(2026, 10, 31);
+
+        service.bulkDelete(MBR, new ExpenseBulkDeleteRequest(3, oct, aug, 10L, null, FOOD));
+
+        ArgumentCaptor<ExpenseSearchCond> cond = ArgumentCaptor.forClass(ExpenseSearchCond.class);
+        verify(expenseMapper).deleteByCond(eq(MBR), cond.capture());
+        assertThat(cond.getValue().getStartYmd()).isEqualTo(aug);
+        assertThat(cond.getValue().getEndYmd()).isEqualTo(oct);
+        assertThat(cond.getValue().getPetSn()).isEqualTo(10L);
+        assertThat(cond.getValue().getExpndClsfCd()).isEqualTo(FOOD);
+    }
+
+    @Test
+    void 목록_SQL은_삭제된_반려동물도_이름을_읽고_지출은_삭제를_뺀다() throws Exception {
+        String xml = Files.readString(Path.of("src/main/resources/mapper/expense/ExpenseMapper.xml"));
+        Matcher select = Pattern.compile("<select id=\"selectList\".*?</select>", Pattern.DOTALL).matcher(xml);
+        assertThat(select.find()).isTrue();
+
+        assertThat(select.group()).contains("E.MBR_SN = #{mbrSn}", "E.DEL_YN = 'N'")
+                .doesNotContain("P.DEL_YN = 'N'");
+        assertThat(xml).contains("WHEN P.DEL_YN = 'Y' THEN TRUE");
     }
 }
