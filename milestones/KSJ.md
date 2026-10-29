@@ -69,6 +69,12 @@
 - 기다리는 것: 프론트 SCR-CSC-003 1:1 문의 API 연결(2026-10-28 끝, 화면은 한 장 10MB·10장까지 받는다)
 - 완료 조건: 한 장 10MB × 10장(합계 100MB)을 한 요청으로 올릴 수 있다(`spring.servlet.multipart.max-request-size=100MB`, `max-file-size=10MB` 유지). `application.properties.example`을 고치고 팀원·디스코드의 `application.properties`도 같이 바꾼다
 
+## SCR-CSC-003 1:1 문의 · 삭제 API — 끝
+- 기능: 명세 기능 ID 추가 없음(프론트 요청 2026-10-29). 걸치는 기능 FN-CSC-003-01 문의 목록, FN-CSC-003-12 문의 상세, FN-CSC-003-15 문의 수정
+- 기다리는 것: 없음
+- 완료 조건: `DELETE /api/inquiries/{otoInqrySn}`로 본인의 접수(미답변) 문의를 삭제하면 목록·상세에서 사라진다. 삭제는 `OTO_INQRY.DEL_YN = 'Y'` UPDATE다
+- 연결 남음: SCR-CSC-003 (프론트 연결 문의 상세의 삭제 버튼과 삭제 뒤 목록 이동, 프론트 저장소에서 /start)
+
 ## 제외
 - FN-CMU-001-12: 화면만 있다(공유하기)
 - FN-CMU-003-05: 화면만 있다(공유하기)
