@@ -36,7 +36,7 @@
 - 연결 남음: FN-MYP-031-05 (영수증 저장 `ExpenseFake` → `ExpenseService.create`·`findDuplicates`, LJS)
 - 연결 남음: FN-MYP-030-08 (알림 목록 COM-004에 가계부 한도 알림 표시, LJS)
 
-## SCR-MYP-004 공동양육자 목록 — 대기
+## SCR-MYP-004 공동양육자 목록 — 진행
 - 기능: FN-MYP-004-01 가족 목록, FN-MYP-004-03 주양육자 표시, FN-MYP-004-04 내 연동 상태, FN-MYP-006-02 공동양육 연동 자진 해제(화면은 SCR-MYP-006), FN-MYP-006-04 목록 즉시 반영(화면은 SCR-MYP-006)
 - 함께 만드는 것: 연동 양육자·연동 반려동물 조회 service 메서드(진료 사전 알림·영수증 LJS가 부름)
 - 기다리는 것: 없음
