@@ -6,11 +6,12 @@
 
 | 메서드 | 경로 | 설명 | 기능 ID | 담당 | 요청 DTO | 응답 DTO |
 | --- | --- | --- | --- | --- | --- | --- |
-| GET | /expenses | 지출 목록. 쿼리 `startYmd`·`endYmd`(월 조회·편집 모드 삭제 범위)·`petSn`·`expndClsfCd`·`sort`(최신순/금액순)·`page`(20건). 날짜·금액·카테고리·반려동물 일치 조건으로 중복 지출 확인에도 씀 | MYP-030-03·09~12·17·20, MYP-031-06 | SJM | - | Page<ExpenseSummary> |
+| GET | /expenses | 지출 목록. 쿼리 `startYmd`·`endYmd`(월 조회·편집 모드 삭제 범위)·`petSn`·`expndClsfCd`·`sort`(최신순/금액순)·`page`(20건). 내가 등록한 지출만(공동양육자끼리도 서로 보지 않음, issues 마이페이지 10번) | MYP-030-03·09~12·17·20 | SJM | - | Page<ExpenseSummary> |
 | GET | /expenses/months | 지출이 한 건 이상 있는 연월 목록(월 피커) | MYP-030-16 | SJM | - | List<ExpenseMonthSummary> |
 | GET | /expenses/statistics | 월 통계. 쿼리 `yearMonth`. 총 지출·월 한도·지난달 대비·일자별 합계와 건수·카테고리별·반려동물별(공용 별도)·금액 상위 3건 | MYP-001-03, MYP-030-01·02·04~06·14 | SJM | - | ExpenseStatisticsResponse |
 | GET | /expenses/totals | 조건별 건수·합계 금액. 쿼리는 GET /expenses와 같음(페이지 제외) | MYP-030-09·17~19 | SJM | - | ExpenseTotalResponse |
-| POST | /expenses | 지출 등록. 날짜·카테고리·내용 공통, 반려동물·금액 줄 여러 개(영수증 마리별 분할), 영수증 연결(`recptSn`) | MYP-031-02·03 | SJM | ExpenseCreateRequest | List<ExpenseResponse> |
+| POST | /expenses | 지출 등록. 날짜·카테고리·내용 공통, 반려동물·금액 줄 여러 개(영수증 마리별 분할), 영수증 연결(`recptSn`, 인식 실패 후 직접 입력도 연결하고 영수증은 저장완료). 처음 201, 모든 줄의 `idmptDmndId`가 이미 있으면 200과 기존 지출. 저장 뒤 이번 달 합계가 한도 90%·100%를 처음 넘으면 한도 알림 | MYP-031-02·03·05, MYP-030-08 | SJM | ExpenseCreateRequest | List<ExpenseResponse> |
+| POST | /expenses/duplicate-check | 저장 전 중복 지출 확인. 같은 날짜·카테고리·금액에 반려동물이 같은 내 지출(공용 줄은 공용 지출끼리). 사용처·내용은 보지 않는다. 저장하지 않는다 | MYP-031-06 | SJM | ExpenseCreateRequest | List<ExpenseSummary> |
 | PUT | /members/me/expense-limit | 월 지출 한도 저장(계정 전체 한 개). 처음 저장하면 한도 알림 수신을 켬 | MYP-030-13 | SJM | ExpenseLimitSaveRequest | ExpenseLimitResponse |
 | PATCH | /expenses/{expndSn} | 지출 수정 | MYP-030-03·12 | SJM | ExpenseUpdateRequest | ExpenseResponse |
 | DELETE | /expenses | 지출 다중 삭제(개별 선택). `?expndSn=1&expndSn=2`, 1개 이상. 본문 없음(`docs/convention/api.md`) | MYP-030-19·21 | SJM | - | - |
@@ -30,7 +31,7 @@
 | expndClsfCd | String | N | 카테고리 필터(MYPG05). 생략하면 전체 | EXPND.EXPND_CLSF_CD, MYP-030-10·17 |
 
 ### ExpenseCreateRequest
-쓰는 API: POST /expenses
+쓰는 API: POST /expenses; POST /expenses/duplicate-check
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | expndYmd | LocalDate | Y | 모든 줄에 공통 적용 | EXPND.EXPND_YMD |
@@ -118,7 +119,7 @@
 | totalExpndAmt | Long | Y | 비율은 프론트가 계산 | MYP-030-05 |
 
 ### ExpenseSummary
-쓰는 API: GET /expenses
+쓰는 API: GET /expenses; POST /expenses/duplicate-check
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | expndSn | Long | Y | | EXPND.EXPND_SN |

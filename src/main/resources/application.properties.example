@@ -42,7 +42,7 @@ app.signup.nickname-token-valid-minutes=30
 # 그 밖의 OS와 prod는 반드시 적는다(운영은 application-prod.properties). 개인 PC 경로는 커밋하지 않는다. 업로드 상한은 SYS_STNG.FILE_MAX_SZ(10MB)와 맞춘다
 # app.file.root-dir=
 spring.servlet.multipart.max-file-size=10MB
-spring.servlet.multipart.max-request-size=10MB
+spring.servlet.multipart.max-request-size=100MB
 # 로그 파일 폴더(logback-spring.xml). 비우면 파일 저장 루트와 같은 규칙: Windows는 프로젝트 드라이브 루트 아래 home/ggorilab/logs, Mac은 /Users/Shared/ggorilab/logs
 # 그 밖의 OS와 prod는 반드시 적는다(운영은 application-prod.properties에 /home/ggorilab/logs)
 # app.log.dir=

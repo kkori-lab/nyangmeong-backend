@@ -12,6 +12,7 @@ import com.github.pagehelper.PageInfo;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.file.FileStore;
+import com.nyangmeong.global.file.StoredFile;
 import com.nyangmeong.global.notification.EventPublisher;
 import com.nyangmeong.global.notification.NotificationEvent;
 import com.nyangmeong.global.notification.NotificationType;
@@ -73,6 +74,20 @@ public class InquiryService {
     @Transactional(readOnly = true)
     public InquiryResponse getInquiry(Long mbrSn, Long otoInqrySn) {
         return toResponse(getOwnedOrThrow(mbrSn, otoInqrySn));
+    }
+
+    /**
+     * 본인 문의의 첨부 이미지 조회 : 그 문의의 삭제되지 않은 첨부가 아니면 FILE_NOT_FOUND
+     */
+    @Transactional(readOnly = true)
+    public StoredFile getImage(Long mbrSn, Long otoInqrySn, Long atchFileSn) {
+        getOwnedOrThrow(mbrSn, otoInqrySn);
+        boolean attached = inquiryMapper.selectPhotos(otoInqrySn).stream()
+                .anyMatch(photo -> photo.getAtchFileSn().equals(atchFileSn));
+        if (!attached) {
+            throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+        }
+        return fileStore.load(atchFileSn);
     }
 
     /**
@@ -236,8 +251,7 @@ public class InquiryService {
      * 응답 변환 (유형·상태 이름과 첨부 포함)
      */
     private InquiryResponse toResponse(Inquiry inquiry) {
-        List<InquiryImageSummary> imgs = inquiryMapper.selectPhotos(inquiry.getOtoInqrySn()).stream()
-                .map(InquiryImageSummary::from).toList();
+        List<InquiryImageSummary> imgs = inquiryMapper.selectImageSummaries(inquiry.getOtoInqrySn());
         return InquiryResponse.from(inquiry, inquiryMapper.selectCodeName(inquiry.getInqryTypeCd()),
                 inquiryMapper.selectCodeName(inquiry.getInqryPrcsSttsCd()), imgs);
     }
