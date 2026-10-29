@@ -320,6 +320,59 @@ class InquiryServiceTest {
     }
 
     @Test
+    void 삭제는_본인의_접수_문의를_지우고_첨부도_함께_지운다() {
+        when(inquiryMapper.selectInquiry(INQ)).thenReturn(inquiry(MBR, InquiryStatus.RECEIVED));
+        when(inquiryMapper.updateInquiryDeleted(INQ, "CSCC0012")).thenReturn(1);
+
+        service.delete(MBR, INQ);
+
+        verify(inquiryMapper).updateInquiryDeleted(INQ, "CSCC0012");
+        verify(inquiryMapper).updateAllPhotosDeleted(INQ);
+    }
+
+    @Test
+    void 삭제는_남의_문의면_403_없는_문의면_404() {
+        when(inquiryMapper.selectInquiry(INQ)).thenReturn(inquiry(2L, InquiryStatus.RECEIVED));
+        when(inquiryMapper.selectInquiry(99L)).thenReturn(null);
+
+        assertThatThrownBy(() -> service.delete(MBR, INQ)).isInstanceOfSatisfying(CustomException.class,
+                e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN));
+        assertThatThrownBy(() -> service.delete(MBR, 99L)).isInstanceOfSatisfying(CustomException.class,
+                e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INQUIRY_NOT_FOUND));
+        verify(inquiryMapper, never()).updateInquiryDeleted(anyLong(), anyString());
+    }
+
+    @Test
+    void 삭제는_답변_완료_문의면_400() {
+        when(inquiryMapper.selectInquiry(INQ)).thenReturn(inquiry(MBR, InquiryStatus.ANSWERED));
+
+        assertThatThrownBy(() -> service.delete(MBR, INQ)).isInstanceOfSatisfying(CustomException.class,
+                e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INQUIRY_NOT_DELETABLE));
+        verify(inquiryMapper, never()).updateInquiryDeleted(anyLong(), anyString());
+    }
+
+    @Test
+    void 삭제는_캐릭터_오류_문의면_400() {
+        Inquiry inquiry = inquiry(MBR, InquiryStatus.RECEIVED);
+        inquiry.setPixelCharSn(3L);
+        when(inquiryMapper.selectInquiry(INQ)).thenReturn(inquiry);
+
+        assertThatThrownBy(() -> service.delete(MBR, INQ)).isInstanceOfSatisfying(CustomException.class,
+                e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INQUIRY_NOT_DELETABLE));
+        verify(inquiryMapper, never()).updateInquiryDeleted(anyLong(), anyString());
+    }
+
+    @Test
+    void 삭제는_답변과_겹쳐_지워진_행이_없으면_400이고_첨부를_건드리지_않는다() {
+        when(inquiryMapper.selectInquiry(INQ)).thenReturn(inquiry(MBR, InquiryStatus.RECEIVED));
+        when(inquiryMapper.updateInquiryDeleted(INQ, "CSCC0012")).thenReturn(0);
+
+        assertThatThrownBy(() -> service.delete(MBR, INQ)).isInstanceOfSatisfying(CustomException.class,
+                e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INQUIRY_NOT_DELETABLE));
+        verify(inquiryMapper, never()).updateAllPhotosDeleted(anyLong());
+    }
+
+    @Test
     void 답변_완료된_문의는_수정할_수_없다() {
         when(inquiryMapper.selectInquiry(INQ)).thenReturn(inquiry(MBR, InquiryStatus.ANSWERED));
 

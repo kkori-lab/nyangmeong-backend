@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -174,6 +175,14 @@ class InquiryControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.otoInqrySn").value(7));
         verify(inquiryService).update(eq(1L), eq(7L), any());
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 삭제는_DELETE로_받아_200을_돌려준다() throws Exception {
+        mockMvc.perform(delete("/api/inquiries/7").header("X-Requested-With", "XMLHttpRequest"))
+                .andExpect(status().isOk());
+        verify(inquiryService).delete(1L, 7L);
     }
 
     @Test
