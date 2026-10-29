@@ -55,4 +55,10 @@ public interface EmailCertificationMapper {
      * 인증 사용 완료 기록 (완료된 인증을 처음 한 번만, 영향 행이 0이면 이미 사용)
      */
     int updateUsed(@Param("emlCertSn") Long emlCertSn, @Param("now") LocalDateTime now);
+
+    /**
+     * 비밀번호 재설정 토큰 해시와 권한 만료 시각 저장 (둘 다 null 이면 비움)
+     */
+    int updatePasswordResetToken(@Param("emlCertSn") Long emlCertSn, @Param("pswdInitTknHash") String pswdInitTknHash,
+            @Param("initAuthrtExpryDt") LocalDateTime initAuthrtExpryDt);
 }

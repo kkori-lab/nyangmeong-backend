@@ -97,4 +97,12 @@
            AND CERT_CMPTN_DT IS NOT NULL
            AND CERT_USE_CMPTN_DT IS NULL
     </update>
+
+    <update id="updatePasswordResetToken">
+        UPDATE EML_CERT
+           SET PSWD_INIT_TKN_HASH = #{pswdInitTknHash,jdbcType=CHAR}
+             , INIT_AUTHRT_EXPRY_DT = #{initAuthrtExpryDt,jdbcType=TIMESTAMP}
+         WHERE EML_CERT_SN = #{emlCertSn}
+           AND CERT_USE_CMPTN_DT IS NULL
+    </update>
 </mapper>
