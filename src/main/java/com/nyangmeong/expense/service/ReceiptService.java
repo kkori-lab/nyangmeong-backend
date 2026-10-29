@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 /**
  * [영수증 상태 처리]
  * - 업로드·다시 분석·분석 종료·취소 각각 별도 트랜잭션 : OCR 호출은 트랜잭션 밖 (ReceiptAnalyzer)
- * - 검진 경로 전용 : 출처 = 건강기록 (FN-AIM-008-02)
+ * - 검진 경로 전용 : 출처 = 건강기록, AI 대화창 업로드는 AI 대화창 (FN-AIM-008-02·013-04)
  */
 @Service
 @RequiredArgsConstructor
@@ -40,7 +40,7 @@ public class ReceiptService {
      * 영수증 업로드
      */
     @Transactional
-    public Long create(Long mbrSn, Long petSn, MultipartFile file) {
+    public Long create(Long mbrSn, Long petSn, MultipartFile file, String ocrDmndSrcCd) {
         petAuthorizer.checkCaregiver(mbrSn, petSn);
         Long atchFileSn = fileStore.store(file, String.valueOf(mbrSn));
 
@@ -48,7 +48,8 @@ public class ReceiptService {
         receipt.setMbrSn(mbrSn);
         receipt.setAtchFileSn(atchFileSn);
         receipt.setOcrPrcsSttsCd(ReceiptStatus.ANALYZING.getCode());
-        receipt.setOcrDmndSrcCd(ReceiptSource.HEALTH.getCode());
+        receipt.setOcrDmndSrcCd(ReceiptSource.CHAT.is(ocrDmndSrcCd) ? ReceiptSource.CHAT.getCode()
+                : ReceiptSource.HEALTH.getCode());
         receiptMapper.insert(receipt);
         insertHistory(receipt.getRecptSn(), mbrSn, null, ReceiptStatus.ANALYZING, null);
         return receipt.getRecptSn();
@@ -69,6 +70,23 @@ public class ReceiptService {
             throw new CustomException(ErrorCode.RECEIPT_ANALYZING);
         }
         insertHistory(recptSn, mbrSn, before, ReceiptStatus.ANALYZING, null);
+    }
+
+    /**
+     * 회원 영수증 조회 : 결과 다시 열기 (FN-AIM-013-06)
+     */
+    @Transactional(readOnly = true)
+    public Receipt get(Long mbrSn, Long recptSn, Long petSn) {
+        petAuthorizer.checkCaregiver(mbrSn, petSn);
+        return getOwned(mbrSn, recptSn);
+    }
+
+    /**
+     * 마지막 상태 변경 사유 : 일시 오류 사유
+     */
+    @Transactional(readOnly = true)
+    public String getLastChgRsn(Long recptSn) {
+        return receiptMapper.selectLastChgRsn(recptSn);
     }
 
     /**

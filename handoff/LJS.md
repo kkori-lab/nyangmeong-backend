@@ -2,11 +2,15 @@
 
 ## 지금 하는 것
 
-SCR-AIM-012 AI 일정 생성 확인 (등록 카드 컨텍스트 내부 API) — 끝 (2026-10-29, `/impl` 검증 1회차 통과, 사람 확인). 새 내부 API `GET /internal/ai/register-context` → `[{petSn, petNm, careArtclNms}]`(pet `PetService.searchMyPets` 재사용, 케어 항목 이름은 `ai/service/CareArticleNameFake` 빈 목록). `docs/api/ai.md` 갱신
+SCR-AIM-013 대화창 · 영수증 분석 (출처 코드 AI 대화창·결과 조회) — 끝 (2026-10-29, 1회차 실패 뒤 루프를 버리고 재검증 통과, 사람 확인). `POST /api/receipts`에 선택 필드 `ocrDmndSrcCd`(`AIMC0026`·`AIMC0031`), 새 `GET /api/receipts/{recptSn}?petSn=`(결과 다시 열기, 일시 오류는 마지막 이력의 `failRsn`), 공통코드 `AIMC0031`은 기준 데이터 SQL에만(추가-2, migration 없음). `docs/api/receipt.md` 갱신
 
 ## 다음에 할 것
 
-- SCR-AIM-012 연결 남음: FN-AIM-012-08 (JAJ 케어 항목 목록 service가 나오면 `CareArticleNameFake`를 그 service로, 반려동물 번호 목록 → 번호별 이름 목록·삭제 제외·등록순), FN-AIM-012-04·08 (Python `FakeRegisterContextRepository`를 이 API로, ai 세션). PR을 올리면 ai 세션에 PR 번호를 알린다(ai `docs/api/internal.md` 미정 행을 확정으로). JAJ에게 출처 코드 `HLTC0067` 받는 방법 확인(메시지 전달은 사람)
+- SCR-AIM-013 PR: 올리면 ai 세션(ai-23)에 백엔드 PR 번호를 알리고, ai 저장소 PR #17(https://github.com/kkori-lab/nyangmeong-ai/pull/17)과 PR 본문에 서로 링크를 건다. 두 PR은 같은 때 병합한다(AI PR만 먼저 들어가면 Java가 `AIMC0031` 원본 저장을 FK로 거절)
+- SCR-AIM-013 연결 남음: FN-AIM-013-04 (프론트 연결 AI 대화창 [＋] 업로드가 `ocrDmndSrcCd=AIMC0031`, 프론트 저장소에서 /start), FN-AIM-013-06 (프론트 연결 본창 "인식 결과 확인" 모달을 `GET /api/receipts/{recptSn}?petSn=`로 열기, 프론트 저장소에서 /start, 모달 열기 파라미터는 JAJ와 협의). 프론트 저장소 마일스톤에 연결 절 넣기(옆 폴더가 없어 사람)
+- 팀에 알린다(SCR-AIM-013): 공통코드 `AIMC0031` AI 대화창은 migration 없이 기준 데이터 SQL에만 넣었다. 각자 로컬 DB에 그 한 줄을 직접 넣는다(공용 DB에는 이미 있음). 검증 중 공용 DB에 만든 RECPT 504~509 정리(사람). DMS 공통코드 정의서 AIMG07에 `AIMC0031` 추가(ai 세션은 아직 안 고쳤다)
+- 케어미션 배치(SJM에게 알린다): `CareMissionService.issue`가 반려동물 약 950마리 × 미션 8개를 트랜잭션 하나에서 한 건씩 INSERT해 약 10분이 걸린다. 그 사이 서버를 재시작하면 롤백돼 다음 정각에 처음부터 다시 출제한다(2026-10-29 14시·15시 로그). 제안: 반려동물 단위 커밋 + 여러 줄 INSERT. 디스코드 공유 `application.properties`의 `app.care-mission.batch-enabled=true`는 로컬에서 끈다(사람, prod는 그대로)
+- SCR-AIM-012 연결 남음: FN-AIM-012-08 (JAJ 케어 항목 목록 service가 나오면 `CareArticleNameFake`를 그 service로, 반려동물 번호 목록 → 번호별 이름 목록·삭제 제외·등록순), FN-AIM-012-04·08 (Python `FakeRegisterContextRepository`를 이 API로, ai 세션). PR을 올리면 ai 세션에 PR 번호를 알린다(ai `docs/api/internal.md` 미정 행을 확정으로). JAJ에게 출처 코드 `HLTC0067` 받는 방법 확인(메시지 전달은 사람) / SCR-AIM-012 연결 가능성: JAJ 토탈 케어리스트 API가 develop에 병합됐다(629b440). 케어 항목 이름 조회 service가 있으면 `CareArticleNameFake`를 그것으로 바꾼다
 - SCR-AIM-002 연결 남음: FN-AIM-002-02·11 (Python AI 서버가 `GET /internal/ai/settings`를 붙인다, ai 세션). PR을 올리면 ai 세션에 PR 번호와 계약(경로·응답 `AiSettingResponse`)을 알린다(ai 저장소 `docs/api/internal.md`와 같은 때 병합)
 - 프론트 연결(frontend 세션 회신 완료): 공통 파일 이미지 컴포넌트(공개 `/api/files/public/{atchFileSn}` + 비공개 blob 훅)를 프론트가 만든다. 캐릭터 번호가 필요하다고 하면 응답에 번호 추가를 추가 요청으로 받는다
 - 팀에 알린다(파일 저장): 각자 `application.properties`의 `app.security.permit-all-paths`에 `/api/files/public/**` 추가, 기존 `uploads/` 파일은 새 경로로 옮기거나 `seedFiles` 다시. 공용 DB(`pawever`)는 옛 시드라 `public/` 행이 없어 시드 사진이 404 → 다음에 공용 시드를 넣을 때 반영
@@ -15,9 +19,7 @@ SCR-AIM-012 AI 일정 생성 확인 (등록 카드 컨텍스트 내부 API) — 
 - `app.seed.password` 필수값 제외(2026-10-26 사람 요청, 범위 미정): (가) `/start` 설정 키 경고에서만 빼기(`scripts/start-check.sh:51` 제외 목록) (나) `seedData`도 값 없이(기본 비밀번호가 공개 저장소에 들어감). 추천 (가)
 - 팀에 알린다(2026-10-26): 공용 DB(`pawever`) 시드를 `seedClean`→`seedData`로 다시 넣었다(팀원 테스트 데이터 삭제됨, 원인 판단 착오로 불필요했던 작업). 예전 시드는 지금 디스코드 키와 다른 AES 키로 암호화돼 있었다. 각 PC는 `./gradlew seedFiles`를 다시. 로컬 서버는 `spring.profiles.default=local`이라 로컬 DB를 쓴다(로컬 데이터가 예전 키면 `seedData -Ptarget=local -Preset`)
 - 디스코드 공유 `application.properties`에 `app.seed.password`(새 값) 추가, `app.internal.*` 줄은 지운다(서버 간 키 제거, 사람). 각 PC 로컬 파일의 `app.internal.inbound-key`도 지운다
-- 키 제거가 develop에 반영되면 Python 세션(nyangmeong-ai-8a)에 알린다. 그쪽은 이 알림 뒤에 `X-Internal-Key` 헤더·`INTERNAL_API_KEY` 검사·`BACKEND_INTERNAL_KEY` 정리와 실제 연결 확인(`BACKEND_BASE_URL=http://localhost:8080`)을 한다. 그 전에 Python이 헤더를 먼저 빼도 키 제거된 Spring은 무시한다
-- Spring→Python HTTP 클라이언트(OCR·캐릭터 실제 구현)는 키 없이 호출한다. Python의 `INTERNAL_API_KEY` 검사가 지워진 뒤에 붙인다
-- 영수증 인식 결과 조회(2026-10-26 승인, 프론트 요청): `GET /api/receipts/{recptSn}` → `ReceiptResponse`. 저장된 `RECPT.OCR_RSPNS_JSON`을 `ReceiptOcrConverter.toResponse`로 다시 가공(오늘 날짜·현재 공동양육 반려동물 기준이라 분석 직후와 달라질 수 있음을 허용, 테스트하며 조정). 남의·없는 영수증은 `RECEIPT_NOT_FOUND`. 대화창에서 분석한 영수증을 본창 건강 일지 "인식 결과 확인" 모달에서 다시 연다. `docs/api/receipt.md`에 행 추가
+- 키 제거가 develop에 반영되면 Python 세션(nyangmeong-ai-8a)에 알린다. 그쪽은 이 알림 뒤에 `X-Internal-Key` 헤더·`INTERNAL_API_KEY` 검사·`BACKEND_INTERNAL_KEY` 정리와 실제 연결 확인(`BACKEND_BASE_URL=http://localhost:8080`)을 한다. 그 전에 Python이 헤더를 먼저 빼도 키 제거된 Spring은 무시한다 / Spring→Python HTTP 클라이언트(OCR·캐릭터 실제 구현)는 키 없이 호출한다. Python의 `INTERNAL_API_KEY` 검사가 지워진 뒤에 붙인다
 - PR 병합 뒤 공용 DB에 `db/migration/20261025_01_add_expnd_plcus_nm.sql` 실행하고 PR에 완료 댓글(사람). 그 뒤 시드 `ExpenseSeeder`의 OCR 지출을 사용처 = 병원명, 세부사항 = null로 맞춘다
 - 요청자에게 알린다: AI매니저 FN-AIM-009-10·21과 건강기록 FN-HLT-002-41 명세서에 아직 "내용 = 병원명". 사용처로 고치고 SCR-HLT-002에 사용처 칸(선택, 80자, 병원명 기본값)을 넣는다
 - KSJ에게 확인: 실종 제보·펫돌봄 모집 글의 `PST.BBS_CD` 규칙이 없어 시드는 펫일상으로 넣었다. 정해지면 `CommunitySeeder`를 맞춘다
@@ -36,14 +38,11 @@ SCR-AIM-012 AI 일정 생성 확인 (등록 카드 컨텍스트 내부 API) — 
 - 프론트 `start` 스킬에도 `docs/api`(백엔드 저장소) 기준 줄을 넣을지 정한다
 - 정하기: 휴대폰 일정 가져오기(기획에 없음, JAJ 영역). 넣는다면 QR 짝짓기 `.ics` 업로드, iPhone 단축어, 웹 → 휴대폰은 `webcal://` 구독 QR
 - 정하기: 파일 저장소 운영(지금 서버 로컬 디스크 폴더. 서버 여러 대·재배포 대비 영구 볼륨 또는 S3), 영상 업로드 형식·용량
-- SCR-AIM-008 연결 남음: health 검진기록·일정 등록(JAJ)이 나오면 `expense/service/CheckupRecordFake`를 그 service로(같은 날 병원 일정 연결·새 일정·앞뒤 7일 미연결 일정·처방약 `CARE_RFLT_YN='N'`), 멱등 재전송용 `remember`·`findByReceipt`도 DB 조회로 / 가계부 지출 생성·중복 확인(SJM)이 나오면 `ExpenseFake`를, pet 연동 반려동물 목록(SJM)이 나오면 `CaregiverPetFake`를 그 service로(그 전에는 FN-AIM-009-17 구역 자동 연결이 안 된다). 지출 생성에 줄마다 `idmptDmndId`, 사용처 `ExpenseCreateCommand.expndPlcusNm`(세부사항은 null)을 넘기고 중복 조회에 `expndPlcusNm`을 채운다
-- SCR-AIM-008 연결 남음: OCR 외부 API 규격이 정해지면 `OcrClient` 실제 구현을 두고 `app.ocr.client`를 바꾼다(지금 `FakeOcrClient`)
+- SCR-AIM-008 연결 남음: health 검진기록·일정 등록(JAJ)이 나오면 `expense/service/CheckupRecordFake`를 그 service로(같은 날 병원 일정 연결·새 일정·앞뒤 7일 미연결 일정·처방약 `CARE_RFLT_YN='N'`), 멱등 재전송용 `remember`·`findByReceipt`도 DB 조회로 / 가계부 지출 생성·중복 확인(SJM)이 나오면 `ExpenseFake`를, pet 연동 반려동물 목록(SJM)이 나오면 `CaregiverPetFake`를 그 service로(그 전에는 FN-AIM-009-17 구역 자동 연결이 안 된다). 지출 생성에 줄마다 `idmptDmndId`, 사용처 `ExpenseCreateCommand.expndPlcusNm`(세부사항은 null)을 넘기고 중복 조회에 `expndPlcusNm`을 채운다 / SCR-AIM-008 연결 남음: OCR 외부 API 규격이 정해지면 `OcrClient` 실제 구현을 두고 `app.ocr.client`를 바꾼다(지금 `FakeOcrClient`)
 - SJM에게 확인: 가계부 모달의 영수증 저장을 `ExpenseService`가 직접 하는지. 영수증 쪽이 하라면 `receipt`(4층) 분리를 다시 검토한다(`docs/OPEN_ISSUES.md` 영수증 행)
-- SCR-AIM-006 연결 남음: health 병원 일정 조회(JAJ)가 나오면 `scheduler/HospitalScheduleFake`를, pet 연동 양육자 조회(SJM)가 나오면 `scheduler/CaregiverFake`를 그 service로. 그 뒤 FN-AIM-006-11·13 화면과 01·02·20 실제 조회를 공용 DB 병원 일정으로 확인한다
-- SCR-AIM-006 연결 남음: 팀이 SMTP 계정을 정하면 `spring-boot-starter-mail`과 `MailSender` SMTP 구현. 그 전까지 메일은 로그만
+- SCR-AIM-006 연결 남음: health 병원 일정 조회(JAJ)가 나오면 `scheduler/HospitalScheduleFake`를, pet 연동 양육자 조회(SJM)가 나오면 `scheduler/CaregiverFake`를 그 service로. 그 뒤 FN-AIM-006-11·13 화면과 01·02·20 실제 조회를 공용 DB 병원 일정으로 확인한다 / SCR-AIM-006 연결 남음: 팀이 SMTP 계정을 정하면 `spring-boot-starter-mail`과 `MailSender` SMTP 구현. 그 전까지 메일은 로그만
 - SCR-MYP-011 연결 남음: 포인트 조회·차감(SJM, FN-MYP-020)이 나오면 `pet/service/PointFake`를 그 service로. 구매의 `idmptDmndId`를 포인트 원장에 넘긴다
-- SCR-MYP-010 연결 남음: FN-MYP-010-24 1:1 문의 작성(SCR-CSC-003, KSJ)이 `PixelCharacterService.receiveErrorInquiry(mbrSn, pixelCharSn, otoInqrySn)`를 부르고 결과 ATCH_FILE_SN을 첨부한다
-- SCR-MYP-010 연결 남음: FN-MYP-010-23 관리자 확인 화면(담당 미정)이 `finishErrorCheck(pixelCharSn, regenerate)`를 부른다
+- SCR-MYP-010 연결 남음: FN-MYP-010-24 1:1 문의 작성(SCR-CSC-003, KSJ)이 `PixelCharacterService.receiveErrorInquiry(mbrSn, pixelCharSn, otoInqrySn)`를 부르고 결과 ATCH_FILE_SN을 첨부한다 / SCR-MYP-010 연결 남음: FN-MYP-010-23 관리자 확인 화면(담당 미정)이 `finishErrorCheck(pixelCharSn, regenerate)`를 부른다
 - FN-MYP-010-19: 캐릭터 생성 외부 API가 정해지면 `CharacterGenerator` 실제 구현과 베이스 캐릭터 선택 방식을 판단한다. 기본 캐릭터 이미지(`resources/character/default-*.png`)도 디자인 이미지로
 - SCR-COM-004 연결 남음: FN-COM-004-08 공동양육 초대 수락·거절(SJM) API가 나오면 알림 행 버튼과 연결하고 초대 알림 `mvmnPath` 형식을 SJM과 맞춘다
 - SCR-COM-002 연결 남음: `/auth/me`의 프로필 이미지 URL은 `FileStore`·파일 조회 API 뒤 연결. 지금은 `atchFileSn`만
