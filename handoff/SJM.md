@@ -16,6 +16,14 @@ SCR-MYP-031 가계부 등록/수정 — 구현 중 (승인 2026-10-28 02:05, 시
 - 하지 않는 것: `ExpenseFake` → `ExpenseService` 연결(LJS의 연결 남음. 다만 `ExpenseService`에 영수증 저장이 부를 `create(ExpenseCreateCommand)`·`findDuplicates(mbrSn, petSn, ymd, amt)`를 가짜와 같은 모양으로 함께 만든다. 한도 알림도 여기서 돈다), 지출 수정 `PATCH /expenses/{expndSn}`(SCR-MYP-030 목록에서 여는 수정, 목록과 함께), 지출 목록·통계·삭제·한도 설정(SCR-MYP-030)
 - 새 의존성: 없음
 
+### 검증 결과 (2026-10-28, 다른 세션에서 /end 할 때 씀)
+- 판정: `확인 못 함 있음` 1회차, `./gradlew build -q` 0. 확인 못 함(내 것) 없음. 연결 남음: FN-MYP-031-02·03·06(프론트 SCR-MYP-031, SJM), FN-MYP-030-08(알림 목록 COM-004, LJS)
+- 사람 확인(아직 안 함): `./gradlew bootRun` → POST `/api/auth/dev-tokens` `{"mbrSn":1}`로 쿠키 → GET `/api/pets`로 `<P1>` 확인. 모든 POST에 `X-Requested-With: XMLHttpRequest`
+  - FN-MYP-031-02·03: POST `/api/expenses` 본문 `{"expndYmd":"2026-10-28","expndClsfCd":"MYPC0013","expndInptMthCd":"MYPC0019","expndPlcusNm":"확인용 사용처","dtlMttr":"verify","lines":[{"petSn":<P1>,"expndAmt":12000,"idmptDmndId":"verify-a"},{"petSn":null,"expndAmt":3000,"idmptDmndId":"verify-b"}]}` → 201·2건, 다시 보내면 200·같은 `expndSn`, id를 verify-a·verify-c로 바꾸면 409 `ALREADY_PROCESSED`. 금액 0 → 400 `INVALID_INPUT_VALUE`, 병원 `MYPC0012`+`petSn` null → 400 `EXPENSE_PET_REQUIRED`, 같은 `petSn` 두 줄 → 400
+  - FN-MYP-031-06: POST `/api/expenses/duplicate-check` 위 본문에서 id를 verify-x·verify-y, 사용처를 "다른 사용처"로 → 200, 위 2건이 줄 순서대로(저장 안 됨)
+  - FN-MYP-030-08: `UPDATE MBR SET MM_EXPND_LIM_AMT = 100000, EXPND_LIM_NOTI_RCPTN_YN = 'Y' WHERE MBR_SN = 1;` 뒤 새 id로 200000원 등록 → GET `/api/notifications`에 "이번 달 지출이 한도를 넘었어요"·"{합계}원 / 100,000원"·`/mypage/expenses` 알림(이미 넘은 상태였으면 안 생기는 게 정상)
+  - 정리: `UPDATE EXPND SET DEL_YN = 'Y' WHERE MBR_SN = 1 AND IDMPT_DMND_ID LIKE 'verify-%';`, MBR 1 한도 두 컬럼 원래 값으로, 한도 알림 삭제
+
 ## 다음에 할 것
 - 배포 후 케어미션 출제·정산 배치가 느리면 개선: 지금은 한 행씩 INSERT·UPDATE하고 전체가 한 트랜잭션이다(로컬 시드 약 960마리로 30분, 2026-10-27 확인). 여러 행을 한 번에 넣고 묶음마다 커밋하도록 `/start`로 기획. 배치는 prod에서만 켜지므로 그 전에는 하지 않는다
 - LJS에게 `MasterSeeder` 미션 목록 변경 알리기(21개로 바뀜, `CharacterSeeder`는 그대로)
