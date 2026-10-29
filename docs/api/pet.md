@@ -8,7 +8,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | GET | /breeds | 반려동물 구분별 품종 마스터 목록(`?petSeCd=`) | CMU-002-13, CMU-004-06·13, MYP-003-02 (기능 분배 3.1절 10번) | KSJ | - | List<BreedSummary> |
 | GET | /caregiver-invitations | 내가 보낸 공동양육 초대 목록(계정 전체) | MYP-005-03 | SJM | - | List<CaregiverInvitationSummary> |
-| GET | /caregiver-invitations/{jntBrupInvtnSn} | 받은 초대 상세(대상 반려동물 카드) | MYP-005-05 | SJM | - | CaregiverInvitationResponse |
+| GET | /caregiver-invitations/{jntBrupInvtnSn} | 받은 초대 상세. 로그인 회원 누구나. 대기중이고 로그인 이메일이 초대 이메일과 같을 때만 초대한 사람·대상 반려동물 카드, 아니면 상태와 가린 이메일만(만료·처리 여부를 이메일보다 먼저 판단) | MYP-005-05·09·10 | SJM | - | CaregiverInvitationResponse |
 | GET | /items/{itemSn}/image | 아이템 이미지(로그인 회원, 판매 중 아이템) | MYP-010-14, MYP-011-02 | LJS | - | 이미지 파일 |
 | GET | /members/me/points | 보유 포인트, 이번 달 적립·사용 합계와 건수, 오늘 미션 요약(주양육 반려동물 전체) | MYP-001-03·04, MYP-011-05, MYP-020-01·09 | SJM | - | PointResponse |
 | GET | /pets | 내 반려동물 목록(주양육·공동양육, 역할·대표 여부·공동양육 인원 포함) | MYP-001-01, MYP-002-01~03, MYP-005-02, MYP-006-04, MYP-020-03 | SJM | - | List<PetSummary> |
@@ -20,9 +20,9 @@
 | GET | /pixel-characters/{pixelCharSn} | 꾸미기 상세. 결과 이미지·보유/착용 아이템·오류 문의 접수 여부 | MYP-010-10·13·14·23 | LJS | - | PixelCharacterResponse |
 | GET | /pixel-characters/{pixelCharSn}/shop-items | 상점 아이템 목록(판매 중, 이 캐릭터 기준 보유중 표시, 보유 포인트). `?itemRegnCd=` | MYP-011-02·03 | LJS | - | ShopItemListResponse |
 | GET | /point-ledgers | 선택한 월의 포인트 적립·사용 내역(최신순). 쿼리 `yearMonth` | MYP-020-02 | SJM | - | List<PointLedgerSummary> |
-| POST | /caregiver-invitations | 이메일로 공동양육 초대 발송. 대상 반려동물 여러 마리를 한 초대로 묶음 | MYP-005-01·02 | SJM | CaregiverInvitationCreateRequest | CaregiverInvitationResponse |
-| POST | /caregiver-invitations/{jntBrupInvtnSn}/accept | 초대 일괄 수락 | MYP-005-05 | SJM | - | - |
-| POST | /caregiver-invitations/{jntBrupInvtnSn}/reject | 초대 거절 | MYP-005-07·08 | SJM | - | - |
+| POST | /caregiver-invitations | 이메일로 공동양육 초대 발송. 대상 반려동물 여러 마리를 한 초대로 묶음. 가입 회원은 인앱 알림, 미가입은 메일. 이미 가족(409 `CAREGIVER_ALREADY_LINKED`)·대기 초대 있음(409 `CAREGIVER_INVITATION_DUPLICATED`)은 오류 data에 CaregiverInvitationConflictResponse | MYP-005-01·02 | SJM | CaregiverInvitationCreateRequest | CaregiverInvitationResponse |
+| POST | /caregiver-invitations/{jntBrupInvtnSn}/accept | 초대 수락. 고른 반려동물만 연동하고 나머지는 반려동물별 거절 | MYP-005-05 | SJM | CaregiverInvitationAcceptRequest | - |
+| POST | /caregiver-invitations/{jntBrupInvtnSn}/reject | 초대 거절. 초대의 반려동물 전체 | MYP-005-07·08 | SJM | - | - |
 | POST | /pets | 반려동물 등록(계정당 10마리, 첫 등록은 대표 지정) | MYP-002-01, MYP-003-01·04·05·07 | SJM | PetCreateRequest | PetResponse |
 | POST | /pets/{petSn}/pixel-characters | 캐릭터 생성 요청(사진 첨부, 백그라운드 생성, 반려동물당 1개) | MYP-010-04·08·09·17 | LJS | PixelCharacterCreateRequest | PixelCharacterResponse |
 | POST | /pets/{petSn}/representative | 대표 반려동물 지정(주양육 반려동물만) | MYP-010-05 | SJM | - | - |
@@ -44,42 +44,60 @@
 | petSeCd | String | Y | 초안 그대로. 공통코드 PETG01 | VRTY.PET_SE_CD |
 | sortSeq | Integer | Y | 초안 그대로 | VRTY.SORT_SEQ |
 
+### CaregiverInvitationAcceptRequest
+쓰는 API: POST /caregiver-invitations/{jntBrupInvtnSn}/accept
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| petSns | List<Long> | Y | 1개 이상. 초대에 든 반려동물만(아니면 400 `INVALID_INPUT_VALUE`). 고르지 않은 반려동물은 거절 | INVTN_TRGT_PET.PET_SN, INVTN_TRGT_PET.ACPT_YN, MYP-005-05 |
+
+### CaregiverInvitationConflictResponse
+쓰는 API: POST /caregiver-invitations의 오류 응답 data(409 `CAREGIVER_ALREADY_LINKED`·`CAREGIVER_INVITATION_DUPLICATED`)
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| petSn | Long | Y | 걸린 반려동물 | PET.PET_SN |
+| petNm | String | Y | "이미 ○○의 가족이에요" | PET.PET_NM, MYP-005-01 |
+| invtnExpryDt | LocalDateTime | N | 대기 중인 초대의 만료일시, "이미 초대를 보냈어요 (MM-DD에 만료돼요)". `CAREGIVER_ALREADY_LINKED`에서는 없음 | JNT_BRUP_INVTN.INVTN_EXPRY_DT, MYP-005-01 |
+
 ### CaregiverInvitationCreateRequest
 쓰는 API: POST /caregiver-invitations
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| invtnTrgtEml | String | Y | 초대할 상대의 이메일 주소(issues 14번) | JNT_BRUP_INVTN.INVTN_TRGT_EML_ENC, MYP-005-01 |
-| petSns | List<Long> | Y | 1개 이상. 내가 주양육자(PCG)인 반려동물만. 공동양육 5명이 찬 반려동물은 불가 | INVTN_TRGT_PET.PET_SN, MYP-005-02, MYP-004-01 |
+| invtnTrgtEml | String | Y | 초대할 상대의 이메일 주소. 회원가입 이메일과 같은 검증(이메일 형식, 최대 254자). 본인 이메일은 400 `CAREGIVER_INVITATION_SELF` | JNT_BRUP_INVTN.INVTN_TRGT_EML_ENC, MYP-005-01 |
+| petSns | List<Long> | Y | 1개 이상. 내가 주양육자(PCG)인 반려동물만(아니면 403 `PET_PRIMARY_ONLY`). 공동양육 5명이 찬 반려동물은 불가(400 `CAREGIVER_LIMIT_EXCEEDED`) | INVTN_TRGT_PET.PET_SN, MYP-005-02, MYP-004-01 |
 
 ### CaregiverInvitationResponse
 쓰는 API: GET /caregiver-invitations/{jntBrupInvtnSn}; POST /caregiver-invitations
+초대 링크(메일·인앱 알림)는 프론트 `/mypage/invitations/{jntBrupInvtnSn}`이고, 로그인한 뒤 이 API를 부른다. 미가입자는 가입·로그인 뒤 같은 링크로 수락하며 `RCVR_MBR_SN`은 수락·거절 때 채운다. 수락 권한은 로그인 계정 이메일 일치로 판단하므로 `INVTN_TKN_HASH`는 저장만 하고 쓰지 않는다. 5-3 수락·5-5 이메일 불일치·5-6 만료·종료를 이 응답 하나로 가른다. `sndrMbrNcnm`·`pets`는 대기중이고 `emailMatched`가 true일 때만 있고, 아니면 JSON에서 빠진다(다른 계정에 남의 반려동물 정보 노출 방지, MYP-005-09·10).
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | jntBrupInvtnSn | Long | Y | | JNT_BRUP_INVTN.JNT_BRUP_INVTN_SN |
-| sndrMbrNcnm | String | Y | | JNT_BRUP_INVTN.SNDR_MBR_SN → MBR.MBR_NCNM |
-| invtnSttsCd | String | Y | 초대 상태(PETG06) | JNT_BRUP_INVTN.INVTN_STTS_CD |
+| sndrMbrNcnm | String | N | | JNT_BRUP_INVTN.SNDR_MBR_SN → MBR.MBR_NCNM |
+| invtnSttsCd | String | Y | 초대 상태(PETG06). 대기중이어도 만료일시가 지나면 만료됨 | JNT_BRUP_INVTN.INVTN_STTS_CD, MYP-005-04 |
 | invtnExpryDt | LocalDateTime | Y | | JNT_BRUP_INVTN.INVTN_EXPRY_DT |
-| pets | List<PetSummary> | Y | 초대 대상 반려동물 카드. 타입은 issues 1번 | INVTN_TRGT_PET.PET_SN, MYP-005-05 |
-| pets[].petSn | Long | Y | | PET.PET_SN |
-| pets[].petNm | String | Y | | PET.PET_NM |
-| pets[].petSeCd | String | Y | | PET.PET_SE_CD |
+| invtnTrgtEmlMask | String | Y | 아이디 첫 글자와 도메인만 남긴 초대 이메일("s***@example.com") | JNT_BRUP_INVTN.INVTN_TRGT_EML_ENC, MYP-005-09 |
+| emailMatched | boolean | Y | 로그인 계정 이메일이 초대 이메일과 같은지 | JNT_BRUP_INVTN.INVTN_TRGT_EML_HMAC, MBR.ACNT_EML_HMAC, MYP-005-09 |
+| pets | List<CaregiverInvitationPetSummary> | N | 초대 대상 반려동물 카드(삭제된 반려동물은 빠짐) | INVTN_TRGT_PET.PET_SN, MYP-005-05 |
 
 ### CaregiverInvitationSummary
 쓰는 API: GET /caregiver-invitations
+최신 발송순. 한 초대의 반려동물은 `pets`에 반려동물별 상태와 함께 담는다(화면은 반려동물마다 한 줄).
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | jntBrupInvtnSn | Long | Y | | JNT_BRUP_INVTN.JNT_BRUP_INVTN_SN |
 | invtnTrgtEml | String | Y | 복호화한 대상 이메일 | JNT_BRUP_INVTN.INVTN_TRGT_EML_ENC, MYP-005-03 |
-| pets | List<CaregiverInvitationPetItem> | Y | 반려동물명 표시 | INVTN_TRGT_PET.PET_SN, MYP-005-03 |
+| rcvrJoined | boolean | Y | 발송 때 가입 회원이었는지. true "가입 회원(인앱 알림)", false "미가입 이메일" | JNT_BRUP_INVTN.RCVR_MBR_SN, MBR.REG_DT, MYP-005-03 |
+| pets | List<CaregiverInvitationPetSummary> | Y | 반려동물명·반려동물별 상태 표시 | INVTN_TRGT_PET.PET_SN, MYP-005-03 |
 | regDt | LocalDateTime | Y | 발송일 | JNT_BRUP_INVTN.REG_DT, MYP-005-03 |
-| invtnSttsCd | String | Y | 대기중·수락·거절·만료됨(PETG06) | JNT_BRUP_INVTN.INVTN_STTS_CD, MYP-005-03 |
+| invtnSttsCd | String | Y | 초대 단위 상태, 대기중·수락·거절·만료됨(PETG06) | JNT_BRUP_INVTN.INVTN_STTS_CD, MYP-005-03 |
 | invtnExpryDt | LocalDateTime | Y | 대기중 항목의 만료 예정일 | JNT_BRUP_INVTN.INVTN_EXPRY_DT, MYP-005-03·04 |
 
-#### CaregiverInvitationPetItem (CaregiverInvitationSummary.pets)
+#### CaregiverInvitationPetSummary (CaregiverInvitationSummary.pets, CaregiverInvitationResponse.pets)
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | petSn | Long | Y | | INVTN_TRGT_PET.PET_SN |
 | petNm | String | Y | | PET.PET_NM, MYP-005-03 |
+| petSeCd | String | Y | | PET.PET_SE_CD, MYP-005-05 |
+| invtnSttsCd | String | Y | 반려동물별 상태(PETG06). 일부 수락이면 고른 반려동물은 수락, 뺀 반려동물은 거절. 응답 전이면 초대 상태(만료 포함) | INVTN_TRGT_PET.ACPT_YN, JNT_BRUP_INVTN.INVTN_STTS_CD, MYP-005-03 |
 
 ### CaregiverSummary
 쓰는 API: GET /pets/{petSn}/caregivers
