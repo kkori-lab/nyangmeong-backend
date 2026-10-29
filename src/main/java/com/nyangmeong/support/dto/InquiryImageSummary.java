@@ -1,14 +1,15 @@
 package com.nyangmeong.support.dto;
 
-import com.nyangmeong.support.domain.InquiryPhoto;
+import lombok.Data;
 
 /**
  * [문의 첨부 이미지 항목]
- * - 이미지 조회 경로는 첨부파일 API로 만든다
+ * - 문의 작성·수정·상세 응답의 imgs[] (FN-CSC-003-09·12·15)
+ * - 이미지 조회 경로는 GET /api/inquiries/{otoInqrySn}/images/{atchFileSn}
  */
-public record InquiryImageSummary(Long atchFileSn, Integer sortSeq) {
-
-    public static InquiryImageSummary from(InquiryPhoto photo) {
-        return new InquiryImageSummary(photo.getAtchFileSn(), photo.getSortSeq());
-    }
+@Data
+public class InquiryImageSummary {
+    private Long atchFileSn;
+    private Integer sortSeq;
+    private String orgnlFileNm;
 }

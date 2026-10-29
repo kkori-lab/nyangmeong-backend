@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 import com.nyangmeong.support.domain.Inquiry;
 import com.nyangmeong.support.domain.InquiryPhoto;
 import com.nyangmeong.support.domain.InquiryStatusHistory;
+import com.nyangmeong.support.dto.InquiryImageSummary;
 import com.nyangmeong.support.dto.InquirySummary;
 
 /**
@@ -35,6 +36,11 @@ public interface InquiryMapper {
      * 사용 중인 첨부사진 조회
      */
     List<InquiryPhoto> selectPhotos(Long otoInqrySn);
+
+    /**
+     * 응답용 첨부 이미지 조회 (원본 파일명 포함)
+     */
+    List<InquiryImageSummary> selectImageSummaries(Long otoInqrySn);
 
     /**
      * 문의 등록
