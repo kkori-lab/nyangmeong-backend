@@ -58,15 +58,13 @@
 - 기능: 명세 기능 ID 추가 없음. 걸치는 기능 FN-CSC-003-09 이미지 첨부, FN-CSC-003-12 문의 상세 조회, FN-CSC-003-15 문의 수정
 - 기다리는 것: 프론트 SCR-CSC-003 1:1 문의 API 연결(2026-10-28 끝, 첨부는 자리 표시 + 장 수로 둠)
 - 완료 조건: 본인 문의의 첨부(`imgs[].atchFileSn`)를 이미지로 받을 수 있다(예: `GET /api/inquiries/{otoInqrySn}/images/{atchFileSn}`). 남의 문의 첨부는 403, 없는 첨부는 404
-- 연결 남음: FN-CSC-003-12·15 (프론트 연결 SCR-CSC-003 문의 상세·수정 화면의 첨부 이미지 표시와 팝업, 프론트 저장소에서 /start)
 
 ## SCR-CSC-003 1:1 문의 · 첨부 응답 원본 파일명 — 끝
 - 기능: 명세 기능 ID 추가 없음. 걸치는 기능 FN-CSC-003-09 이미지 첨부, FN-CSC-003-12 문의 상세 조회, FN-CSC-003-15 문의 수정
 - 기다리는 것: 프론트 SCR-CSC-003 첨부 이미지 썸네일 클릭 팝업(원본 파일명 표시)
 - 완료 조건: 문의 작성·수정·상세 응답의 `imgs[]`에 `orgnlFileNm`(ATCH_FILE.ORGNL_FILE_NM)이 들어간다. 삭제된 첨부는 계속 빠진다
-- 연결 남음: FN-CSC-003-09·12·15 (프론트 연결 SCR-CSC-003 첨부 썸네일 클릭 팝업, 프론트 저장소에서 /start)
 
-## SCR-CSC-003 1:1 문의 · 업로드 한도 — 대기
+## SCR-CSC-003 1:1 문의 · 업로드 한도 — 끝
 - 기능: 명세 기능 ID 추가 없음. 걸치는 기능 FN-CSC-003-09 이미지 첨부, FN-CSC-003-11 문의 제출, FN-CSC-003-15 문의 수정
 - 기다리는 것: 프론트 SCR-CSC-003 1:1 문의 API 연결(2026-10-28 끝, 화면은 한 장 10MB·10장까지 받는다)
 - 완료 조건: 한 장 10MB × 10장(합계 100MB)을 한 요청으로 올릴 수 있다(`spring.servlet.multipart.max-request-size=100MB`, `max-file-size=10MB` 유지). `application.properties.example`을 고치고 팀원·디스코드의 `application.properties`도 같이 바꾼다
