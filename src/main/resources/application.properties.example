@@ -27,7 +27,7 @@ app.cookie.secure=false
 # 쿠키를 실어 보낼 수 있는 프론트 오리진(쉼표 구분). 개발은 Vite 주소
 app.cors.allowed-origins=http://localhost:5173
 # 로그인 없이 여는 경로(쉼표 구분). 목록 밖은 전부 인증이 필요하다. 생략하면 아래와 같은 기본값
-app.security.permit-all-paths=/api/auth/dev-tokens,/api/auth/login,/api/auth/login-attempt-limits,/api/auth/captchas,/api/auth/refresh,/api/auth/logout,/api/terms,/api/terms/*,/api/email-certifications,/api/email-certifications/*/verify,/api/email-certifications/*/invalidate,/api/members,/api/members/nickname-availability,/api/members/phone-availability,/api/members/me/nickname,/api/files/public/**,/swagger-ui/**,/swagger-ui.html,/v3/api-docs/**
+app.security.permit-all-paths=/api/auth/dev-tokens,/api/auth/login,/api/auth/login-attempt-limits,/api/auth/captchas,/api/auth/refresh,/api/auth/logout,/api/terms,/api/terms/*,/api/email-certifications,/api/email-certifications/*/verify,/api/email-certifications/*/invalidate,/api/email-certifications/*/password-reset,/api/members,/api/members/nickname-availability,/api/members/phone-availability,/api/members/me/nickname,/api/files/public/**,/swagger-ui/**,/swagger-ui.html,/v3/api-docs/**
 
 # 이메일 인증·가입(SCR-ACC-001). 모두 생략 가능, 생략하면 아래와 같은 기본값(초·분 단위는 키 이름 끝)
 app.email-cert.code-validity-seconds=180

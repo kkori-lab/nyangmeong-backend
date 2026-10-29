@@ -2,6 +2,7 @@ package com.nyangmeong.member.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -34,6 +35,7 @@ import com.nyangmeong.global.security.jwt.JwtTokenProvider;
 import com.nyangmeong.global.security.jwt.TokenCookies;
 import com.nyangmeong.member.dto.EmailCertificationCreateRequest;
 import com.nyangmeong.member.dto.EmailCertificationInvalidateRequest;
+import com.nyangmeong.member.dto.EmailCertificationPasswordResetRequest;
 import com.nyangmeong.member.dto.EmailCertificationResponse;
 import com.nyangmeong.member.dto.EmailCertificationResult;
 import com.nyangmeong.member.dto.EmailCertificationVerifyRequest;
@@ -74,6 +76,13 @@ class EmailCertificationControllerTest {
 
     private MockHttpServletRequestBuilder invalidateRequest(String body) {
         return post("/api/email-certifications/3/invalidate")
+                .header("X-Requested-With", "XMLHttpRequest")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body);
+    }
+
+    private MockHttpServletRequestBuilder passwordResetRequest(String body) {
+        return post("/api/email-certifications/3/password-reset")
                 .header("X-Requested-With", "XMLHttpRequest")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body);
@@ -199,5 +208,45 @@ class EmailCertificationControllerTest {
                 .andExpect(jsonPath("$.data[0].field").value("certTrgtEml"));
 
         verify(emailCertificationService, never()).invalidate(any(), any());
+    }
+
+    @Test
+    void 비밀번호_재설정은_로그인_없이_200이다() throws Exception {
+        mockMvc.perform(passwordResetRequest("{\"pswdInitTkn\":\"tkn\",\"pswd\":\"newpass12\",\"pswdCnfrm\":\"newpass12\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"));
+
+        verify(emailCertificationService).resetPassword(eq(3L), any(EmailCertificationPasswordResetRequest.class));
+    }
+
+    @Test
+    void 비밀번호_규칙_오류는_400과_명세_문구이고_서비스를_부르지_않는다() throws Exception {
+        mockMvc.perform(passwordResetRequest("{\"pswdInitTkn\":\"tkn\",\"pswd\":\"short1\",\"pswdCnfrm\":\"short1\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT_VALUE"))
+                .andExpect(jsonPath("$.data[0].field").value("pswd"))
+                .andExpect(jsonPath("$.data[0].message").value("비밀번호는 8자 이상, 문자와 숫자를 함께 입력해 주세요."));
+
+        verify(emailCertificationService, never()).resetPassword(any(), any());
+    }
+
+    @Test
+    void 토큰이_비면_400과_본인확인_문구이다() throws Exception {
+        mockMvc.perform(passwordResetRequest("{\"pswdInitTkn\":\"\",\"pswd\":\"newpass12\",\"pswdCnfrm\":\"newpass12\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.data[0].field").value("pswdInitTkn"))
+                .andExpect(jsonPath("$.data[0].message").value("본인확인이 필요합니다. 이메일 인증을 다시 진행해 주세요."));
+
+        verify(emailCertificationService, never()).resetPassword(any(), any());
+    }
+
+    @Test
+    void 재설정_권한이_없으면_400_PASSWORD_RESET_NOT_AVAILABLE이다() throws Exception {
+        doThrow(new CustomException(ErrorCode.PASSWORD_RESET_NOT_AVAILABLE))
+                .when(emailCertificationService).resetPassword(eq(3L), any());
+
+        mockMvc.perform(passwordResetRequest("{\"pswdInitTkn\":\"tkn\",\"pswd\":\"newpass12\",\"pswdCnfrm\":\"newpass12\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("PASSWORD_RESET_NOT_AVAILABLE"));
     }
 }

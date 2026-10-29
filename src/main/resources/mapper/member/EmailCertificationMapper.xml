@@ -13,6 +13,8 @@
         <result column="CERT_CMPTN_DT"      property="certCmptnDt" />
         <result column="CERT_USE_CMPTN_DT"  property="certUseCmptnDt" />
         <result column="CERT_INVLD_DT"      property="certInvldDt" />
+        <result column="PSWD_INIT_TKN_HASH"    property="pswdInitTknHash" />
+        <result column="INIT_AUTHRT_EXPRY_DT"  property="initAuthrtExpryDt" />
         <result column="REG_DT"             property="regDt" />
     </resultMap>
 
@@ -28,6 +30,8 @@
              , CERT_CMPTN_DT
              , CERT_USE_CMPTN_DT
              , CERT_INVLD_DT
+             , PSWD_INIT_TKN_HASH
+             , INIT_AUTHRT_EXPRY_DT
              , REG_DT
           FROM EML_CERT
          WHERE EML_CERT_SN = #{emlCertSn}
@@ -104,5 +108,18 @@
              , INIT_AUTHRT_EXPRY_DT = #{initAuthrtExpryDt,jdbcType=TIMESTAMP}
          WHERE EML_CERT_SN = #{emlCertSn}
            AND CERT_USE_CMPTN_DT IS NULL
+    </update>
+
+    <!-- 재설정 권한은 한 번만 : 토큰 일치·인증 완료·미사용·미무효화·미만료일 때만 1행이 바뀐다 -->
+    <update id="updatePasswordResetUsed">
+        UPDATE EML_CERT
+           SET CERT_USE_CMPTN_DT = #{now}
+         WHERE EML_CERT_SN = #{emlCertSn}
+           AND EML_CERT_PRPS_CD = #{emlCertPrpsCd}
+           AND PSWD_INIT_TKN_HASH = #{pswdInitTknHash}
+           AND CERT_CMPTN_DT IS NOT NULL
+           AND CERT_USE_CMPTN_DT IS NULL
+           AND CERT_INVLD_DT IS NULL
+           AND INIT_AUTHRT_EXPRY_DT &gt; #{now}
     </update>
 </mapper>

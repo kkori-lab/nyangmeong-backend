@@ -61,4 +61,10 @@ public interface EmailCertificationMapper {
      */
     int updatePasswordResetToken(@Param("emlCertSn") Long emlCertSn, @Param("pswdInitTknHash") String pswdInitTknHash,
             @Param("initAuthrtExpryDt") LocalDateTime initAuthrtExpryDt);
+
+    /**
+     * 비밀번호 재설정 권한 사용 처리 (토큰 일치·미사용·미무효화·미만료일 때만 1행, 아니면 0)
+     */
+    int updatePasswordResetUsed(@Param("emlCertSn") Long emlCertSn, @Param("emlCertPrpsCd") String emlCertPrpsCd,
+            @Param("pswdInitTknHash") String pswdInitTknHash, @Param("now") LocalDateTime now);
 }

@@ -19,6 +19,7 @@ import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.nyangmeong.global.error.BaseException;
 import com.nyangmeong.global.error.CustomException;
@@ -27,10 +28,12 @@ import com.nyangmeong.global.notification.CertificationMailEvent;
 import com.nyangmeong.global.notification.EventPublisher;
 import com.nyangmeong.global.security.crypto.CryptoProperties;
 import com.nyangmeong.global.security.crypto.FieldCryptoService;
+import com.nyangmeong.global.security.session.LoginSessionManager;
 import com.nyangmeong.member.domain.EmailCertPurpose;
 import com.nyangmeong.member.domain.EmailCertification;
 import com.nyangmeong.member.dto.EmailCertificationCreateRequest;
 import com.nyangmeong.member.dto.EmailCertificationInvalidateRequest;
+import com.nyangmeong.member.dto.EmailCertificationPasswordResetRequest;
 import com.nyangmeong.member.dto.EmailCertificationResponse;
 import com.nyangmeong.member.dto.EmailCertificationResult;
 import com.nyangmeong.member.dto.EmailCertificationVerifyRequest;
@@ -51,8 +54,10 @@ class EmailCertificationServiceTest {
     private final EventPublisher eventPublisher = mock(EventPublisher.class);
     private final FieldCryptoService crypto = cryptoService();
     private final EmailCertProperties properties = new EmailCertProperties();
+    private final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
+    private final LoginSessionManager loginSessionManager = mock(LoginSessionManager.class);
     private final EmailCertificationService service = new EmailCertificationService(mapper, memberService, crypto,
-            eventPublisher, properties);
+            eventPublisher, properties, passwordEncoder, loginSessionManager);
 
     private final String emailHmac = crypto.hmac(EMAIL);
 
@@ -493,5 +498,103 @@ class EmailCertificationServiceTest {
         service.invalidate(4L, new EmailCertificationInvalidateRequest(EMAIL));
 
         verify(mapper, never()).updateInvalidate(anyLong(), any());
+    }
+
+    private static final String RESET_TOKEN = "reset-token";
+
+    private EmailCertificationPasswordResetRequest resetRequest(String pswd, String pswdCnfrm) {
+        return new EmailCertificationPasswordResetRequest(RESET_TOKEN, pswd, pswdCnfrm);
+    }
+
+    /** 재설정 대상 회원 12번과 토큰이 발급된 인증 3번을 준비한다 */
+    private void readyReset() {
+        when(mapper.selectBySn(3L)).thenReturn(resetCert(0, LocalDateTime.now().minusMinutes(1)));
+        when(memberService.resolvePasswordResetAccount(emailHmac))
+                .thenReturn(new PasswordResetAccount(EmailCertificationResponse.PASSWORD_RESET_READY, null, 12L));
+        when(mapper.updatePasswordResetUsed(eq(3L), eq(EmailCertPurpose.PASSWORD_RESET.getCode()),
+                eq(crypto.hmac("pswdinit:" + RESET_TOKEN)), any())).thenReturn(1);
+        when(passwordEncoder.encode("newpass12")).thenReturn("HASHED");
+    }
+
+    @Test
+    void 맞는_토큰이면_비밀번호를_바꾸고_사용_처리하고_기존_로그인을_모두_끝낸다() {
+        readyReset();
+
+        service.resetPassword(3L, resetRequest("newpass12", "newpass12"));
+
+        verify(memberService).changePassword(12L, "HASHED");
+        verify(loginSessionManager).revokeAll(12L);
+    }
+
+    @Test
+    void 두_비밀번호가_다르면_아무것도_바꾸지_않는다() {
+        readyReset();
+
+        assertThatThrownBy(() -> service.resetPassword(3L, resetRequest("newpass12", "newpass13")))
+                .satisfies(e -> assertCode(e, ErrorCode.PASSWORD_MISMATCH));
+
+        verify(mapper, never()).updatePasswordResetUsed(anyLong(), any(), any(), any());
+        verify(memberService, never()).changePassword(anyLong(), any());
+        verify(loginSessionManager, never()).revokeAll(anyLong());
+    }
+
+    @Test
+    void 사용_처리가_0행이면_토큰_불일치_만료_사용_완료_무효화와_같이_거절한다() {
+        readyReset();
+        when(mapper.updatePasswordResetUsed(anyLong(), any(), any(), any())).thenReturn(0);
+
+        assertThatThrownBy(() -> service.resetPassword(3L, resetRequest("newpass12", "newpass12")))
+                .satisfies(e -> assertCode(e, ErrorCode.PASSWORD_RESET_NOT_AVAILABLE));
+
+        verify(memberService, never()).changePassword(anyLong(), any());
+        verify(loginSessionManager, never()).revokeAll(anyLong());
+    }
+
+    @Test
+    void 인증이_없거나_가입_목적이면_재설정할_수_없다() {
+        when(mapper.selectBySn(3L)).thenReturn(null);
+        when(mapper.selectBySn(4L)).thenReturn(freshCert(0));
+
+        assertThatThrownBy(() -> service.resetPassword(3L, resetRequest("newpass12", "newpass12")))
+                .satisfies(e -> assertCode(e, ErrorCode.PASSWORD_RESET_NOT_AVAILABLE));
+        assertThatThrownBy(() -> service.resetPassword(4L, resetRequest("newpass12", "newpass12")))
+                .satisfies(e -> assertCode(e, ErrorCode.PASSWORD_RESET_NOT_AVAILABLE));
+
+        verify(mapper, never()).updatePasswordResetUsed(anyLong(), any(), any(), any());
+    }
+
+    @Test
+    void 그_사이_탈퇴하거나_SNS_전용이_된_계정은_재설정할_수_없다() {
+        readyReset();
+        when(memberService.resolvePasswordResetAccount(emailHmac))
+                .thenReturn(new PasswordResetAccount(EmailCertificationResponse.SNS_ONLY, List.of("USRC0008")))
+                .thenReturn(new PasswordResetAccount(EmailCertificationResponse.MEMBER_WITHDRAWN, null));
+
+        assertThatThrownBy(() -> service.resetPassword(3L, resetRequest("newpass12", "newpass12")))
+                .satisfies(e -> assertCode(e, ErrorCode.PASSWORD_RESET_NOT_AVAILABLE));
+        assertThatThrownBy(() -> service.resetPassword(3L, resetRequest("newpass12", "newpass12")))
+                .satisfies(e -> assertCode(e, ErrorCode.PASSWORD_RESET_NOT_AVAILABLE));
+
+        verify(mapper, never()).updatePasswordResetUsed(anyLong(), any(), any(), any());
+        verify(memberService, never()).changePassword(anyLong(), any());
+    }
+
+    @Test
+    void 무효화한_인증의_토큰은_사용_처리가_0행이라_재설정되지_않는다() {
+        readyReset();
+        EmailCertification invalidated = resetCert(0, LocalDateTime.now().minusMinutes(1));
+        invalidated.setCertInvldDt(LocalDateTime.now());
+        when(mapper.selectBySn(3L)).thenReturn(invalidated);
+        when(mapper.updatePasswordResetUsed(anyLong(), any(), any(), any())).thenReturn(0);
+
+        assertThatThrownBy(() -> service.resetPassword(3L, resetRequest("newpass12", "newpass12")))
+                .satisfies(e -> assertCode(e, ErrorCode.PASSWORD_RESET_NOT_AVAILABLE));
+
+        verify(memberService, never()).changePassword(anyLong(), any());
+    }
+
+    @Test
+    void 요청_문자열에_비밀번호_원문이_남지_않는다() {
+        assertThat(resetRequest("newpass12", "newpass12").toString()).doesNotContain("newpass12", RESET_TOKEN);
     }
 }

@@ -96,6 +96,14 @@ public class LoginSessionManager {
         clearCookies(response);
     }
 
+    /**
+     * 회원의 모든 세션 폐기 (비밀번호 재설정 등), 요청자 쿠키는 건드리지 않는다
+     */
+    @Transactional
+    public void revokeAll(Long mbrSn) {
+        refreshTokenMapper.updateDiscardAllByMbrSn(mbrSn);
+    }
+
     private CustomException fail(HttpServletResponse response) {
         clearCookies(response);
         return new CustomException(ErrorCode.UNAUTHORIZED);
