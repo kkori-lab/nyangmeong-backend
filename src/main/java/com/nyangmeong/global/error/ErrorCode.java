@@ -95,6 +95,7 @@ public enum ErrorCode {
     CARE_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "케어 항목을 찾을 수 없습니다."),
     CARE_ITEM_DEFAULT_LIMITED(HttpStatus.BAD_REQUEST, "기본 케어 항목은 주기만 수정할 수 있습니다."),
     CARE_ITEM_DEFAULT_NOT_DELETABLE(HttpStatus.BAD_REQUEST, "기본 케어 항목은 삭제할 수 없습니다."),
+    CARE_ITEM_LINKED_NOT_EDITABLE(HttpStatus.BAD_REQUEST, "처방약·반복 예방 항목은 검진상세에서 바꿔 주세요."),
     CARE_ITEM_MAIN_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "메인에 표시할 케어 항목은 최대 6개입니다."),
     CARE_COMPLETION_NOT_FOUND(HttpStatus.NOT_FOUND, "완료 기록을 찾을 수 없습니다."),
     CARE_COMPLETION_FUTURE_DATE(HttpStatus.BAD_REQUEST, "완료일은 오늘 이후로 입력할 수 없습니다."),
