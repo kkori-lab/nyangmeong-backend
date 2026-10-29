@@ -9,7 +9,7 @@
 
 `db/`의 SQL 파일도 여러 명이 추가한다.
 
-- 테이블 변경은 `db/migration/`에 추가한다. 파일 이름은 `YYYYMMDD_NN_설명.sql`이다(예: `20261022_01_add_expnd_idmpt_dmnd_id.sql`, `NN`은 같은 날짜 안의 순번). 자세한 규칙은 `db/migration/README.md`에 있다.
+- 테이블 변경은 `db/migration/`에 추가한다. 파일 이름은 `YYYYMMDD_NN_설명.sql`이다(예: `20261030_01_add_pet_memo.sql`, `NN`은 같은 날짜 안의 순번). 자세한 규칙은 `db/migration/README.md`에 있다.
 - `db/` 바로 아래는 처음부터 새로 만드는 기준 파일(전체 DROP 후 생성, 공통코드 시드)만 둔다. 공용 DB에는 실행하지 않는다.
 - 병합된 SQL 파일은 고치지 않는다. 바꿀 것이 있으면 새 파일을 추가한다.
 - 테이블을 바꾸는 PR은 본문에 "DB 변경 있음"과 파일 이름을 적는다.

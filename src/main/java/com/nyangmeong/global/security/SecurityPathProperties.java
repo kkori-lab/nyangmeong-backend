@@ -30,6 +30,7 @@ public class SecurityPathProperties {
             "/api/terms/*",
             "/api/email-certifications",
             "/api/email-certifications/*/verify",
+            "/api/email-certifications/*/invalidate",
             "/api/members",
             "/api/members/nickname-availability",
             "/api/members/phone-availability",

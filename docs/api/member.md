@@ -22,8 +22,8 @@
 | POST | /auth/logout | 로그아웃(Refresh 토큰 폐기) | COM-005-07·08, AIM-011-17 (기능 분배 3.1절 28번) | YAY | - | - |
 | POST | /auth/refresh | Access 토큰 재발급. 토큰은 httpOnly 쿠키로만 주고 응답 `data`는 없다(`docs/convention/api.md`). 근거는 로그인 유지 기능(issues 6) | (명세 기능 ID 없음) | YAY | - | - |
 | POST | /auth/sns-login | 네이버·카카오·구글 인가 결과 처리: 기존 회원 로그인 / 신규 가입 확인 / 이메일 중복 / 30일 복구 분기 | ACC-002-09~11, ACC-001-22·31·38·40 | YAY | SnsLoginRequest | SnsLoginResponse |
-| POST | /email-certifications | 이메일 인증번호 발송·재전송(목적: 가입·비밀번호 찾기·복구). 가입 목적은 정상 회원 이메일 중복이면 거절(409 EMAIL_ALREADY_REGISTERED, 탈퇴 보관 이메일은 409 MEMBER_RECOVERY_AVAILABLE). 재전송 간격·횟수에 걸리면 400 EMAIL_CERT_RESEND_NOT_YET이고 data의 `resendAvailableDt`가 재시도 가능 시각. 지금은 가입 목적(USRC0010)만 구현 | ACC-001-03·04·38·41, ACC-011-03·07 | YAY | EmailCertificationCreateRequest | EmailCertificationResponse |
-| POST | /email-certifications/{emlCertSn}/invalidate | 인증번호·재설정 권한·복구 확인 권한 무효화 | ACC-011-05, ACC-012-04, ACC-001-46 | YAY | - | - |
+| POST | /email-certifications | 이메일 인증번호 발송·재전송(목적: 가입·비밀번호 찾기·복구). 가입 목적은 정상 회원 이메일 중복이면 거절(409 EMAIL_ALREADY_REGISTERED, 탈퇴 보관 이메일은 409 MEMBER_RECOVERY_AVAILABLE). 재전송 간격·횟수에 걸리면 400 EMAIL_CERT_RESEND_NOT_YET이고 data의 `resendAvailableDt`가 재시도 가능 시각. 지금은 가입(USRC0010)·비밀번호 찾기(USRC0011) 목적만 구현. 비밀번호 찾기는 가입 여부·SNS 전용 여부를 드러내지 않도록 회원을 조회하지 않고 같은 응답으로 발송 | ACC-001-03·04·38·41, ACC-011-03·07 | YAY | EmailCertificationCreateRequest | EmailCertificationResponse |
+| POST | /email-certifications/{emlCertSn}/invalidate | 인증번호·재설정 권한·복구 확인 권한 무효화. 일련번호가 순번이라 본문의 `certTrgtEml`이 그 인증의 이메일과 맞아야 한다(없음·불일치·다른 목적은 404 EMAIL_CERT_NOT_FOUND, 이미 무효·사용 완료는 200). 지금은 비밀번호 찾기 목적만 구현 | ACC-011-05, ACC-012-04, ACC-001-46 | YAY | EmailCertificationInvalidateRequest | - |
 | POST | /email-certifications/{emlCertSn}/password-reset | 본인확인 결과로 비밀번호 재설정, 대상 계정 기존 로그인 종료 | ACC-012-01~03 | YAY | EmailCertificationPasswordResetRequest | - |
 | POST | /email-certifications/{emlCertSn}/verify | 인증번호 확인. 목적별 결과(가입 진행 / 재설정 대상·SNS 전용·미가입·탈퇴 보관 분기 / 복구 확인 권한) 반환 | ACC-001-06·40·43, ACC-011-08~10 | YAY | EmailCertificationVerifyRequest | EmailCertificationResponse |
 | POST | /members | 회원가입(이메일·SNS 공통). 약관별 동의·번호 암호문/HMAC·기본 닉네임·최초 상태 이력·SNS 연결 저장, 서버 재검사. 201과 함께 닉네임 설정 전용 쿠키 `ncnm_setup`(로그인 쿠키 아님)을 준다. 이메일 가입만 구현(SNS 가입은 SNS 로그인 마일스톤) | ACC-001-09·10·12·14·22·24·27·29·32·38 | YAY | MemberCreateRequest | MemberResponse |
@@ -96,12 +96,18 @@
 | certExpryDt | LocalDateTime | Y | 남은 시간 표시 기준(서버 만료시각) | EML_CERT.CERT_EXPRY_DT, ACC-001-05 |
 | resendAvailableDt | LocalDateTime | N | 재전송 제한 중이면 재시도 가능 시점 | ACC-011-07 |
 | certCmptnDt | LocalDateTime | N | 인증 확인 성공 시각. verify 이후 | EML_CERT.CERT_CMPTN_DT |
-| certRslt | String | N | verify 결과 분기. 가입 목적은 `SIGNUP_READY`로 확정. 복구 대상 / 재설정 대상 / SNS 전용 / 미가입 / 탈퇴 보관은 해당 마일스톤에서 값 확정 | ACC-001-06·43, ACC-011-08 |
+| certRslt | String | N | verify 결과 분기. 가입 목적은 `SIGNUP_READY`, 비밀번호 찾기 목적은 `PASSWORD_RESET_READY`(재설정 대상, 정지 회원 포함) / `SNS_ONLY`(비밀번호 없는 회원) / `MEMBER_NOT_FOUND`(미가입, 보관 기간이 지난 탈퇴) / `MEMBER_WITHDRAWN`(보관 기간 안의 탈퇴)로 확정. 복구 대상 값은 복구 마일스톤에서 확정 | ACC-001-06·43, ACC-011-08 |
 | snsOffrCds | List<String> | N | `certRslt`가 SNS 전용일 때 실제 연결된 제공자(USRG03) | SNS_ACNT_LINK.SNS_OFFR_CD, ACC-011-10 |
 | pswdInitTkn | String | N | 재설정 대상일 때만. 비밀번호 재설정 권한 토큰 원문 | EML_CERT.PSWD_INIT_TKN_HASH (해시 전 원문), ACC-011-08 |
 | initAuthrtExpryDt | LocalDateTime | N | 재설정 권한 만료 시각 | EML_CERT.INIT_AUTHRT_EXPRY_DT |
 | resetAvailable | Boolean | N | GET 조회 시 재설정 권한이 유효한지(만료·사용 완료·무효화면 false) | EML_CERT.CERT_USE_CMPTN_DT, EML_CERT.CERT_INVLD_DT, ACC-012-06 |
 | rcvryAuthrtTkn | String | N | 복구 대상일 때만. 복구 확인 권한 토큰(저장 컬럼 없음, issues 5) | ACC-001-43 |
+
+### EmailCertificationInvalidateRequest
+쓰는 API: POST /email-certifications/{emlCertSn}/invalidate
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| certTrgtEml | String | Y | 이메일 형식. 인증한 이메일과 같아야 한다(일련번호 추측으로 남의 인증을 끄지 못하게) | EML_CERT.CERT_TRGT_EML_HMAC, ACC-011-05 |
 
 ### EmailCertificationVerifyRequest
 쓰는 API: POST /email-certifications/{emlCertSn}/verify

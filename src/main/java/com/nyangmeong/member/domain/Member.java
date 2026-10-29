@@ -23,5 +23,6 @@ public class Member {
     private String pswdHash;
     private String mbrNcnm;
     private LocalDateTime lastLgnDt;
+    private LocalDateTime whdwlDt;
     private String ncnmStngCmptnYn;
 }
