@@ -22,6 +22,7 @@ import org.mockito.ArgumentCaptor;
 import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.health.domain.CheckupStatus;
 import com.nyangmeong.health.domain.HealthCodeGroup;
 import com.nyangmeong.health.domain.Schedule;
 import com.nyangmeong.health.domain.ScheduleKind;
@@ -97,7 +98,7 @@ class CareScheduleServiceTest {
         CareScheduleSearchCond cond = new CareScheduleSearchCond();
         cond.setSize(3);
         List<CareScheduleSummary> rows = List.of(new CareScheduleSummary());
-        when(mapper.selectList(PET, cond)).thenReturn(rows);
+        when(mapper.selectList(PET, cond, CheckupStatus.COMPLETED.getCode())).thenReturn(rows);
 
         assertThat(service.search(MBR, PET, cond)).isSameAs(rows);
         verify(petAuthorizer).checkCaregiver(MBR, PET);
@@ -109,7 +110,7 @@ class CareScheduleServiceTest {
 
         assertThatThrownBy(() -> service.search(MBR, PET, new CareScheduleSearchCond()))
                 .isInstanceOf(CustomException.class);
-        verify(mapper, never()).selectList(anyLong(), any());
+        verify(mapper, never()).selectList(anyLong(), any(), anyString());
     }
 
     @Test

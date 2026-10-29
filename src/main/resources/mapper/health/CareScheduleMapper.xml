@@ -53,7 +53,8 @@
              , S.CLDR_BADGE_COLR_CD
              , ( SELECT COUNT(*)
                    FROM CKUP_RCD C
-                  WHERE C.SCHDL_SN = S.SCHDL_SN ) AS CKUP_RCD_CNT
+                  WHERE C.SCHDL_SN = S.SCHDL_SN
+                    AND C.CKUP_RCD_STTS_CD = #{completedCd} ) AS CKUP_RCD_CNT
           FROM SCHDL S
           LEFT JOIN COM_CD K
             ON K.COM_CD = S.SCHDL_KND_CD

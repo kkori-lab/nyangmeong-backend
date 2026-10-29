@@ -63,6 +63,13 @@ class CareScheduleMapperXmlTest {
     }
 
     @Test
+    void 연결_검진기록_수는_삭제_상태_검진기록을_세지_않는다() throws Exception {
+        String sql = sql("selectList");
+
+        assertThat(sql).contains("C.SCHDL_SN = S.SCHDL_SN AND C.CKUP_RCD_STTS_CD = #{completedCd}");
+    }
+
+    @Test
     void 단건_조회는_삭제된_일정을_빼서_삭제_뒤_다시_찾지_못한다() throws Exception {
         assertThat(sql("selectSchedule")).contains("DEL_YN = 'N'");
     }
