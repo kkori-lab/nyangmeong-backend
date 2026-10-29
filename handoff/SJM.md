@@ -1,7 +1,7 @@
 # SJM 핸드오프
 
 ## 지금 하는 것
-SCR-MYP-030 가계부 목록 — 기획 (시작 2026-10-29 02:41)
+SCR-MYP-030 가계부 목록 — 구현 중 (승인 2026-10-29 02:46, 시작 2026-10-29 02:41)
 - 근거: 마이페이지_기능명세서_v0.4_20261025, 마이페이지_화면설계서_v0.6_20261025 (DMS). 지출은 회원별(issues API 마이페이지 10번), 한도 알림은 SCR-MYP-031에서 만든 `notifyLimit` 그대로
 - 0. 초안 고치기(구현 전, `docs/api/expense.md`·`docs/api/issues.md`): ① 반려동물 필터 "공용"은 쿼리 `common=true`(`PET_SN IS NULL`, `petSn`과 함께 오면 400) — `GET /expenses`·`/totals`·`ExpenseBulkDeleteRequest`에 추가, issues API 9번·DTO 8번에 결정 기록 ② 정렬 값 `sort=latest`(기본, 날짜·등록 역순)·`amount`(금액 큰 순, 같으면 최신순) ③ 새 행 `GET /expenses/pets`(필터 드롭다운) → `List<ExpensePetOption>`{petSn, petNm, petDelYn, petLinked}: 지금 연동된 동물 전체 + 내 지출이 남은 동물(삭제·연동 해제 포함), 반려동물 등록순, DTO 12번에 결정 기록 ④ `ExpenseUpdateRequest`에 `common`(Boolean, true면 공용으로 바꿈, `petSn`과 함께 오면 400), DTO 4번에 결정 기록 ⑤ `ExpenseStatisticsDayItem`·`ExpenseStatisticsPetItem`에 `petDelYn` 추가("(삭제됨)" 표기), `ExpenseSummary.petNm`은 삭제된 동물도 이름을 준다(지금은 null) ⑥ 전체 선택 뒤 일부 해제는 받지 않는다(제외 목록 없음, 하나라도 해제하면 화면이 개별 선택 `DELETE /expenses?expndSn=`으로 전환), DTO 8번에 기록 ⑦ 수정·삭제는 한도 알림을 보내지 않는다(명세 030-08은 등록 시점만)
 - FN-MYP-030-01·02·04·05·06·14: `GET /api/expenses/statistics?yearMonth=yyyy-MM` → `ExpenseStatisticsResponse`. 새 `ExpenseQueryService.getStatistics`, `ExpenseMapper` 집계 쿼리(일자별·카테고리별·반려동물별·공용 합계·상위 3건·지난달 합계·한도), 지난달 비교는 이번 달 이전 지출이 한 건도 없으면 null, 미래 달은 400. 바꿀 파일: `ExpenseController`, `ExpenseQueryService`(새), `ExpenseMapper`·XML, `dto/ExpenseStatistics*`(새). 완료 조건 — 명령: `ExpenseQueryServiceTest`·`ExpenseControllerTest` 통과 / 화면: Postman으로 공용 지출이 `pets`에 없고 `commonTotalExpndAmt`로 따로 오고, 삭제된 동물 지출이 `petDelYn=true`·이름과 함께 막대에 남고, 한도 미설정이면 `mmExpndLimAmt` null
