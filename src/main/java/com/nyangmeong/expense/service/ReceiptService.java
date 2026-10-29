@@ -111,6 +111,20 @@ public class ReceiptService {
     }
 
     /**
+     * Python AI 서버의 분석 결과·상태 반영 : 분석중인 본인 영수증만 (FN-AIM-010-01·013-04)
+     */
+    @Transactional
+    public void report(Long mbrSn, Long recptSn, ReceiptStatus after, String chgRsn, String ocrRspnsJson) {
+        ReceiptStatus before = ReceiptStatus.from(getOwned(mbrSn, recptSn).getOcrPrcsSttsCd());
+        if (before != ReceiptStatus.ANALYZING) {
+            throw conflict(before);
+        }
+        if (!finish(mbrSn, recptSn, after, chgRsn, ocrRspnsJson)) {
+            throw new CustomException(ErrorCode.ALREADY_PROCESSED);
+        }
+    }
+
+    /**
      * 분석 취소
      */
     @Transactional

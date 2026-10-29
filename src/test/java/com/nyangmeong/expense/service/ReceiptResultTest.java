@@ -19,8 +19,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import com.nyangmeong.expense.domain.Receipt;
 import com.nyangmeong.expense.domain.ReceiptSource;
 import com.nyangmeong.expense.domain.ReceiptStatus;
-import com.nyangmeong.expense.dto.CaregiverPetSummary;
-import com.nyangmeong.expense.dto.ReceiptResponse;
+import com.nyangmeong.expense.dto.ReceiptResultResponse;
 import com.nyangmeong.expense.mapper.ReceiptMapper;
 import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.CustomException;
@@ -86,18 +85,32 @@ class ReceiptResultTest {
     }
 
     @Test
-    void 인식_성공_영수증은_저장된_결과를_다시_가공해_돌려준다() {
+    void 인식_성공_영수증은_저장된_OCR_응답을_그대로_돌려준다() {
         when(mapper.selectOwned(3L, 1L)).thenReturn(stored(ReceiptStatus.RECOGNIZED, recognizedJson()));
-        when(caregiverPetFake.search(1L)).thenReturn(List.of(new CaregiverPetSummary(10L, "미르")));
 
-        ReceiptResponse response = analyzer.get(1L, 3L, 10L);
+        ReceiptResultResponse response = analyzer.getResult(1L, 3L, 10L);
 
         assertThat(response.recptSn()).isEqualTo(3L);
+        assertThat(response.petSn()).isEqualTo(10L);
         assertThat(response.ocrPrcsSttsCd()).isEqualTo(ReceiptStatus.RECOGNIZED.getCode());
-        assertThat(response.hsptlNm()).isEqualTo("냥멍동물병원");
-        assertThat(response.recptAmt()).isEqualTo(10_000L);
-        assertThat(response.sections()).singleElement().satisfies(tab -> assertThat(tab.petSn()).isEqualTo(10L));
+        assertThat(response.failRsn()).isNull();
+        assertThat(response.ocr().hsptlNm()).isEqualTo("냥멍동물병원");
+        assertThat(response.ocr().recptAmt()).isEqualTo(10_000L);
+        assertThat(response.ocr().sections()).singleElement()
+                .satisfies(section -> assertThat(section.sectionNm()).isEqualTo("미르"));
         verify(petAuthorizer).checkCaregiver(1L, 10L);
+    }
+
+    @Test
+    void 부분_인식과_저장_완료도_OCR_응답을_돌려준다() {
+        for (ReceiptStatus status : List.of(ReceiptStatus.PARTIAL, ReceiptStatus.SAVED)) {
+            when(mapper.selectOwned(3L, 1L)).thenReturn(stored(status, recognizedJson()));
+
+            ReceiptResultResponse response = analyzer.getResult(1L, 3L, 10L);
+
+            assertThat(response.ocrPrcsSttsCd()).isEqualTo(status.getCode());
+            assertThat(response.ocr()).isNotNull();
+        }
     }
 
     @Test
@@ -105,11 +118,11 @@ class ReceiptResultTest {
         when(mapper.selectOwned(3L, 1L)).thenReturn(stored(ReceiptStatus.TEMPORARY_ERROR, null));
         when(mapper.selectLastChgRsn(3L)).thenReturn("TIMEOUT");
 
-        ReceiptResponse response = analyzer.get(1L, 3L, 10L);
+        ReceiptResultResponse response = analyzer.getResult(1L, 3L, 10L);
 
         assertThat(response.ocrPrcsSttsCd()).isEqualTo(ReceiptStatus.TEMPORARY_ERROR.getCode());
         assertThat(response.failRsn()).isEqualTo("TIMEOUT");
-        assertThat(response.sections()).isEmpty();
+        assertThat(response.ocr()).isNull();
     }
 
     @Test
@@ -118,12 +131,11 @@ class ReceiptResultTest {
                 ReceiptStatus.NOT_RECOGNIZED)) {
             when(mapper.selectOwned(3L, 1L)).thenReturn(stored(status, recognizedJson()));
 
-            ReceiptResponse response = analyzer.get(1L, 3L, 10L);
+            ReceiptResultResponse response = analyzer.getResult(1L, 3L, 10L);
 
             assertThat(response.ocrPrcsSttsCd()).isEqualTo(status.getCode());
             assertThat(response.failRsn()).isNull();
-            assertThat(response.hsptlNm()).isNull();
-            assertThat(response.sections()).isEmpty();
+            assertThat(response.ocr()).isNull();
         }
     }
 
@@ -131,7 +143,7 @@ class ReceiptResultTest {
     void 남의_영수증이나_없는_영수증은_RECEIPT_NOT_FOUND() {
         when(mapper.selectOwned(3L, 1L)).thenReturn(null);
 
-        assertThatThrownBy(() -> analyzer.get(1L, 3L, 10L))
+        assertThatThrownBy(() -> analyzer.getResult(1L, 3L, 10L))
                 .extracting("errorCode").isEqualTo(ErrorCode.RECEIPT_NOT_FOUND);
     }
 
@@ -139,7 +151,7 @@ class ReceiptResultTest {
     void 연동되지_않은_반려동물이면_조회하지_않는다() {
         doThrow(new CustomException(ErrorCode.PET_ACCESS_DENIED)).when(petAuthorizer).checkCaregiver(1L, 99L);
 
-        assertThatThrownBy(() -> analyzer.get(1L, 3L, 99L))
+        assertThatThrownBy(() -> analyzer.getResult(1L, 3L, 99L))
                 .extracting("errorCode").isEqualTo(ErrorCode.PET_ACCESS_DENIED);
     }
 }

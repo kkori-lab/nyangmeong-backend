@@ -116,6 +116,14 @@
 - 연결 남음: FN-AIM-013-04 (프론트 연결 AI 대화창 [＋] 업로드가 `POST /api/receipts`에 `ocrDmndSrcCd=AIMC0031`, 프론트 저장소에서 /start), FN-AIM-013-06 (프론트 연결 본창 건강 일지 "인식 결과 확인" 모달을 `GET /api/receipts/{recptSn}?petSn=`로 열기, 프론트 저장소에서 /start. 모달 열기 파라미터는 JAJ와 협의)
 - 추가: 추가-1 일시 오류 `failRsn`을 마지막 상태 이력에서 읽는 Mapper 쿼리, 추가-2 공통코드는 migration 없이 기준 데이터 SQL에만(각 DB에 한 줄 직접 넣기)
 
+## SCR-AIM-013 대화창 · 영수증 분석 (Python 중심: 원본 저장·결과 보고 내부 API, 결과 조회) — 끝
+- 기능: FN-AIM-008-09·013-08 원본 이미지 보관(Python → Java 원본 저장), FN-AIM-010-06 실패해도 원본 유지, FN-AIM-010-01·013-04 판정·출처 기록(Python → Java 결과 보고), FN-AIM-013-06 확인 후 저장(React → Java 결과 조회를 `{recptSn, petSn, ocr}` 모양으로). 기준 AI매니저_기능명세서_v0.11_20261029(DMS, 2026-10-29 확인). 2026-10-29 사람 결정 (나): React → Python `POST /ai/receipts`가 분석 중심. 명세 기능 ID 추가 없음(대조 수 그대로)
+- 함께 만드는 것: 없음(`ReceiptService` 상태 처리 재사용)
+- 기다리는 것: 없음(ai 저장소 `FakeReceiptRepository` 연결은 ai 세션)
+- 완료 조건: Python이 쿠키로 원본을 올리면 RECPT(분석중)가 생기고 `recptSn`을 돌려받는다. 결과 보고가 RECPT 상태·OCR 응답·이력에 남는다. React가 본인 영수증 결과를 `{recptSn, petSn, ocrPrcsSttsCd, failRsn, ocr}`로 받는다
+- 연결 남음: FN-AIM-008-09·013-08·010-01·013-04 (Python `FakeReceiptRepository`를 원본 저장·결과 보고 내부 API로, ai 세션), FN-AIM-013-06 (프론트 연결 본창 "인식 결과 확인" 모달 `getChatReceiptResult`를 `GET /api/receipts/{recptSn}?petSn=`로, 프론트 저장소에서 /start)
+- 추가: 없음. `ocrRslt` 허용값 밖은 공통 요청 형식 오류 400 `BAD_REQUEST`(기획은 `INVALID_INPUT_VALUE`, 없을 때만 `INVALID_INPUT_VALUE`)
+
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
 - FN-COM-002-11: 채팅 안 읽은 수 API는 KSJ(채팅, 마일스톤 담당 표 COM-009)
