@@ -6,6 +6,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -24,6 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.error.GlobalExceptionHandler;
+import com.nyangmeong.global.file.StoredFile;
 import com.nyangmeong.global.log.SensitiveDataMasker;
 import com.nyangmeong.global.response.PageResponse;
 import com.nyangmeong.global.security.AuthMemberMapper;
@@ -77,6 +80,26 @@ class InquiryControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.content[0].otoInqrySn").value(7))
                 .andExpect(jsonPath("$.data.totalElements").value(1));
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 첨부_이미지는_파일_내용을_그대로_돌려준다() throws Exception {
+        when(inquiryService.getImage(1L, 7L, 101L)).thenReturn(new StoredFile(new byte[] {1, 2, 3}, "image/png", "a.png"));
+
+        mockMvc.perform(get("/api/inquiries/7/images/101"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "image/png"))
+                .andExpect(header().string("Cache-Control", "no-cache"))
+                .andExpect(content().bytes(new byte[] {1, 2, 3}));
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 첨부_이미지가_남의_문의면_403() throws Exception {
+        when(inquiryService.getImage(1L, 7L, 101L)).thenThrow(new CustomException(ErrorCode.FORBIDDEN));
+
+        mockMvc.perform(get("/api/inquiries/7/images/101")).andExpect(status().isForbidden());
     }
 
     @Test

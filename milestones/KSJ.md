@@ -54,6 +54,17 @@
 - 기다리는 것: RSS 수집 대상 언론사 결정
 - 완료 조건: 뉴스 목록이 카테고리·키워드로 걸러지고, 수집 배치는 제목·요약·썸네일 URL·원문 링크만 저장한다
 
+## SCR-CSC-003 1:1 문의 · 첨부 이미지 조회 API — 끝
+- 기능: 명세 기능 ID 추가 없음. 걸치는 기능 FN-CSC-003-09 이미지 첨부, FN-CSC-003-12 문의 상세 조회, FN-CSC-003-15 문의 수정
+- 기다리는 것: 프론트 SCR-CSC-003 1:1 문의 API 연결(2026-10-28 끝, 첨부는 자리 표시 + 장 수로 둠)
+- 완료 조건: 본인 문의의 첨부(`imgs[].atchFileSn`)를 이미지로 받을 수 있다(예: `GET /api/inquiries/{otoInqrySn}/images/{atchFileSn}`). 남의 문의 첨부는 403, 없는 첨부는 404
+- 연결 남음: FN-CSC-003-12·15 (프론트 연결 SCR-CSC-003 문의 상세·수정 화면의 첨부 이미지 표시와 팝업, 프론트 저장소에서 /start)
+
+## SCR-CSC-003 1:1 문의 · 업로드 한도 — 대기
+- 기능: 명세 기능 ID 추가 없음. 걸치는 기능 FN-CSC-003-09 이미지 첨부, FN-CSC-003-11 문의 제출, FN-CSC-003-15 문의 수정
+- 기다리는 것: 프론트 SCR-CSC-003 1:1 문의 API 연결(2026-10-28 끝, 화면은 한 장 10MB·10장까지 받는다)
+- 완료 조건: 한 장 10MB × 10장(합계 100MB)을 한 요청으로 올릴 수 있다(`spring.servlet.multipart.max-request-size=100MB`, `max-file-size=10MB` 유지). `application.properties.example`을 고치고 팀원·디스코드의 `application.properties`도 같이 바꾼다
+
 ## 제외
 - FN-CMU-001-12: 화면만 있다(공유하기)
 - FN-CMU-003-05: 화면만 있다(공유하기)
