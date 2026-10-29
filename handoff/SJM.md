@@ -1,7 +1,7 @@
 # SJM 핸드오프
 
 ## 지금 하는 것
-SCR-MYP-004 공동양육자 목록 — 진행 중: 구현·빌드 끝, 검증 1회차 `실패`(서버를 못 띄워 화면 확인 못 함). 사람 확인 2026-10-29 Postman 67개·DB(BRUP_REL·BRUP_LINK_STTS_HSTRY) 통과 (승인 2026-10-29 04:43, 시작 2026-10-29 04:29)
+SCR-MYP-004 공동양육자 목록 — 끝남: 검증 `통과`(실제 서버에서 화면 확인), 사람 확인 통과 (승인 2026-10-29 04:43, 시작 2026-10-29 04:29)
 - 초안 고치기(구현 전): `docs/api/pet.md` GET /pets/{petSn}/caregivers 설명과 CaregiverSummary 설명을 "주양육자에게는 전원, 공동양육자에게는 주양육자 + 본인"으로, `linkYmd`(LocalDate, Y, 연동일 "07-02 연동", 마지막 `PETC0024` 이력 REG_DT, 없으면 BRUP_REL.REG_DT) 추가. 이유: 화면설계서 4-2가 공동양육자에게도 주양육자 카드(FN-MYP-004-03)를 보이고, 카드마다 연동일을 표시한다. 권한("조회+수정")은 역할로 정해져 필드를 두지 않는다. `PetResponse.caregivers[]`도 같은 모양이라 함께 고친다
 - FN-MYP-004-01 가족 목록: `PetController`에 `GET /pets/{petSn}/caregivers`, `PetService.searchCaregivers`(PetAuthorizer.checkCaregiver), `PetMapper.selectCaregivers`에 `LINK_YMD` 추가(PetMapper.xml), `CaregiverSummary.linkYmd`. 주양육자에게는 연동 중(USE_YN='Y') 전원, 주양육자 첫 줄. 명령: `./gradlew build -q`(PetServiceTest·PetControllerTest에 추가). 화면: 주양육자 토큰으로 조회하면 주양육자 1줄 + 공동양육자 전원이 연동일과 함께 온다. 프론트 연결: SCR-MYP-002 슬라이드 카드 가족 영역·[✕] (프론트 저장소에서 /start)
 - FN-MYP-004-03 주양육자 표시: 위 목록 첫 줄이 `brupRoleCd=PETC0018`. 명령: 같은 테스트. 화면: 주양육자·공동양육자 어느 쪽으로 조회해도 첫 줄이 주양육자다
@@ -12,12 +12,8 @@ SCR-MYP-004 공동양육자 목록 — 진행 중: 구현·빌드 끝, 검증 1�
 - 알림: 명세에 해제 알림 기능 ID가 없어 이번에 발행하지 않는다
 새 의존성: 없음
 ## 다음에 할 것
-- 검증 루프 1회차 실패로 보관 중. 기획은 고치지 않는다. 루프를 버리려면 `! sh scripts/verify-loop.sh clear`
-  - 1회차 실패 항목: FN-MYP-004-03·004-04·006-04 `화면:`을 검증 에이전트가 실제 서버로 확인 못 함(이 환경에 application.properties·공용 DB 없음). 코드 결함은 없다고 보고됨
-  - 사람 확인은 통과(Postman `SCR-MYP-004 공동양육자 목록·연동 해제` 폴더 67개, DB에서 해제 행 USE_YN='N'·MDFR_ID, 이력 PETC0025·PETC0026). 확인용 행(PET_SN 3, MBR_SN 3·4)은 정리함
-  - 이어 가기: application.properties가 있는 환경에서 `/verify` → 통과하면 `/end`
-- 연결 남음(SCR-MYP-004 끝난 뒤): FN-MYP-004-01·03·04 프론트 SCR-MYP-002 슬라이드 카드 가족 영역·[✕], FN-MYP-006-02·04 프론트 SCR-MYP-006 확인 팝업·토스트(프론트 저장소에서 /start). API: `GET /pets/{petSn}/caregivers`(`linkYmd` 추가), `DELETE /pets/{petSn}/caregivers/{brupRelSn}`
-- LJS에게 알리기(SCR-MYP-004 끝난 뒤): `scheduler/CaregiverFake` → `PetService.searchCaregiverMbrSns(petSn)`, `expense/CaregiverPetFake` → `PetService.searchMyPets(mbrSn)`의 petSn·petNm으로 바꾸기
+- 연결 남음(SCR-MYP-004): FN-MYP-004-01·03·04 프론트 SCR-MYP-002 슬라이드 카드 가족 영역·[✕], FN-MYP-006-02·04 프론트 SCR-MYP-006 확인 팝업·토스트(프론트 저장소에서 /start). API: `GET /pets/{petSn}/caregivers`(`linkYmd` 추가), `DELETE /pets/{petSn}/caregivers/{brupRelSn}`
+- LJS에게 알리기(SCR-MYP-004): `scheduler/CaregiverFake` → `PetService.searchCaregiverMbrSns(petSn)`, `expense/CaregiverPetFake` → `PetService.searchMyPets(mbrSn)`의 petSn·petNm으로 바꾸기
 - 연결 남음: FN-MYP-030-01~06·09~21 프론트 SCR-MYP-030 가계부 기본 화면·전체 내역·편집 모드·한도 설정·삭제 모달·월 피커(프론트 저장소에서 /start). API: `GET /expenses/statistics`·`/expenses`·`/totals`·`/months`·`/pets`, `PATCH`·`DELETE /expenses/{expndSn}`, `DELETE /expenses?expndSn=`, `POST /expenses/bulk-delete`, `PUT /members/me/expense-limit`
 - 연결 남음: FN-MYP-031-02·03·05·06 프론트 SCR-MYP-031 직접 입력·인식 결과 확인 저장·실패 후 직접 입력의 영수증 연결·중복 지출 확인 모달(프론트 저장소에서 /start)
 - 연결 남음: FN-MYP-031-05 LJS 영수증 저장 `ExpenseFake` → `ExpenseService.create`·`findDuplicates`(가짜와 같은 모양), FN-MYP-030-08 LJS 알림 목록 COM-004에 가계부 한도 알림 표시
