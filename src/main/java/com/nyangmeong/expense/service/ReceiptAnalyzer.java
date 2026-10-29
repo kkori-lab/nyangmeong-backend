@@ -1,6 +1,7 @@
 package com.nyangmeong.expense.service;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -11,6 +12,7 @@ import java.util.concurrent.TimeoutException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.nyangmeong.expense.domain.Receipt;
 import com.nyangmeong.expense.domain.ReceiptFailReason;
 import com.nyangmeong.expense.domain.ReceiptStatus;
 import com.nyangmeong.expense.dto.ReceiptResponse;
@@ -28,6 +30,7 @@ import tools.jackson.databind.ObjectMapper;
  * [영수증 OCR 분석]
  * - 요청 안에서 동기 분석, 제한 시간(app.ocr.timeout) 초과·API 오류 -> 일시 오류 (FN-AIM-008-07·010-01)
  * - 추출 0건 -> 인식 실패, 일부 -> 부분 인식, 실패해도 원본 유지 (FN-AIM-010-05·06)
+ * - 결과 다시 열기 : 저장된 OCR 응답을 오늘 날짜·현재 반려동물 기준으로 다시 가공 (FN-AIM-013-06)
  */
 @Slf4j
 @Component
@@ -40,12 +43,33 @@ public class ReceiptAnalyzer {
     private final CaregiverPetFake caregiverPetFake;
     private final ObjectMapper objectMapper;
 
+    /** 저장된 OCR 응답으로 결과를 다시 주는 상태 */
+    private static final List<ReceiptStatus> RESULT_KEPT = List.of(ReceiptStatus.RECOGNIZED, ReceiptStatus.PARTIAL,
+            ReceiptStatus.SAVED);
+
     /**
      * 영수증 업로드와 분석
      */
-    public ReceiptResponse create(Long mbrSn, Long petSn, MultipartFile file) {
-        Long recptSn = receiptService.create(mbrSn, petSn, file);
+    public ReceiptResponse create(Long mbrSn, Long petSn, MultipartFile file, String ocrDmndSrcCd) {
+        Long recptSn = receiptService.create(mbrSn, petSn, file, ocrDmndSrcCd);
         return run(mbrSn, recptSn, petSn);
+    }
+
+    /**
+     * 분석 결과 다시 열기
+     */
+    public ReceiptResponse get(Long mbrSn, Long recptSn, Long petSn) {
+        Receipt receipt = receiptService.get(mbrSn, recptSn, petSn);
+        ReceiptStatus status = ReceiptStatus.from(receipt.getOcrPrcsSttsCd());
+        if (status == ReceiptStatus.TEMPORARY_ERROR) {
+            return ReceiptResponse.empty(recptSn, status.getCode(), receiptService.getLastChgRsn(recptSn));
+        }
+        if (!RESULT_KEPT.contains(status) || receipt.getOcrRspnsJson() == null) {
+            return ReceiptResponse.empty(recptSn, status.getCode(), null);
+        }
+        ReceiptOcrResponse ocr = objectMapper.readValue(receipt.getOcrRspnsJson(), ReceiptOcrResponse.class);
+        return ReceiptOcrConverter.toResponse(recptSn, status, ocr, petSn, caregiverPetFake.search(mbrSn),
+                LocalDate.now());
     }
 
     /**
