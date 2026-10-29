@@ -67,7 +67,7 @@
 
 ### CaregiverInvitationResponse
 쓰는 API: GET /caregiver-invitations/{jntBrupInvtnSn}; POST /caregiver-invitations
-초대 링크(메일·인앱 알림)는 프론트 `/mypage/invitations/{jntBrupInvtnSn}`이고, 로그인한 뒤 이 API를 부른다. 미가입자는 가입·로그인 뒤 같은 링크로 수락하며 `RCVR_MBR_SN`은 수락·거절 때 채운다. 수락 권한은 로그인 계정 이메일 일치로 판단하므로 `INVTN_TKN_HASH`는 저장만 하고 쓰지 않는다. 5-3 수락·5-5 이메일 불일치·5-6 만료·종료를 이 응답 하나로 가른다. `sndrMbrNcnm`·`pets`는 대기중이고 `emailMatched`가 true일 때만 있고, 아니면 null이라 빠진다(다른 계정에 남의 반려동물 정보 노출 방지, MYP-005-09·10).
+초대 링크(메일·인앱 알림)는 프론트 `/mypage/invitations/{jntBrupInvtnSn}`이고, 로그인한 뒤 이 API를 부른다. 미가입자는 가입·로그인 뒤 같은 링크로 수락하며 `RCVR_MBR_SN`은 수락·거절 때 채운다. 수락 권한은 로그인 계정 이메일 일치로 판단하므로 `INVTN_TKN_HASH`는 저장만 하고 쓰지 않는다. 5-3 수락·5-5 이메일 불일치·5-6 만료·종료를 이 응답 하나로 가른다. `sndrMbrNcnm`·`pets`는 대기중이고 `emailMatched`가 true일 때만 있고, 아니면 JSON에서 빠진다(다른 계정에 남의 반려동물 정보 노출 방지, MYP-005-09·10).
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | jntBrupInvtnSn | Long | Y | | JNT_BRUP_INVTN.JNT_BRUP_INVTN_SN |
