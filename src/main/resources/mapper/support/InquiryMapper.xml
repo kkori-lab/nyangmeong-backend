@@ -15,6 +15,7 @@
         <result column="INQRY_CN"             property="inqryCn" />
         <result column="ANS_CN"               property="ansCn" />
         <result column="ANS_DT"               property="ansDt" />
+        <result column="DEL_YN"               property="delYn" />
         <result column="REG_DT"               property="regDt" />
         <result column="MDFCN_DT"             property="mdfcnDt" />
     </resultMap>
@@ -60,6 +61,7 @@
           LEFT JOIN COM_CD S
             ON S.COM_CD = I.INQRY_PRCS_STTS_CD
          WHERE I.MBR_SN = #{mbrSn}
+           AND I.DEL_YN = 'N'
         <if test="inqryPrcsSttsCd != null">
            AND I.INQRY_PRCS_STTS_CD = #{inqryPrcsSttsCd}
         </if>
@@ -81,10 +83,12 @@
              , INQRY_CN
              , ANS_CN
              , ANS_DT
+             , DEL_YN
              , REG_DT
              , MDFCN_DT
           FROM OTO_INQRY
          WHERE OTO_INQRY_SN = #{otoInqrySn}
+           AND DEL_YN = 'N'
     </select>
 
     <select id="selectCodeName" parameterType="string" resultType="string">
@@ -199,6 +203,26 @@
         </set>
          WHERE OTO_INQRY_SN = #{otoInqrySn}
            AND INQRY_PRCS_STTS_CD = #{receivedCd}
+           AND DEL_YN = 'N'
+    </update>
+
+    <update id="updateInquiryDeleted">
+        /* 1:1 문의 삭제 처리 */
+        UPDATE OTO_INQRY
+           SET DEL_YN = 'Y'
+             , MDFCN_DT = NOW()
+         WHERE OTO_INQRY_SN = #{otoInqrySn}
+           AND INQRY_PRCS_STTS_CD = #{receivedCd}
+           AND DEL_YN = 'N'
+    </update>
+
+    <update id="updateAllPhotosDeleted">
+        /* 문의 첨부 사진 전체 삭제 처리 */
+        UPDATE INQRY_ATCH_PHOTO
+           SET DEL_YN = 'Y'
+             , MDFCN_DT = NOW()
+         WHERE OTO_INQRY_SN = #{otoInqrySn}
+           AND DEL_YN = 'N'
     </update>
 
     <update id="updatePhotosDeleted">
@@ -224,5 +248,6 @@
              , MDFCN_DT = NOW()
          WHERE OTO_INQRY_SN = #{otoInqrySn}
            AND INQRY_PRCS_STTS_CD = #{receivedCd}
+           AND DEL_YN = 'N'
     </update>
 </mapper>

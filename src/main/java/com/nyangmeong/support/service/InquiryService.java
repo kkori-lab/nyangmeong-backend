@@ -248,6 +248,22 @@ public class InquiryService {
     }
 
     /**
+     * 문의 삭제 (본인의 접수 상태 문의만, 캐릭터 오류 문의 제외)
+     */
+    @Transactional
+    public void delete(Long mbrSn, Long otoInqrySn) {
+        Inquiry inquiry = getOwnedOrThrow(mbrSn, otoInqrySn);
+        if (!InquiryStatus.RECEIVED.is(inquiry.getInqryPrcsSttsCd()) || inquiry.getPixelCharSn() != null) {
+            throw new CustomException(ErrorCode.INQUIRY_NOT_DELETABLE);
+        }
+        /** 접수 상태 조건을 UPDATE 에도 걸어 답변 등록과의 경합 차단 */
+        if (inquiryMapper.updateInquiryDeleted(otoInqrySn, InquiryStatus.RECEIVED.getCode()) == 0) {
+            throw new CustomException(ErrorCode.INQUIRY_NOT_DELETABLE);
+        }
+        inquiryMapper.updateAllPhotosDeleted(otoInqrySn);
+    }
+
+    /**
      * 응답 변환 (유형·상태 이름과 첨부 포함)
      */
     private InquiryResponse toResponse(Inquiry inquiry) {
