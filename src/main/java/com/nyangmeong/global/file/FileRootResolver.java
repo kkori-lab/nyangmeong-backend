@@ -8,7 +8,7 @@ import java.util.Locale;
  * - app.file.root-dir 을 적었으면 항상 그 값
  * - 비었으면 개발 OS별 기본값 : Windows = 프로젝트가 있는 드라이브 루트 아래, Mac = /Users/Shared 아래
  * - 그 밖의 OS 이거나 prod 이면 지정하라는 오류 : uploads 같은 곳으로 조용히 넘어가지 않는다
- * - 시드 생성기(src/seed)와 로그 폴더(global/log, app.log.dir)도 같은 규칙을 쓴다
+ * - 로그 폴더(global/log, app.log.dir)도 같은 규칙을 쓴다
  */
 public final class FileRootResolver {
 

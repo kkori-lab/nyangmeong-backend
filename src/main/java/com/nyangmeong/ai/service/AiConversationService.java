@@ -30,6 +30,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AiConversationService {
 
+    /** 사용자 질문 최대 길이 (FN-AIM-001-04) */
+    static final int USER_MESSAGE_MAX_LENGTH = 1000;
+
     private final AiConversationMapper aiConversationMapper;
     private final PetAuthorizer petAuthorizer;
     private final FieldCryptoService fieldCryptoService;
@@ -80,6 +83,10 @@ public class AiConversationService {
         AiMessageRole role = AiMessageRole.USER.is(req.roleCd()) ? AiMessageRole.USER
                 : AiMessageRole.AI.is(req.roleCd()) ? AiMessageRole.AI : null;
         if (role == null) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        /** 사용자 질문은 1,000자 (FN-AIM-001-04), AI 답변은 DTO 상한 10,000자 */
+        if (role == AiMessageRole.USER && req.cnvrsCn().length() > USER_MESSAGE_MAX_LENGTH) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
         /** 방 행 잠금으로 같은 대화의 동시 저장 순서 충돌 방지 */

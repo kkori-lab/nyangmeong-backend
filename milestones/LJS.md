@@ -92,6 +92,14 @@
 - 기다리는 것: 공개·비공개 분류 확인(반려동물·캐릭터 공동양육자 한정 여부 SJM), 운영 서버 폴더 준비와 nginx `client_max_body_size`(10MB 이상)
 - 완료 조건: 시작 로그에 해석된 절대 경로가 한 줄 나온다. 공개 이미지가 `/api/files/public/{atchFileSn}`로 열리고, 공개가 아니거나 없는 번호는 404 `FILE_NOT_FOUND`다(비공개는 도메인 API로). prod에서 폴더에 쓸 수 없으면 앱이 시작되지 않는다. Windows에서 프로젝트를 C:와 D:에 두고 띄우면 각 드라이브 아래에 폴더가 생긴다
 - 연결 남음: 게시글·캐릭터 이미지를 `<img src="/api/files/public/{atchFileSn}">`로 전환(프론트 연결 공통 파일 이미지 컴포넌트, 프론트 저장소 LJS 마일스톤. 게시글·캐릭터는 담당 KSJ·SJM에게 안내. 캐릭터는 응답에 번호가 없어 `character-image` API 사용). 공개·비공개 분류 확인(SJM), 운영 서버 폴더·nginx `client_max_body_size`(사람)
+- 추가-1(2026-10-28): 개발 로그 폴더도 같은 OS별 규칙(`app.log.dir`, `LogDirEnvironmentPostProcessor`). PR #43 병합
+
+## SCR-AIM-002 검색 질문·응답 (AI 서버 연결: 답변 저장 길이·AI 설정값 조회) — 끝
+- 기능: FN-AIM-002-02 응답 최대 토큰(설정값 제공), FN-AIM-002-03 의료 고지 포함 저장(AI 답변 길이), FN-AIM-002-07 미완료 답변 저장(`cmptnYn`, 이미 구현·검사만 보강), FN-AIM-002-11 최근 N턴 컨텍스트(설정값 제공). 화면 기능은 Python AI 서버, 이 저장소는 내부 API만. 기준 AI매니저_기능명세서_v0.9_20261026(DMS, 2026-10-28 확인)
+- 함께 만드는 것: 없음(`global/setting` SystemSettingService 재사용)
+- 기다리는 것: 없음
+- 완료 조건: AI 역할 메시지가 1,000자를 넘어도 10,000자까지 저장되고 사용자 역할은 1,000자 그대로다. `GET /internal/ai/settings`가 토큰 상한·대화 턴 수를 준다
+- 연결 남음: FN-AIM-002-02·11 (Python AI 서버의 `GET /internal/ai/settings` 연결, ai 세션)
 
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
