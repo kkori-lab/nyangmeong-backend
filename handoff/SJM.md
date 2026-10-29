@@ -1,10 +1,12 @@
 # SJM 핸드오프
 
 ## 지금 하는 것
-SCR-MYP-031 가계부 등록/수정 — 끝 (2026-10-29 사람 확인, Postman으로 FN-MYP-031-02·03·06·030-08 모두 통과). 다음 작업은 `/start`로 고른다(추천 SCR-MYP-030 가계부 목록, 지출 수정·목록·통계·삭제·한도 설정)
-- 이번에 정한 것(SCR-MYP-030도 따름): 지출은 회원별, 주양육자·공동양육자도 서로의 지출을 보지 않는다(issues 마이페이지 10번). 중복 확인은 `POST /expenses/duplicate-check`(9번). 한도 알림은 이번 저장으로 처음 90%·100%를 넘을 때만, 둘 다 넘으면 초과만
+SCR-MYP-030 가계부 목록 — 끝 (2026-10-29 사람 확인, Postman으로 FN-MYP-030 전 기능 ID와 공동양육자 지출 분리까지 통과). 다음 작업은 `/start`로 고른다(대기 맨 위 SCR-MYP-004 공동양육자 목록)
+- 이번에 정한 것: 공용 필터는 `common=true`, 정렬은 `sort=latest|amount`, 필터 드롭다운은 `GET /expenses/pets`(`petLinked`로 "(연동 해제)"), 수정은 `common`으로 공용 전환, 삭제된 반려동물은 모든 지출 응답에 이름과 `petDelYn` (issues 마이페이지 API 9번, DTO 4·8·12번)
+- 추가-1: `MapperXmlRuleTest` 예외 목록에 삭제된 반려동물 이름을 읽는 `ExpenseMapper` select 8개 추가 (요청 2026-10-29)
 
 ## 다음에 할 것
+- 연결 남음: FN-MYP-030-01~06·09~21 프론트 SCR-MYP-030 가계부 기본 화면·전체 내역·편집 모드·한도 설정·삭제 모달·월 피커(프론트 저장소에서 /start). API: `GET /expenses/statistics`·`/expenses`·`/totals`·`/months`·`/pets`, `PATCH`·`DELETE /expenses/{expndSn}`, `DELETE /expenses?expndSn=`, `POST /expenses/bulk-delete`, `PUT /members/me/expense-limit`
 - 연결 남음: FN-MYP-031-02·03·05·06 프론트 SCR-MYP-031 직접 입력·인식 결과 확인 저장·실패 후 직접 입력의 영수증 연결·중복 지출 확인 모달(프론트 저장소에서 /start)
 - 연결 남음: FN-MYP-031-05 LJS 영수증 저장 `ExpenseFake` → `ExpenseService.create`·`findDuplicates`(가짜와 같은 모양), FN-MYP-030-08 LJS 알림 목록 COM-004에 가계부 한도 알림 표시
 - LJS에게 알리기: `ReceiptService.markSavedByExpense`를 더함(인식 실패 후 직접 입력도 영수증을 저장완료로, LJS 파일)

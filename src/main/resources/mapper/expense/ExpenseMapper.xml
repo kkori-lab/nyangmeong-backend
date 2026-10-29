@@ -50,6 +50,7 @@
         <result column="RECPT_SN"       property="recptSn" />
     </resultMap>
 
+    <!-- 삭제된 반려동물도 이름을 보여 주므로 PET 조인에 DEL_YN 조건을 두지 않음 (FN-MYP-030-02·03·05·06·12) -->
     <sql id="expenseSummaryColumns">
         E.EXPND_SN
              , E.EXPND_YMD
@@ -57,7 +58,7 @@
              , E.PET_SN
              , P.PET_NM
              , CASE WHEN E.PET_SN IS NULL THEN NULL
-                    WHEN P.PET_SN IS NULL THEN TRUE
+                    WHEN P.DEL_YN = 'Y' THEN TRUE
                     ELSE FALSE END AS PET_DEL_YN
              , E.DTL_MTTR
              , E.EXPND_PLCUS_NM
@@ -71,7 +72,6 @@
           FROM EXPND E
           LEFT JOIN PET P
             ON P.PET_SN = E.PET_SN
-           AND P.DEL_YN = 'N'
          WHERE E.MBR_SN = #{mbrSn}
            AND E.DEL_YN = 'N'
            AND E.IDMPT_DMND_ID IN
@@ -87,7 +87,6 @@
           FROM EXPND E
           LEFT JOIN PET P
             ON P.PET_SN = E.PET_SN
-           AND P.DEL_YN = 'N'
          WHERE E.MBR_SN = #{mbrSn}
            AND E.DEL_YN = 'N'
            AND E.EXPND_YMD = #{expndYmd}
@@ -111,6 +110,309 @@
     <select id="selectNotifiedLimitAmt" resultType="java.lang.Long">
         /* 알림 받을 월 지출 한도 조회(한도 없음·알림 끔이면 NULL) */
         SELECT CASE WHEN EXPND_LIM_NOTI_RCPTN_YN = 'Y' THEN MM_EXPND_LIM_AMT END
+          FROM MBR
+         WHERE MBR_SN = #{mbrSn}
+    </select>
+
+    <sql id="searchCondition">
+        <if test="cond.startYmd != null">
+           AND E.EXPND_YMD &gt;= #{cond.startYmd}
+        </if>
+        <if test="cond.endYmd != null">
+           AND E.EXPND_YMD &lt;= #{cond.endYmd}
+        </if>
+        <if test="cond.petSn != null">
+           AND E.PET_SN = #{cond.petSn}
+        </if>
+        <if test="cond.common != null and cond.common">
+           AND E.PET_SN IS NULL
+        </if>
+        <if test="cond.expndClsfCd != null">
+           AND E.EXPND_CLSF_CD = #{cond.expndClsfCd}
+        </if>
+    </sql>
+
+    <select id="selectList" resultMap="expenseSummaryResultMap">
+        /* 내 지출 목록(최신순·금액순) */
+        SELECT <include refid="expenseSummaryColumns" />
+          FROM EXPND E
+          LEFT JOIN PET P
+            ON P.PET_SN = E.PET_SN
+         WHERE E.MBR_SN = #{mbrSn}
+           AND E.DEL_YN = 'N'
+        <include refid="searchCondition" />
+         ORDER BY
+        <choose>
+            <when test="sort == @com.nyangmeong.expense.domain.ExpenseSort@AMOUNT">
+               E.EXPND_AMT DESC, E.EXPND_YMD DESC, E.EXPND_SN DESC
+            </when>
+            <otherwise>
+               E.EXPND_YMD DESC, E.EXPND_SN DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="selectCount" resultType="int">
+        /* 조건에 맞는 내 지출 건수 */
+        SELECT COUNT(*)
+          FROM EXPND E
+         WHERE E.MBR_SN = #{mbrSn}
+           AND E.DEL_YN = 'N'
+        <include refid="searchCondition" />
+    </select>
+
+    <select id="selectSumAmt" resultType="long">
+        /* 조건에 맞는 내 지출 합계 */
+        SELECT COALESCE(SUM(E.EXPND_AMT), 0)
+          FROM EXPND E
+         WHERE E.MBR_SN = #{mbrSn}
+           AND E.DEL_YN = 'N'
+        <include refid="searchCondition" />
+    </select>
+
+    <select id="selectMonths" resultType="string">
+        /* 내 지출이 있는 연월(최신순, 기준일 이후 제외) */
+        SELECT DATE_FORMAT(E.EXPND_YMD, '%Y-%m') AS YM
+          FROM EXPND E
+         WHERE E.MBR_SN = #{mbrSn}
+           AND E.DEL_YN = 'N'
+           AND E.EXPND_YMD &lt;= #{endYmd}
+         GROUP BY DATE_FORMAT(E.EXPND_YMD, '%Y-%m')
+         ORDER BY YM DESC
+    </select>
+
+    <resultMap id="petOptionResultMap" type="com.nyangmeong.expense.dto.ExpensePetOption">
+        <id     column="PET_SN"     property="petSn" />
+        <result column="PET_NM"     property="petNm" />
+        <result column="PET_DEL_YN" property="petDelYn" />
+    </resultMap>
+
+    <select id="selectPetOptions" resultMap="petOptionResultMap">
+        /* 내 지출이 남은 반려동물(삭제된 반려동물 포함, 공용 제외) */
+        SELECT P.PET_SN
+             , P.PET_NM
+             , CASE WHEN P.DEL_YN = 'Y' THEN TRUE ELSE FALSE END AS PET_DEL_YN
+          FROM PET P
+         WHERE P.PET_SN IN (SELECT E.PET_SN
+                              FROM EXPND E
+                             WHERE E.MBR_SN = #{mbrSn}
+                               AND E.DEL_YN = 'N'
+                               AND E.PET_SN IS NOT NULL)
+         ORDER BY P.PET_SN
+    </select>
+
+    <resultMap id="dayItemResultMap" type="com.nyangmeong.expense.dto.ExpenseStatisticsDayItem">
+        <id     column="EXPND_YMD"       property="expndYmd" />
+        <result column="TOTAL_EXPND_AMT" property="totalExpndAmt" />
+        <result column="EXPND_CNT"       property="expndCnt" />
+        <result column="PET_SN"          property="petSn" />
+        <result column="PET_NM"          property="petNm" />
+        <result column="PET_DEL_YN"      property="petDelYn" />
+        <result column="EXPND_CLSF_CD"   property="expndClsfCd" />
+    </resultMap>
+
+    <select id="selectDayItems" resultMap="dayItemResultMap">
+        /* 기간 내 날짜별 합계·건수(1건인 날만 반려동물·카테고리) */
+        SELECT E.EXPND_YMD
+             , SUM(E.EXPND_AMT) AS TOTAL_EXPND_AMT
+             , COUNT(*) AS EXPND_CNT
+             , CASE WHEN COUNT(*) = 1 THEN MIN(E.PET_SN) END AS PET_SN
+             , CASE WHEN COUNT(*) = 1 THEN MIN(P.PET_NM) END AS PET_NM
+             , CASE WHEN COUNT(*) = 1 AND MIN(E.PET_SN) IS NOT NULL
+                    THEN MAX(CASE WHEN P.DEL_YN = 'Y' THEN 1 ELSE 0 END) = 1 END AS PET_DEL_YN
+             , CASE WHEN COUNT(*) = 1 THEN MIN(E.EXPND_CLSF_CD) END AS EXPND_CLSF_CD
+          FROM EXPND E
+          LEFT JOIN PET P
+            ON P.PET_SN = E.PET_SN
+         WHERE E.MBR_SN = #{mbrSn}
+           AND E.DEL_YN = 'N'
+           AND E.EXPND_YMD BETWEEN #{startYmd} AND #{endYmd}
+         GROUP BY E.EXPND_YMD
+         ORDER BY E.EXPND_YMD
+    </select>
+
+    <resultMap id="categoryItemResultMap" type="com.nyangmeong.expense.dto.ExpenseStatisticsCategoryItem">
+        <id     column="EXPND_CLSF_CD"   property="expndClsfCd" />
+        <result column="TOTAL_EXPND_AMT" property="totalExpndAmt" />
+    </resultMap>
+
+    <select id="selectCategoryItems" resultMap="categoryItemResultMap">
+        /* 기간 내 카테고리별 합계(금액 큰 순, 기타는 마지막) */
+        SELECT E.EXPND_CLSF_CD
+             , SUM(E.EXPND_AMT) AS TOTAL_EXPND_AMT
+          FROM EXPND E
+         WHERE E.MBR_SN = #{mbrSn}
+           AND E.DEL_YN = 'N'
+           AND E.EXPND_YMD BETWEEN #{startYmd} AND #{endYmd}
+         GROUP BY E.EXPND_CLSF_CD
+         ORDER BY CASE WHEN E.EXPND_CLSF_CD = #{etcClsfCd} THEN 1 ELSE 0 END
+                , TOTAL_EXPND_AMT DESC
+    </select>
+
+    <resultMap id="petItemResultMap" type="com.nyangmeong.expense.dto.ExpenseStatisticsPetItem">
+        <id     column="PET_SN"          property="petSn" />
+        <result column="PET_NM"          property="petNm" />
+        <result column="PET_DEL_YN"      property="petDelYn" />
+        <result column="TOTAL_EXPND_AMT" property="totalExpndAmt" />
+    </resultMap>
+
+    <select id="selectPetItems" resultMap="petItemResultMap">
+        /* 기간 내 반려동물별 합계(등록순, 공용 제외, 삭제된 반려동물 포함) */
+        SELECT E.PET_SN
+             , MIN(P.PET_NM) AS PET_NM
+             , MAX(CASE WHEN P.DEL_YN = 'Y' THEN 1 ELSE 0 END) = 1 AS PET_DEL_YN
+             , SUM(E.EXPND_AMT) AS TOTAL_EXPND_AMT
+          FROM EXPND E
+          JOIN PET P
+            ON P.PET_SN = E.PET_SN
+         WHERE E.MBR_SN = #{mbrSn}
+           AND E.DEL_YN = 'N'
+           AND E.EXPND_YMD BETWEEN #{startYmd} AND #{endYmd}
+         GROUP BY E.PET_SN
+         ORDER BY E.PET_SN
+    </select>
+
+    <select id="selectCommonTotalAmt" resultType="long">
+        /* 기간 내 공용 지출 합계 */
+        SELECT COALESCE(SUM(EXPND_AMT), 0)
+          FROM EXPND
+         WHERE MBR_SN = #{mbrSn}
+           AND DEL_YN = 'N'
+           AND PET_SN IS NULL
+           AND EXPND_YMD BETWEEN #{startYmd} AND #{endYmd}
+    </select>
+
+    <select id="selectTopExpenses" resultMap="expenseSummaryResultMap">
+        /* 기간 내 금액 큰 지출 3건 */
+        SELECT <include refid="expenseSummaryColumns" />
+          FROM EXPND E
+          LEFT JOIN PET P
+            ON P.PET_SN = E.PET_SN
+         WHERE E.MBR_SN = #{mbrSn}
+           AND E.DEL_YN = 'N'
+           AND E.EXPND_YMD BETWEEN #{startYmd} AND #{endYmd}
+         ORDER BY E.EXPND_AMT DESC, E.EXPND_YMD DESC, E.EXPND_SN DESC
+         LIMIT 3
+    </select>
+
+    <select id="existsBefore" resultType="boolean">
+        /* 기준일 이전 내 지출 존재 여부(지난달 비교 대상) */
+        SELECT EXISTS (SELECT 1
+                         FROM EXPND
+                        WHERE MBR_SN = #{mbrSn}
+                          AND DEL_YN = 'N'
+                          AND EXPND_YMD &lt; #{ymd})
+    </select>
+
+    <resultMap id="expenseResultMap" type="com.nyangmeong.expense.domain.Expense">
+        <id     column="EXPND_SN"          property="expndSn" />
+        <result column="PET_SN"            property="petSn" />
+        <result column="MBR_SN"            property="mbrSn" />
+        <result column="RECPT_SN"          property="recptSn" />
+        <result column="EXPND_CLSF_CD"     property="expndClsfCd" />
+        <result column="EXPND_INPT_MTH_CD" property="expndInptMthCd" />
+        <result column="EXPND_AMT"         property="expndAmt" />
+        <result column="EXPND_PLCUS_NM"    property="expndPlcusNm" />
+        <result column="DTL_MTTR"          property="dtlMttr" />
+        <result column="EXPND_YMD"         property="expndYmd" />
+        <result column="IDMPT_DMND_ID"     property="idmptDmndId" />
+        <result column="DEL_YN"            property="delYn" />
+        <result column="REG_DT"            property="regDt" />
+        <result column="MDFCN_DT"          property="mdfcnDt" />
+    </resultMap>
+
+    <select id="selectMine" resultMap="expenseResultMap">
+        /* 내 지출 한 건 */
+        SELECT EXPND_SN
+             , PET_SN
+             , MBR_SN
+             , RECPT_SN
+             , EXPND_CLSF_CD
+             , EXPND_INPT_MTH_CD
+             , EXPND_AMT
+             , EXPND_PLCUS_NM
+             , DTL_MTTR
+             , EXPND_YMD
+             , IDMPT_DMND_ID
+             , DEL_YN
+             , REG_DT
+             , MDFCN_DT
+          FROM EXPND
+         WHERE EXPND_SN = #{expndSn}
+           AND MBR_SN = #{mbrSn}
+           AND DEL_YN = 'N'
+    </select>
+
+    <select id="selectSummary" resultMap="expenseSummaryResultMap">
+        /* 내 지출 한 건(목록 항목 형태) */
+        SELECT <include refid="expenseSummaryColumns" />
+          FROM EXPND E
+          LEFT JOIN PET P
+            ON P.PET_SN = E.PET_SN
+         WHERE E.EXPND_SN = #{expndSn}
+           AND E.MBR_SN = #{mbrSn}
+           AND E.DEL_YN = 'N'
+    </select>
+
+    <update id="update" parameterType="com.nyangmeong.expense.domain.Expense">
+        /* 지출 수정 */
+        UPDATE EXPND
+           SET PET_SN = #{petSn}
+             , EXPND_CLSF_CD = #{expndClsfCd}
+             , EXPND_AMT = #{expndAmt}
+             , EXPND_PLCUS_NM = #{expndPlcusNm}
+             , DTL_MTTR = #{dtlMttr}
+             , EXPND_YMD = #{expndYmd}
+             , MDFCN_DT = NOW()
+         WHERE EXPND_SN = #{expndSn}
+           AND MBR_SN = #{mbrSn}
+           AND DEL_YN = 'N'
+    </update>
+
+    <update id="deleteMine">
+        /* 내 지출 삭제(번호 목록) */
+        UPDATE EXPND
+           SET DEL_YN = 'Y'
+             , MDFCN_DT = NOW()
+         WHERE MBR_SN = #{mbrSn}
+           AND DEL_YN = 'N'
+           AND EXPND_SN IN
+            <foreach collection="expndSns" item="expndSn" open="(" separator="," close=")">
+                #{expndSn}
+            </foreach>
+    </update>
+
+    <update id="deleteByCond">
+        /* 조건에 맞는 내 지출 삭제 */
+        UPDATE EXPND E
+           SET E.DEL_YN = 'Y'
+             , E.MDFCN_DT = NOW()
+         WHERE E.MBR_SN = #{mbrSn}
+           AND E.DEL_YN = 'N'
+        <include refid="searchCondition" />
+    </update>
+
+    <update id="updateLimit">
+        /* 월 지출 한도 저장(처음 저장이면 한도 알림 수신을 켬, 수신 여부를 먼저 계산) */
+        UPDATE MBR
+           SET EXPND_LIM_NOTI_RCPTN_YN = CASE WHEN MM_EXPND_LIM_AMT IS NULL THEN 'Y'
+                                              ELSE EXPND_LIM_NOTI_RCPTN_YN END
+             , MM_EXPND_LIM_AMT = #{mmExpndLimAmt}
+             , MDFR_ID = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE MBR_SN = #{mbrSn}
+    </update>
+
+    <select id="selectLimitNotiRcptnYn" resultType="string">
+        /* 한도 알림 수신 여부 */
+        SELECT EXPND_LIM_NOTI_RCPTN_YN
+          FROM MBR
+         WHERE MBR_SN = #{mbrSn}
+    </select>
+
+    <select id="selectLimitAmt" resultType="java.lang.Long">
+        /* 월 지출 한도(미설정이면 NULL) */
+        SELECT MM_EXPND_LIM_AMT
           FROM MBR
          WHERE MBR_SN = #{mbrSn}
     </select>
