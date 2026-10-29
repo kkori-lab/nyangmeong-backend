@@ -37,7 +37,7 @@
 | expndYmd | LocalDate | Y | 모든 줄에 공통 적용 | EXPND.EXPND_YMD |
 | expndClsfCd | String | Y | 카테고리 7종(MYPG05). 모든 줄에 공통 적용 | EXPND.EXPND_CLSF_CD |
 | dtlMttr | String | N | 최대 1000자. 모든 줄에 공통 적용 | EXPND.DTL_MTTR |
-| expndPlcusNm | String | N | 사용처. 최대 80자. 모든 줄에 공통 적용. 영수증 등록이면 상호명이 기본값 | EXPND.EXPND_PLCUS_NM (`db/migration/20261025_01_add_expnd_plcus_nm.sql`), MYP-031-02·03 |
+| expndPlcusNm | String | N | 사용처. 최대 80자. 모든 줄에 공통 적용. 영수증 등록이면 상호명이 기본값 | EXPND.EXPND_PLCUS_NM (`db/20261029_create_tables_v0.10.sql`), MYP-031-02·03 |
 | recptSn | Long | N | 영수증 등록이면 그 영수증. 모든 줄을 같은 영수증에 연결 | EXPND.RECPT_SN, MYP-031-03·05 |
 | expndInptMthCd | String | Y | 직접 입력·영수증 구분(MYPG06) | EXPND.EXPND_INPT_MTH_CD |
 | lines | List<ExpenseLineRequest> | Y | 1줄 이상. 같은 반려동물을 두 줄에 고를 수 없음. 줄 수는 연동된 반려동물 수까지 | MYP-031-03 |
@@ -47,7 +47,7 @@
 | --- | --- | --- | --- | --- |
 | petSn | Long | N | 비우면 공용. 병원 카테고리면 필수(공용 불가). 연동된 반려동물만 | EXPND.PET_SN, MYP-031-02·03 |
 | expndAmt | Long | Y | 1 이상(0원 불가) | EXPND.EXPND_AMT, MYP-031-02·03 |
-| idmptDmndId | String | Y | 줄마다 클라이언트가 만든 UUID, 최대 100자. 중복 클릭·재전송 차단. 모든 줄의 값이 이미 있으면 200과 기존 지출, 처음이면 201. 일부만 있으면 409 `ALREADY_PROCESSED` | EXPND.IDMPT_DMND_ID (`db/migration/20261022_01_add_expnd_idmpt_dmnd_id.sql`) |
+| idmptDmndId | String | Y | 줄마다 클라이언트가 만든 UUID, 최대 100자. 중복 클릭·재전송 차단. 모든 줄의 값이 이미 있으면 200과 기존 지출, 처음이면 201. 일부만 있으면 409 `ALREADY_PROCESSED` | EXPND.IDMPT_DMND_ID (`db/20261029_create_tables_v0.10.sql`) |
 
 ### ExpenseLimitResponse
 쓰는 API: PUT /members/me/expense-limit
