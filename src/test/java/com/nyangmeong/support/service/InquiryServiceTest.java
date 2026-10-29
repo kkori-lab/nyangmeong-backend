@@ -27,6 +27,7 @@ import com.github.pagehelper.PageHelper;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.file.FileStore;
+import com.nyangmeong.global.file.StoredFile;
 import com.nyangmeong.global.notification.EventPublisher;
 import com.nyangmeong.global.notification.NotificationEvent;
 import com.nyangmeong.global.notification.NotificationType;
@@ -270,6 +271,39 @@ class InquiryServiceTest {
         assertThatThrownBy(() -> service.update(MBR, INQ, new InquiryUpdateRequest(null, "제목", null, null, null)))
                 .isInstanceOfSatisfying(CustomException.class,
                         e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN));
+    }
+
+    @Test
+    void 첨부_이미지는_본인_문의의_첨부면_파일을_읽어_돌려준다() {
+        StoredFile file = new StoredFile(new byte[] {1}, "image/png", "a.png");
+        when(inquiryMapper.selectInquiry(INQ)).thenReturn(inquiry(MBR, InquiryStatus.RECEIVED));
+        when(inquiryMapper.selectPhotos(INQ)).thenReturn(List.of(photo(101L, 0), photo(102L, 1)));
+        when(fileStore.load(102L)).thenReturn(file);
+
+        assertThat(service.getImage(MBR, INQ, 102L)).isSameAs(file);
+    }
+
+    @Test
+    void 첨부_이미지는_남의_문의면_403_없는_문의면_404() {
+        when(inquiryMapper.selectInquiry(INQ)).thenReturn(inquiry(2L, InquiryStatus.RECEIVED));
+        when(inquiryMapper.selectInquiry(99L)).thenReturn(null);
+
+        assertThatThrownBy(() -> service.getImage(MBR, INQ, 101L)).isInstanceOfSatisfying(CustomException.class,
+                e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN));
+        assertThatThrownBy(() -> service.getImage(MBR, 99L, 101L)).isInstanceOfSatisfying(CustomException.class,
+                e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INQUIRY_NOT_FOUND));
+        verify(fileStore, never()).load(anyLong());
+    }
+
+    @Test
+    void 첨부_이미지는_그_문의의_첨부가_아니거나_삭제된_첨부면_404() {
+        when(inquiryMapper.selectInquiry(INQ)).thenReturn(inquiry(MBR, InquiryStatus.RECEIVED));
+        /** 삭제된 첨부는 selectPhotos 에서 빠진다 : 다른 문의의 첨부(500)도 목록에 없다 */
+        when(inquiryMapper.selectPhotos(INQ)).thenReturn(List.of(photo(101L, 0)));
+
+        assertThatThrownBy(() -> service.getImage(MBR, INQ, 500L)).isInstanceOfSatisfying(CustomException.class,
+                e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.FILE_NOT_FOUND));
+        verify(fileStore, never()).load(anyLong());
     }
 
     @Test

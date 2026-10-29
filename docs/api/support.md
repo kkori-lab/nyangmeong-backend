@@ -9,6 +9,7 @@
 | GET | /faqs | FAQ 목록(카테고리·키워드, 답변 포함, 10건) | CSC-002-01~03·05 | KSJ | - | Page<FaqSummary> |
 | GET | /inquiries | 내 1:1 문의 목록(처리 상태 필터) | CSC-003-01~04·16·17 | KSJ | - | Page<InquirySummary> |
 | GET | /inquiries/{otoInqrySn} | 내 1:1 문의 상세(답변 포함) | CSC-003-12·13·16 | KSJ | - | InquiryResponse |
+| GET | /inquiries/{otoInqrySn}/images/{atchFileSn} | 내 1:1 문의 첨부 이미지(본인만, 이미지 바이너리, 다른 문의·삭제된 첨부는 404) | CSC-003-12·15 | KSJ | - | byte[] |
 | GET | /notices | 공지사항 목록(상단 고정 우선·제목 검색, 10건). 상세 하단 최신 5건도 사용 | CSC-001-01~04·06 | KSJ | - | Page<NoticeSummary> |
 | GET | /notices/{ntcMttrSn} | 공지사항 상세(조회수 세션 기준 1회 증가) | CSC-001-05·07 | KSJ | - | NoticeResponse |
 | POST | /inquiries | 1:1 문의 작성(multipart, 캐릭터 오류 문의 연동 포함, 접수 상태) | CSC-003-06·08~11, MYP-010-12·24 (기능 분배 3.1절 21·24번) | KSJ | InquiryCreateRequest | InquiryResponse |
