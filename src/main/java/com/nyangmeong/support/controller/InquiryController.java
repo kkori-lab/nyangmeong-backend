@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -77,5 +78,13 @@ public class InquiryController {
     public ResponseEntity<ApiResponse<InquiryResponse>> update(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long otoInqrySn, @Valid @ModelAttribute InquiryUpdateRequest req) {
         return ResponseEntity.ok(ApiResponse.success(inquiryService.update(me.id(), otoInqrySn, req)));
+    }
+
+    @Operation(summary = "1:1 문의 삭제(접수 상태만)")
+    @DeleteMapping("/{otoInqrySn}")
+    public ResponseEntity<ApiResponse<Void>> delete(@AuthenticationPrincipal LoginMember me,
+            @PathVariable Long otoInqrySn) {
+        inquiryService.delete(me.id(), otoInqrySn);
+        return ResponseEntity.ok(ApiResponse.success());
     }
 }

@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
+import com.nyangmeong.pet.dto.CaregiverSummary;
 import com.nyangmeong.pet.dto.PetCreateRequest;
 import com.nyangmeong.pet.dto.PetResponse;
 import com.nyangmeong.pet.dto.PetSummary;
@@ -29,6 +31,7 @@ import lombok.RequiredArgsConstructor;
  * [반려동물 컨트롤러]
  * - 내 반려동물 목록 (SCR-MYP-001 카드, SCR-MYP-002 슬라이드)
  * - 등록·수정·상세 (SCR-MYP-003), 대표 지정 (FN-MYP-010-05)
+ * - 양육자 목록·연동 해제 (SCR-MYP-004·006)
  */
 @RestController
 @RequiredArgsConstructor
@@ -70,6 +73,21 @@ public class PetController {
     public ResponseEntity<ApiResponse<Void>> designateRepresentative(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn) {
         petService.designateRepresentative(me.id(), petSn);
+        return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    @Operation(summary = "양육자 목록")
+    @GetMapping("/{petSn}/caregivers")
+    public ResponseEntity<ApiResponse<List<CaregiverSummary>>> searchCaregivers(
+            @AuthenticationPrincipal LoginMember me, @PathVariable Long petSn) {
+        return ResponseEntity.ok(ApiResponse.success(petService.searchCaregivers(me.id(), petSn)));
+    }
+
+    @Operation(summary = "공동양육 연동 해제")
+    @DeleteMapping("/{petSn}/caregivers/{brupRelSn}")
+    public ResponseEntity<ApiResponse<Void>> unlinkCaregiver(@AuthenticationPrincipal LoginMember me,
+            @PathVariable Long petSn, @PathVariable Long brupRelSn) {
+        petService.unlinkCaregiver(me.id(), petSn, brupRelSn);
         return ResponseEntity.ok(ApiResponse.success());
     }
 }

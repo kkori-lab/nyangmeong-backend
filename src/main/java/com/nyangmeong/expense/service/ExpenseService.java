@@ -16,11 +16,14 @@ import org.springframework.transaction.annotation.Transactional;
 import com.nyangmeong.expense.domain.Expense;
 import com.nyangmeong.expense.domain.ExpenseCategory;
 import com.nyangmeong.expense.domain.ExpenseInputMethod;
+import com.nyangmeong.expense.dto.ExpenseBulkDeleteRequest;
 import com.nyangmeong.expense.dto.ExpenseCreateCommand;
 import com.nyangmeong.expense.dto.ExpenseCreateRequest;
 import com.nyangmeong.expense.dto.ExpenseLineRequest;
 import com.nyangmeong.expense.dto.ExpenseResponse;
+import com.nyangmeong.expense.dto.ExpenseSearchCond;
 import com.nyangmeong.expense.dto.ExpenseSummary;
+import com.nyangmeong.expense.dto.ExpenseUpdateRequest;
 import com.nyangmeong.expense.dto.ReceiptSaveCheckResponse;
 import com.nyangmeong.expense.mapper.ExpenseMapper;
 import com.nyangmeong.global.auth.PetAuthorizer;
@@ -36,9 +39,9 @@ import com.nyangmeong.pet.service.PetService;
 import lombok.RequiredArgsConstructor;
 
 /**
- * [가계부 지출 등록·중복 확인 (SCR-MYP-031)]
- * - 지출은 회원별 : 중복 확인·한도 합계 모두 내가 등록한 지출만
- * - 저장 뒤 이번 달 합계가 한도 90%·100% 를 처음 넘으면 한도 알림 (FN-MYP-030-08)
+ * [가계부 지출 등록·중복 확인 (SCR-MYP-031)·수정·삭제 (SCR-MYP-030)]
+ * - 지출은 회원별 : 중복 확인·한도 합계·수정·삭제 모두 내가 등록한 지출만
+ * - 등록 뒤 이번 달 합계가 한도 90%·100% 를 처음 넘으면 한도 알림 (FN-MYP-030-08), 수정·삭제는 알리지 않음
  */
 @Service
 @RequiredArgsConstructor
@@ -146,6 +149,78 @@ public class ExpenseService {
                 .map(row -> new ReceiptSaveCheckResponse.DuplicateExpense(row.getPetSn(), row.getExpndSn(),
                         row.getExpndYmd(), row.getExpndAmt(), row.getDtlMttr(), row.getExpndPlcusNm()))
                 .toList();
+    }
+
+    /**
+     * 지출 수정 (FN-MYP-030-03·12)
+     * - 반려동물을 바꿀 때만 연동 검사 : 그대로 두면 연동 해제된 반려동물이어도 수정 가능
+     */
+    @Transactional
+    public ExpenseResponse update(Long mbrSn, Long expndSn, ExpenseUpdateRequest req) {
+        Expense expense = expenseMapper.selectMine(mbrSn, expndSn);
+        if (expense == null) {
+            throw new CustomException(ErrorCode.EXPENSE_NOT_FOUND);
+        }
+        boolean common = Boolean.TRUE.equals(req.common());
+        if (common && req.petSn() != null) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        if (req.expndClsfCd() != null && !ExpenseCategory.exists(req.expndClsfCd())) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        Long petSn = common ? null : req.petSn() != null ? req.petSn() : expense.getPetSn();
+        String clsfCd = req.expndClsfCd() != null ? req.expndClsfCd() : expense.getExpndClsfCd();
+        if (petSn == null && ExpenseCategory.HOSPITAL.is(clsfCd)) {
+            throw new CustomException(ErrorCode.EXPENSE_PET_REQUIRED);
+        }
+        if (petSn != null && !petSn.equals(expense.getPetSn())) {
+            petAuthorizer.checkCaregiver(mbrSn, petSn);
+        }
+        expense.setPetSn(petSn);
+        expense.setExpndClsfCd(clsfCd);
+        if (req.expndYmd() != null) {
+            expense.setExpndYmd(req.expndYmd());
+        }
+        if (req.expndAmt() != null) {
+            expense.setExpndAmt(req.expndAmt());
+        }
+        if (req.dtlMttr() != null) {
+            expense.setDtlMttr(req.dtlMttr().isBlank() ? null : req.dtlMttr());
+        }
+        if (req.expndPlcusNm() != null) {
+            expense.setExpndPlcusNm(req.expndPlcusNm().isBlank() ? null : req.expndPlcusNm());
+        }
+        expenseMapper.update(expense);
+        return ExpenseResponse.from(expenseMapper.selectSummary(mbrSn, expndSn));
+    }
+
+    /**
+     * 지출 삭제 (FN-MYP-030-03·15·19·21)
+     * - 하나라도 없거나 남의 지출이면 모두 취소
+     */
+    @Transactional
+    public void delete(Long mbrSn, List<Long> expndSns) {
+        List<Long> distinct = expndSns == null ? List.of()
+                : expndSns.stream().filter(Objects::nonNull).distinct().toList();
+        if (distinct.isEmpty()) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        if (expenseMapper.deleteMine(mbrSn, distinct) != distinct.size()) {
+            throw new CustomException(ErrorCode.EXPENSE_NOT_FOUND);
+        }
+    }
+
+    /**
+     * 조건 전체 삭제 (FN-MYP-030-18·19·21)
+     * - 화면이 보여 준 건수와 다르면 그 사이 바뀐 것이므로 지우지 않음
+     */
+    @Transactional
+    public void bulkDelete(Long mbrSn, ExpenseBulkDeleteRequest req) {
+        ExpenseSearchCond cond = ExpenseQueryService.normalize(req.toCond());
+        if (expenseMapper.selectCount(mbrSn, cond) != req.expectedCnt()) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        expenseMapper.deleteByCond(mbrSn, cond);
     }
 
     /**

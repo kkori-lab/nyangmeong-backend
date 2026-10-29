@@ -13,6 +13,7 @@
 | GET | /notices | 공지사항 목록(상단 고정 우선·제목 검색, 10건). 상세 하단 최신 5건도 사용 | CSC-001-01~04·06 | KSJ | - | Page<NoticeSummary> |
 | GET | /notices/{ntcMttrSn} | 공지사항 상세(조회수 세션 기준 1회 증가) | CSC-001-05·07 | KSJ | - | NoticeResponse |
 | POST | /inquiries | 1:1 문의 작성(multipart, 캐릭터 오류 문의 연동 포함, 접수 상태) | CSC-003-06·08~11, MYP-010-12·24 (기능 분배 3.1절 21·24번) | KSJ | InquiryCreateRequest | InquiryResponse |
+| DELETE | /inquiries/{otoInqrySn} | 1:1 문의 삭제(본인, 접수 상태만, 캐릭터 오류 문의 제외, DEL_YN) | 명세 없음(프론트 요청) | KSJ | - | - |
 | PATCH | /inquiries/{otoInqrySn} | 1:1 문의 수정(multipart, 접수 상태에서만) | CSC-003-15 | KSJ | InquiryUpdateRequest | InquiryResponse |
 
 ## DTO

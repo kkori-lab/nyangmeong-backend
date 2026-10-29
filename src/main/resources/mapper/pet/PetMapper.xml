@@ -110,6 +110,7 @@
         <result column="MBR_SN"       property="mbrSn" />
         <result column="MBR_NCNM"     property="mbrNcnm" />
         <result column="BRUP_ROLE_CD" property="brupRoleCd" />
+        <result column="LINK_YMD"     property="linkYmd" />
     </resultMap>
 
     <select id="selectPet" parameterType="long" resultMap="petResultMap">
@@ -181,20 +182,56 @@
            AND USE_YN = 'Y'
     </select>
 
-    <select id="selectCaregivers" parameterType="long" resultMap="caregiverSummaryResultMap">
-        /* 반려동물 양육자 목록 조회 */
+    <select id="selectCaregivers" resultMap="caregiverSummaryResultMap">
+        /* 반려동물 양육자 목록 조회 (주양육자 첫 줄, 공동양육자는 연동순) */
         SELECT R.BRUP_REL_SN
              , R.MBR_SN
              , M.MBR_NCNM
              , R.BRUP_ROLE_CD
+             , DATE(COALESCE(H.LINK_DT, R.REG_DT)) AS LINK_YMD
           FROM BRUP_REL R
           JOIN MBR M
             ON M.MBR_SN = R.MBR_SN
+          LEFT JOIN ( SELECT BRUP_REL_SN
+                           , MAX(REG_DT) AS LINK_DT
+                        FROM BRUP_LINK_STTS_HSTRY
+                       WHERE LINK_CHG_TYPE_CD = #{linkTypeCd}
+                       GROUP BY BRUP_REL_SN
+                    ) H
+            ON H.BRUP_REL_SN = R.BRUP_REL_SN
          WHERE R.PET_SN = #{petSn}
            AND R.USE_YN = 'Y'
-         ORDER BY R.BRUP_ROLE_CD
-                , R.REG_DT
+         ORDER BY CASE WHEN R.BRUP_ROLE_CD = #{primaryRoleCd} THEN 0 ELSE 1 END
+                , COALESCE(H.LINK_DT, R.REG_DT)
                 , R.BRUP_REL_SN
+    </select>
+
+    <select id="selectBrupRelBySn" parameterType="long" resultMap="brupRelResultMap">
+        /* 사용 중인 양육 관계 단건 조회 */
+        SELECT BRUP_REL_SN
+             , PET_SN
+             , MBR_SN
+             , BRUP_ROLE_CD
+             , RPRS_PET_YN
+             , USE_YN
+             , REG_DT
+             , MDFCN_DT
+             , MDFR_ID
+          FROM BRUP_REL
+         WHERE BRUP_REL_SN = #{brupRelSn}
+           AND USE_YN = 'Y'
+    </select>
+
+    <select id="selectCaregiverMbrSns" parameterType="long" resultType="long">
+        /* 반려동물의 연동 양육자 회원 번호 조회 */
+        SELECT R.MBR_SN
+          FROM BRUP_REL R
+          JOIN PET P
+            ON P.PET_SN = R.PET_SN
+         WHERE R.PET_SN = #{petSn}
+           AND R.USE_YN = 'Y'
+           AND P.DEL_YN = 'N'
+         ORDER BY R.BRUP_REL_SN
     </select>
 
     <select id="countPrimaryPets" resultType="int">
@@ -321,4 +358,32 @@
            AND PET_SN = #{petSn}
            AND USE_YN = 'Y'
     </update>
+
+    <update id="updateBrupRelUnlink">
+        /* 양육 관계 연동 해제 */
+        UPDATE BRUP_REL
+           SET USE_YN      = 'N'
+             , RPRS_PET_YN = 'N'
+             , MDFR_ID     = #{actorId}
+             , MDFCN_DT    = NOW()
+         WHERE BRUP_REL_SN = #{brupRelSn}
+           AND USE_YN      = 'Y'
+    </update>
+
+    <insert id="insertLinkHistory" parameterType="com.nyangmeong.pet.domain.BrupLinkSttsHstry"
+            useGeneratedKeys="true" keyProperty="brupLinkSttsHstrySn" keyColumn="BRUP_LINK_STTS_HSTRY_SN">
+        /* 양육 연동 상태 이력 등록 */
+        INSERT INTO BRUP_LINK_STTS_HSTRY
+             ( BRUP_REL_SN
+             , MBR_SN
+             , LINK_CHG_TYPE_CD
+             , CHG_RSN
+             )
+        VALUES
+             ( #{brupRelSn}
+             , #{mbrSn}
+             , #{linkChgTypeCd}
+             , #{chgRsn}
+             )
+    </insert>
 </mapper>

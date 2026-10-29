@@ -65,6 +65,16 @@ public interface InquiryMapper {
             @Param("receivedCd") String receivedCd);
 
     /**
+     * 접수 상태 문의 삭제 처리
+     */
+    int updateInquiryDeleted(@Param("otoInqrySn") Long otoInqrySn, @Param("receivedCd") String receivedCd);
+
+    /**
+     * 문의의 첨부사진 전체 삭제 처리
+     */
+    int updateAllPhotosDeleted(Long otoInqrySn);
+
+    /**
      * 첨부사진 삭제 처리
      */
     int updatePhotosDeleted(@Param("otoInqrySn") Long otoInqrySn, @Param("atchFileSns") List<Long> atchFileSns);

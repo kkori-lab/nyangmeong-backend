@@ -34,6 +34,15 @@ class MapperXmlRuleTest {
     /** 삭제된 행까지 읽는 조회 ("namespace.id") */
     private static final Set<String> EXCEPTIONS = Set.of(
             "com.nyangmeong.community.mapper.CommentMapper.selectList",
+            /** 가계부 : 삭제된 반려동물도 "(삭제됨)"과 이름을 보여 줌 (SCR-MYP-030), 지출 자체는 DEL_YN = 'N' */
+            "com.nyangmeong.expense.mapper.ExpenseMapper.selectByIdmptDmndIds",
+            "com.nyangmeong.expense.mapper.ExpenseMapper.selectDuplicates",
+            "com.nyangmeong.expense.mapper.ExpenseMapper.selectList",
+            "com.nyangmeong.expense.mapper.ExpenseMapper.selectPetOptions",
+            "com.nyangmeong.expense.mapper.ExpenseMapper.selectDayItems",
+            "com.nyangmeong.expense.mapper.ExpenseMapper.selectPetItems",
+            "com.nyangmeong.expense.mapper.ExpenseMapper.selectTopExpenses",
+            "com.nyangmeong.expense.mapper.ExpenseMapper.selectSummary",
             /** 연결 일정이 삭제된 검진기록도 "연결된 일정 삭제됨"으로 남겨 보여 준다 (FN-HLT-002-05) */
             "com.nyangmeong.health.mapper.CheckupMapper.selectList",
             "com.nyangmeong.health.mapper.CheckupMapper.selectDetail");

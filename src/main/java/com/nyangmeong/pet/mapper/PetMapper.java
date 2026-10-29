@@ -5,6 +5,7 @@ import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import com.nyangmeong.pet.domain.BrupLinkSttsHstry;
 import com.nyangmeong.pet.domain.BrupRel;
 import com.nyangmeong.pet.domain.Pet;
 import com.nyangmeong.pet.dto.CaregiverSummary;
@@ -12,7 +13,7 @@ import com.nyangmeong.pet.dto.PetSummary;
 
 /**
  * [반려동물 Mapper]
- * - PET·BRUP_REL 조회·저장 (반려동물 관리)
+ * - PET·BRUP_REL 조회·저장 (반려동물 관리), BRUP_LINK_STTS_HSTRY 저장 (연동 해제)
  */
 @Mapper
 public interface PetMapper {
@@ -45,7 +46,18 @@ public interface PetMapper {
     /**
      * 반려동물의 양육자 목록 조회
      */
-    List<CaregiverSummary> selectCaregivers(@Param("petSn") Long petSn);
+    List<CaregiverSummary> selectCaregivers(@Param("petSn") Long petSn, @Param("primaryRoleCd") String primaryRoleCd,
+            @Param("linkTypeCd") String linkTypeCd);
+
+    /**
+     * 사용 중인 양육관계 단건 조회
+     */
+    BrupRel selectBrupRelBySn(@Param("brupRelSn") Long brupRelSn);
+
+    /**
+     * 반려동물의 연동 양육자 회원 번호 조회
+     */
+    List<Long> selectCaregiverMbrSns(@Param("petSn") Long petSn);
 
     /**
      * 회원의 주양육 반려동물 수
@@ -77,4 +89,14 @@ public interface PetMapper {
      */
     int updateRepresentativeOn(@Param("mbrSn") Long mbrSn, @Param("petSn") Long petSn,
             @Param("actorId") String actorId);
+
+    /**
+     * 양육관계 연동 해제
+     */
+    int updateBrupRelUnlink(@Param("brupRelSn") Long brupRelSn, @Param("actorId") String actorId);
+
+    /**
+     * 양육 연동 상태 이력 등록
+     */
+    int insertLinkHistory(BrupLinkSttsHstry history);
 }
