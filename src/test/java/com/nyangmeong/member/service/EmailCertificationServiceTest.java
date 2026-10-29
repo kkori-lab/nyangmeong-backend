@@ -30,9 +30,11 @@ import com.nyangmeong.global.security.crypto.FieldCryptoService;
 import com.nyangmeong.member.domain.EmailCertPurpose;
 import com.nyangmeong.member.domain.EmailCertification;
 import com.nyangmeong.member.dto.EmailCertificationCreateRequest;
+import com.nyangmeong.member.dto.EmailCertificationInvalidateRequest;
 import com.nyangmeong.member.dto.EmailCertificationResponse;
 import com.nyangmeong.member.dto.EmailCertificationResult;
 import com.nyangmeong.member.dto.EmailCertificationVerifyRequest;
+import com.nyangmeong.member.dto.PasswordResetAccount;
 import com.nyangmeong.member.mapper.EmailCertificationMapper;
 
 /**
@@ -77,6 +79,16 @@ class EmailCertificationServiceTest {
         cert.setCertFailNmtm(failCount);
         cert.setCertExpryDt(expiry);
         cert.setCertCmptnDt(completed);
+        return cert;
+    }
+
+    private EmailCertificationCreateRequest resetSendRequest() {
+        return new EmailCertificationCreateRequest(EmailCertPurpose.PASSWORD_RESET.getCode(), " Newbie@Example.com ");
+    }
+
+    private EmailCertification resetCert(int failCount, LocalDateTime completed) {
+        EmailCertification cert = cert(failCount, LocalDateTime.now().plusMinutes(2), completed);
+        cert.setEmlCertPrpsCd(EmailCertPurpose.PASSWORD_RESET.getCode());
         return cert;
     }
 
@@ -130,11 +142,42 @@ class EmailCertificationServiceTest {
     }
 
     @Test
-    void 비밀번호_재설정_목적은_아직_받지_않는다() {
-        EmailCertificationCreateRequest req = new EmailCertificationCreateRequest(
-                EmailCertPurpose.PASSWORD_RESET.getCode(), EMAIL);
+    void 복구_목적은_아직_받지_않는다() {
+        EmailCertificationCreateRequest req = new EmailCertificationCreateRequest(EmailCertPurpose.RECOVERY.getCode(),
+                EMAIL);
 
         assertThatThrownBy(() -> service.send(req)).satisfies(e -> assertCode(e, ErrorCode.INVALID_INPUT_VALUE));
+        verify(mapper, never()).insert(any());
+    }
+
+    @Test
+    void 비밀번호_찾기는_회원을_조회하지_않고_이메일_종류와_관계없이_발송한다() {
+        doThrow(new CustomException(ErrorCode.EMAIL_ALREADY_REGISTERED)).when(memberService)
+                .checkEmailAvailable(emailHmac);
+
+        EmailCertificationResult result = service.send(resetSendRequest());
+
+        assertThat(result.succeeded()).isTrue();
+        verify(memberService, never()).checkEmailAvailable(anyString());
+        verify(mapper).updateInvalidatePrevious(eq(emailHmac), eq(EmailCertPurpose.PASSWORD_RESET.getCode()), any());
+        ArgumentCaptor<EmailCertification> saved = ArgumentCaptor.forClass(EmailCertification.class);
+        verify(mapper).insert(saved.capture());
+        assertThat(saved.getValue().getEmlCertPrpsCd()).isEqualTo(EmailCertPurpose.PASSWORD_RESET.getCode());
+        ArgumentCaptor<CertificationMailEvent> event = ArgumentCaptor.forClass(CertificationMailEvent.class);
+        verify(eventPublisher).publish(event.capture());
+        assertThat(event.getValue().mailTtl()).contains("비밀번호 찾기");
+    }
+
+    @Test
+    void 비밀번호_찾기_재전송도_간격_안이면_거절한다() {
+        LocalDateTime latest = LocalDateTime.now().minusSeconds(20);
+        when(mapper.selectRegDtList(eq(emailHmac), eq(EmailCertPurpose.PASSWORD_RESET.getCode()), any()))
+                .thenReturn(List.of(latest));
+
+        EmailCertificationResult result = service.send(resetSendRequest());
+
+        assertThat(result.error()).isEqualTo(ErrorCode.EMAIL_CERT_RESEND_NOT_YET);
+        assertThat(result.response().resendAvailableDt()).isEqualTo(latest.plusSeconds(60));
         verify(mapper, never()).insert(any());
     }
 
@@ -245,7 +288,7 @@ class EmailCertificationServiceTest {
     @Test
     void 다른_목적의_인증은_찾을_수_없다() {
         EmailCertification other = freshCert(0);
-        other.setEmlCertPrpsCd(EmailCertPurpose.PASSWORD_RESET.getCode());
+        other.setEmlCertPrpsCd(EmailCertPurpose.RECOVERY.getCode());
         when(mapper.selectBySn(3L)).thenReturn(other);
 
         assertThatThrownBy(() -> service.verify(3L, new EmailCertificationVerifyRequest(CODE)))
@@ -314,5 +357,141 @@ class EmailCertificationServiceTest {
         service.use(3L);
 
         assertThatThrownBy(() -> service.use(3L)).satisfies(e -> assertCode(e, ErrorCode.ALREADY_PROCESSED));
+    }
+
+    @Test
+    void 비밀번호_찾기_일반_회원은_재설정_토큰을_받고_해시만_저장된다() {
+        when(mapper.selectBySn(3L)).thenReturn(resetCert(0, null));
+        when(memberService.resolvePasswordResetAccount(emailHmac))
+                .thenReturn(new PasswordResetAccount(EmailCertificationResponse.PASSWORD_RESET_READY, null));
+
+        EmailCertificationResponse response = service.verify(3L, new EmailCertificationVerifyRequest(CODE));
+
+        assertThat(response.certRslt()).isEqualTo(EmailCertificationResponse.PASSWORD_RESET_READY);
+        assertThat(response.pswdInitTkn()).isNotBlank();
+        assertThat(response.initAuthrtExpryDt()).isAfter(LocalDateTime.now().plusMinutes(29));
+        ArgumentCaptor<String> hash = ArgumentCaptor.forClass(String.class);
+        verify(mapper).updatePasswordResetToken(eq(3L), hash.capture(), eq(response.initAuthrtExpryDt()));
+        assertThat(hash.getValue()).isEqualTo(crypto.hmac("pswdinit:" + response.pswdInitTkn()))
+                .doesNotContain(response.pswdInitTkn());
+        verify(memberService, never()).checkEmailAvailable(anyString());
+        verify(mapper).updateCompleted(eq(3L), any());
+    }
+
+    @Test
+    void 비밀번호_찾기_SNS_전용은_제공자만_주고_토큰은_주지_않는다() {
+        when(mapper.selectBySn(3L)).thenReturn(resetCert(0, null));
+        when(memberService.resolvePasswordResetAccount(emailHmac))
+                .thenReturn(new PasswordResetAccount(EmailCertificationResponse.SNS_ONLY, List.of("USRC0008")));
+
+        EmailCertificationResponse response = service.verify(3L, new EmailCertificationVerifyRequest(CODE));
+
+        assertThat(response.certRslt()).isEqualTo(EmailCertificationResponse.SNS_ONLY);
+        assertThat(response.snsOffrCds()).containsExactly("USRC0008");
+        assertThat(response.pswdInitTkn()).isNull();
+        assertThat(response.initAuthrtExpryDt()).isNull();
+        verify(mapper).updatePasswordResetToken(3L, null, null);
+    }
+
+    @Test
+    void 비밀번호_찾기_미가입과_탈퇴_보관은_토큰_없이_결과만_준다() {
+        when(mapper.selectBySn(3L)).thenReturn(resetCert(0, null));
+        when(memberService.resolvePasswordResetAccount(emailHmac))
+                .thenReturn(new PasswordResetAccount(EmailCertificationResponse.MEMBER_NOT_FOUND, null))
+                .thenReturn(new PasswordResetAccount(EmailCertificationResponse.MEMBER_WITHDRAWN, null));
+
+        EmailCertificationResponse notFound = service.verify(3L, new EmailCertificationVerifyRequest(CODE));
+        EmailCertificationResponse withdrawn = service.verify(3L, new EmailCertificationVerifyRequest(CODE));
+
+        assertThat(notFound.certRslt()).isEqualTo(EmailCertificationResponse.MEMBER_NOT_FOUND);
+        assertThat(withdrawn.certRslt()).isEqualTo(EmailCertificationResponse.MEMBER_WITHDRAWN);
+        assertThat(notFound.pswdInitTkn()).isNull();
+        assertThat(withdrawn.pswdInitTkn()).isNull();
+    }
+
+    @Test
+    void 비밀번호_찾기_번호가_틀리면_토큰도_계정_조회도_없다() {
+        when(mapper.selectBySn(3L)).thenReturn(resetCert(1, null));
+
+        assertThatThrownBy(() -> service.verify(3L, new EmailCertificationVerifyRequest("000000")))
+                .satisfies(e -> assertCode(e, ErrorCode.EMAIL_CERT_MISMATCH));
+        verify(mapper, never()).updatePasswordResetToken(anyLong(), any(), any());
+        verify(memberService, never()).resolvePasswordResetAccount(anyString());
+    }
+
+    @Test
+    void 비밀번호_찾기_만료된_인증은_토큰을_주지_않는다() {
+        EmailCertification expired = resetCert(0, null);
+        expired.setCertExpryDt(LocalDateTime.now().minusSeconds(1));
+        when(mapper.selectBySn(3L)).thenReturn(expired);
+
+        assertThatThrownBy(() -> service.verify(3L, new EmailCertificationVerifyRequest(CODE)))
+                .satisfies(e -> assertCode(e, ErrorCode.EMAIL_CERT_EXPIRED));
+        verify(mapper, never()).updatePasswordResetToken(anyLong(), any(), any());
+    }
+
+    @Test
+    void 비밀번호_찾기_같은_번호로_다시_확인하면_새_토큰이고_만료는_그대로이다() {
+        LocalDateTime completed = LocalDateTime.now().minusMinutes(5);
+        when(mapper.selectBySn(3L)).thenReturn(resetCert(0, completed));
+        when(memberService.resolvePasswordResetAccount(emailHmac))
+                .thenReturn(new PasswordResetAccount(EmailCertificationResponse.PASSWORD_RESET_READY, null));
+
+        EmailCertificationResponse first = service.verify(3L, new EmailCertificationVerifyRequest(CODE));
+        EmailCertificationResponse second = service.verify(3L, new EmailCertificationVerifyRequest(CODE));
+
+        assertThat(second.pswdInitTkn()).isNotEqualTo(first.pswdInitTkn());
+        assertThat(second.initAuthrtExpryDt()).isEqualTo(completed.plusMinutes(30)).isEqualTo(first.initAuthrtExpryDt());
+        verify(mapper, never()).updateCompleted(anyLong(), any());
+    }
+
+    @Test
+    void 가입_인증은_비밀번호_찾기_결과를_받지_못한다() {
+        when(mapper.selectBySn(3L)).thenReturn(freshCert(0));
+
+        EmailCertificationResponse response = service.verify(3L, new EmailCertificationVerifyRequest(CODE));
+
+        assertThat(response.certRslt()).isEqualTo(EmailCertificationResponse.SIGNUP_READY);
+        assertThat(response.pswdInitTkn()).isNull();
+        verify(memberService, never()).resolvePasswordResetAccount(anyString());
+        verify(mapper, never()).updatePasswordResetToken(anyLong(), any(), any());
+    }
+
+    @Test
+    void 이메일이_맞으면_비밀번호_찾기_인증을_무효화한다() {
+        when(mapper.selectBySn(3L)).thenReturn(resetCert(0, null));
+
+        service.invalidate(3L, new EmailCertificationInvalidateRequest(" Newbie@Example.com "));
+
+        verify(mapper).updateInvalidate(eq(3L), any());
+    }
+
+    @Test
+    void 무효화는_다른_이메일_가입_목적_없는_인증을_찾을_수_없다() {
+        when(mapper.selectBySn(3L)).thenReturn(resetCert(0, null));
+        when(mapper.selectBySn(4L)).thenReturn(freshCert(0));
+
+        assertThatThrownBy(() -> service.invalidate(3L, new EmailCertificationInvalidateRequest("other@example.com")))
+                .satisfies(e -> assertCode(e, ErrorCode.EMAIL_CERT_NOT_FOUND));
+        assertThatThrownBy(() -> service.invalidate(4L, new EmailCertificationInvalidateRequest(EMAIL)))
+                .satisfies(e -> assertCode(e, ErrorCode.EMAIL_CERT_NOT_FOUND));
+        assertThatThrownBy(() -> service.invalidate(5L, new EmailCertificationInvalidateRequest(EMAIL)))
+                .satisfies(e -> assertCode(e, ErrorCode.EMAIL_CERT_NOT_FOUND));
+        verify(mapper, never()).updateInvalidate(anyLong(), any());
+    }
+
+    @Test
+    void 이미_무효이거나_사용한_인증의_무효화는_그대로_성공한다() {
+        EmailCertification invalidated = resetCert(0, null);
+        invalidated.setCertInvldDt(LocalDateTime.now());
+        EmailCertification used = resetCert(0, LocalDateTime.now());
+        used.setCertUseCmptnDt(LocalDateTime.now());
+        when(mapper.selectBySn(3L)).thenReturn(invalidated);
+        when(mapper.selectBySn(4L)).thenReturn(used);
+
+        service.invalidate(3L, new EmailCertificationInvalidateRequest(EMAIL));
+        service.invalidate(4L, new EmailCertificationInvalidateRequest(EMAIL));
+
+        verify(mapper, never()).updateInvalidate(anyLong(), any());
     }
 }

@@ -1,5 +1,6 @@
 package com.nyangmeong.member.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -12,6 +13,7 @@ import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.security.crypto.FieldCryptoService;
 import com.nyangmeong.global.security.domain.MemberAuthority;
 import com.nyangmeong.global.security.domain.MemberStatus;
+import com.nyangmeong.global.setting.SystemSettingService;
 import com.nyangmeong.global.validation.PhoneNumberNormalizer;
 import com.nyangmeong.member.domain.JoinPath;
 import com.nyangmeong.member.domain.Member;
@@ -20,6 +22,8 @@ import com.nyangmeong.member.dto.MemberNicknameUpdateRequest;
 import com.nyangmeong.member.dto.MemberPhoneAvailabilityResponse;
 import com.nyangmeong.member.dto.MemberResponse;
 import com.nyangmeong.member.dto.MemberSnsAccountSummary;
+import com.nyangmeong.member.dto.EmailCertificationResponse;
+import com.nyangmeong.member.dto.PasswordResetAccount;
 import com.nyangmeong.member.mapper.MemberMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -39,6 +43,7 @@ public class MemberService {
 
     private final MemberMapper memberMapper;
     private final FieldCryptoService fieldCryptoService;
+    private final SystemSettingService systemSettingService;
 
     /**
      * 로그인용 회원 조회 : 없으면 null (없는 아이디도 불일치와 같게 다루기 위해)
@@ -70,6 +75,31 @@ public class MemberService {
             throw new CustomException(ErrorCode.MEMBER_RECOVERY_AVAILABLE);
         }
         throw new CustomException(ErrorCode.EMAIL_ALREADY_REGISTERED);
+    }
+
+    /**
+     * 비밀번호 찾기 계정 판단 : 본인확인이 끝난 이메일에만 쓴다
+     * - 비밀번호 없는 회원은 SNS 전용, 탈퇴 회원은 보관 기간 안이면 복구 안내 밖이면 미가입과 같다
+     * - 정지 회원은 비밀번호를 바꿔도 로그인이 막히므로 재설정 대상으로 둔다
+     */
+    @Transactional(readOnly = true)
+    public PasswordResetAccount resolvePasswordResetAccount(String acntEmlHmac) {
+        Member member = memberMapper.selectByEmailHmac(acntEmlHmac);
+        if (member == null) {
+            return new PasswordResetAccount(EmailCertificationResponse.MEMBER_NOT_FOUND, null);
+        }
+        if (MemberStatus.WITHDRAWN.is(member.getMbrSttsCd())) {
+            int keepDayCnt = systemSettingService.get().getWhdwlMbrKpngDayCnt().intValue();
+            boolean keeping = member.getWhdwlDt() == null
+                    || member.getWhdwlDt().plusDays(keepDayCnt).isAfter(LocalDateTime.now());
+            return new PasswordResetAccount(keeping ? EmailCertificationResponse.MEMBER_WITHDRAWN
+                    : EmailCertificationResponse.MEMBER_NOT_FOUND, null);
+        }
+        if (member.getPswdHash() == null) {
+            return new PasswordResetAccount(EmailCertificationResponse.SNS_ONLY,
+                    memberMapper.selectSnsOffrCds(member.getMbrSn()));
+        }
+        return new PasswordResetAccount(EmailCertificationResponse.PASSWORD_RESET_READY, null);
     }
 
     /**
