@@ -8,7 +8,8 @@
 
 | 메서드 | 경로 | 설명 | 기능 ID | 담당 | 요청 DTO | 응답 DTO |
 | --- | --- | --- | --- | --- | --- | --- |
-| POST | /receipts | 영수증 이미지 업로드(multipart, 확장자·파일 시그니처 검증) → 요청 안에서 동기 OCR(제한 시간 `app.ocr.timeout`, 기본 15초) → 상태·추출 결과. 인식 실패·일시 오류도 201이고 `ocrPrcsSttsCd`·`failRsn`으로 구분. 오류: `FILE_TYPE_NOT_ALLOWED`·`FILE_TOO_LARGE`(400) | AIM-008-04~06·09, AIM-009-04·16·20·21, AIM-010-01·05 | LJS | ReceiptCreateRequest | ReceiptResponse |
+| POST | /receipts | 영수증 이미지 업로드(multipart, 확장자·파일 시그니처 검증) → 요청 안에서 동기 OCR(제한 시간 `app.ocr.timeout`, 기본 15초) → 상태·추출 결과. 인식 실패·일시 오류도 201이고 `ocrPrcsSttsCd`·`failRsn`으로 구분. 오류: `FILE_TYPE_NOT_ALLOWED`·`FILE_TOO_LARGE`(400) | AIM-008-04~06·09, AIM-013-04·08, AIM-009-04·16·20·21, AIM-010-01·05 | LJS | ReceiptCreateRequest | ReceiptResponse |
+| GET | /receipts/{recptSn}?petSn= | 분석 결과 다시 열기(대화창 [확인 후 저장] → 본창 인식 결과 확인 모달). 저장된 OCR 응답을 오늘 날짜·현재 공동양육 반려동물 기준으로 다시 가공해 분석 직후와 다를 수 있다. 인식 성공·부분 인식·저장 완료만 결과를 주고, 일시 오류는 상태와 `failRsn`, 그 밖은 상태만. `petSn`은 진입 반려동물(돌봄 권한 검사). 오류: `RECEIPT_NOT_FOUND`(404, 남의·없는 영수증) | AIM-013-06 | LJS | - | ReceiptResponse |
 | GET | /receipts/{recptSn}/image | 영수증 원본 이미지. 남의·없는 영수증은 404 `RECEIPT_NOT_FOUND` | AIM-009-01 | LJS | - | 이미지 파일 |
 | POST | /receipts/{recptSn}/analyze | 다시 분석(취소·인식 실패·일시 오류 뒤). 200. 오류: `RECEIPT_ANALYZING`·`ALREADY_PROCESSED`(409) | AIM-008-07, AIM-010-05 | LJS | ReceiptAnalyzeRequest | ReceiptResponse |
 | POST | /receipts/{recptSn}/cancel | 분석 취소(영수증 상태 '취소'). 오류: `RECEIPT_ALREADY_CANCELED`(409) | AIM-008-07 | LJS | - | - |
@@ -29,9 +30,10 @@
 | --- | --- | --- | --- | --- |
 | file | MultipartFile | Y | jpg·jpeg·png·webp, 1건당 10MB 이하, 확장자·실제 형식 이중 검증. PDF 불가 | RECPT.ATCH_FILE_SN (AIM-008-05) |
 | petSn | Long | Y | 진입한 반려동물. 로그인 회원과 연동된 반려동물 | PET.PET_SN, AIM-009-17 |
+| ocrDmndSrcCd | String | N | 요청 출처 AIMG07. `AIMC0026` 건강 일지(생략 시)·`AIMC0031` AI 대화창만, 그 밖은 400 `INVALID_INPUT_VALUE` | RECPT.OCR_DMND_SRC_CD, AIM-013-04 |
 
 ### ReceiptResponse
-쓰는 API: POST /receipts; POST /receipts/{recptSn}/analyze
+쓰는 API: POST /receipts; POST /receipts/{recptSn}/analyze; GET /receipts/{recptSn}
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | recptSn | Long | Y | | RECPT.RECPT_SN |
