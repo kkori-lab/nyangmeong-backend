@@ -24,14 +24,17 @@
 - 연결 남음: FN-MYP-020-02 (프론트 연결 SCR-MYP-020 포인트 내역, 프론트 저장소에서 /start)
 - 연결 남음: FN-MYP-020-03·04·07 (프론트 연결 SCR-MYP-020 케어미션 탭·날짜 이동·0마리 안내, SCR-MYP-001 오늘의 케어미션, 프론트 저장소에서 /start)
 - 연결 남음: FN-MYP-020-08 (검진기록 등록·영수증 빠른 등록에서 `earnCheckupPoint` 호출, JAJ)
-- 연결 남음: FN-MYP-020-04·06 (건강 일지 기록·케어리스트 기본 항목 체크·일정·관찰 기록 → `reflect` JAJ, 관찰 중 반려동물 조회 JAJ, 펫이야기 글·댓글 → `reflectRepresentative` KSJ, 가계부 지출 → `reflect` 가계부 담당, 아이템 구매 `PointFake` → `PointService.use` LJS)
+- 연결 남음: FN-MYP-020-04·06 (건강 일지 기록·케어리스트 기본 항목 체크·일정·관찰 기록 → `reflect` JAJ, 관찰 중 반려동물 조회 JAJ, 펫이야기 글·댓글 → `reflectRepresentative` KSJ, 아이템 구매 `PointFake` → `PointService.use` LJS)
 
-## SCR-MYP-031 가계부 등록/수정 — 진행
+## SCR-MYP-031 가계부 등록/수정 — 끝
 - 기능: FN-MYP-031-02 직접 입력 폼, FN-MYP-031-03 인식 결과 확인·수정, FN-MYP-031-05 영수증 업로드(인식 실패 후 직접 입력 저장의 영수증 연결), FN-MYP-031-06 중복 지출 확인, FN-MYP-030-08 한도 알림(화면은 SCR-MYP-030)
 - API가 남의 것: FN-MYP-031-03·05 영수증 업로드·분석 (LJS, `expense` 영수증 API 재사용)
 - 함께 만드는 것: 지출 생성·중복 확인 service 메서드(영수증 저장 LJS가 부름)
 - 기다리는 것: 없음
 - 완료 조건: `POST /api/expenses`가 1원 미만과 병원+공용 조합을 막는다. 저장 뒤 월 합계가 한도의 90%·100%를 넘으면 한도 알림 이벤트를 발행한다
+- 연결 남음: FN-MYP-031-02·03·05·06 (프론트 연결 SCR-MYP-031 직접 입력·인식 결과 확인 저장·실패 후 직접 입력의 영수증 연결·중복 지출 확인 모달, 프론트 저장소에서 /start)
+- 연결 남음: FN-MYP-031-05 (영수증 저장 `ExpenseFake` → `ExpenseService.create`·`findDuplicates`, LJS)
+- 연결 남음: FN-MYP-030-08 (알림 목록 COM-004에 가계부 한도 알림 표시, LJS)
 
 ## SCR-MYP-004 공동양육자 목록 — 대기
 - 기능: FN-MYP-004-01 가족 목록, FN-MYP-004-03 주양육자 표시, FN-MYP-004-04 내 연동 상태, FN-MYP-006-02 공동양육 연동 자진 해제(화면은 SCR-MYP-006), FN-MYP-006-04 목록 즉시 반영(화면은 SCR-MYP-006)
