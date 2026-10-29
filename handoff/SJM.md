@@ -12,8 +12,10 @@ SCR-MYP-030 가계부 목록 — 구현 중 (승인 2026-10-29 02:46, 시작 202
 - FN-MYP-030-17·18·19·21: `DELETE /api/expenses?expndSn=1&expndSn=2`(내 지출만, 하나라도 내 것이 아니거나 없으면 전부 거절 `EXPENSE_NOT_FOUND`), `POST /api/expenses/bulk-delete`(`ExpenseBulkDeleteRequest`, 서버가 센 건수가 `expectedCnt`와 다르면 400, 같은 검색 조건 `<sql>`로 UPDATE). 바꿀 파일: `ExpenseService`, `ExpenseController`, `ExpenseMapper`·XML, `dto/ExpenseBulkDeleteRequest`(새). 완료 조건 — 명령: `ExpenseServiceTest` 통과 / 화면: Postman으로 여러 달 범위+반려동물 필터 조건 삭제 뒤 `totals`가 0, `expectedCnt` 불일치면 400이고 아무것도 지워지지 않음
 - 화면 연결: FN-MYP-030-01~06·09~21 `프론트 연결: SCR-MYP-030 가계부 기본 화면·전체 내역·편집 모드·한도 설정·삭제 모달·월 피커 (프론트 저장소에서 /start)`
 - 함께 고치는 것: `ExpenseSummary` 공통 컬럼의 PET 조인에서 `P.DEL_YN = 'N'` 조건을 빼고 `PET_DEL_YN`을 `P.DEL_YN`으로 계산(삭제된 동물 이름 표시가 목적, 주석으로 남김). 중복 확인 모달도 이름이 나오게 됨
-- 함께 고치는 것(2026-10-29 결정: 추천안대로): `MapperXmlRuleTest`의 `EXCEPTIONS`에 삭제된 반려동물 이름을 읽는 `ExpenseMapper` select를 추가(`docs/convention/test.md` "삭제된 행까지 읽어야 하는 조회는 이 테스트의 예외 목록에 추가"). EXPND의 `DEL_YN = 'N'`은 그대로 둔다. 완료 조건 — 명령: `MapperXmlRuleTest` 통과
 - 새 의존성: 없음
+
+### 추가 요청
+| 추가-1 | `src/test/java/com/nyangmeong/MapperXmlRuleTest.java`(`EXCEPTIONS`에 삭제된 반려동물 이름을 읽는 `ExpenseMapper` select 8개 추가, EXPND의 `DEL_YN = 'N'`은 그대로) | 명령: `./gradlew test --tests 'com.nyangmeong.MapperXmlRuleTest'` 통과 | 요청 2026-10-29 03:06 "삭제된 반려동물 이름 표시를 위해 MapperXmlRuleTest 예외 목록에 지출 조회를 추가" |
 
 ## 다음에 할 것
 - 연결 남음: FN-MYP-031-02·03·05·06 프론트 SCR-MYP-031 직접 입력·인식 결과 확인 저장·실패 후 직접 입력의 영수증 연결·중복 지출 확인 모달(프론트 저장소에서 /start)
