@@ -33,7 +33,16 @@ class MapperXmlRuleTest {
 
     /** 삭제된 행까지 읽는 조회 ("namespace.id") */
     private static final Set<String> EXCEPTIONS = Set.of(
-            "com.nyangmeong.community.mapper.CommentMapper.selectList");
+            "com.nyangmeong.community.mapper.CommentMapper.selectList",
+            /** 가계부 : 삭제된 반려동물도 "(삭제됨)"과 이름을 보여 줌 (SCR-MYP-030), 지출 자체는 DEL_YN = 'N' */
+            "com.nyangmeong.expense.mapper.ExpenseMapper.selectByIdmptDmndIds",
+            "com.nyangmeong.expense.mapper.ExpenseMapper.selectDuplicates",
+            "com.nyangmeong.expense.mapper.ExpenseMapper.selectList",
+            "com.nyangmeong.expense.mapper.ExpenseMapper.selectPetOptions",
+            "com.nyangmeong.expense.mapper.ExpenseMapper.selectDayItems",
+            "com.nyangmeong.expense.mapper.ExpenseMapper.selectPetItems",
+            "com.nyangmeong.expense.mapper.ExpenseMapper.selectTopExpenses",
+            "com.nyangmeong.expense.mapper.ExpenseMapper.selectSummary");
 
     private static final Pattern TABLE = Pattern.compile("\\b(?:FROM|JOIN)\\s+`?(\\w+)`?", Pattern.CASE_INSENSITIVE);
     private static final Pattern DEL_YN_CONDITION = Pattern.compile("DEL_YN`?\\s*=\\s*'N'", Pattern.CASE_INSENSITIVE);

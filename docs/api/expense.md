@@ -6,16 +6,17 @@
 
 | 메서드 | 경로 | 설명 | 기능 ID | 담당 | 요청 DTO | 응답 DTO |
 | --- | --- | --- | --- | --- | --- | --- |
-| GET | /expenses | 지출 목록. 쿼리 `startYmd`·`endYmd`(월 조회·편집 모드 삭제 범위)·`petSn`·`expndClsfCd`·`sort`(최신순/금액순)·`page`(20건). 내가 등록한 지출만(공동양육자끼리도 서로 보지 않음, issues 마이페이지 10번) | MYP-030-03·09~12·17·20 | SJM | - | Page<ExpenseSummary> |
-| GET | /expenses/months | 지출이 한 건 이상 있는 연월 목록(월 피커) | MYP-030-16 | SJM | - | List<ExpenseMonthSummary> |
-| GET | /expenses/statistics | 월 통계. 쿼리 `yearMonth`. 총 지출·월 한도·지난달 대비·일자별 합계와 건수·카테고리별·반려동물별(공용 별도)·금액 상위 3건 | MYP-001-03, MYP-030-01·02·04~06·14 | SJM | - | ExpenseStatisticsResponse |
+| GET | /expenses | 지출 목록. 쿼리 `startYmd`·`endYmd`(월 조회·편집 모드 삭제 범위)·`petSn` 또는 `common=true`(공용만, 함께 보내면 400)·`expndClsfCd`·`sort`(`latest` 최신순 기본/`amount` 금액순)·`page`(20건). 시작이 종료보다 뒤면 바꿔 적용, 기간 생략이면 전체 기간. 내가 등록한 지출만(공동양육자끼리도 서로 보지 않음, issues 마이페이지 10번) | MYP-030-03·09~12·17·20 | SJM | - | Page<ExpenseSummary> |
+| GET | /expenses/months | 지출이 한 건 이상 있는 연월 목록(월 피커). 최신순, 미래 달 제외 | MYP-030-16 | SJM | - | List<ExpenseMonthSummary> |
+| GET | /expenses/pets | 지출 필터 반려동물. 지금 연동된 반려동물 + 내 지출이 남은 반려동물(삭제·연동 해제 포함), 반려동물 등록순. "공용"은 화면이 붙인다 | MYP-030-10 | SJM | - | List<ExpensePetOption> |
+| GET | /expenses/statistics | 월 통계. 쿼리 `yearMonth`. 총 지출·월 한도·지난달 대비·일자별 합계와 건수·카테고리별·반려동물별(공용 별도)·금액 상위 3건. 미래 달은 400 | MYP-001-03, MYP-030-01·02·04~06·14 | SJM | - | ExpenseStatisticsResponse |
 | GET | /expenses/totals | 조건별 건수·합계 금액. 쿼리는 GET /expenses와 같음(페이지 제외) | MYP-030-09·17~19 | SJM | - | ExpenseTotalResponse |
 | POST | /expenses | 지출 등록. 날짜·카테고리·내용 공통, 반려동물·금액 줄 여러 개(영수증 마리별 분할), 영수증 연결(`recptSn`, 인식 실패 후 직접 입력도 연결하고 영수증은 저장완료). 처음 201, 모든 줄의 `idmptDmndId`가 이미 있으면 200과 기존 지출. 저장 뒤 이번 달 합계가 한도 90%·100%를 처음 넘으면 한도 알림 | MYP-031-02·03·05, MYP-030-08 | SJM | ExpenseCreateRequest | List<ExpenseResponse> |
 | POST | /expenses/duplicate-check | 저장 전 중복 지출 확인. 같은 날짜·카테고리·금액에 반려동물이 같은 내 지출(공용 줄은 공용 지출끼리). 사용처·내용은 보지 않는다. 저장하지 않는다 | MYP-031-06 | SJM | ExpenseCreateRequest | List<ExpenseSummary> |
 | PUT | /members/me/expense-limit | 월 지출 한도 저장(계정 전체 한 개). 처음 저장하면 한도 알림 수신을 켬 | MYP-030-13 | SJM | ExpenseLimitSaveRequest | ExpenseLimitResponse |
-| PATCH | /expenses/{expndSn} | 지출 수정 | MYP-030-03·12 | SJM | ExpenseUpdateRequest | ExpenseResponse |
-| DELETE | /expenses | 지출 다중 삭제(개별 선택). `?expndSn=1&expndSn=2`, 1개 이상. 본문 없음(`docs/convention/api.md`) | MYP-030-19·21 | SJM | - | - |
-| POST | /expenses/bulk-delete | 지출 조건 전체 삭제([조회 결과 전체 선택]). 범위·필터에 맞는 전체 건. 200, `data` 없음 | MYP-030-18·19·21 | SJM | ExpenseBulkDeleteRequest | - |
+| PATCH | /expenses/{expndSn} | 지출 수정. 내 지출만(아니면 404). 수정·삭제는 한도 알림을 보내지 않는다 | MYP-030-03·12 | SJM | ExpenseUpdateRequest | ExpenseResponse |
+| DELETE | /expenses | 지출 다중 삭제(개별 선택). `?expndSn=1&expndSn=2`, 1개 이상. 하나라도 없거나 남의 지출이면 모두 거절(404). 본문 없음(`docs/convention/api.md`) | MYP-030-19·21 | SJM | - | - |
+| POST | /expenses/bulk-delete | 지출 조건 전체 삭제([조회 결과 전체 선택]). 범위·필터에 맞는 전체 건. 전체 선택 뒤 일부 해제는 받지 않는다(화면이 개별 선택 삭제로 전환). 200, `data` 없음 | MYP-030-18·19·21 | SJM | ExpenseBulkDeleteRequest | - |
 | DELETE | /expenses/{expndSn} | 지출 한 건 삭제 | MYP-030-03·15 | SJM | - | - |
 
 ## DTO
@@ -27,7 +28,8 @@
 | expectedCnt | Integer | Y | 화면이 보여 준 삭제 건수(`GET /expenses/totals`). 서버가 센 건수와 다르면 400으로 거절해, 그 사이 바뀐 조건으로 지우지 않는다 | MYP-030-18·19 (issues 8번) |
 | startYmd | LocalDate | N | 삭제 범위 시작 월의 첫날. 종료보다 뒤면 서로 바꿔 적용. `endYmd`와 함께 생략하면 전체 기간 | MYP-030-17 |
 | endYmd | LocalDate | N | 삭제 범위 종료 월의 말일 | MYP-030-17 |
-| petSn | Long | N | 반려동물 필터. 생략하면 전체("공용" 표현은 issues 8번) | EXPND.PET_SN, MYP-030-10·17 |
+| petSn | Long | N | 반려동물 필터. `petSn`·`common`을 모두 생략하면 전체 | EXPND.PET_SN, MYP-030-10·17 |
+| common | Boolean | N | `true`면 공용(`PET_SN` 없음)만. `petSn`과 함께 보내면 400 | MYP-030-10·17 (issues 9번) |
 | expndClsfCd | String | N | 카테고리 필터(MYPG05). 생략하면 전체 | EXPND.EXPND_CLSF_CD, MYP-030-10·17 |
 
 ### ExpenseCreateRequest
@@ -68,6 +70,15 @@
 | --- | --- | --- | --- | --- |
 | yearMonth | String | Y | 지출이 한 건 이상 있는 연월. 형식 `yyyy-MM`(issues 9번) | MYP-030-16, EXPND.EXPND_YMD |
 
+### ExpensePetOption
+쓰는 API: GET /expenses/pets
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| petSn | Long | Y | | PET.PET_SN |
+| petNm | String | Y | 삭제된 반려동물도 이름을 준다 | PET.PET_NM, MYP-030-10 |
+| petDelYn | boolean | Y | `true`면 "(삭제됨)" | PET.DEL_YN, MYP-030-10 |
+| petLinked | boolean | Y | `false`면 "(연동 해제)". 지출 등록 선택 목록에는 쓰지 않는다 | BRUP_REL.USE_YN, MYP-030-10 (issues DTO 12번) |
+
 ### ExpenseResponse
 쓰는 API: PATCH /expenses/{expndSn}; POST /expenses
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
@@ -88,10 +99,10 @@
 | --- | --- | --- | --- | --- |
 | totalExpndAmt | Long | Y | 선택한 달의 총 지출액 | MYP-030-01, MYP-001-03 |
 | mmExpndLimAmt | Long | N | null이면 한도 미설정(안내로 대체) | MBR.MM_EXPND_LIM_AMT, MYP-030-01·14 |
-| lastMonthTotalExpndAmt | Long | N | 지난달 총 지출. 비교 대상이 없는 첫 달이면 null | MYP-030-01 |
+| lastMonthTotalExpndAmt | Long | N | 지난달 총 지출. 이 달 이전 지출이 한 건도 없는 첫 달이면 null | MYP-030-01 |
 | days | List<ExpenseStatisticsDayItem> | Y | 지출이 있는 날짜만 | MYP-030-02 |
-| categories | List<ExpenseStatisticsCategoryItem> | Y | 비율은 `totalExpndAmt`로 프론트가 계산 | MYP-030-04 |
-| pets | List<ExpenseStatisticsPetItem> | Y | 반려동물 등록순(issues 10번). 공용은 제외 | MYP-030-05 |
+| categories | List<ExpenseStatisticsCategoryItem> | Y | 금액 큰 순, 기타는 마지막. 비율은 `totalExpndAmt`로 프론트가 계산 | MYP-030-04 |
+| pets | List<ExpenseStatisticsPetItem> | Y | 반려동물 등록순(issues 10번). 공용은 제외, 삭제된 반려동물 포함 | MYP-030-05 |
 | commonTotalExpndAmt | Long | Y | 공용 지출 합계. 없으면 0 | MYP-030-05 |
 | topExpenses | List<ExpenseSummary> | Y | 금액 큰 개별 지출 최대 3건 | MYP-030-06 |
 
@@ -102,7 +113,8 @@
 | totalExpndAmt | Long | Y | 그날 합계 | MYP-030-02 |
 | expndCnt | Integer | Y | 그날 건수 | MYP-030-02 |
 | petSn | Long | N | 그날 1건일 때만. 공용이면 null | EXPND.PET_SN, MYP-030-02 |
-| petNm | String | N | 그날 1건일 때만 | PET.PET_NM, MYP-030-02 |
+| petNm | String | N | 그날 1건일 때만. 삭제된 반려동물도 이름을 준다 | PET.PET_NM, MYP-030-02 |
+| petDelYn | boolean | N | 그날 1건이고 공용이 아닐 때만. `true`면 "(삭제됨)" | PET.DEL_YN, MYP-030-02 |
 | expndClsfCd | String | N | 그날 1건일 때만 | EXPND.EXPND_CLSF_CD, MYP-030-02 |
 
 #### ExpenseStatisticsCategoryItem (ExpenseStatisticsResponse.categories)
@@ -115,7 +127,8 @@
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | petSn | Long | Y | | EXPND.PET_SN |
-| petNm | String | Y | | PET.PET_NM |
+| petNm | String | Y | 삭제된 반려동물도 이름을 준다 | PET.PET_NM |
+| petDelYn | boolean | Y | `true`면 "(삭제됨)" | PET.DEL_YN, MYP-030-05 |
 | totalExpndAmt | Long | Y | 비율은 프론트가 계산 | MYP-030-05 |
 
 ### ExpenseSummary
@@ -126,8 +139,8 @@
 | expndYmd | LocalDate | Y | 날짜 그룹·요일은 프론트가 계산 | EXPND.EXPND_YMD, MYP-030-12 |
 | expndClsfCd | String | Y | 카테고리 배지 | EXPND.EXPND_CLSF_CD, MYP-030-12 |
 | petSn | Long | N | null이면 공용 | EXPND.PET_SN |
-| petNm | String | N | | PET.PET_NM, MYP-030-12 |
-| petDelYn | boolean | N | `true`면 "(삭제된 반려동물)" 표기. 공용이면 null | PET.DEL_YN, MYP-002-07 (issues 12번) |
+| petNm | String | N | 삭제된 반려동물도 이름을 준다("모리(삭제됨)") | PET.PET_NM, MYP-030-12 |
+| petDelYn | boolean | N | `true`면 "(삭제됨)" 표기. 공용이면 null | PET.DEL_YN, MYP-002-07 (issues 12번) |
 | dtlMttr | String | N | 내용 | EXPND.DTL_MTTR, MYP-030-12 |
 | expndPlcusNm | String | N | 사용처 | EXPND.EXPND_PLCUS_NM, MYP-031-06 |
 | expndAmt | Long | Y | | EXPND.EXPND_AMT, MYP-030-12 |
@@ -146,7 +159,8 @@
 | --- | --- | --- | --- | --- |
 | expndYmd | LocalDate | N | | EXPND.EXPND_YMD, MYP-030-12 |
 | expndClsfCd | String | N | 카테고리 7종(MYPG05). 병원으로 바꾸면 반려동물 필수 | EXPND.EXPND_CLSF_CD, MYP-031-02 |
-| petSn | Long | N | 연동된 반려동물만. 공용으로 바꾸는 방법은 issues 4번 | EXPND.PET_SN, MYP-031-02 |
+| petSn | Long | N | 연동된 반려동물만(바꿀 때만 검사, 그대로면 연동 해제된 동물도 유지). `common`과 함께 보내면 400 | EXPND.PET_SN, MYP-031-02 |
+| common | Boolean | N | `true`면 공용으로 바꾼다. 병원이면 400 `EXPENSE_PET_REQUIRED` | MYP-031-02 (issues DTO 4번) |
 | expndAmt | Long | N | 1 이상(수정 시에도 0원 불가) | EXPND.EXPND_AMT, MYP-031-02 |
 | dtlMttr | String | N | 최대 1000자. `""`이면 비움 | EXPND.DTL_MTTR |
 | expndPlcusNm | String | N | 최대 80자. `""`이면 비움 | EXPND.EXPND_PLCUS_NM |
