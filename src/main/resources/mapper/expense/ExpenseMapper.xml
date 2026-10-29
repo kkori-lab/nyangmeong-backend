@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nyangmeong.expense.mapper.ExpenseMapper">
+
+    <insert id="insert" parameterType="com.nyangmeong.expense.domain.Expense"
+            useGeneratedKeys="true" keyProperty="expndSn" keyColumn="EXPND_SN">
+        /* 지출 등록 */
+        INSERT INTO EXPND
+             ( PET_SN
+             , MBR_SN
+             , RECPT_SN
+             , EXPND_CLSF_CD
+             , EXPND_INPT_MTH_CD
+             , EXPND_AMT
+             , EXPND_PLCUS_NM
+             , DTL_MTTR
+             , EXPND_YMD
+             , IDMPT_DMND_ID
+             , DEL_YN
+             , REG_DT
+             , MDFCN_DT
+             )
+        VALUES
+             ( #{petSn}
+             , #{mbrSn}
+             , #{recptSn}
+             , #{expndClsfCd}
+             , #{expndInptMthCd}
+             , #{expndAmt}
+             , #{expndPlcusNm}
+             , #{dtlMttr}
+             , #{expndYmd}
+             , #{idmptDmndId}
+             , 'N'
+             , NOW()
+             , NOW()
+             )
+    </insert>
+
+    <resultMap id="expenseSummaryResultMap" type="com.nyangmeong.expense.dto.ExpenseSummary">
+        <id     column="EXPND_SN"       property="expndSn" />
+        <result column="EXPND_YMD"      property="expndYmd" />
+        <result column="EXPND_CLSF_CD"  property="expndClsfCd" />
+        <result column="PET_SN"         property="petSn" />
+        <result column="PET_NM"         property="petNm" />
+        <result column="PET_DEL_YN"     property="petDelYn" />
+        <result column="DTL_MTTR"       property="dtlMttr" />
+        <result column="EXPND_PLCUS_NM" property="expndPlcusNm" />
+        <result column="EXPND_AMT"      property="expndAmt" />
+        <result column="RECPT_SN"       property="recptSn" />
+    </resultMap>
+
+    <sql id="expenseSummaryColumns">
+        E.EXPND_SN
+             , E.EXPND_YMD
+             , E.EXPND_CLSF_CD
+             , E.PET_SN
+             , P.PET_NM
+             , CASE WHEN E.PET_SN IS NULL THEN NULL
+                    WHEN P.PET_SN IS NULL THEN TRUE
+                    ELSE FALSE END AS PET_DEL_YN
+             , E.DTL_MTTR
+             , E.EXPND_PLCUS_NM
+             , E.EXPND_AMT
+             , E.RECPT_SN
+    </sql>
+
+    <select id="selectByIdmptDmndIds" resultMap="expenseSummaryResultMap">
+        /* 멱등 요청 ID 로 내 지출 조회 */
+        SELECT <include refid="expenseSummaryColumns" />
+          FROM EXPND E
+          LEFT JOIN PET P
+            ON P.PET_SN = E.PET_SN
+           AND P.DEL_YN = 'N'
+         WHERE E.MBR_SN = #{mbrSn}
+           AND E.DEL_YN = 'N'
+           AND E.IDMPT_DMND_ID IN
+            <foreach collection="idmptDmndIds" item="idmptDmndId" open="(" separator="," close=")">
+                #{idmptDmndId}
+            </foreach>
+         ORDER BY E.EXPND_SN
+    </select>
+
+    <select id="selectDuplicates" resultMap="expenseSummaryResultMap">
+        /* 같은 날짜·카테고리·금액·반려동물의 내 지출 조회(공용은 공용끼리, 사용처·내용 제외) */
+        SELECT <include refid="expenseSummaryColumns" />
+          FROM EXPND E
+          LEFT JOIN PET P
+            ON P.PET_SN = E.PET_SN
+           AND P.DEL_YN = 'N'
+         WHERE E.MBR_SN = #{mbrSn}
+           AND E.DEL_YN = 'N'
+           AND E.EXPND_YMD = #{expndYmd}
+           AND E.EXPND_CLSF_CD = #{expndClsfCd}
+           AND
+            <foreach collection="lines" item="line" open="(" separator=" OR " close=")">
+                (E.PET_SN &lt;=&gt; #{line.petSn} AND E.EXPND_AMT = #{line.expndAmt})
+            </foreach>
+         ORDER BY E.EXPND_SN
+    </select>
+
+    <select id="selectTotalAmt" resultType="long">
+        /* 기간 내 지출 합계 */
+        SELECT COALESCE(SUM(EXPND_AMT), 0)
+          FROM EXPND
+         WHERE MBR_SN = #{mbrSn}
+           AND DEL_YN = 'N'
+           AND EXPND_YMD BETWEEN #{startYmd} AND #{endYmd}
+    </select>
+
+    <select id="selectNotifiedLimitAmt" resultType="java.lang.Long">
+        /* 알림 받을 월 지출 한도 조회(한도 없음·알림 끔이면 NULL) */
+        SELECT CASE WHEN EXPND_LIM_NOTI_RCPTN_YN = 'Y' THEN MM_EXPND_LIM_AMT END
+          FROM MBR
+         WHERE MBR_SN = #{mbrSn}
+    </select>
+</mapper>
