@@ -1,7 +1,7 @@
 # SJM 핸드오프
 
 ## 지금 하는 것
-SCR-MYP-004 공동양육자 목록 — 기획 (시작 2026-10-29 04:29)
+SCR-MYP-004 공동양육자 목록 — 구현 중 (승인 2026-10-29 04:43, 시작 2026-10-29 04:29)
 - 초안 고치기(구현 전): `docs/api/pet.md` GET /pets/{petSn}/caregivers 설명과 CaregiverSummary 설명을 "주양육자에게는 전원, 공동양육자에게는 주양육자 + 본인"으로, `linkYmd`(LocalDate, Y, 연동일 "07-02 연동", 마지막 `PETC0024` 이력 REG_DT, 없으면 BRUP_REL.REG_DT) 추가. 이유: 화면설계서 4-2가 공동양육자에게도 주양육자 카드(FN-MYP-004-03)를 보이고, 카드마다 연동일을 표시한다. 권한("조회+수정")은 역할로 정해져 필드를 두지 않는다. `PetResponse.caregivers[]`도 같은 모양이라 함께 고친다
 - FN-MYP-004-01 가족 목록: `PetController`에 `GET /pets/{petSn}/caregivers`, `PetService.searchCaregivers`(PetAuthorizer.checkCaregiver), `PetMapper.selectCaregivers`에 `LINK_YMD` 추가(PetMapper.xml), `CaregiverSummary.linkYmd`. 주양육자에게는 연동 중(USE_YN='Y') 전원, 주양육자 첫 줄. 명령: `./gradlew build -q`(PetServiceTest·PetControllerTest에 추가). 화면: 주양육자 토큰으로 조회하면 주양육자 1줄 + 공동양육자 전원이 연동일과 함께 온다. 프론트 연결: SCR-MYP-002 슬라이드 카드 가족 영역·[✕] (프론트 저장소에서 /start)
 - FN-MYP-004-03 주양육자 표시: 위 목록 첫 줄이 `brupRoleCd=PETC0018`. 명령: 같은 테스트. 화면: 주양육자·공동양육자 어느 쪽으로 조회해도 첫 줄이 주양육자다

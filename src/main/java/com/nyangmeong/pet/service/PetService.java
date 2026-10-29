@@ -13,7 +13,9 @@ import com.nyangmeong.global.code.CommonCodeService;
 import com.nyangmeong.global.code.CommonCodeSummary;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.pet.domain.BrupLinkSttsHstry;
 import com.nyangmeong.pet.domain.BrupRel;
+import com.nyangmeong.pet.domain.LinkChangeType;
 import com.nyangmeong.pet.domain.Pet;
 import com.nyangmeong.pet.domain.PetCodeGroup;
 import com.nyangmeong.pet.domain.PetColor;
@@ -30,6 +32,7 @@ import lombok.RequiredArgsConstructor;
  * [반려동물 서비스]
  * - 내 반려동물 목록 (SCR-MYP-001·002), 다른 도메인도 이 목록을 씀
  * - 등록·수정·상세·대표 지정 (SCR-MYP-003, FN-MYP-010-05)
+ * - 양육자 목록·연동 해제 (SCR-MYP-004·006), 연동 양육자 회원 번호는 다른 도메인도 씀
  * - 정렬 = 내 양육관계 등록순 (docs/api/issues.md 마이페이지 1번 결정 전까지)
  */
 @Service
@@ -192,6 +195,57 @@ public class PetService {
     }
 
     /**
+     * 양육자 목록 조회
+     */
+    @Transactional(readOnly = true)
+    public List<CaregiverSummary> searchCaregivers(Long mbrSn, Long petSn) {
+        petAuthorizer.checkCaregiver(mbrSn, petSn);
+        BrupRel rel = petMapper.selectBrupRel(mbrSn, petSn);
+        return visibleCaregivers(mbrSn, petSn, rel.getBrupRoleCd());
+    }
+
+    /**
+     * 공동양육 연동 해제
+     * - 주양육자 = 강제 해제 (FN-MYP-004-01), 공동양육자 = 본인만 자진 해제 (FN-MYP-006-02)
+     */
+    @Transactional
+    public void unlinkCaregiver(Long mbrSn, Long petSn, Long brupRelSn) {
+        petAuthorizer.checkCaregiver(mbrSn, petSn);
+        BrupRel target = petMapper.selectBrupRelBySn(brupRelSn);
+        /** 주양육자 행은 해제 대상 아님 */
+        if (target == null || !petSn.equals(target.getPetSn()) || !BrupRole.CO_PARENT.is(target.getBrupRoleCd())) {
+            throw new CustomException(ErrorCode.CAREGIVER_NOT_FOUND);
+        }
+
+        LinkChangeType type;
+        if (BrupRole.PRIMARY.is(petMapper.selectBrupRel(mbrSn, petSn).getBrupRoleCd())) {
+            type = LinkChangeType.FORCED_UNLINKED;
+        } else if (mbrSn.equals(target.getMbrSn())) {
+            type = LinkChangeType.SELF_UNLINKED;
+        } else {
+            throw new CustomException(ErrorCode.PET_PRIMARY_ONLY);
+        }
+
+        if (petMapper.updateBrupRelUnlink(brupRelSn, String.valueOf(mbrSn)) == 0) {
+            throw new CustomException(ErrorCode.CAREGIVER_NOT_FOUND);
+        }
+        BrupLinkSttsHstry history = new BrupLinkSttsHstry();
+        history.setBrupRelSn(brupRelSn);
+        history.setMbrSn(target.getMbrSn());
+        history.setLinkChgTypeCd(type.getCode());
+        petMapper.insertLinkHistory(history);
+    }
+
+    /**
+     * 연동 양육자 회원 번호 조회
+     * - 주양육자 + 연동 중 공동양육자, 삭제된 반려동물은 빈 목록
+     */
+    @Transactional(readOnly = true)
+    public List<Long> searchCaregiverMbrSns(Long petSn) {
+        return petMapper.selectCaregiverMbrSns(petSn);
+    }
+
+    /**
      * 삭제되지 않은 반려동물 조회
      */
     private Pet loadPet(Long petSn) {
@@ -207,12 +261,24 @@ public class PetService {
      */
     private PetResponse toResponse(Long mbrSn, Pet pet) {
         BrupRel rel = petMapper.selectBrupRel(mbrSn, pet.getPetSn());
-        List<CaregiverSummary> caregivers = petMapper.selectCaregivers(pet.getPetSn());
-        if (!BrupRole.PRIMARY.is(rel.getBrupRoleCd())) {
-            caregivers = caregivers.stream().filter(c -> mbrSn.equals(c.getMbrSn())).toList();
-        }
+        List<CaregiverSummary> caregivers = visibleCaregivers(mbrSn, pet.getPetSn(), rel.getBrupRoleCd());
         String vrtyNm = pet.getVrtySn() != null ? petMapper.selectVrtyNm(pet.getVrtySn()) : null;
         return PetResponse.from(pet, vrtyNm, rel, caregivers);
+    }
+
+    /**
+     * 역할별로 보이는 양육자 목록
+     * - 공동양육자에게는 주양육자와 본인만, 서로 모르는 사이일 수 있음 (FN-MYP-004-04)
+     */
+    private List<CaregiverSummary> visibleCaregivers(Long mbrSn, Long petSn, String myRoleCd) {
+        List<CaregiverSummary> caregivers = petMapper.selectCaregivers(petSn, BrupRole.PRIMARY.getCode(),
+                LinkChangeType.INVITATION_ACCEPTED.getCode());
+        if (BrupRole.PRIMARY.is(myRoleCd)) {
+            return caregivers;
+        }
+        return caregivers.stream()
+                .filter(c -> BrupRole.PRIMARY.is(c.getBrupRoleCd()) || mbrSn.equals(c.getMbrSn()))
+                .toList();
     }
 
     /**
