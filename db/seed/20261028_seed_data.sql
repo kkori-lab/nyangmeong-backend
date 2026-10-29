@@ -1,10 +1,10 @@
 -- =====================================================================
--- 냥멍케어 시드 데이터  |  v0.9 기준 SQL + db/migration 위에 실행
+-- 냥멍케어 시드 데이터  |  v0.10 기준 SQL(20261029_create_tables_v0.10.sql → 20261029_insert_base_data_v0.10.sql) 위에 실행
 -- 생성기(src/seed) seedData -Ptarget=local, scale 1 결과를 2026-10-28에 mysqldump로 뜬 것 (151,592행)
--- 넣지 않는 테이블: COM_CD(기준 SQL), NOTI_TMPLT, RFRSH_TKN·LGN_ATMPT_LMT·EML_CERT·NOTI_SNDNG_LOG(실행 중 쌓이는 기록)
+-- 넣지 않는 테이블: COM_CD(기준 데이터), NOTI_TMPLT, RFRSH_TKN·LGN_ATMPT_LMT·EML_CERT·NOTI_SNDNG_LOG(실행 중 쌓이는 기록)
 -- 이미지 파일은 없다. ATCH_FILE 행만 있어 시드 이미지는 404다
 -- 날짜는 2026-10-28 기준으로 고정되어 있다
--- 빈 DB에만 실행한다. 20261027_02 마이그레이션이 넣은 CARE_MSN 행은 아래에서 지우고 시드 행으로 바꾼다
+-- 빈 DB에만 실행한다. 기준 데이터가 넣은 CARE_MSN 행은 아래에서 지우고 시드 행으로 바꾼다
 -- =====================================================================
 
 -- MySQL dump 10.13  Distrib 8.0.40, for macos14 (arm64)
