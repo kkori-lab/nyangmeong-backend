@@ -11,7 +11,7 @@
 | GET | /pets/{petSn}/care-schedules | 케어 캘린더 일정 목록. `?fromYmd=&toYmd=&schdlKndCd=&ckupTypeCd=&size=` — 월간·날짜 상세·다가오는 일정·다음 예정일·가까운 예정 일정 후보 | HLT-003-29~31·39·40, HLT-011-04, HLT-002-46 | JAJ | - | List<CareScheduleSummary> |
 | GET | /pets/{petSn}/checkup-attachments | 검진기록 첨부 목록(최신순). `?ckupRcdSn=&atchTypeCd=&page=&size=` | HLT-005-01·02, HLT-011-09 | JAJ | - | Page<CheckupAttachmentSummary> |
 | GET | /pets/{petSn}/checkup-attachments/{ckupRcdAtchSn} | 첨부 파일 다운로드·이미지 미리보기(보호 파일, 파일 자체 반환) | HLT-005-01, HLT-011-09 | JAJ | - | 파일 |
-| GET | /pets/{petSn}/checkups | 검진기록 목록(최신순). `?year=&ckupTypeCd=&page=&size=` — 리스트·필터 칩 건수·타임라인·예방/정기검진 이력 | HLT-002-05·06·14, HLT-011-03·04 | JAJ | - | Page<CheckupSummary> |
+| GET | /pets/{petSn}/checkups | 검진기록 목록(최신순). `?year=&ckupTypeCd=&page=&size=` (year 생략 시 전체 연도) — 리스트·필터 칩 건수·타임라인·예방/정기검진 이력 | HLT-002-05·06·14, HLT-011-03·04 | JAJ | - | Page<CheckupSummary> |
 | GET | /pets/{petSn}/checkups/{ckupRcdSn} | 검진상세 기본정보 | HLT-005-01·15 | JAJ | - | CheckupResponse |
 | GET | /pets/{petSn}/daily-health-records | 일상 건강기록 목록. `?dailyRcdIdctCd=&fromYmd=&toYmd=&size=` — 그래프(최근 14개)·오늘의 기록·날짜별 표·최신 체중 | HLT-002-09·10·12·13, HLT-011-02 | JAJ | - | List<DailyHealthRecordSummary> |
 | GET | /pets/{petSn}/etc-inspections | 기타검사 목록. `?ckupRcdSn=` | HLT-005-02 | JAJ | - | List<EtcInspectionSummary> |

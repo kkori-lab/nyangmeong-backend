@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.health.domain.CheckupStatus;
 import com.nyangmeong.health.domain.HealthCodeGroup;
 import com.nyangmeong.health.domain.Schedule;
 import com.nyangmeong.health.domain.ScheduleKind;
@@ -40,7 +41,7 @@ public class CareScheduleService {
     @Transactional(readOnly = true)
     public List<CareScheduleSummary> search(Long mbrSn, Long petSn, CareScheduleSearchCond cond) {
         petAuthorizer.checkCaregiver(mbrSn, petSn);
-        return careScheduleMapper.selectList(petSn, cond);
+        return careScheduleMapper.selectList(petSn, cond, CheckupStatus.COMPLETED.getCode());
     }
 
     /**

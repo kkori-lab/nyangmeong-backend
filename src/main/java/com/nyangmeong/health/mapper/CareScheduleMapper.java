@@ -19,7 +19,8 @@ public interface CareScheduleMapper {
     /**
      * 반려동물 일정 목록 조회
      */
-    List<CareScheduleSummary> selectList(@Param("petSn") Long petSn, @Param("cond") CareScheduleSearchCond cond);
+    List<CareScheduleSummary> selectList(@Param("petSn") Long petSn, @Param("cond") CareScheduleSearchCond cond,
+            @Param("completedCd") String completedCd);
 
     /**
      * 일정 단건 조회

@@ -33,7 +33,10 @@ class MapperXmlRuleTest {
 
     /** 삭제된 행까지 읽는 조회 ("namespace.id") */
     private static final Set<String> EXCEPTIONS = Set.of(
-            "com.nyangmeong.community.mapper.CommentMapper.selectList");
+            "com.nyangmeong.community.mapper.CommentMapper.selectList",
+            /** 연결 일정이 삭제된 검진기록도 "연결된 일정 삭제됨"으로 남겨 보여 준다 (FN-HLT-002-05) */
+            "com.nyangmeong.health.mapper.CheckupMapper.selectList",
+            "com.nyangmeong.health.mapper.CheckupMapper.selectDetail");
 
     private static final Pattern TABLE = Pattern.compile("\\b(?:FROM|JOIN)\\s+`?(\\w+)`?", Pattern.CASE_INSENSITIVE);
     private static final Pattern DEL_YN_CONDITION = Pattern.compile("DEL_YN`?\\s*=\\s*'N'", Pattern.CASE_INSENSITIVE);
