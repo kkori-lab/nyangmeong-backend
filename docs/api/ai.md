@@ -22,6 +22,7 @@
 | POST | /internal/ai/conversations/{aiCnvrsRoomSn}/messages | 메시지 추가(사용자·AI, 순서는 서버가 매김, 201) | AIM-011-10·14 | LJS | ConversationMessageCreateRequest | ConversationMessageResponse |
 | DELETE | /internal/ai/conversations/{aiCnvrsRoomSn} | 대화 삭제(물리 삭제, 메시지 CASCADE, 200) | AIM-011-13 | LJS | - | - |
 | GET | /internal/ai/settings | AI 설정값(응답 토큰 상한·대화 턴 수). 설정 행이 없으면 기본 4500·6 | AIM-002-02·11 | LJS | - | AiSettingResponse |
+| GET | /internal/ai/register-context | 등록 카드 컨텍스트. 쿠키 회원이 양육하는 반려동물 전부(공동양육 포함)와 각자의 케어 항목 이름. 반려동물이 없으면 빈 배열. 반려동물 목록은 외부 AI에 보내지 않는다 | AIM-012-04·08 | LJS | - | List<RegisterContextPet> |
 
 탈퇴 회원 대화 파기(AIM-011-19)는 API가 아니라 `scheduler/AiConversationPurgeJob`이 매일 03:00 KST에 한다. Python의 `DELETE /internal/v1/members/{mbrSn}/conversations`는 쓰지 않는다.
 
@@ -77,3 +78,11 @@
 | --- | --- | --- | --- | --- |
 | aiTknUplmtCnt | int | Y | 응답 최대 생성 토큰 수(기본 4500) | SYS_STNG.AI_TKN_UPLMT_CNT, AIM-002-02 |
 | aiCnvrsTurnCnt | int | Y | 컨텍스트로 넘기는 최근 대화 턴 수(기본 6) | SYS_STNG.AI_CNVRS_TURN_CNT, AIM-002-11 |
+
+### RegisterContextPet
+쓰는 API: GET /internal/ai/register-context
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| petSn | Long | Y | | PET.PET_SN, AIM-012-04 |
+| petNm | String | Y | 문장 속 이름과 대조 | PET.PET_NM, AIM-012-04 |
+| careArtclNms | List<String> | Y | 그 반려동물의 케어 항목 이름(삭제 제외, 등록순). 없으면 빈 배열. 케어 항목 목록 service(JAJ) 연결 전까지 빈 배열 | CARE_ARTCL.CARE_ARTCL_NM, AIM-012-08 |

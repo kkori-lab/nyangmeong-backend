@@ -2,10 +2,11 @@
 
 ## 지금 하는 것
 
-SCR-AIM-002 검색 질문·응답 (AI 서버 연결: 답변 저장 길이·AI 설정값 조회) — 끝 (2026-10-28, `/impl` 검증 2회차 통과, 사람 확인). 메시지 추가는 사용자 1,000자·AI 10,000자(역할별, DB 변경 없음), 새 내부 API `GET /internal/ai/settings` → `{aiTknUplmtCnt, aiCnvrsTurnCnt}`(설정 행 없으면 4500·6). `cmptnYn` 저장·반환은 AIM-011에서 이미 구현. `docs/api/ai.md` 갱신, 미완료 PATCH는 두지 않음
+SCR-AIM-012 AI 일정 생성 확인 (등록 카드 컨텍스트 내부 API) — 끝 (2026-10-29, `/impl` 검증 1회차 통과, 사람 확인). 새 내부 API `GET /internal/ai/register-context` → `[{petSn, petNm, careArtclNms}]`(pet `PetService.searchMyPets` 재사용, 케어 항목 이름은 `ai/service/CareArticleNameFake` 빈 목록). `docs/api/ai.md` 갱신
 
 ## 다음에 할 것
 
+- SCR-AIM-012 연결 남음: FN-AIM-012-08 (JAJ 케어 항목 목록 service가 나오면 `CareArticleNameFake`를 그 service로, 반려동물 번호 목록 → 번호별 이름 목록·삭제 제외·등록순), FN-AIM-012-04·08 (Python `FakeRegisterContextRepository`를 이 API로, ai 세션). PR을 올리면 ai 세션에 PR 번호를 알린다(ai `docs/api/internal.md` 미정 행을 확정으로). JAJ에게 출처 코드 `HLTC0067` 받는 방법 확인(메시지 전달은 사람)
 - SCR-AIM-002 연결 남음: FN-AIM-002-02·11 (Python AI 서버가 `GET /internal/ai/settings`를 붙인다, ai 세션). PR을 올리면 ai 세션에 PR 번호와 계약(경로·응답 `AiSettingResponse`)을 알린다(ai 저장소 `docs/api/internal.md`와 같은 때 병합)
 - `.github/workflows/build.yml` 변경(PR·main CI 트리거 제거, 커밋하지 않음)이 작업 폴더와 `git stash`("build.yml CI 트리거 변경")에 있다. 의도한 것인지 정해 따로 다룬다
 - 프론트 연결(frontend 세션 회신 완료): 공통 파일 이미지 컴포넌트(공개 `/api/files/public/{atchFileSn}` + 비공개 blob 훅)를 프론트가 만든다. 캐릭터 번호가 필요하다고 하면 응답에 번호 추가를 추가 요청으로 받는다
@@ -36,8 +37,7 @@ SCR-AIM-002 검색 질문·응답 (AI 서버 연결: 답변 저장 길이·AI �
 - 프론트 `start` 스킬에도 `docs/api`(백엔드 저장소) 기준 줄을 넣을지 정한다
 - 정하기: 휴대폰 일정 가져오기(기획에 없음, JAJ 영역). 넣는다면 QR 짝짓기 `.ics` 업로드, iPhone 단축어, 웹 → 휴대폰은 `webcal://` 구독 QR
 - 정하기: 파일 저장소 운영(지금 서버 로컬 디스크 폴더. 서버 여러 대·재배포 대비 영구 볼륨 또는 S3), 영상 업로드 형식·용량
-- SCR-AIM-008 연결 남음: health 검진기록·일정 등록(JAJ)이 나오면 `expense/service/CheckupRecordFake`를 그 service로(같은 날 병원 일정 연결·새 일정·앞뒤 7일 미연결 일정·처방약 `CARE_RFLT_YN='N'`), 멱등 재전송용 `remember`·`findByReceipt`도 DB 조회로
-- SCR-AIM-008 연결 남음: 가계부 지출 생성·중복 확인(SJM)이 나오면 `ExpenseFake`를, pet 연동 반려동물 목록(SJM)이 나오면 `CaregiverPetFake`를 그 service로(그 전에는 FN-AIM-009-17 구역 자동 연결이 안 된다). 지출 생성에 줄마다 `idmptDmndId`, 사용처 `ExpenseCreateCommand.expndPlcusNm`(세부사항은 null)을 넘기고 중복 조회에 `expndPlcusNm`을 채운다
+- SCR-AIM-008 연결 남음: health 검진기록·일정 등록(JAJ)이 나오면 `expense/service/CheckupRecordFake`를 그 service로(같은 날 병원 일정 연결·새 일정·앞뒤 7일 미연결 일정·처방약 `CARE_RFLT_YN='N'`), 멱등 재전송용 `remember`·`findByReceipt`도 DB 조회로 / 가계부 지출 생성·중복 확인(SJM)이 나오면 `ExpenseFake`를, pet 연동 반려동물 목록(SJM)이 나오면 `CaregiverPetFake`를 그 service로(그 전에는 FN-AIM-009-17 구역 자동 연결이 안 된다). 지출 생성에 줄마다 `idmptDmndId`, 사용처 `ExpenseCreateCommand.expndPlcusNm`(세부사항은 null)을 넘기고 중복 조회에 `expndPlcusNm`을 채운다
 - SCR-AIM-008 연결 남음: OCR 외부 API 규격이 정해지면 `OcrClient` 실제 구현을 두고 `app.ocr.client`를 바꾼다(지금 `FakeOcrClient`)
 - SJM에게 확인: 가계부 모달의 영수증 저장을 `ExpenseService`가 직접 하는지. 영수증 쪽이 하라면 `receipt`(4층) 분리를 다시 검토한다(`docs/OPEN_ISSUES.md` 영수증 행)
 - SCR-AIM-006 연결 남음: health 병원 일정 조회(JAJ)가 나오면 `scheduler/HospitalScheduleFake`를, pet 연동 양육자 조회(SJM)가 나오면 `scheduler/CaregiverFake`를 그 service로. 그 뒤 FN-AIM-006-11·13 화면과 01·02·20 실제 조회를 공용 DB 병원 일정으로 확인한다
