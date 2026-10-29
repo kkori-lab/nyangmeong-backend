@@ -28,6 +28,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ReceiptService {
 
+    /** 가계부 지출에 연결할 수 있는 상태 */
+    private static final List<ReceiptStatus> EXPENSE_SAVABLE = List.of(ReceiptStatus.RECOGNIZED,
+            ReceiptStatus.PARTIAL, ReceiptStatus.NOT_RECOGNIZED, ReceiptStatus.TEMPORARY_ERROR);
+
     private final ReceiptMapper receiptMapper;
     private final FileStore fileStore;
     private final PetAuthorizer petAuthorizer;
@@ -111,6 +115,23 @@ public class ReceiptService {
     public void markSaved(Long mbrSn, Long recptSn, ReceiptStatus before, String idmptDmndId) {
         if (receiptMapper.updateSaved(recptSn, codes(List.of(ReceiptStatus.RECOGNIZED, ReceiptStatus.PARTIAL)),
                 ReceiptStatus.SAVED.getCode(), idmptDmndId) == 0) {
+            throw new CustomException(ErrorCode.ALREADY_PROCESSED);
+        }
+        insertHistory(recptSn, mbrSn, before, ReceiptStatus.SAVED, null);
+    }
+
+    /**
+     * 가계부 지출 저장의 영수증 저장 완료 처리
+     * - 인식 실패 뒤 직접 입력(FN-MYP-031-05)도 연결 : 미인식·일시오류도 저장완료로
+     */
+    @Transactional
+    public void markSavedByExpense(Long mbrSn, Long recptSn, String idmptDmndId) {
+        ReceiptStatus before = ReceiptStatus.from(getOwned(mbrSn, recptSn).getOcrPrcsSttsCd());
+        if (!EXPENSE_SAVABLE.contains(before)) {
+            throw conflict(before);
+        }
+        if (receiptMapper.updateSaved(recptSn, codes(EXPENSE_SAVABLE), ReceiptStatus.SAVED.getCode(),
+                idmptDmndId) == 0) {
             throw new CustomException(ErrorCode.ALREADY_PROCESSED);
         }
         insertHistory(recptSn, mbrSn, before, ReceiptStatus.SAVED, null);

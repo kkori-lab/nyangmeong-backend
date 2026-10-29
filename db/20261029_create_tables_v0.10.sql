@@ -1,15 +1,16 @@
 -- =====================================================================
--- 냥멍케어 MySQL DDL v0.9  |  MySQL 8.0.16+ / InnoDB / utf8mb4_0900_ai_ci
--- 대상: DBeaver (전체 선택 후 스크립트 실행 Alt+X)
--- 원천: DDL v0.8(2026-10-07) + ERDCloud 2026-10-12 현재본과의 차이 3건 반영 (85 테이블 / 878 컬럼 / 관계 FK 145)
+-- 냥멍케어 MySQL DDL v0.10  |  MySQL 8.0.16+ / InnoDB / utf8mb4_0900_ai_ci
+-- 대상: DBeaver (전체 선택 후 스크립트 실행 Alt+X, 또는 스키마 우클릭 → Tools → Execute script)
+-- 원천: DDL v0.9(2026-10-12) + db/migration 2026-10-22~27 테이블 변경을 합친 것 (86 테이블 / 890 컬럼 / 관계 FK 145)
 --       UK·INDEX·CHECK·생성열·공통코드 FK 는 v0.8 그대로 유지
 -- 구성: [1] DROP  [2] CREATE(PK·UK·INDEX·CHECK·생성열)  [3] 관계 FK 145  [4] 공통코드 FK
--- v0.8 → v0.9 변경 상세는 07_DB_DDL_v0.9_변경내역_20261012.md 참조
--- 변경: (1) CARE_ARTCL.BSC_ARTCL_YN 추가  (2) OBSRV_ARTCL.DEL_YN 추가
---       (3) PET.MIN_BDWG·MAX_BDWG NOT NULL, CK_PET_WGHT_RANGE 조건 변경
--- 주의: 전체 DROP 후 재생성합니다. 기존 데이터가 있으면 먼저 백업하세요.
---       v0.8 DB 를 유지한 채 바꾸려면 07_DB_ALTER_v0.8_to_v0.9_20261012.sql 을 쓰세요.
---       공통코드 시드는 07_DB_공통코드시드_v0.9_20261012.sql 에 있습니다. 마스터 시드(체크리스트 15~24·31)는 포함되지 않습니다.
+-- v0.9 → v0.10 변경 (모두 v0.9 위에 실행하던 db/migration 파일을 합친 것)
+--       (1) PST_INQ_HSTRY 추가 (20261026_01_create_pst_inq_hstry)
+--       (2) EML_CERT.CERT_FAIL_NMTM 추가 (20261027_01_add_eml_cert_fail_nmtm)
+--       (3) EXPND.IDMPT_DMND_ID + UK_EXPND_1 추가 (20261022_01_add_expnd_idmpt_dmnd_id)
+--       (4) EXPND.EXPND_PLCUS_NM 추가 (20261025_01_add_expnd_plcus_nm)
+-- 주의: 전체 DROP 후 재생성합니다. 기존 데이터가 있으면 먼저 백업하세요. 공용 DB에는 실행하지 않습니다.
+-- 실행 순서: 이 파일 → 20261029_insert_base_data_v0.10.sql (공통코드·케어미션 마스터) → (선택) db/seed/
 -- =====================================================================
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -795,12 +796,15 @@ CREATE TABLE `EXPND` (
   `EXPND_CLSF_CD` char(8) NOT NULL COMMENT '가계부카테고리공통코드(MYPG05)',
   `EXPND_INPT_MTH_CD` char(8) NOT NULL COMMENT '가계부입력방식공통코드(MYPG06)',
   `EXPND_AMT` decimal(13,0) NOT NULL COMMENT '지출금액',
+  `EXPND_PLCUS_NM` varchar(80) NULL COMMENT '사용처명',
   `DTL_MTTR` varchar(1000) NULL COMMENT '세부사항',
   `EXPND_YMD` date NOT NULL COMMENT '지출일자',
+  `IDMPT_DMND_ID` varchar(100) NULL COMMENT '멱등요청ID',
   `DEL_YN` char(1) NOT NULL DEFAULT 'N' COMMENT '삭제여부',
   `REG_DT` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
   `MDFCN_DT` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
   PRIMARY KEY (`EXPND_SN`),
+  UNIQUE KEY `UK_EXPND_1` (`IDMPT_DMND_ID`),
   KEY `IDX_EXPND_1` (`MBR_SN`, `EXPND_YMD`),
   KEY `IDX_EXPND_2` (`PET_SN`),
   KEY `IDX_EXPND_3` (`RECPT_SN`),

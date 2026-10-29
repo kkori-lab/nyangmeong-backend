@@ -1,14 +1,17 @@
 -- =====================================================================
--- 냥멍케어 공통코드 시드 v0.9 (2026-10-12)
--- 대상 DDL : 07_DB_DDL_v0.9_20261012.sql  (테이블 COM_CD)
--- 범위     : 공통코드 그룹 68개 전체 (261개 코드) — 시드 v0.8(2026-10-07)과 INSERT 문이 같다
---            DDL v0.9 에서 추가·변경된 컬럼(BSC_ARTCL_YN, DEL_YN, MIN_BDWG, MAX_BDWG)은 공통코드를 참조하지 않아 코드 변경이 없다
+-- 냥멍케어 기준 데이터 v0.10 (2026-10-29)  |  공통코드 + 케어미션 마스터
+-- 대상 DDL : 20261029_create_tables_v0.10.sql  (테이블 COM_CD, CARE_MSN)
+-- 범위     : [1] 공통코드 그룹 68개 전체 (269개 코드)  [2] 케어미션 마스터 21건
+-- v0.9 → v0.10 변경 (모두 v0.9 위에 실행하던 db/migration 파일을 합친 것)
+--            (1) PETC0010 검정&황갈색 → 블랙탄, PETC0017 SORT_SEQ 130 → 200, PETC0028~PETC0034 추가 (20261026_01_update_petg03_colors)
+--            (2) MYPC0021 검진기록 등록 추가, 케어미션 마스터 21건 (20261027_02_update_care_msn_and_ckup_pnt)
+--            새 코드는 기존 DB와 COM_CD_SN이 같도록 마이그레이션을 실행했던 순서대로 파일 끝에 둔다
 -- 채번 규칙: 그룹 = 도메인3자 + G + 2자리(ERD 그대로) / 코드 = 도메인3자 + C + 4자리
 --            삭제된 번호는 결번으로 두고 재사용하지 않으며, 신규 코드는 도메인 마지막 번호 뒤에 붙인다
 -- 정렬순서 : 그룹·코드 모두 10 단위
 -- 설명(EXPLN): 그룹 행 = 사용 컬럼 목록 / 코드 행 = 의미·조건
--- 실행 조건: DDL v0.9 적용 후 빈 COM_CD 테이블에 1회 실행 (UK_COM_CD_1 중복 시 전체 롤백)
--- 실행 순서: 07_DB_DROP_ALL_v0.9_20261012.sql → 07_DB_DDL_v0.9_20261012.sql → 이 파일
+-- 실행 조건: DDL v0.10 적용 후 빈 COM_CD·CARE_MSN 테이블에 1회 실행
+-- 실행 순서: 20261029_create_tables_v0.10.sql → 이 파일 → (선택) db/seed/
 -- =====================================================================
 SET NAMES utf8mb4;
 START TRANSACTION;
@@ -64,14 +67,14 @@ INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG03') p),'PETC0007','갈색','공통',30);
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG03') p),'PETC0008','크림','공통',40);
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG03') p),'PETC0009','회색','공통',50);
-INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG03') p),'PETC0010','검정&황갈색','강아지 전용',60);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG03') p),'PETC0010','블랙탄','강아지 전용',60);
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG03') p),'PETC0011','얼룩','강아지 전용',70);
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG03') p),'PETC0012','브린들','강아지 전용',80);
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG03') p),'PETC0013','삼색','공통',90);
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG03') p),'PETC0014','고등어','고양이 전용',100);
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG03') p),'PETC0015','치즈','고양이 전용',110);
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG03') p),'PETC0016','턱시도','고양이 전용',120);
-INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG03') p),'PETC0017','직접 입력','공통 — 선택 시 PET_COLR_DRCT_INPT_NM에 입력값 저장',130);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG03') p),'PETC0017','직접 입력','공통 — 선택 시 PET_COLR_DRCT_INPT_NM에 입력값 저장',200);
 -- PETG05 양육역할
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES (NULL,'PETG05','양육역할','사용 컬럼: BRUP_REL.BRUP_ROLE_CD',40);
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG05') p),'PETC0018','주양육자','PCG — 반려동물을 등록한 회원, 삭제·강제 해제·꾸미기 권한',10);
@@ -438,5 +441,44 @@ INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='MYPG06') p),'MYPC0019','직접입력','수동 입력(영수증 인식 실패 후 [직접 입력]으로 저장한 건 포함 — 영수증은 연결)',10);
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='MYPG06') p),'MYPC0020','OCR','가계부 영수증 등록 + 건강 일지 병원 영수증 자동 기록(FN-AIM-009-10)',20);
 
+-- ■ PET 마이페이지(반려동물) — v0.10 추가: PETG03 털색 (20261026_01_update_petg03_colors)
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG03') p),'PETC0028','황색','강아지 전용',130);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG03') p),'PETC0029','파티','강아지 전용',140);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG03') p),'PETC0030','세이블','강아지 전용',150);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG03') p),'PETC0031','멀','강아지 전용',160);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG03') p),'PETC0032','젖소','고양이 전용',170);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG03') p),'PETC0033','카오스','고양이 전용',180);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG03') p),'PETC0034','포인트','고양이 전용',190);
+
+-- ■ MYP 마이페이지 — v0.10 추가: 검진기록 등록 포인트 (20261027_02_update_care_msn_and_ckup_pnt)
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='MYPG03') p),'MYPC0021','검진기록 등록','적립(+). 반려동물·검진일당 1회 20P, 등록일 기준 최근 7일 이내 검진일만 (FN-MYP-020-08)',15);
+
+-- =====================================================================
+-- [2] 케어미션 마스터 (CARE_MSN) — 20261027_02_update_care_msn_and_ckup_pnt 의 최종 상태
+--     일상케어(MYPC0010) 9개, 활동기반(MYPC0011) 12개. 근거: FN-MYP-020-03·05, FN-HLT-003-12
+-- =====================================================================
+INSERT INTO `CARE_MSN` (`MSN_POOL_CD`,`MSN_NM`,`CMPN_PNT`,`ACHV_CRTR_NMTM`,`MVMN_PATH`) VALUES
+  ('MYPC0010','화장실 청소하기',10,1,'/health/calendar'),
+  ('MYPC0010','양치하기',5,1,'/health/calendar'),
+  ('MYPC0010','빗질하기',5,1,'/health/calendar'),
+  ('MYPC0010','발 관리하기',3,1,'/health/calendar'),
+  ('MYPC0010','놀이하기',5,1,'/health/calendar'),
+  ('MYPC0010','체중 기록하기',10,1,'/health'),
+  ('MYPC0010','식사량 기록하기',10,1,'/health'),
+  ('MYPC0010','음수량 기록하기',10,1,'/health'),
+  ('MYPC0010','배변 기록하기',5,1,'/health'),
+  ('MYPC0011','가계부 지출 등록하기',5,1,'/mypage/expenses'),
+  ('MYPC0011','케어 캘린더 일정 등록하기',5,1,'/health/calendar'),
+  ('MYPC0011','귀 청소하기',10,1,'/health/calendar'),
+  ('MYPC0011','발톱 관리하기',15,1,'/health/calendar'),
+  ('MYPC0011','목욕하기',20,1,'/health/calendar'),
+  ('MYPC0011','눈 주변 관리하기',5,1,'/health/calendar'),
+  ('MYPC0011','발바닥 털 관리하기',10,1,'/health/calendar'),
+  ('MYPC0011','구강 상태 확인하기',5,1,'/health/calendar'),
+  ('MYPC0011','산책 기록하기',10,1,'/health'),
+  ('MYPC0011','관찰 기록 추가하기',10,1,'/health'),
+  ('MYPC0011','펫이야기 글 등록하기',20,1,'/community'),
+  ('MYPC0011','펫이야기 댓글 작성하기',5,1,'/community');
+
 COMMIT;
--- 합계: 그룹 68건 + 코드 261건 = 329건
+-- 합계: 공통코드 그룹 68건 + 코드 269건 = 337건, 케어미션 21건
