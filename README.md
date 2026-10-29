@@ -9,7 +9,7 @@
 
 ```mermaid
 flowchart LR
-  E[application.properties 받기] --> A[setup 실행] --> B[앱 다시 켜기] --> F[seedFiles 한 번] --> C[MCP 인증 한 번] --> D["/start"]
+  E[application.properties 받기] --> A[setup 실행] --> B[앱 다시 켜기] --> C[MCP 인증 한 번] --> D["/start"]
 ```
 
 ### setup
@@ -37,7 +37,6 @@ flowchart LR
 
 - `application.properties`를 디스코드에서 받아 `src/main/resources/`에 둔다. 이름이 `.txt`로 바뀌지 않았는지 본다.
 - STS는 처음 한 번 File > Import > Gradle > Existing Gradle Project로 `gradlew`가 있는 `backend` 폴더를 가져온다.
-- `./gradlew seedFiles`를 한 번 실행한다(시드 이미지, "시드 데이터").
 - DB 접속이 안 되면(학원 밖 등) setup이 할 일로 알려 준다.
 
 ### application.properties
@@ -52,7 +51,7 @@ flowchart LR
 | `dms.mcp-url` | DMS MCP 서버 주소(claude.ai 커넥터로 `dms`가 연결돼 있으면 비워도 된다) |
 
 - 키를 추가·변경하면 `application.properties.example`과 디스코드의 파일도 같이 고친다.
-- `application-local.properties`(git 제외)가 있으면 그 DB 설정이 우선한다. 공용 DB의 시드 데이터를 보려면 이 파일을 두지 않는다.
+- `application-local.properties`(git 제외)가 있으면 그 DB 설정이 우선한다. 공용 DB를 쓰려면 이 파일을 두지 않는다.
 - 운영 설정은 `application-prod.properties`(비밀값 없음, 커밋)에 둔다.
 
 ### MCP
@@ -73,7 +72,7 @@ flowchart LR
 
 ### 로그인 (dev-token)
 
-로그인 API(YAY)가 나오기 전에는 회원 번호로 토큰 쿠키를 받는다(운영 프로필에서는 꺼진다). 번호는 "시드 데이터"의 계정 표를 본다.
+로그인 API(YAY)가 나오기 전에는 회원 번호로 토큰 쿠키를 받는다(운영 프로필에서는 꺼진다).
 
 - Postman: `POST http://localhost:8080/api/auth/dev-tokens`, Headers `X-Requested-With: XMLHttpRequest`, Body(raw JSON) `{"mbrSn": 1}` → 200. 쿠키는 Postman이 저장해 다음 요청부터 붙인다(요청 오른쪽 Cookies에서 확인·삭제).
 - 브라우저: 프론트 화면(`http://localhost:5173`)의 개발자 도구 콘솔에서 실행하고 새로고침한다.
@@ -93,41 +92,12 @@ fetch('/api/auth/dev-tokens',{method:'POST',headers:{'Content-Type':'application
 
 - 프론트는 `/api` 요청을 8080으로 넘긴다(`vite.config.js` 프록시). 두 포트가 꼭 8080·5173이어야 한다.
 - 5173이 이미 쓰이고 있으면 Vite가 5174로 뜨고, 백엔드 CORS(`app.cors.allowed-origins`, 기본 5173)에 막혀 POST가 403(`Invalid CORS request`)이 된다. 5173을 쓰는 다른 프로젝트를 먼저 끈다.
-- 로그인은 위 "로그인 (dev-token)"의 브라우저 방법. 이미지가 404면 `./gradlew seedFiles`를 실행한다.
+- 로그인은 위 "로그인 (dev-token)"의 브라우저 방법.
 
-### 시드 데이터
+### 파일 저장
 
-공용 DB에 화면 확인용 데이터(회원 200, 반려동물 1,000, 게시글 1,000 등 약 15만 행)가 들어 있다. 코드는 `src/seed`.
-
-| 하고 싶은 것 | 명령 |
-| --- | --- |
-| 시드 이미지를 내 PC에 만들기(각자 한 번) | `./gradlew seedFiles` |
-| 공용 DB에 넣기(빈 DB에 한 사람이) | `./gradlew seedData -Ptarget=shared -Pconfirm=<DB이름>` |
-| 비우기(공용은 팀에 알린 뒤) | `./gradlew seedClean -Ptarget=shared -Pconfirm=<DB이름>` |
-| 개인 로컬 DB에 넣기 / 비우고 다시 | `./gradlew seedData -Ptarget=local` / 뒤에 `-Preset` |
-| 양 늘리기(1~20배) | `-Pscale=10` 추가 |
-
-- 시드 대상 테이블에 행이 있으면 넣지 않는다. 고쳐서 다시 넣을 때는 `seedClean` → `seedData`. 둘 다 한 트랜잭션이라 실패하면 DB가 그대로다.
-- `seedClean`은 시드 행만이 아니라 시드 대상·기록 테이블을 전부 비운다(팀원 테스트 데이터 포함). `COM_CD`·`NOTI_TMPLT`는 남는다.
-- 공용 DB에는 이미지 행만 있어서 각 PC가 `seedFiles`로 파일(파일 저장 루트 아래 `seed/`·`public/seed/`)을 만든다. 남이 올린 이미지는 내 PC에 파일이 없어 404다. 공용 DB를 쓰면 `seedFiles`를 한 번 실행한다.
-- 파일 저장 루트는 `app.file.root-dir`이다. 비우면 Windows는 프로젝트가 있는 드라이브 루트 아래 `home/ggorilab/attachment`(C:와 D:에 프로젝트를 두면 각 드라이브에 따로 생긴다), Mac은 `/Users/Shared/ggorilab/attachment`다. 서버를 켜면 로그에 `[FileRoot] 파일 저장 루트=…` 한 줄이 나온다. 예전 `uploads/` 폴더의 파일은 새 경로로 옮기거나 `seedFiles`를 다시 실행한다.
+- 파일 저장 루트는 `app.file.root-dir`이다. 비우면 Windows는 프로젝트가 있는 드라이브 루트 아래 `home/ggorilab/attachment`(C:와 D:에 프로젝트를 두면 각 드라이브에 따로 생긴다), Mac은 `/Users/Shared/ggorilab/attachment`다. 서버를 켜면 로그에 `[FileRoot] 파일 저장 루트=…` 한 줄이 나온다. 예전 `uploads/` 폴더의 파일은 새 경로로 옮긴다.
 - `app.security.permit-all-paths`에 `/api/files/public/**`가 있어야 공개 이미지가 로그인 없이 열린다. 내 `application.properties`에 이 값을 직접 적었다면 추가한다.
-- 사진은 `src/seed/resources/images`의 CC0 사진을 고른다. 사진을 바꾸면 같은 폴더 `SOURCES.md`에 출처를 적는다(표에 있는 사진만 쓴다). 영수증·검사결과지·픽셀 캐릭터·아이템은 생성기가 그린다.
-- 같은 번호는 늘 같은 회원·반려동물이다. 날짜는 실행한 날 기준이다.
-- 테이블 구조가 바뀌어도 생성기를 고치지 않아도 된다. 빠진 NOT NULL 컬럼은 타입·주석·공통코드 그룹·FK로 채우고, 없어진 컬럼은 빼고, 새 테이블은 자동으로 행을 만든다(못 넣으면 그 테이블만 건너뜀). 실행 끝의 "자동 처리" 경고를 보고, 화면에 어색한 값이 있으면 그 도메인 Seeder(`src/seed/java/com/nyangmeong/seed/domain/`)에서 다듬는다.
-
-비밀번호는 모두 같고 `application.properties`의 `app.seed.password`에 있다(공개 저장소라 여기 적지 않는다). 로그인 API가 나오기 전에는 dev-token으로 들어간다.
-
-| 회원 번호 | 이메일 | 용도 |
-| --- | --- | --- |
-| 1 | `tester@nyangmeong.dev` | 일반회원. 반려동물 3마리와 공동양육, 모든 화면에 데이터가 있다 |
-| 2 | `admin@nyangmeong.dev` | 관리자 |
-| 3 | `empty@nyangmeong.dev` | 반려동물 0마리(빈 화면 확인) |
-| 4 | `full@nyangmeong.dev` | 반려동물 10마리(등록 상한 확인) |
-| 5 | `operator@nyangmeong.dev` | 관리자 |
-| 6~ | `user0006@nyangmeong.dev` 형식 | 일반회원. 정지·탈퇴 회원이 섞여 있다 |
-
-넣지 않는 테이블: `COM_CD`(기준 SQL), `NOTI_TMPLT`(없으면 코드의 기본 문구), `RFRSH_TKN`·`LGN_ATMPT_LMT`·`EML_CERT`·`NOTI_SNDNG_LOG`(실행 중 쌓이는 기록).
 
 ## AI로 작업하기
 

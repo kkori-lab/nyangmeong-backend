@@ -235,6 +235,50 @@ class AiConversationServiceTest {
     }
 
     @Test
+    void 사용자_질문이_1000자를_넘으면_입력값_오류이고_저장하지_않는다() {
+        assertThatThrownBy(() -> service.createMessage(MBR, ROOM,
+                new ConversationMessageCreateRequest("AIMC0024", "가".repeat(1001), null)))
+                .isInstanceOfSatisfying(CustomException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT_VALUE));
+        verify(aiConversationMapper, never()).insertMessage(any());
+    }
+
+    @Test
+    void 사용자_질문은_1000자까지_저장한다() {
+        when(aiConversationMapper.selectRoomForUpdate(MBR, ROOM)).thenReturn(room(PET));
+        when(aiConversationMapper.selectNextMsgSeq(ROOM)).thenReturn(2);
+        doAnswer(inv -> {
+            AiConversationMessage saved = inv.getArgument(0);
+            saved.setAiCnvrsMsgSn(11L);
+            return 1;
+        }).when(aiConversationMapper).insertMessage(any());
+        when(aiConversationMapper.selectMessage(11L)).thenReturn(message(11L, "AIMC0024", 2, "Y"));
+
+        service.createMessage(MBR, ROOM, new ConversationMessageCreateRequest("AIMC0024", "가".repeat(1000), null));
+
+        verify(aiConversationMapper).insertMessage(any());
+    }
+
+    @Test
+    void AI_답변은_1000자를_넘어도_저장한다() {
+        when(aiConversationMapper.selectRoomForUpdate(MBR, ROOM)).thenReturn(room(PET));
+        when(aiConversationMapper.selectNextMsgSeq(ROOM)).thenReturn(2);
+        doAnswer(inv -> {
+            AiConversationMessage saved = inv.getArgument(0);
+            saved.setAiCnvrsMsgSn(11L);
+            return 1;
+        }).when(aiConversationMapper).insertMessage(any());
+        when(aiConversationMapper.selectMessage(11L)).thenReturn(message(11L, "AIMC0025", 2, "Y"));
+        String answer = "가".repeat(1001);
+
+        service.createMessage(MBR, ROOM, new ConversationMessageCreateRequest("AIMC0025", answer, null));
+
+        ArgumentCaptor<AiConversationMessage> captor = ArgumentCaptor.forClass(AiConversationMessage.class);
+        verify(aiConversationMapper).insertMessage(captor.capture());
+        assertThat(captor.getValue().getCnvrsCnEnc()).isEqualTo("ENC(" + answer + ")");
+    }
+
+    @Test
     void 삭제는_본인_대화만_지우고_없으면_NOT_FOUND다() {
         when(aiConversationMapper.deleteRoom(MBR, ROOM)).thenReturn(1);
         service.delete(MBR, ROOM);

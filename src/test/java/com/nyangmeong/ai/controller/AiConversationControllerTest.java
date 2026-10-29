@@ -2,6 +2,7 @@ package com.nyangmeong.ai.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -145,6 +146,18 @@ class AiConversationControllerTest {
         mockMvc.perform(post(PATH + "/7/messages").header("X-Requested-With", AJAX)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"roleCd\":\"AIMC0025\",\"cnvrsCn\":\"답변\"}"))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.data.msgSeq").value(2));
+    }
+
+    @Test
+    @WithMockLoginMember(id = 1L)
+    void 메시지_내용이_10000자를_넘으면_400이고_저장하지_않는다() throws Exception {
+        String longAnswer = "가".repeat(10001);
+
+        mockMvc.perform(post(PATH + "/7/messages").header("X-Requested-With", AJAX)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"roleCd\":\"AIMC0025\",\"cnvrsCn\":\"" + longAnswer + "\"}"))
+                .andExpect(status().isBadRequest());
+        verify(aiConversationService, never()).createMessage(any(), any(), any());
     }
 
     @Test
