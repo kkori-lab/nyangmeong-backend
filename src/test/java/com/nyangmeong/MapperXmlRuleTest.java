@@ -36,7 +36,9 @@ class MapperXmlRuleTest {
             "com.nyangmeong.community.mapper.CommentMapper.selectList",
             /** 연결 일정이 삭제된 검진기록도 "연결된 일정 삭제됨"으로 남겨 보여 준다 (FN-HLT-002-05) */
             "com.nyangmeong.health.mapper.CheckupMapper.selectList",
-            "com.nyangmeong.health.mapper.CheckupMapper.selectDetail");
+            "com.nyangmeong.health.mapper.CheckupMapper.selectDetail",
+            /** 삭제된 같은 날짜 완료 기록도 읽어 되살림·미션 중복 반영을 가린다 (FN-HLT-003-12) */
+            "com.nyangmeong.health.mapper.CareItemMapper.selectCompletionByDateForUpdate");
 
     private static final Pattern TABLE = Pattern.compile("\\b(?:FROM|JOIN)\\s+`?(\\w+)`?", Pattern.CASE_INSENSITIVE);
     private static final Pattern DEL_YN_CONDITION = Pattern.compile("DEL_YN`?\\s*=\\s*'N'", Pattern.CASE_INSENSITIVE);
