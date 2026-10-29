@@ -9,18 +9,18 @@
 | GET | /pets/{petSn}/care-completions | 케어 완료 기록 목록(기록 내용). `?careArtclSn=&fromYmd=&toYmd=` | HLT-003-12 | JAJ | - | List<CareCompletionSummary> |
 | GET | /pets/{petSn}/care-items | 케어 항목 목록(토탈 케어리스트, 오늘 투약 횟수 포함). `?mainExpsrYn=&careArtclNm=` | HLT-003-12·13, AIM-012-08 | JAJ | - | List<CareItemSummary> |
 | GET | /pets/{petSn}/care-schedules | 케어 캘린더 일정 목록. `?fromYmd=&toYmd=&schdlKndCd=&ckupTypeCd=&size=` — 월간·날짜 상세·다가오는 일정·다음 예정일·가까운 예정 일정 후보 | HLT-003-29~31·39·40, HLT-011-04, HLT-002-46 | JAJ | - | List<CareScheduleSummary> |
-| GET | /pets/{petSn}/checkup-attachments | 검진기록 첨부 목록(최신순). `?ckupRcdSn=&atchTypeCd=&page=&size=` | HLT-005-01·02, HLT-011-09 | JAJ | - | Page<CheckupAttachmentSummary> |
+| GET | /pets/{petSn}/checkup-attachments | 검진기록 첨부 목록(최신순). `?ckupRcdSn=&atchTypeCd=&page=&size=` — `ckupRcdSn` 필수(반려동물 전체 조회는 HLT-011에서 추가) | HLT-005-01·02, HLT-011-09 | JAJ | - | Page<CheckupAttachmentSummary> |
 | GET | /pets/{petSn}/checkup-attachments/{ckupRcdAtchSn} | 첨부 파일 다운로드·이미지 미리보기(보호 파일, 파일 자체 반환) | HLT-005-01, HLT-011-09 | JAJ | - | 파일 |
 | GET | /pets/{petSn}/checkups | 검진기록 목록(최신순). `?year=&ckupTypeCd=&page=&size=` (year 생략 시 전체 연도) — 리스트·필터 칩 건수·타임라인·예방/정기검진 이력 | HLT-002-05·06·14, HLT-011-03·04 | JAJ | - | Page<CheckupSummary> |
 | GET | /pets/{petSn}/checkups/{ckupRcdSn} | 검진상세 기본정보 | HLT-005-01·15 | JAJ | - | CheckupResponse |
 | GET | /pets/{petSn}/daily-health-records | 일상 건강기록 목록. `?dailyRcdIdctCd=&fromYmd=&toYmd=&size=` — 그래프(최근 14개)·오늘의 기록·날짜별 표·최신 체중 | HLT-002-09·10·12·13, HLT-011-02 | JAJ | - | List<DailyHealthRecordSummary> |
-| GET | /pets/{petSn}/etc-inspections | 기타검사 목록. `?ckupRcdSn=` | HLT-005-02 | JAJ | - | List<EtcInspectionSummary> |
-| GET | /pets/{petSn}/inspection-values | 혈액검사 수치 목록. `?ckupRcdSn=&inspArtclCd=` — 검진상세 결과·최근 검사·수치 추이 | HLT-005-02, HLT-011-02·06·07 | JAJ | - | List<InspectionValueSummary> |
+| GET | /pets/{petSn}/etc-inspections | 기타검사 목록. `?ckupRcdSn=` — `ckupRcdSn` 필수 | HLT-005-02 | JAJ | - | List<EtcInspectionSummary> |
+| GET | /pets/{petSn}/inspection-values | 혈액검사 수치 목록. `?ckupRcdSn=&inspArtclCd=` — 검진상세 결과·최근 검사·수치 추이. `ckupRcdSn` 필수(반려동물 전체 조회는 HLT-011에서 추가) | HLT-005-02, HLT-011-02·06·07 | JAJ | - | List<InspectionValueSummary> |
 | GET | /pets/{petSn}/observation-cycles | 관찰 회차 목록(관찰일 순). `?obsrvArtclSn=` | HLT-002-17~19 | JAJ | - | List<ObservationCycleSummary> |
 | GET | /pets/{petSn}/observation-cycles/{obsrvCyclSn}/photo | 관찰 사진 원본·썸네일(보호 파일, 파일 자체 반환) | HLT-002-17·19, HLT-011-10 | JAJ | - | 파일 |
 | GET | /pets/{petSn}/observation-items | 관찰 항목 목록(첫·최근 회차 요약 포함). `?obsrvSttsCd=` | HLT-002-15, HLT-011-10 | JAJ | - | List<ObservationItemSummary> |
-| GET | /pets/{petSn}/prescriptions | 처방약 목록(복용 중 우선·최신순). `?ckupRcdSn=&prscSttsCd=` | HLT-005-03, HLT-011-02·08 | JAJ | - | List<PrescriptionSummary> |
-| GET | /pets/{petSn}/repeat-preventions | 반복 예방 관리 목록. `?ckupRcdSn=` | HLT-005-05 | JAJ | - | List<RepeatPreventionSummary> |
+| GET | /pets/{petSn}/prescriptions | 처방약 목록(복용 중 우선·최신순). `?ckupRcdSn=&prscSttsCd=` — `ckupRcdSn` 필수(반려동물 전체 조회는 HLT-011에서 추가) | HLT-005-03, HLT-011-02·08 | JAJ | - | List<PrescriptionSummary> |
+| GET | /pets/{petSn}/repeat-preventions | 반복 예방 관리 목록. `?ckupRcdSn=` — `ckupRcdSn` 필수 | HLT-005-05 | JAJ | - | List<RepeatPreventionSummary> |
 | POST | /pets/{petSn}/care-completions | 케어 완료 체크(투약 항목은 1회 체크). 다음 예정일 재계산. 중복 체크는 `UK_CARE_CMPTN_HSTRY_1`(항목+완료일)로 막는다. 같은 항목·같은 날 다시 보내면 200과 기존 기록(처음은 201), `idmptDmndId`는 받지 않는다 | HLT-003-12 | JAJ | CareCompletionCreateRequest | CareCompletionResponse |
 | POST | /pets/{petSn}/care-items | 케어 항목 추가(마지막으로 한 날은 완료 기록으로 함께 저장). AI 대화 등록도 같은 API | HLT-003-21~24·38, AIM-012-07·09·13 | JAJ | CareItemCreateRequest | CareItemResponse |
 | POST | /pets/{petSn}/care-schedules | 일정 등록(종류별 필수값 서버 재검증, 출처 SCHDL_SRC_CD). AI 대화 등록도 같은 API | HLT-003-32~37, AIM-012-09·12~14 | JAJ | CareScheduleCreateRequest | CareScheduleResponse |
@@ -417,7 +417,7 @@
 | --- | --- | --- | --- | --- |
 | ckupRcdAtchSn | Long | Y | 분석한 첨부 | CKUP_RCD_ATCH.CKUP_RCD_ATCH_SN, HLT-005-04 |
 | ckupRcdSn | Long | Y | 저장할 검진기록(SCR-HLT-007 진입) | CKUP_RCD_ATCH.CKUP_RCD_SN, HLT-005-04 |
-| anlysRslt | String | Y | 분석 결과 구분: 성공 / 인식 실패 / 일시 오류(제한 시간 초과·외부 API 오류). 실패도 200으로 주고 이 값으로 문구를 고른다. 값 표현은 영수증의 `ocrPrcsSttsCd`(AIMG01)처럼 공통코드로 둘지 JAJ가 정한다(2026-10-22 제안) | HLT-005-04, HLT-007-06 |
+| anlysRslt | String | Y | 분석 결과 구분: 성공 / 인식 실패 / 일시 오류(제한 시간 초과·외부 API 오류). 실패도 200으로 주고 이 값으로 문구를 고른다. 값은 공통코드가 아닌 문자열 `SUCCESS`(성공)·`NOT_RECOGNIZED`(인식 실패)·`TEMPORARY_ERROR`(일시 오류)(JAJ 결정 2026-10-29) | HLT-005-04, HLT-007-06 |
 | items | List<InspectionAnalysisItem> | Y | 혈액검사 항목만. 0건이면 빈 목록 | HLT-007-04·05 |
 | excludedArtclNms | List<String> | N | 혈액검사가 아니라서 뺀 항목 이름(안내용, issues 10) | HLT-007-05 |
 

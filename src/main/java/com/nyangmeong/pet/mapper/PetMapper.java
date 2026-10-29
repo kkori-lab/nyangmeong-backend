@@ -13,7 +13,7 @@ import com.nyangmeong.pet.dto.PetSummary;
 
 /**
  * [반려동물 Mapper]
- * - PET·BRUP_REL 조회·저장 (반려동물 관리), BRUP_LINK_STTS_HSTRY 저장 (연동 해제)
+ * - PET·BRUP_REL 조회·저장 (반려동물 관리), BRUP_LINK_STTS_HSTRY 저장 (연동 해제·초대 수락)
  */
 @Mapper
 public interface PetMapper {
@@ -60,6 +60,16 @@ public interface PetMapper {
     List<Long> selectCaregiverMbrSns(@Param("petSn") Long petSn);
 
     /**
+     * 해제된 행까지 포함한 회원의 양육관계 조회
+     */
+    BrupRel selectBrupRelIncludingUnlinked(@Param("mbrSn") Long mbrSn, @Param("petSn") Long petSn);
+
+    /**
+     * 반려동물의 연동 중 공동양육자 수
+     */
+    int countLinkedCaregivers(@Param("petSn") Long petSn, @Param("coParentRoleCd") String coParentRoleCd);
+
+    /**
      * 회원의 주양육 반려동물 수
      */
     int countPrimaryPets(@Param("mbrSn") Long mbrSn, @Param("primaryRoleCd") String primaryRoleCd);
@@ -94,6 +104,12 @@ public interface PetMapper {
      * 양육관계 연동 해제
      */
     int updateBrupRelUnlink(@Param("brupRelSn") Long brupRelSn, @Param("actorId") String actorId);
+
+    /**
+     * 해제된 양육관계 재연동
+     */
+    int updateBrupRelRelink(@Param("brupRelSn") Long brupRelSn, @Param("coParentRoleCd") String coParentRoleCd,
+            @Param("actorId") String actorId);
 
     /**
      * 양육 연동 상태 이력 등록

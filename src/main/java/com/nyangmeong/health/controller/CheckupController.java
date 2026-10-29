@@ -30,7 +30,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * [검진기록 컨트롤러]
- * - SCR-HLT-002 검진기록 목록·직접 등록·수정·삭제 (docs/api/health.md)
+ * - SCR-HLT-002 검진기록 목록·직접 등록·수정·삭제, SCR-HLT-005 기본정보 (docs/api/health.md)
  */
 @RestController
 @RequiredArgsConstructor
@@ -44,6 +44,13 @@ public class CheckupController {
     public ResponseEntity<ApiResponse<PageResponse<CheckupSummary>>> search(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @Valid @ModelAttribute CheckupSearchCond cond, PageQuery pq) {
         return ResponseEntity.ok(ApiResponse.success(checkupService.search(me.id(), petSn, cond, pq)));
+    }
+
+    @Operation(summary = "검진상세 기본정보")
+    @GetMapping("/{ckupRcdSn}")
+    public ResponseEntity<ApiResponse<CheckupResponse>> getCheckup(@AuthenticationPrincipal LoginMember me,
+            @PathVariable Long petSn, @PathVariable Long ckupRcdSn) {
+        return ResponseEntity.ok(ApiResponse.success(checkupService.getCheckup(me.id(), petSn, ckupRcdSn)));
     }
 
     @Operation(summary = "검진기록 직접 등록")

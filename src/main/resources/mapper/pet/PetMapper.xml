@@ -234,6 +234,31 @@
          ORDER BY R.BRUP_REL_SN
     </select>
 
+    <select id="selectBrupRelIncludingUnlinked" resultMap="brupRelResultMap">
+        /* 해제된 행까지 포함한 양육 관계 조회 (UK_BRUP_REL_1 재연동용) */
+        SELECT BRUP_REL_SN
+             , PET_SN
+             , MBR_SN
+             , BRUP_ROLE_CD
+             , RPRS_PET_YN
+             , USE_YN
+             , REG_DT
+             , MDFCN_DT
+             , MDFR_ID
+          FROM BRUP_REL
+         WHERE MBR_SN = #{mbrSn}
+           AND PET_SN = #{petSn}
+    </select>
+
+    <select id="countLinkedCaregivers" resultType="int">
+        /* 연동 중 공동양육자 수 조회 */
+        SELECT COUNT(*)
+          FROM BRUP_REL
+         WHERE PET_SN = #{petSn}
+           AND BRUP_ROLE_CD = #{coParentRoleCd}
+           AND USE_YN = 'Y'
+    </select>
+
     <select id="countPrimaryPets" resultType="int">
         /* 주양육 반려동물 수 조회 */
         SELECT COUNT(*)
@@ -368,6 +393,18 @@
              , MDFCN_DT    = NOW()
          WHERE BRUP_REL_SN = #{brupRelSn}
            AND USE_YN      = 'Y'
+    </update>
+
+    <update id="updateBrupRelRelink">
+        /* 해제된 양육 관계 공동양육으로 재연동 */
+        UPDATE BRUP_REL
+           SET USE_YN       = 'Y'
+             , BRUP_ROLE_CD = #{coParentRoleCd}
+             , RPRS_PET_YN  = 'N'
+             , MDFR_ID      = #{actorId}
+             , MDFCN_DT     = NOW()
+         WHERE BRUP_REL_SN = #{brupRelSn}
+           AND USE_YN      = 'N'
     </update>
 
     <insert id="insertLinkHistory" parameterType="com.nyangmeong.pet.domain.BrupLinkSttsHstry"

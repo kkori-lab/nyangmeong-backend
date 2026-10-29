@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nyangmeong.health.mapper.EtcInspectionMapper">
+
+    <resultMap id="etcInspectionSummaryResultMap" type="com.nyangmeong.health.dto.EtcInspectionSummary">
+        <id     column="ETC_INSP_SN"    property="etcInspSn" />
+        <result column="CKUP_RCD_SN"    property="ckupRcdSn" />
+        <result column="INSP_NM"        property="inspNm" />
+        <result column="INSP_RSLT_CN"   property="inspRsltCn" />
+        <result column="MEMO_CN"        property="memoCn" />
+    </resultMap>
+
+    <resultMap id="etcInspectionResultMap" type="com.nyangmeong.health.domain.EtcInspection">
+        <id     column="ETC_INSP_SN"    property="etcInspSn" />
+        <result column="CKUP_RCD_SN"    property="ckupRcdSn" />
+        <result column="INSP_NM"        property="inspNm" />
+        <result column="INSP_RSLT_CN"   property="inspRsltCn" />
+        <result column="MEMO_CN"        property="memoCn" />
+        <result column="DEL_YN"         property="delYn" />
+        <result column="REG_DT"         property="regDt" />
+        <result column="MDFCN_DT"       property="mdfcnDt" />
+        <result column="RGTR_ID"        property="rgtrId" />
+        <result column="MDFR_ID"        property="mdfrId" />
+    </resultMap>
+
+    <select id="selectList" resultMap="etcInspectionSummaryResultMap">
+        /* 기타검사 목록 조회(등록순) */
+        SELECT ETC_INSP_SN
+             , CKUP_RCD_SN
+             , INSP_NM
+             , INSP_RSLT_CN
+             , MEMO_CN
+          FROM ETC_INSP
+         WHERE CKUP_RCD_SN = #{cond.ckupRcdSn}
+           AND DEL_YN = 'N'
+         ORDER BY ETC_INSP_SN
+    </select>
+
+    <select id="selectInspection" resultMap="etcInspectionResultMap">
+        /* 기타검사 조회 */
+        SELECT ETC_INSP_SN
+             , CKUP_RCD_SN
+             , INSP_NM
+             , INSP_RSLT_CN
+             , MEMO_CN
+             , DEL_YN
+             , REG_DT
+             , MDFCN_DT
+             , RGTR_ID
+             , MDFR_ID
+          FROM ETC_INSP
+         WHERE ETC_INSP_SN = #{etcInspSn}
+           AND DEL_YN = 'N'
+    </select>
+
+    <insert id="insertInspection" parameterType="com.nyangmeong.health.domain.EtcInspection"
+            useGeneratedKeys="true" keyProperty="etcInspSn" keyColumn="ETC_INSP_SN">
+        /* 기타검사 등록 */
+        INSERT INTO ETC_INSP
+             ( CKUP_RCD_SN
+             , INSP_NM
+             , INSP_RSLT_CN
+             , MEMO_CN
+             , DEL_YN
+             , REG_DT
+             , MDFCN_DT
+             , RGTR_ID
+             , MDFR_ID )
+        VALUES
+             ( #{ckupRcdSn}
+             , #{inspNm}
+             , #{inspRsltCn}
+             , #{memoCn}
+             , 'N'
+             , NOW()
+             , NOW()
+             , #{rgtrId}
+             , #{mdfrId} )
+    </insert>
+
+    <update id="updateInspection">
+        /* 기타검사 수정 */
+        UPDATE ETC_INSP
+           SET INSP_NM      = #{inspection.inspNm}
+             , INSP_RSLT_CN = #{inspection.inspRsltCn}
+             , MEMO_CN      = #{inspection.memoCn}
+             , MDFR_ID      = #{actorId}
+             , MDFCN_DT     = NOW()
+         WHERE ETC_INSP_SN = #{inspection.etcInspSn}
+           AND DEL_YN = 'N'
+    </update>
+
+    <update id="deleteInspection">
+        /* 기타검사 삭제 */
+        UPDATE ETC_INSP
+           SET DEL_YN   = 'Y'
+             , MDFR_ID  = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE ETC_INSP_SN = #{etcInspSn}
+           AND DEL_YN = 'N'
+    </update>
+</mapper>
