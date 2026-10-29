@@ -320,7 +320,21 @@ class MemberServiceTest {
         member.setPswdHash("hash");
         when(memberMapper.selectByEmailHmac(crypto.hmac(EMAIL))).thenReturn(member);
 
-        assertThat(service.resolvePasswordResetAccount(crypto.hmac(EMAIL)).resettable()).isTrue();
+        PasswordResetAccount account = service.resolvePasswordResetAccount(crypto.hmac(EMAIL));
+        assertThat(account.resettable()).isTrue();
+        assertThat(account.mbrSn()).isEqualTo(1L);
+    }
+
+    @Test
+    void 비밀번호_변경은_바뀐_행이_없으면_재설정_불가이다() {
+        when(memberMapper.updatePassword(eq(1L), eq("HASH"), eq(MemberStatus.WITHDRAWN.getCode()), anyString()))
+                .thenReturn(1)
+                .thenReturn(0);
+
+        service.changePassword(1L, "HASH");
+
+        assertThatThrownBy(() -> service.changePassword(1L, "HASH"))
+                .satisfies(e -> assertCode(e, ErrorCode.PASSWORD_RESET_NOT_AVAILABLE));
     }
 
     @Test

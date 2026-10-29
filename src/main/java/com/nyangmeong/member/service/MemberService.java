@@ -99,7 +99,18 @@ public class MemberService {
             return new PasswordResetAccount(EmailCertificationResponse.SNS_ONLY,
                     memberMapper.selectSnsOffrCds(member.getMbrSn()));
         }
-        return new PasswordResetAccount(EmailCertificationResponse.PASSWORD_RESET_READY, null);
+        return new PasswordResetAccount(EmailCertificationResponse.PASSWORD_RESET_READY, null, member.getMbrSn());
+    }
+
+    /**
+     * 비밀번호 재설정 저장 : 이미 BCrypt 로 만든 해시를 받는다, 바뀐 행이 없으면(그 사이 탈퇴) 재설정 불가
+     */
+    @Transactional
+    public void changePassword(Long mbrSn, String pswdHash) {
+        if (memberMapper.updatePassword(mbrSn, pswdHash, MemberStatus.WITHDRAWN.getCode(),
+                String.valueOf(mbrSn)) != 1) {
+            throw new CustomException(ErrorCode.PASSWORD_RESET_NOT_AVAILABLE);
+        }
     }
 
     /**
