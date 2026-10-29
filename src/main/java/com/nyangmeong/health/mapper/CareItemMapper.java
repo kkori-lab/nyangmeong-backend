@@ -135,4 +135,25 @@ public interface CareItemMapper {
      * 처방약 1일 복용 횟수 조회
      */
     Integer selectDayMdcnNmtm(Long prscSn);
+
+    /**
+     * 처방약 연동 투약 항목 존재 여부
+     */
+    boolean existsPrescriptionItem(Long prscSn);
+
+    /**
+     * 처방약 연동 투약 항목 삭제
+     */
+    int deletePrescriptionItems(@Param("prscSn") Long prscSn, @Param("actorId") String actorId);
+
+    /**
+     * 반복 예방 연동 케어 항목 삭제
+     */
+    int deleteRepeatPreventionItems(@Param("reptPrvntMngSn") Long reptPrvntMngSn,
+            @Param("actorId") String actorId);
+
+    /**
+     * 반복 예방 시작일 조회
+     */
+    LocalDate selectRepeatPreventionBgngYmd(Long reptPrvntMngSn);
 }
