@@ -8,7 +8,6 @@ SCR-AIM-012 AI 일정 생성 확인 (등록 카드 컨텍스트 내부 API) — 
 
 - SCR-AIM-012 연결 남음: FN-AIM-012-08 (JAJ 케어 항목 목록 service가 나오면 `CareArticleNameFake`를 그 service로, 반려동물 번호 목록 → 번호별 이름 목록·삭제 제외·등록순), FN-AIM-012-04·08 (Python `FakeRegisterContextRepository`를 이 API로, ai 세션). PR을 올리면 ai 세션에 PR 번호를 알린다(ai `docs/api/internal.md` 미정 행을 확정으로). JAJ에게 출처 코드 `HLTC0067` 받는 방법 확인(메시지 전달은 사람)
 - SCR-AIM-002 연결 남음: FN-AIM-002-02·11 (Python AI 서버가 `GET /internal/ai/settings`를 붙인다, ai 세션). PR을 올리면 ai 세션에 PR 번호와 계약(경로·응답 `AiSettingResponse`)을 알린다(ai 저장소 `docs/api/internal.md`와 같은 때 병합)
-- `.github/workflows/build.yml` 변경(PR·main CI 트리거 제거, 커밋하지 않음)이 작업 폴더와 `git stash`("build.yml CI 트리거 변경")에 있다. 의도한 것인지 정해 따로 다룬다
 - 프론트 연결(frontend 세션 회신 완료): 공통 파일 이미지 컴포넌트(공개 `/api/files/public/{atchFileSn}` + 비공개 blob 훅)를 프론트가 만든다. 캐릭터 번호가 필요하다고 하면 응답에 번호 추가를 추가 요청으로 받는다
 - 팀에 알린다(파일 저장): 각자 `application.properties`의 `app.security.permit-all-paths`에 `/api/files/public/**` 추가, 기존 `uploads/` 파일은 새 경로로 옮기거나 `seedFiles` 다시. 공용 DB(`pawever`)는 옛 시드라 `public/` 행이 없어 시드 사진이 404 → 다음에 공용 시드를 넣을 때 반영
 - 운영(사람): 서버에 저장 폴더와 쓰기 권한, nginx `client_max_body_size` 10m 이상. SJM에게 공개·비공개 분류 확인(반려동물·캐릭터를 공동양육자에게만 보이게 할지)
