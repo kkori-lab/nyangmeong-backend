@@ -49,10 +49,18 @@
 | inqryPrcsSttsCdNm | String | Y | 상태 표시 | COM_CD.COM_CD_NM, CSC-003-12 |
 | inqryTtl | String | Y | 초안 그대로 | OTO_INQRY.INQRY_TTL |
 | inqryCn | String | Y | | OTO_INQRY.INQRY_CN, CSC-003-12 |
-| imgs | List<ImageItem> | Y | 없으면 빈 목록 | INQRY_ATCH_PHOTO, CSC-003-12 |
+| imgs | List<InquiryImageSummary> | Y | 없으면 빈 목록 | INQRY_ATCH_PHOTO, CSC-003-12 |
 | regDt | LocalDateTime | Y | 접수일 | 공통 감사 컬럼 REG_DT, CSC-003-12 |
 | ansCn | String | N | 답변 전 null | OTO_INQRY.ANS_CN, CSC-003-13 |
 | ansDt | LocalDateTime | N | 답변 전 null | OTO_INQRY.ANS_DT, CSC-003-13 |
+
+### InquiryImageSummary
+쓰는 API: GET /inquiries/{otoInqrySn}; PATCH /inquiries/{otoInqrySn}; POST /inquiries (응답 `InquiryResponse.imgs`. ImageItem에 문의 전용 `orgnlFileNm`을 더한 것)
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| atchFileSn | Long | Y | 이미지는 `GET /api/inquiries/{otoInqrySn}/images/{atchFileSn}`(본인만) | INQRY_ATCH_PHOTO.ATCH_FILE_SN |
+| sortSeq | Integer | Y | | INQRY_ATCH_PHOTO.SORT_SEQ |
+| orgnlFileNm | String | Y | 첨부 팝업 표시용 원본 파일명 | ATCH_FILE.ORGNL_FILE_NM |
 
 ### InquirySummary
 쓰는 API: GET /inquiries

@@ -251,8 +251,7 @@ public class InquiryService {
      * 응답 변환 (유형·상태 이름과 첨부 포함)
      */
     private InquiryResponse toResponse(Inquiry inquiry) {
-        List<InquiryImageSummary> imgs = inquiryMapper.selectPhotos(inquiry.getOtoInqrySn()).stream()
-                .map(InquiryImageSummary::from).toList();
+        List<InquiryImageSummary> imgs = inquiryMapper.selectImageSummaries(inquiry.getOtoInqrySn());
         return InquiryResponse.from(inquiry, inquiryMapper.selectCodeName(inquiry.getInqryTypeCd()),
                 inquiryMapper.selectCodeName(inquiry.getInqryPrcsSttsCd()), imgs);
     }

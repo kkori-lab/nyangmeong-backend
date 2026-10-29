@@ -62,9 +62,17 @@ class InquiryControllerTest {
     @MockitoBean
     AuthMemberMapper authMemberMapper;
 
+    private InquiryImageSummary imageSummary() {
+        InquiryImageSummary summary = new InquiryImageSummary();
+        summary.setAtchFileSn(101L);
+        summary.setSortSeq(0);
+        summary.setOrgnlFileNm("a.png");
+        return summary;
+    }
+
     private InquiryResponse response() {
         return new InquiryResponse(7L, "CSCC0008", "커뮤니티", "CSCC0012", "접수", "제목", "내용",
-                List.of(new InquiryImageSummary(101L, 0)), LocalDateTime.of(2026, 10, 26, 9, 0), null, null);
+                List.of(imageSummary()), LocalDateTime.of(2026, 10, 26, 9, 0), null, null);
     }
 
     @Test
@@ -115,7 +123,8 @@ class InquiryControllerTest {
                 .andExpect(jsonPath("$.httpCode").value(201))
                 .andExpect(jsonPath("$.data.otoInqrySn").value(7))
                 .andExpect(jsonPath("$.data.inqryPrcsSttsCdNm").value("접수"))
-                .andExpect(jsonPath("$.data.imgs[0].atchFileSn").value(101));
+                .andExpect(jsonPath("$.data.imgs[0].atchFileSn").value(101))
+                .andExpect(jsonPath("$.data.imgs[0].orgnlFileNm").value("a.png"));
     }
 
     @Test

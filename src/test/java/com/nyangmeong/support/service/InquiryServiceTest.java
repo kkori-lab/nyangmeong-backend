@@ -39,6 +39,7 @@ import com.nyangmeong.support.domain.InquiryStatus;
 import com.nyangmeong.support.domain.InquiryStatusHistory;
 import com.nyangmeong.support.domain.InquiryType;
 import com.nyangmeong.support.dto.InquiryCreateRequest;
+import com.nyangmeong.support.dto.InquiryImageSummary;
 import com.nyangmeong.support.dto.InquiryResponse;
 import com.nyangmeong.support.dto.InquirySearchCond;
 import com.nyangmeong.support.dto.InquiryUpdateRequest;
@@ -82,6 +83,14 @@ class InquiryServiceTest {
         photo.setAtchFileSn(atchFileSn);
         photo.setSortSeq(sortSeq);
         return photo;
+    }
+
+    private InquiryImageSummary imageSummary(Long atchFileSn, int sortSeq, String orgnlFileNm) {
+        InquiryImageSummary summary = new InquiryImageSummary();
+        summary.setAtchFileSn(atchFileSn);
+        summary.setSortSeq(sortSeq);
+        summary.setOrgnlFileNm(orgnlFileNm);
+        return summary;
     }
 
     private MultipartFile image(String name) {
@@ -131,7 +140,8 @@ class InquiryServiceTest {
     void 작성하면_접수_상태로_저장하고_이력과_첨부를_남긴다() {
         stubSavedInquiry(inquiry(MBR, InquiryStatus.RECEIVED));
         when(fileStore.store(any(MultipartFile.class), anyString())).thenReturn(101L, 102L);
-        when(inquiryMapper.selectPhotos(INQ)).thenReturn(List.of(photo(101L, 0), photo(102L, 1)));
+        when(inquiryMapper.selectImageSummaries(INQ))
+                .thenReturn(List.of(imageSummary(101L, 0, "a.png"), imageSummary(102L, 1, "b.png")));
         when(inquiryMapper.selectCodeName("CSCC0008")).thenReturn("커뮤니티");
         when(inquiryMapper.selectCodeName("CSCC0012")).thenReturn("접수");
 
@@ -149,6 +159,8 @@ class InquiryServiceTest {
         verify(pixelCharacterService, never()).receiveErrorInquiry(anyLong(), anyLong(), anyLong());
         assertThat(res.inqryTypeCdNm()).isEqualTo("커뮤니티");
         assertThat(res.imgs()).hasSize(2);
+        assertThat(res.imgs().get(0).getOrgnlFileNm()).isEqualTo("a.png");
+        assertThat(res.imgs().get(1).getOrgnlFileNm()).isEqualTo("b.png");
     }
 
     @Test
@@ -251,13 +263,14 @@ class InquiryServiceTest {
     @Test
     void 상세는_답변_전이면_답변을_비워_돌려준다() {
         when(inquiryMapper.selectInquiry(INQ)).thenReturn(inquiry(MBR, InquiryStatus.RECEIVED));
-        when(inquiryMapper.selectPhotos(INQ)).thenReturn(List.of(photo(101L, 0)));
+        when(inquiryMapper.selectImageSummaries(INQ)).thenReturn(List.of(imageSummary(101L, 0, "a.png")));
 
         InquiryResponse res = service.getInquiry(MBR, INQ);
 
         assertThat(res.ansCn()).isNull();
         assertThat(res.ansDt()).isNull();
         assertThat(res.imgs()).hasSize(1);
+        assertThat(res.imgs().get(0).getOrgnlFileNm()).isEqualTo("a.png");
     }
 
     @Test
@@ -322,14 +335,18 @@ class InquiryServiceTest {
         when(inquiryMapper.selectPhotos(INQ)).thenReturn(List.of(photo(101L, 0), photo(102L, 1)));
         when(inquiryMapper.updateInquiry(eq(INQ), any(), eq("새 제목"), any(), eq("CSCC0012"))).thenReturn(1);
         when(fileStore.store(any(MultipartFile.class), anyString())).thenReturn(103L);
+        when(inquiryMapper.selectImageSummaries(INQ))
+                .thenReturn(List.of(imageSummary(102L, 1, "b.png"), imageSummary(103L, 2, "c.png")));
 
-        service.update(MBR, INQ, new InquiryUpdateRequest(null, "새 제목", null, List.of(102L), List.of(image("c.png"))));
+        InquiryResponse res = service.update(MBR, INQ,
+                new InquiryUpdateRequest(null, "새 제목", null, List.of(102L), List.of(image("c.png"))));
 
         verify(inquiryMapper).updatePhotosDeleted(INQ, List.of(101L));
         ArgumentCaptor<InquiryPhoto> added = ArgumentCaptor.forClass(InquiryPhoto.class);
         verify(inquiryMapper).insertPhoto(added.capture());
         assertThat(added.getValue().getAtchFileSn()).isEqualTo(103L);
         assertThat(added.getValue().getSortSeq()).isEqualTo(2);
+        assertThat(res.imgs()).extracting(InquiryImageSummary::getOrgnlFileNm).containsExactly("b.png", "c.png");
     }
 
     @Test
