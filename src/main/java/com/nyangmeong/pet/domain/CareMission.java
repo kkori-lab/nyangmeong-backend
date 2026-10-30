@@ -5,7 +5,7 @@ import java.util.Optional;
 
 /**
  * [케어미션]
- * - CARE_MSN 행을 MSN_NM(UK)으로 찾음 : 이름을 바꾸면 db/migration 과 같이 바꿈
+ * - CARE_MSN 행을 MSN_NM(UK)으로 찾음 : 이름을 바꾸면 db/ 기준 데이터 파일(insert_base_data)과 같이 바꿈
  * - 케어리스트 미션은 건강기록 기본 항목(FN-HLT-003-12)만, 사용자 추가·처방약·반복 예방 항목은 미션 아님
  */
 public enum CareMission {

@@ -1,17 +1,134 @@
 -- =====================================================================
--- 냥멍케어 기준 데이터 v0.10 (2026-10-29)  |  공통코드 + 케어미션 마스터
--- 대상 DDL : 20261029_create_tables_v0.10.sql  (테이블 COM_CD, CARE_MSN)
--- 범위     : [1] 공통코드 그룹 68개 전체 (269개 코드)  [2] 케어미션 마스터 21건
--- v0.9 → v0.10 변경 (모두 v0.9 위에 실행하던 db/migration 파일을 합친 것)
---            (1) PETC0010 검정&황갈색 → 블랙탄, PETC0017 SORT_SEQ 130 → 200, PETC0028~PETC0034 추가 (20261026_01_update_petg03_colors)
---            (2) MYPC0021 검진기록 등록 추가, 케어미션 마스터 21건 (20261027_02_update_care_msn_and_ckup_pnt)
---            새 코드는 기존 DB와 COM_CD_SN이 같도록 마이그레이션을 실행했던 순서대로 파일 끝에 둔다
+-- 냥멍케어 기준 데이터 v0.11 (2026-10-30)  |  공통코드 + 케어미션 마스터
+-- 대상 DDL : 20261030_create_tables_v0.11.sql  (테이블 COM_CD, CARE_MSN, AI_ROUT_MPNG, KWRD_DICT)
+-- 범위     : [1] 공통코드 그룹 76개 전체 (302개 코드)  [2] 케어미션 마스터 21건  [3] AI 라우팅 매핑 45건  [4] 키워드 사전 16건
+-- 원천     : 기준 데이터 v0.10(db/archive/v0.10/) 위에 아래 "v0.10 → v0.11 변경"을 더한 것
+--            새 코드는 기존 DB와 COM_CD_SN이 같도록 공용 DB에 실행한 순서대로 파일 끝에 둔다
 -- 채번 규칙: 그룹 = 도메인3자 + G + 2자리(ERD 그대로) / 코드 = 도메인3자 + C + 4자리
 --            삭제된 번호는 결번으로 두고 재사용하지 않으며, 신규 코드는 도메인 마지막 번호 뒤에 붙인다
 -- 정렬순서 : 그룹·코드 모두 10 단위
 -- 설명(EXPLN): 그룹 행 = 사용 컬럼 목록 / 코드 행 = 의미·조건
--- 실행 조건: DDL v0.10 적용 후 빈 COM_CD·CARE_MSN 테이블에 1회 실행
--- 실행 순서: 20261029_create_tables_v0.10.sql → 이 파일 → (선택) db/seed/
+-- 실행 조건: DDL v0.11 적용 후 빈 COM_CD·CARE_MSN 테이블에 1회 실행
+-- 실행 순서: 20261030_create_tables_v0.11.sql → 이 파일 → (선택) db/seed/
+-- =====================================================================
+-- v0.10 → v0.11 변경 (기존 DB에 실행할 SQL. 공용 DB에는 이 절의 SQL만 실행한다, docs/convention/shared-files.md)
+-- v0.11 (1) 관리자 테이블 5개 (2026-10-30, LJS, 근거: 관리자_기능명세서_v0.1 / docs/admin/implementation-plan.md 결정 25·31·32·33)
+--   20261030_create_tables_v0.11.sql의 v0.11 (1)을 실행한 다음에 실행한다
+--   SET NAMES utf8mb4;
+--   START TRANSACTION;
+--   -- ■ SYS 시스템·AIM AI매니저 — v0.11 추가: 관리자 테이블 공통코드 (v0.11 (1))
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES (NULL,'SYSG01','작업유형','사용 컬럼: MNGR_TASK_LOG.TASK_TYPE_CD',10);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG01') p),'SYSC0001','등록',NULL,10);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG01') p),'SYSC0002','수정',NULL,20);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG01') p),'SYSC0003','삭제','DEL_YN = Y 변경 포함',30);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG01') p),'SYSC0004','처리','신고 처리·문의 답변·정지 등 상태를 바꾸는 작업',40);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG01') p),'SYSC0005','로그인','관리자 로그인 (FN-ADM-114-03)',50);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES (NULL,'SYSG02','배치구분','사용 컬럼: BTCH_EXCN_HSTRY.BTCH_SE_CD',20);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0006','케어미션 출제','scheduler/CareMissionJob',10);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0007','케어 일정 사전 알림','scheduler/CareScheduleAlarmJob',20);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0008','AI 대화 정리','scheduler/AiConversationPurgeJob',30);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0009','처방 만료','health/PrescriptionExpiryJob',40);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES (NULL,'SYSG03','실행구분','사용 컬럼: BTCH_EXCN_HSTRY.EXCN_SE_CD',30);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG03') p),'SYSC0010','자동','스케줄 실행',10);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG03') p),'SYSC0011','수동','관리자 수동 실행 (FN-ADM-111-03), MBR_SN = 실행한 관리자',20);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES (NULL,'SYSG04','실행결과','사용 컬럼: BTCH_EXCN_HSTRY.EXCN_RSLT_CD',40);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG04') p),'SYSC0012','실행중',NULL,10);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG04') p),'SYSC0013','성공',NULL,20);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG04') p),'SYSC0014','실패','FAIL_RSN 기록',30);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES (NULL,'SYSG05','외부API구분','사용 컬럼: EXTL_API_CALL_LOG.EXTL_API_SE_CD',50);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG05') p),'SYSC0015','AI 대화','Python AI 서버, 토큰 수 기록',10);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG05') p),'SYSC0016','영수증 OCR',NULL,20);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG05') p),'SYSC0017','캐릭터 생성',NULL,30);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG05') p),'SYSC0018','지역 변환','좌표 → 행정구역',40);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG05') p),'SYSC0019','장소 공공데이터','장소 수집 (FN-ADM-060-04)',50);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG05') p),'SYSC0020','메일 발송','SMTP',60);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES (NULL,'SYSG06','호출결과','사용 컬럼: EXTL_API_CALL_LOG.CALL_RSLT_CD',60);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG06') p),'SYSC0021','성공',NULL,10);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG06') p),'SYSC0022','실패','FAIL_RSN 기록',20);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG06') p),'SYSC0023','시간초과',NULL,30);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES (NULL,'AIMG09','이동방식','사용 컬럼: AI_ROUT_MPNG.MVMN_MTHD_CD',90);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='AIMG09') p),'AIMC0032','화면 이동','칩·바로가기 = 즉시, 자연어 = 3초 유예 후 이동 (FN-AIM-004-04·05)',10);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='AIMG09') p),'AIMC0033','모달 열기','화면 이동 없이 본창에서 모달을 연다. 대화창은 닫는다',20);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='AIMG09') p),'AIMC0034','라우팅 대상 아님','목록에서만 진입하는 종속 화면',30);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='AIMG09') p),'AIMC0035','제외','매핑 금지',40);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='AIMG09') p),'AIMC0036','보류','화면 ID 확인 필요',50);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES (NULL,'AIMG10','사전용도','사용 컬럼: KWRD_DICT.DICT_USG_CD',100);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='AIMG10') p),'AIMC0037','일정 등록 판정','AI매니저 부록 B (FN-AIM-001-05 ①, FN-AIM-012-01~02)',10);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='AIMG10') p),'AIMC0038','가계부 분류',NULL,20);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='AIMG10') p),'AIMC0039','뉴스 분류','RSS 기사 제목 키워드 (결정 20)',30);
+--   -- =====================================================================
+--   -- [3] AI 라우팅 매핑 (AI_ROUT_MPNG) — AI매니저 기능명세서 v0.12 부록 A를 옮긴 것 (v0.11 (1), 결정 25)
+--   --     PRRT_SEQ = 부록 No × 10. 지시어 키워드는 쉼표 구분
+--   -- =====================================================================
+--   INSERT INTO `AI_ROUT_MPNG` (`DOMN_NM`,`TRGT_SCRN_NM`,`SCRN_ID`,`SCRN_PARAM_CN`,`INST_KWRD_CN`,`MVMN_MTHD_CD`,`RPRS_CHIP_YN`,`PRRT_SEQ`,`RMRK_CN`) VALUES
+--     ('HLT','종합 건강기록','SCR-HLT-011',NULL,'건강기록, 종합 건강기록, 건강 종합, 건강 이력, 우리 애 상태','AIMC0032','Y',10,'칩 ①. 건강기록 진입 첫 화면(뎁스2 최상단). 조회 전용. v0.3: SCR-HLT-001(09-04 폐지) → 011'),
+--     ('HOS','플레이스 — 병원 탭','SCR-HOS-001','cat=hospital','병원, 동물병원, 진료, 아파, 병원 찾아줘','AIMC0032','Y',20,'칩 ②. 08-17 동물병원 → 플레이스 통합'),
+--     ('HOS','플레이스 (키워드에 따라 탭)','SCR-HOS-001','cat=…','플레이스, 미용, 용품, 호텔, 동반','AIMC0032','Y',30,'칩 ③. 탭 파라미터는 아래 행 참조'),
+--     ('CMU','펫이야기 목록','SCR-CMU-001-01',NULL,'커뮤니티, 게시판, 펫이야기, 글 보고 싶어','AIMC0032','Y',40,'칩 ④. 커뮤니티 1차 메뉴 첫 화면'),
+--     ('MYP','마이페이지 홈','SCR-MYP-001',NULL,'마이페이지, 내 정보, 내 페이지','AIMC0032','Y',50,'칩 ⑤'),
+--     ('MYP','픽셀 캐릭터 관리','SCR-MYP-010',NULL,'캐릭터, 픽셀, 꾸미기, 아이템','AIMC0032','Y',60,'칩 ⑥. MYP v0.4에서 ID 공란 해소'),
+--     ('CSC','공지사항 목록','SCR-CSC-001',NULL,'고객센터, 문의, 공지, 공지사항','AIMC0032','Y',70,'칩 ⑦. (10-01) 요구사항정의서 v0.8.6에서 REQ-CSC-001 관련 화면 ID를 SCR-CSC-001로 정비 — 표기 불일치 해소'),
+--     ('MAN','메인 (히어로 + 건강 대시보드)','SCR-MAN-001',NULL,'메인, 홈, 처음으로, 대시보드, 통합대시보드, 건강 대시보드','AIMC0032','N',80,'로고 클릭과 동일 목적지'),
+--     ('COM','설정 (알림)','SCR-COM-008',NULL,'설정, 알림 설정, 알림 꺼줘, 알림 켜줘, 수신 해제','AIMC0032','N',90,'09-12 신설. 값 변경은 하지 않고 화면 이동만 한다'),
+--     ('COM','공통 채팅 모달','SCR-COM-009',NULL,'채팅, 메시지, 쪽지, 대화 확인','AIMC0033','N',100,'※ 특수 — 화면 이동이 아니라 본창에서 모달을 연다. 대화창은 닫는다 (v0.4 신설)'),
+--     ('HLT','케어 캘린더 (월간 캘린더)','SCR-HLT-003',NULL,'케어 캘린더, 캘린더, 일정 보여줘, 일정 등록, 접종 일정, 다음 접종, 예방접종 예정, 정기검진 일정, 병원 예약','AIMC0032','N',110,'일정 전용(일상 기록 미표시). 예방접종·정기검진 다음 예정일의 진실 출처. 케어 일정 알림 이동 대상과 동일(FN-AIM-006-13) / v0.4: ''일정 등록'' 등 키워드가 걸려도 날짜·시간·주기 표현과 함께 오면 등록 요청(SCR-AIM-012)으로 먼저 판정(FN-AIM-004-13). 날짜 없는 요청만 이 행으로 라우팅'),
+--     ('HLT','케어 캘린더 (토탈 케어리스트)','SCR-HLT-003',NULL,'케어리스트, 토탈 케어리스트, 데일리케어(구 명칭), 일상관리, 정기관리, 투약 체크, 심장사상충, 구충','AIMC0032','N',120,'월간 캘린더 아래 토탈 케어리스트 — 영역 앵커 미정의로 화면 단위 이동'),
+--     ('HLT','건강 일지','SCR-HLT-002',NULL,'건강 일지, 일상 기록, 오늘 기록, 체중, 식사량, 음수량, 배변, 산책 기록, 검진기록, 검진 이력, 진료 내역, 지속 관찰, 관찰 기록','AIMC0032','N',130,'v0.3 신설. 일상 기록·검진기록 등록의 유일 경로. 영역 앵커(#건강기록변화·#지속관찰·#검진기록)는 HLT 합의 전까지 미사용 — 화면 단위 이동'),
+--     ('HLT','건강 일지 — 검진기록 (영수증으로 빠른 등록)','SCR-HLT-002',NULL,'병원 영수증, 약봉투, 진료비 영수증, 영수증으로 검진 등록','AIMC0032','N',140,'v0.3: SCR-AIM-008 직접 진입 → 건강 일지로 변경. OCR 화면은 [영수증으로 빠른 등록] 버튼 경유만(REQ-AIM-004). 가계부 영수증은 가계부(SCR-MYP-030) 행'),
+--     ('HLT','종합 건강기록 — 처방 및 투약 이력','SCR-HLT-011',NULL,'처방약, 약, 복용 중인 약, 투약 이력','AIMC0032','N',150,'조회 전용. 검진상세(SCR-HLT-005)는 검진기록 종속 화면이라 단독 라우팅 불가(제외 행). 데이터 컨텍스트(''초코 처방약'') 미수용'),
+--     ('HLT','종합 건강기록 — 검사 결과·수치 추이','SCR-HLT-011',NULL,'검사 결과, 혈액검사 결과, 검사 수치, 수치 추이, 검사지','AIMC0032','N',160,'조회 전용. 결과지 등록(PDF 분석)은 검진상세 경유. SCR-HLT-008 결번'),
+--     ('HOS','플레이스 — 미용 탭','SCR-HOS-001','cat=beauty','미용, 애견미용, 미용실, 털 깎','AIMC0032','N',170,NULL),
+--     ('HOS','플레이스 — 용품 탭','SCR-HOS-001','cat=goods','용품, 사료 파는 곳, 펫샵','AIMC0032','N',180,NULL),
+--     ('HOS','플레이스 — 동반 탭','SCR-HOS-001','cat=pet-friendly','동반, 같이 갈 수 있는, 애견동반 카페','AIMC0032','N',190,NULL),
+--     ('HOS','플레이스 — 호텔 탭','SCR-HOS-001','cat=hotel','호텔, 맡길 곳, 펫호텔','AIMC0032','N',200,NULL),
+--     ('HOS','동물병원 요약 카드 · 외부 연결','SCR-HOS-002',NULL,NULL,'AIMC0034','N',210,'목록에서만 진입하는 종속 화면 — 매핑 제외'),
+--     ('CMU','펫이야기 글 상세','SCR-CMU-001-02',NULL,NULL,'AIMC0034','N',220,'특정 글 지정은 데이터 컨텍스트 — 미수용'),
+--     ('CMU','실종센터','SCR-CMU-002',NULL,'실종, 잃어버렸어, 실종센터, 찾아주세요, 제보','AIMC0032','N',230,NULL),
+--     ('CMU','펫뉴스','SCR-CMU-003-01',NULL,'뉴스, 펫뉴스, 소식','AIMC0032','N',240,NULL),
+--     ('CMU','우리동네 펫돌봄','SCR-CMU-004',NULL,'펫돌봄, 돌봄, 펫시터, 산책 도우미, 맡아주실 분','AIMC0032','N',250,'REQ-CMU-009 개정(09-15). 구 지시어 ''산책 도우미''도 함께 매핑'),
+--     ('MYP','반려동물 등록·수정','SCR-MYP-002',NULL,'반려동물 등록, 프로필 등록, 우리 애 정보','AIMC0032','N',260,'SCR-MYP-003(상세)은 목록 경유 — 매핑 제외'),
+--     ('MYP','공동양육 관리','SCR-MYP-004',NULL,'공동양육, 같이 키우, 초대','AIMC0032','N',270,'SCR-MYP-005·006은 하위 단계 — 매핑 제외'),
+--     ('MYP','픽셀 캐릭터 상세','SCR-MYP-011',NULL,NULL,'AIMC0034','N',280,'SCR-MYP-010 경유. 캐릭터 완료 알림의 이동 대상'),
+--     ('MYP','케어미션 · 포인트','SCR-MYP-020',NULL,'포인트, 케어미션, 미션','AIMC0032','N',290,NULL),
+--     ('MYP','가계부','SCR-MYP-030',NULL,'가계부, 지출, 얼마 썼, 병원비, 한도, 가계부 영수증','AIMC0032','N',300,'월 지출 한도 설정도 이 화면 (REQ-MYP-004 v0.7)'),
+--     ('MYP','가계부 전체 내역','SCR-MYP-031',NULL,'전체 내역, 지출 내역 다 보여줘','AIMC0032','N',310,NULL),
+--     ('MYP','회원정보 수정','SCR-MYP-040',NULL,'회원정보, 비밀번호 변경, 닉네임 변경, 탈퇴','AIMC0032','N',320,NULL),
+--     ('CSC','FAQ 목록','SCR-CSC-002-01',NULL,'자주하는 질문, FAQ, 도움말','AIMC0032','N',330,'폴백 2회 연속 실패 시 이동 대상(FN-AIM-005-05)'),
+--     ('CSC','공지 상세','SCR-CSC-001-02',NULL,NULL,'AIMC0034','N',340,'목록 경유'),
+--     ('MAN','랜딩페이지','SCR-MAN-002',NULL,NULL,'AIMC0035','N',350,'로그인 상태에서는 메인으로 리다이렉트 (REQ-MAN-007) — 라우팅 대상 아님'),
+--     ('ACC','로그인 · 회원가입','SCR-ACC-001 / 002',NULL,NULL,'AIMC0035','N',360,'전 서비스 로그인 필수 — 대화창이 열린 시점에 이미 로그인 상태'),
+--     ('COM','기본 레이아웃 · 드롭다운 3종','SCR-COM-002·004·005·006',NULL,NULL,'AIMC0035','N',370,'화면이 아니라 공통 구조·드롭다운 — 이동 대상이 될 수 없음'),
+--     ('COM','AI 매니저 새 창 런처','SCR-COM-007',NULL,NULL,'AIMC0035','N',380,'대화창 안에서 대화창을 여는 순환 — 매핑 금지'),
+--     ('AIM','대화창 자신 (001·002·004·005·011·012·013)','SCR-AIM-0xx',NULL,NULL,'AIMC0035','N',390,'상동. ※ SCR-AIM-003·007은 결번 — 매핑 금지'),
+--     ('AIM','OCR 촬영 · 결과 확인 · 실패','SCR-AIM-008 / 009 / 010',NULL,NULL,'AIMC0035','N',400,'건강 일지 [영수증으로 빠른 등록] 경유 — 단독 진입 불가(REQ-AIM-004 진입 경로) / v0.9: AI 대화창 안 영수증 분석은 입력창 [＋](파일 업로드)(SCR-AIM-013)로 하며 라우팅 대상이 아니다'),
+--     ('HLT','검진상세','SCR-HLT-005',NULL,NULL,'AIMC0035','N',410,'검진기록 종속 페이지(건강 일지·종합 건강기록 경유) — 단독 진입 불가'),
+--     ('HLT','검사 수치 입력','SCR-HLT-007',NULL,NULL,'AIMC0035','N',420,'SCR-HLT-005 경유(검진기록 종속) — 단독 진입 불가'),
+--     ('HLT','결번','SCR-HLT-000·001·004·006·008·009',NULL,NULL,'AIMC0035','N',430,'건강기록 v0.9 결번(재사용 금지) — 매핑 금지. 구 ''통합대시보드''는 메인(SCR-MAN-001), 구 ''건강 종합''은 종합 건강기록(SCR-HLT-011)'),
+--     ('PLC','SCR-PLC-001 / 002','SCR-PLC-001 / 002',NULL,NULL,'AIMC0036','N',440,'※ REQ-PLC-001·002의 화면 ID. 플레이스 목록이 SCR-HOS-001인 것과 표기 체계가 달라 확인 필요 (REQ-PLC-001 비고의 SCR-PLC-010도 ''확인'' 표기 상태)'),
+--     ('ADM','관리자 도메인 전체',NULL,NULL,NULL,'AIMC0035','N',450,'관리자 화면설계·기능명세는 사용자 도메인 확정 후 착수 (09-06 팀장 확정)');
+--
+--   -- =====================================================================
+--   -- [4] 키워드 사전 (KWRD_DICT) — AI매니저 기능명세서 v0.12 부록 B 등록 판정 사전 (v0.11 (1), 결정 25)
+--   --     검진유형 행은 해석 결과(HLTG01)별로 나눴다. 가계부·뉴스 분류 키워드는 아직 없다
+--   -- =====================================================================
+--   INSERT INTO `KWRD_DICT` (`DICT_USG_CD`,`KWRD_CLSF_NM`,`ARTCL_NM`,`KWRD_CN`,`INTRP_RSLT_CN`,`MPNG_CD`,`SORT_SEQ`,`RMRK_CN`) VALUES
+--     ('AIMC0037','판정 규칙','등록 요청','등록 동사 + (날짜 또는 시간 또는 주기 표현)','둘 다 있으면 등록 요청 → SCR-AIM-012',NULL,10,'한쪽만 있으면 등록 요청 아님(라우팅·검색 판정으로 진행). FN-AIM-001-05 ①'),
+--     ('AIMC0037','등록 동사','일정·항목 등록','잡아줘, 등록해줘, 넣어줘, 추가해줘, 예약해줘, 만들어줘','등록 의도',NULL,20,'어미 변형(잡아 줘·등록해 주세요 등) 포함'),
+--     ('AIMC0037','날짜','상대 날짜','오늘, 내일, 모레, 이번 주 ○요일, 다음 주 ○요일, 다음 달 ○일, ○일 후, ○요일','날짜(오늘 KST 기준 계산)',NULL,30,'AI 보조 결과도 서버에서 재검증(FN-AIM-012-03) / ○요일만 쓰면 오늘부터 가장 가까운 그 요일(오늘 포함, 화면설계서 SCR-AIM-012 ⑦ 예시)'),
+--     ('AIMC0037','날짜','절대 날짜','○월 ○일, ○일, ○/○, YYYY-MM-DD','날짜',NULL,40,'연도 생략 시: 일정은 오늘 이후 가장 가까운 날짜(지났으면 다음 해), ''마지막으로 한 날''은 오늘 이전 가장 가까운 날짜(10-01 확정)'),
+--     ('AIMC0037','시간','시각','오전·오후 ○시, ○시 ○분, ○시 반, HH:MM','시간(선택 칸)',NULL,50,'없으면 시간 없이 등록'),
+--     ('AIMC0037','주기','일상관리','매일, 날마다, 하루에 한 번','반복 유형 = 매일(일상관리)',NULL,60,'FN-AIM-012-07'),
+--     ('AIMC0037','주기','정기관리','매주·일주일마다(1주), 2주마다·격주(2주), 매달·한 달마다(한달), 매년·1년마다(1년), ○일마다(직접입력 n일)','반복 유형 = 주기(정기관리) + 주기 값',NULL,70,'FN-HLT-003-21~24 선택지와 동일 값'),
+--     ('AIMC0037','주기','마지막으로 한 날','○일에 했어, 지난주 ○요일에 했어, 어제 했어','마지막으로 한 날',NULL,80,'없으면 등록일 기준(FN-HLT-003-38)'),
+--     ('AIMC0037','일정 종류','병원','병원, 동물병원, 검진, 접종, 진료','일정 종류 = 병원(HLTG19)','HLTC0057',90,'병원이면 검진유형·병원명 필수'),
+--     ('AIMC0037','일정 종류','미용·목욕','미용, 목욕, 털 깎기','일정 종류 = 미용·목욕','HLTC0058',100,NULL),
+--     ('AIMC0037','일정 종류','케어·투약','투약, 약 먹이기, 케어','일정 종류 = 케어·투약','HLTC0059',110,NULL),
+--     ('AIMC0037','검진유형','병원 일정','정기검진·건강검진','검진유형 = 정기검진(HLTG01)','HLTC0001',120,'못 정하면 되물음(FN-AIM-012-05)'),
+--     ('AIMC0037','검진유형','병원 일정','예방접종·접종·백신','검진유형 = 예방접종(HLTG01)','HLTC0002',130,'못 정하면 되물음(FN-AIM-012-05)'),
+--     ('AIMC0037','검진유형','병원 일정','진료·아파서','검진유형 = 질병진료(HLTG01)','HLTC0003',140,'못 정하면 되물음(FN-AIM-012-05)'),
+--     ('AIMC0037','검진유형','병원 일정','검사','검진유형 = 검사(HLTG01)','HLTC0004',150,'못 정하면 되물음(FN-AIM-012-05)'),
+--     ('AIMC0037','검진유형','병원 일정','그 외','검진유형 = 기타 진료(HLTG01)','HLTC0005',160,'못 정하면 되물음(FN-AIM-012-05)');
+--   COMMIT;
 -- =====================================================================
 SET NAMES utf8mb4;
 START TRANSACTION;
@@ -454,6 +571,50 @@ INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT
 -- ■ MYP 마이페이지 — v0.10 추가: 검진기록 등록 포인트 (20261027_02_update_care_msn_and_ckup_pnt)
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='MYPG03') p),'MYPC0021','검진기록 등록','적립(+). 반려동물·검진일당 1회 20P, 등록일 기준 최근 7일 이내 검진일만 (FN-MYP-020-08)',15);
 
+-- ■ CMU 커뮤니티 — v0.10 추가: 실종센터 게시판 (20261029_02_add_cmug01_lost)
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='CMUG01') p),'CMUC0024','실종센터','LOST_TPOF와 1:1인 게시글',30);
+
+-- ■ SYS 시스템·AIM AI매니저 — v0.11 추가: 관리자 테이블 공통코드 (v0.11 (1))
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES (NULL,'SYSG01','작업유형','사용 컬럼: MNGR_TASK_LOG.TASK_TYPE_CD',10);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG01') p),'SYSC0001','등록',NULL,10);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG01') p),'SYSC0002','수정',NULL,20);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG01') p),'SYSC0003','삭제','DEL_YN = Y 변경 포함',30);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG01') p),'SYSC0004','처리','신고 처리·문의 답변·정지 등 상태를 바꾸는 작업',40);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG01') p),'SYSC0005','로그인','관리자 로그인 (FN-ADM-114-03)',50);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES (NULL,'SYSG02','배치구분','사용 컬럼: BTCH_EXCN_HSTRY.BTCH_SE_CD',20);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0006','케어미션 출제','scheduler/CareMissionJob',10);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0007','케어 일정 사전 알림','scheduler/CareScheduleAlarmJob',20);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0008','AI 대화 정리','scheduler/AiConversationPurgeJob',30);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0009','처방 만료','health/PrescriptionExpiryJob',40);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES (NULL,'SYSG03','실행구분','사용 컬럼: BTCH_EXCN_HSTRY.EXCN_SE_CD',30);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG03') p),'SYSC0010','자동','스케줄 실행',10);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG03') p),'SYSC0011','수동','관리자 수동 실행 (FN-ADM-111-03), MBR_SN = 실행한 관리자',20);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES (NULL,'SYSG04','실행결과','사용 컬럼: BTCH_EXCN_HSTRY.EXCN_RSLT_CD',40);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG04') p),'SYSC0012','실행중',NULL,10);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG04') p),'SYSC0013','성공',NULL,20);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG04') p),'SYSC0014','실패','FAIL_RSN 기록',30);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES (NULL,'SYSG05','외부API구분','사용 컬럼: EXTL_API_CALL_LOG.EXTL_API_SE_CD',50);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG05') p),'SYSC0015','AI 대화','Python AI 서버, 토큰 수 기록',10);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG05') p),'SYSC0016','영수증 OCR',NULL,20);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG05') p),'SYSC0017','캐릭터 생성',NULL,30);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG05') p),'SYSC0018','지역 변환','좌표 → 행정구역',40);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG05') p),'SYSC0019','장소 공공데이터','장소 수집 (FN-ADM-060-04)',50);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG05') p),'SYSC0020','메일 발송','SMTP',60);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES (NULL,'SYSG06','호출결과','사용 컬럼: EXTL_API_CALL_LOG.CALL_RSLT_CD',60);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG06') p),'SYSC0021','성공',NULL,10);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG06') p),'SYSC0022','실패','FAIL_RSN 기록',20);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG06') p),'SYSC0023','시간초과',NULL,30);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES (NULL,'AIMG09','이동방식','사용 컬럼: AI_ROUT_MPNG.MVMN_MTHD_CD',90);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='AIMG09') p),'AIMC0032','화면 이동','칩·바로가기 = 즉시, 자연어 = 3초 유예 후 이동 (FN-AIM-004-04·05)',10);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='AIMG09') p),'AIMC0033','모달 열기','화면 이동 없이 본창에서 모달을 연다. 대화창은 닫는다',20);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='AIMG09') p),'AIMC0034','라우팅 대상 아님','목록에서만 진입하는 종속 화면',30);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='AIMG09') p),'AIMC0035','제외','매핑 금지',40);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='AIMG09') p),'AIMC0036','보류','화면 ID 확인 필요',50);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES (NULL,'AIMG10','사전용도','사용 컬럼: KWRD_DICT.DICT_USG_CD',100);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='AIMG10') p),'AIMC0037','일정 등록 판정','AI매니저 부록 B (FN-AIM-001-05 ①, FN-AIM-012-01~02)',10);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='AIMG10') p),'AIMC0038','가계부 분류',NULL,20);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='AIMG10') p),'AIMC0039','뉴스 분류','RSS 기사 제목 키워드 (결정 20)',30);
+
 -- =====================================================================
 -- [2] 케어미션 마스터 (CARE_MSN) — 20261027_02_update_care_msn_and_ckup_pnt 의 최종 상태
 --     일상케어(MYPC0010) 9개, 활동기반(MYPC0011) 12개. 근거: FN-MYP-020-03·05, FN-HLT-003-12
@@ -481,5 +642,79 @@ INSERT INTO `CARE_MSN` (`MSN_POOL_CD`,`MSN_NM`,`CMPN_PNT`,`ACHV_CRTR_NMTM`,`MVMN
   ('MYPC0011','펫이야기 글 등록하기',20,1,'/community'),
   ('MYPC0011','펫이야기 댓글 작성하기',5,1,'/community');
 
+
+-- =====================================================================
+-- [3] AI 라우팅 매핑 (AI_ROUT_MPNG) — AI매니저 기능명세서 v0.12 부록 A를 옮긴 것 (v0.11 (1), 결정 25)
+--     PRRT_SEQ = 부록 No × 10. 지시어 키워드는 쉼표 구분
+-- =====================================================================
+INSERT INTO `AI_ROUT_MPNG` (`DOMN_NM`,`TRGT_SCRN_NM`,`SCRN_ID`,`SCRN_PARAM_CN`,`INST_KWRD_CN`,`MVMN_MTHD_CD`,`RPRS_CHIP_YN`,`PRRT_SEQ`,`RMRK_CN`) VALUES
+  ('HLT','종합 건강기록','SCR-HLT-011',NULL,'건강기록, 종합 건강기록, 건강 종합, 건강 이력, 우리 애 상태','AIMC0032','Y',10,'칩 ①. 건강기록 진입 첫 화면(뎁스2 최상단). 조회 전용. v0.3: SCR-HLT-001(09-04 폐지) → 011'),
+  ('HOS','플레이스 — 병원 탭','SCR-HOS-001','cat=hospital','병원, 동물병원, 진료, 아파, 병원 찾아줘','AIMC0032','Y',20,'칩 ②. 08-17 동물병원 → 플레이스 통합'),
+  ('HOS','플레이스 (키워드에 따라 탭)','SCR-HOS-001','cat=…','플레이스, 미용, 용품, 호텔, 동반','AIMC0032','Y',30,'칩 ③. 탭 파라미터는 아래 행 참조'),
+  ('CMU','펫이야기 목록','SCR-CMU-001-01',NULL,'커뮤니티, 게시판, 펫이야기, 글 보고 싶어','AIMC0032','Y',40,'칩 ④. 커뮤니티 1차 메뉴 첫 화면'),
+  ('MYP','마이페이지 홈','SCR-MYP-001',NULL,'마이페이지, 내 정보, 내 페이지','AIMC0032','Y',50,'칩 ⑤'),
+  ('MYP','픽셀 캐릭터 관리','SCR-MYP-010',NULL,'캐릭터, 픽셀, 꾸미기, 아이템','AIMC0032','Y',60,'칩 ⑥. MYP v0.4에서 ID 공란 해소'),
+  ('CSC','공지사항 목록','SCR-CSC-001',NULL,'고객센터, 문의, 공지, 공지사항','AIMC0032','Y',70,'칩 ⑦. (10-01) 요구사항정의서 v0.8.6에서 REQ-CSC-001 관련 화면 ID를 SCR-CSC-001로 정비 — 표기 불일치 해소'),
+  ('MAN','메인 (히어로 + 건강 대시보드)','SCR-MAN-001',NULL,'메인, 홈, 처음으로, 대시보드, 통합대시보드, 건강 대시보드','AIMC0032','N',80,'로고 클릭과 동일 목적지'),
+  ('COM','설정 (알림)','SCR-COM-008',NULL,'설정, 알림 설정, 알림 꺼줘, 알림 켜줘, 수신 해제','AIMC0032','N',90,'09-12 신설. 값 변경은 하지 않고 화면 이동만 한다'),
+  ('COM','공통 채팅 모달','SCR-COM-009',NULL,'채팅, 메시지, 쪽지, 대화 확인','AIMC0033','N',100,'※ 특수 — 화면 이동이 아니라 본창에서 모달을 연다. 대화창은 닫는다 (v0.4 신설)'),
+  ('HLT','케어 캘린더 (월간 캘린더)','SCR-HLT-003',NULL,'케어 캘린더, 캘린더, 일정 보여줘, 일정 등록, 접종 일정, 다음 접종, 예방접종 예정, 정기검진 일정, 병원 예약','AIMC0032','N',110,'일정 전용(일상 기록 미표시). 예방접종·정기검진 다음 예정일의 진실 출처. 케어 일정 알림 이동 대상과 동일(FN-AIM-006-13) / v0.4: ''일정 등록'' 등 키워드가 걸려도 날짜·시간·주기 표현과 함께 오면 등록 요청(SCR-AIM-012)으로 먼저 판정(FN-AIM-004-13). 날짜 없는 요청만 이 행으로 라우팅'),
+  ('HLT','케어 캘린더 (토탈 케어리스트)','SCR-HLT-003',NULL,'케어리스트, 토탈 케어리스트, 데일리케어(구 명칭), 일상관리, 정기관리, 투약 체크, 심장사상충, 구충','AIMC0032','N',120,'월간 캘린더 아래 토탈 케어리스트 — 영역 앵커 미정의로 화면 단위 이동'),
+  ('HLT','건강 일지','SCR-HLT-002',NULL,'건강 일지, 일상 기록, 오늘 기록, 체중, 식사량, 음수량, 배변, 산책 기록, 검진기록, 검진 이력, 진료 내역, 지속 관찰, 관찰 기록','AIMC0032','N',130,'v0.3 신설. 일상 기록·검진기록 등록의 유일 경로. 영역 앵커(#건강기록변화·#지속관찰·#검진기록)는 HLT 합의 전까지 미사용 — 화면 단위 이동'),
+  ('HLT','건강 일지 — 검진기록 (영수증으로 빠른 등록)','SCR-HLT-002',NULL,'병원 영수증, 약봉투, 진료비 영수증, 영수증으로 검진 등록','AIMC0032','N',140,'v0.3: SCR-AIM-008 직접 진입 → 건강 일지로 변경. OCR 화면은 [영수증으로 빠른 등록] 버튼 경유만(REQ-AIM-004). 가계부 영수증은 가계부(SCR-MYP-030) 행'),
+  ('HLT','종합 건강기록 — 처방 및 투약 이력','SCR-HLT-011',NULL,'처방약, 약, 복용 중인 약, 투약 이력','AIMC0032','N',150,'조회 전용. 검진상세(SCR-HLT-005)는 검진기록 종속 화면이라 단독 라우팅 불가(제외 행). 데이터 컨텍스트(''초코 처방약'') 미수용'),
+  ('HLT','종합 건강기록 — 검사 결과·수치 추이','SCR-HLT-011',NULL,'검사 결과, 혈액검사 결과, 검사 수치, 수치 추이, 검사지','AIMC0032','N',160,'조회 전용. 결과지 등록(PDF 분석)은 검진상세 경유. SCR-HLT-008 결번'),
+  ('HOS','플레이스 — 미용 탭','SCR-HOS-001','cat=beauty','미용, 애견미용, 미용실, 털 깎','AIMC0032','N',170,NULL),
+  ('HOS','플레이스 — 용품 탭','SCR-HOS-001','cat=goods','용품, 사료 파는 곳, 펫샵','AIMC0032','N',180,NULL),
+  ('HOS','플레이스 — 동반 탭','SCR-HOS-001','cat=pet-friendly','동반, 같이 갈 수 있는, 애견동반 카페','AIMC0032','N',190,NULL),
+  ('HOS','플레이스 — 호텔 탭','SCR-HOS-001','cat=hotel','호텔, 맡길 곳, 펫호텔','AIMC0032','N',200,NULL),
+  ('HOS','동물병원 요약 카드 · 외부 연결','SCR-HOS-002',NULL,NULL,'AIMC0034','N',210,'목록에서만 진입하는 종속 화면 — 매핑 제외'),
+  ('CMU','펫이야기 글 상세','SCR-CMU-001-02',NULL,NULL,'AIMC0034','N',220,'특정 글 지정은 데이터 컨텍스트 — 미수용'),
+  ('CMU','실종센터','SCR-CMU-002',NULL,'실종, 잃어버렸어, 실종센터, 찾아주세요, 제보','AIMC0032','N',230,NULL),
+  ('CMU','펫뉴스','SCR-CMU-003-01',NULL,'뉴스, 펫뉴스, 소식','AIMC0032','N',240,NULL),
+  ('CMU','우리동네 펫돌봄','SCR-CMU-004',NULL,'펫돌봄, 돌봄, 펫시터, 산책 도우미, 맡아주실 분','AIMC0032','N',250,'REQ-CMU-009 개정(09-15). 구 지시어 ''산책 도우미''도 함께 매핑'),
+  ('MYP','반려동물 등록·수정','SCR-MYP-002',NULL,'반려동물 등록, 프로필 등록, 우리 애 정보','AIMC0032','N',260,'SCR-MYP-003(상세)은 목록 경유 — 매핑 제외'),
+  ('MYP','공동양육 관리','SCR-MYP-004',NULL,'공동양육, 같이 키우, 초대','AIMC0032','N',270,'SCR-MYP-005·006은 하위 단계 — 매핑 제외'),
+  ('MYP','픽셀 캐릭터 상세','SCR-MYP-011',NULL,NULL,'AIMC0034','N',280,'SCR-MYP-010 경유. 캐릭터 완료 알림의 이동 대상'),
+  ('MYP','케어미션 · 포인트','SCR-MYP-020',NULL,'포인트, 케어미션, 미션','AIMC0032','N',290,NULL),
+  ('MYP','가계부','SCR-MYP-030',NULL,'가계부, 지출, 얼마 썼, 병원비, 한도, 가계부 영수증','AIMC0032','N',300,'월 지출 한도 설정도 이 화면 (REQ-MYP-004 v0.7)'),
+  ('MYP','가계부 전체 내역','SCR-MYP-031',NULL,'전체 내역, 지출 내역 다 보여줘','AIMC0032','N',310,NULL),
+  ('MYP','회원정보 수정','SCR-MYP-040',NULL,'회원정보, 비밀번호 변경, 닉네임 변경, 탈퇴','AIMC0032','N',320,NULL),
+  ('CSC','FAQ 목록','SCR-CSC-002-01',NULL,'자주하는 질문, FAQ, 도움말','AIMC0032','N',330,'폴백 2회 연속 실패 시 이동 대상(FN-AIM-005-05)'),
+  ('CSC','공지 상세','SCR-CSC-001-02',NULL,NULL,'AIMC0034','N',340,'목록 경유'),
+  ('MAN','랜딩페이지','SCR-MAN-002',NULL,NULL,'AIMC0035','N',350,'로그인 상태에서는 메인으로 리다이렉트 (REQ-MAN-007) — 라우팅 대상 아님'),
+  ('ACC','로그인 · 회원가입','SCR-ACC-001 / 002',NULL,NULL,'AIMC0035','N',360,'전 서비스 로그인 필수 — 대화창이 열린 시점에 이미 로그인 상태'),
+  ('COM','기본 레이아웃 · 드롭다운 3종','SCR-COM-002·004·005·006',NULL,NULL,'AIMC0035','N',370,'화면이 아니라 공통 구조·드롭다운 — 이동 대상이 될 수 없음'),
+  ('COM','AI 매니저 새 창 런처','SCR-COM-007',NULL,NULL,'AIMC0035','N',380,'대화창 안에서 대화창을 여는 순환 — 매핑 금지'),
+  ('AIM','대화창 자신 (001·002·004·005·011·012·013)','SCR-AIM-0xx',NULL,NULL,'AIMC0035','N',390,'상동. ※ SCR-AIM-003·007은 결번 — 매핑 금지'),
+  ('AIM','OCR 촬영 · 결과 확인 · 실패','SCR-AIM-008 / 009 / 010',NULL,NULL,'AIMC0035','N',400,'건강 일지 [영수증으로 빠른 등록] 경유 — 단독 진입 불가(REQ-AIM-004 진입 경로) / v0.9: AI 대화창 안 영수증 분석은 입력창 [＋](파일 업로드)(SCR-AIM-013)로 하며 라우팅 대상이 아니다'),
+  ('HLT','검진상세','SCR-HLT-005',NULL,NULL,'AIMC0035','N',410,'검진기록 종속 페이지(건강 일지·종합 건강기록 경유) — 단독 진입 불가'),
+  ('HLT','검사 수치 입력','SCR-HLT-007',NULL,NULL,'AIMC0035','N',420,'SCR-HLT-005 경유(검진기록 종속) — 단독 진입 불가'),
+  ('HLT','결번','SCR-HLT-000·001·004·006·008·009',NULL,NULL,'AIMC0035','N',430,'건강기록 v0.9 결번(재사용 금지) — 매핑 금지. 구 ''통합대시보드''는 메인(SCR-MAN-001), 구 ''건강 종합''은 종합 건강기록(SCR-HLT-011)'),
+  ('PLC','SCR-PLC-001 / 002','SCR-PLC-001 / 002',NULL,NULL,'AIMC0036','N',440,'※ REQ-PLC-001·002의 화면 ID. 플레이스 목록이 SCR-HOS-001인 것과 표기 체계가 달라 확인 필요 (REQ-PLC-001 비고의 SCR-PLC-010도 ''확인'' 표기 상태)'),
+  ('ADM','관리자 도메인 전체',NULL,NULL,NULL,'AIMC0035','N',450,'관리자 화면설계·기능명세는 사용자 도메인 확정 후 착수 (09-06 팀장 확정)');
+
+-- =====================================================================
+-- [4] 키워드 사전 (KWRD_DICT) — AI매니저 기능명세서 v0.12 부록 B 등록 판정 사전 (v0.11 (1), 결정 25)
+--     검진유형 행은 해석 결과(HLTG01)별로 나눴다. 가계부·뉴스 분류 키워드는 아직 없다
+-- =====================================================================
+INSERT INTO `KWRD_DICT` (`DICT_USG_CD`,`KWRD_CLSF_NM`,`ARTCL_NM`,`KWRD_CN`,`INTRP_RSLT_CN`,`MPNG_CD`,`SORT_SEQ`,`RMRK_CN`) VALUES
+  ('AIMC0037','판정 규칙','등록 요청','등록 동사 + (날짜 또는 시간 또는 주기 표현)','둘 다 있으면 등록 요청 → SCR-AIM-012',NULL,10,'한쪽만 있으면 등록 요청 아님(라우팅·검색 판정으로 진행). FN-AIM-001-05 ①'),
+  ('AIMC0037','등록 동사','일정·항목 등록','잡아줘, 등록해줘, 넣어줘, 추가해줘, 예약해줘, 만들어줘','등록 의도',NULL,20,'어미 변형(잡아 줘·등록해 주세요 등) 포함'),
+  ('AIMC0037','날짜','상대 날짜','오늘, 내일, 모레, 이번 주 ○요일, 다음 주 ○요일, 다음 달 ○일, ○일 후, ○요일','날짜(오늘 KST 기준 계산)',NULL,30,'AI 보조 결과도 서버에서 재검증(FN-AIM-012-03) / ○요일만 쓰면 오늘부터 가장 가까운 그 요일(오늘 포함, 화면설계서 SCR-AIM-012 ⑦ 예시)'),
+  ('AIMC0037','날짜','절대 날짜','○월 ○일, ○일, ○/○, YYYY-MM-DD','날짜',NULL,40,'연도 생략 시: 일정은 오늘 이후 가장 가까운 날짜(지났으면 다음 해), ''마지막으로 한 날''은 오늘 이전 가장 가까운 날짜(10-01 확정)'),
+  ('AIMC0037','시간','시각','오전·오후 ○시, ○시 ○분, ○시 반, HH:MM','시간(선택 칸)',NULL,50,'없으면 시간 없이 등록'),
+  ('AIMC0037','주기','일상관리','매일, 날마다, 하루에 한 번','반복 유형 = 매일(일상관리)',NULL,60,'FN-AIM-012-07'),
+  ('AIMC0037','주기','정기관리','매주·일주일마다(1주), 2주마다·격주(2주), 매달·한 달마다(한달), 매년·1년마다(1년), ○일마다(직접입력 n일)','반복 유형 = 주기(정기관리) + 주기 값',NULL,70,'FN-HLT-003-21~24 선택지와 동일 값'),
+  ('AIMC0037','주기','마지막으로 한 날','○일에 했어, 지난주 ○요일에 했어, 어제 했어','마지막으로 한 날',NULL,80,'없으면 등록일 기준(FN-HLT-003-38)'),
+  ('AIMC0037','일정 종류','병원','병원, 동물병원, 검진, 접종, 진료','일정 종류 = 병원(HLTG19)','HLTC0057',90,'병원이면 검진유형·병원명 필수'),
+  ('AIMC0037','일정 종류','미용·목욕','미용, 목욕, 털 깎기','일정 종류 = 미용·목욕','HLTC0058',100,NULL),
+  ('AIMC0037','일정 종류','케어·투약','투약, 약 먹이기, 케어','일정 종류 = 케어·투약','HLTC0059',110,NULL),
+  ('AIMC0037','검진유형','병원 일정','정기검진·건강검진','검진유형 = 정기검진(HLTG01)','HLTC0001',120,'못 정하면 되물음(FN-AIM-012-05)'),
+  ('AIMC0037','검진유형','병원 일정','예방접종·접종·백신','검진유형 = 예방접종(HLTG01)','HLTC0002',130,'못 정하면 되물음(FN-AIM-012-05)'),
+  ('AIMC0037','검진유형','병원 일정','진료·아파서','검진유형 = 질병진료(HLTG01)','HLTC0003',140,'못 정하면 되물음(FN-AIM-012-05)'),
+  ('AIMC0037','검진유형','병원 일정','검사','검진유형 = 검사(HLTG01)','HLTC0004',150,'못 정하면 되물음(FN-AIM-012-05)'),
+  ('AIMC0037','검진유형','병원 일정','그 외','검진유형 = 기타 진료(HLTG01)','HLTC0005',160,'못 정하면 되물음(FN-AIM-012-05)');
+
 COMMIT;
--- 합계: 공통코드 그룹 68건 + 코드 269건 = 337건, 케어미션 21건
+-- 합계: 공통코드 그룹 76건 + 코드 302건 = 378건, 케어미션 21건, AI 라우팅 매핑 45건, 키워드 사전 16건
