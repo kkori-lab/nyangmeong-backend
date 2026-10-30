@@ -45,6 +45,47 @@
            AND USE_YN = 'Y'
     </select>
 
+    <select id="selectMissingEssential" parameterType="long" resultMap="termsSummaryResultMap">
+        /* 회원이 동의하지 않은 현재 필수 약관 */
+        SELECT T.TRMS_SN
+             , T.TRMS_FIX_IDNTF_KEY
+             , T.TRMS_VER_ID
+             , T.TRMS_TTL
+             , (T.ESNTL_AGRE_YN = 'Y') AS ESNTL_AGRE_YN
+             , T.SORT_SEQ
+          FROM TRMS T
+         WHERE T.USE_YN = 'Y'
+           AND T.ESNTL_AGRE_YN = 'Y'
+           AND NOT EXISTS (SELECT 1
+                             FROM MBR_TRMS_AGRE A
+                            WHERE A.MBR_SN = #{mbrSn}
+                              AND A.TRMS_SN = T.TRMS_SN
+                              AND A.AGRE_YN = 'Y')
+         ORDER BY T.SORT_SEQ, T.TRMS_SN
+    </select>
+
+    <insert id="upsertAgreement">
+        INSERT INTO MBR_TRMS_AGRE (
+               MBR_SN
+             , TRMS_SN
+             , AGRE_DT
+             , AGRE_YN
+             , RGTR_ID
+             , MDFR_ID
+        ) VALUES (
+               #{mbrSn}
+             , #{trmsSn}
+             , NOW()
+             , 'Y'
+             , #{actorId}
+             , #{actorId}
+        )
+        ON DUPLICATE KEY UPDATE
+               AGRE_YN = 'Y'
+             , AGRE_DT = NOW()
+             , MDFR_ID = #{actorId}
+    </insert>
+
     <insert id="insertAgreement">
         INSERT INTO MBR_TRMS_AGRE (
                MBR_SN
