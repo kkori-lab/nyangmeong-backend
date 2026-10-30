@@ -16,6 +16,7 @@ public enum InspectionArticle {
     AST("HLTC0032"),
     ALP("HLTC0033"),
     GLU("HLTC0034"),
+    SDMA("HLTC0078"),
     DIRECT("HLTC0035");
 
     private final String code;

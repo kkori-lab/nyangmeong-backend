@@ -111,4 +111,16 @@ class CheckupMapperXmlTest {
         assertThat(sql("update", "updateLinkedCareItemsPet")).contains("PET_SN = #{petSn}")
                 .contains("MAIN_EXPSR_YN = 'N'");
     }
+
+    @Test
+    void 목록과_단건_조회는_삭제된_검진기록을_뺀다() throws Exception {
+        assertThat(sql("select", "selectList")).contains("C.DEL_YN = 'N'");
+        assertThat(sql("select", "selectDetail")).contains("C.DEL_YN = 'N'");
+    }
+
+    @Test
+    void 일정의_연결_검진기록_확인은_삭제된_검진기록을_세지_않는다() throws Exception {
+        assertThat(sql("select", "existsLinkedCheckup")).contains("FROM CKUP_RCD")
+                .contains("AND DEL_YN = 'N'");
+    }
 }

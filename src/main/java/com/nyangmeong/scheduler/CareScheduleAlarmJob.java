@@ -10,7 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.nyangmeong.global.notification.CareScheduleAlarmEvent;
 import com.nyangmeong.global.notification.EventPublisher;
-import com.nyangmeong.scheduler.HospitalScheduleFake.HospitalScheduleSummary;
+import com.nyangmeong.health.dto.HospitalScheduleSummary;
+import com.nyangmeong.health.service.CareScheduleService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -28,7 +29,7 @@ public class CareScheduleAlarmJob {
     /** 설정에서 고를 수 있는 사전 알림 일수 (당일·D-1·D-3·D-7) */
     static final List<Integer> BFHD_DAY_CNTS = List.of(0, 1, 3, 7);
 
-    private final HospitalScheduleFake hospitalScheduleFake;
+    private final CareScheduleService careScheduleService;
     private final CaregiverFake caregiverFake;
     private final EventPublisher eventPublisher;
 
@@ -47,11 +48,11 @@ public class CareScheduleAlarmJob {
     @Transactional
     public void scan(LocalDate baseYmd) {
         for (int bfhdDayCnt : BFHD_DAY_CNTS) {
-            for (HospitalScheduleSummary schedule : hospitalScheduleFake.search(baseYmd.plusDays(bfhdDayCnt))) {
-                for (Long mbrSn : caregiverFake.search(schedule.petSn())) {
-                    eventPublisher.publish(new CareScheduleAlarmEvent(mbrSn, schedule.schdlSn(), schedule.schdlDt(),
-                            schedule.hrInptYn(), schedule.petNm(), schedule.ckupTypeNm(), schedule.hsptlNm(),
-                            bfhdDayCnt));
+            for (HospitalScheduleSummary schedule : careScheduleService.searchHospitalSchedules(baseYmd.plusDays(bfhdDayCnt))) {
+                for (Long mbrSn : caregiverFake.search(schedule.getPetSn())) {
+                    eventPublisher.publish(new CareScheduleAlarmEvent(mbrSn, schedule.getSchdlSn(),
+                            schedule.getSchdlDt(), schedule.isHrInptYn(), schedule.getPetNm(),
+                            schedule.getCkupTypeNm(), schedule.getHsptlNm(), bfhdDayCnt));
                 }
             }
         }

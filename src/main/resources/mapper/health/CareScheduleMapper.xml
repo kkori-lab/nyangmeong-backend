@@ -18,6 +18,16 @@
         <result column="CKUP_RCD_CNT"       property="ckupRcdCnt" />
     </resultMap>
 
+    <resultMap id="hospitalScheduleSummaryResultMap" type="com.nyangmeong.health.dto.HospitalScheduleSummary">
+        <id     column="SCHDL_SN"     property="schdlSn" />
+        <result column="PET_SN"       property="petSn" />
+        <result column="PET_NM"       property="petNm" />
+        <result column="SCHDL_DT"     property="schdlDt" />
+        <result column="HR_INPT_YN"   property="hrInptYn" />
+        <result column="HSPTL_NM"     property="hsptlNm" />
+        <result column="CKUP_TYPE_NM" property="ckupTypeNm" />
+    </resultMap>
+
     <resultMap id="scheduleResultMap" type="com.nyangmeong.health.domain.Schedule">
         <id     column="SCHDL_SN"           property="schdlSn" />
         <result column="PET_SN"             property="petSn" />
@@ -54,7 +64,8 @@
              , ( SELECT COUNT(*)
                    FROM CKUP_RCD C
                   WHERE C.SCHDL_SN = S.SCHDL_SN
-                    AND C.CKUP_RCD_STTS_CD = #{completedCd} ) AS CKUP_RCD_CNT
+                    AND C.CKUP_RCD_STTS_CD = #{completedCd}
+                    AND C.DEL_YN = 'N' ) AS CKUP_RCD_CNT
           FROM SCHDL S
           LEFT JOIN COM_CD K
             ON K.COM_CD = S.SCHDL_KND_CD
@@ -83,6 +94,30 @@
         <if test="cond.size != null">
          LIMIT #{cond.size}
         </if>
+    </select>
+
+    <select id="selectHospitalSchedules" resultMap="hospitalScheduleSummaryResultMap">
+        /* 일정일의 병원 일정 목록 조회 (삭제된 반려동물 제외) */
+        SELECT S.SCHDL_SN
+             , S.PET_SN
+             , P.PET_NM
+             , S.SCHDL_DT
+             , CASE WHEN S.HR_INPT_YN = 'Y' THEN TRUE ELSE FALSE END AS HR_INPT_YN
+             , S.HSPTL_NM
+             , T.COM_CD_NM AS CKUP_TYPE_NM
+          FROM SCHDL S
+          JOIN PET P
+            ON P.PET_SN = S.PET_SN
+           AND P.DEL_YN = 'N'
+          LEFT JOIN COM_CD T
+            ON T.COM_CD = S.CKUP_TYPE_CD
+           AND T.COM_CD_PRNT_SN IS NOT NULL
+         WHERE S.SCHDL_KND_CD = #{hospitalCd}
+           AND S.DEL_YN = 'N'
+           AND S.SCHDL_DT &gt;= #{schdlYmd}
+           AND S.SCHDL_DT &lt; DATE_ADD(#{schdlYmd}, INTERVAL 1 DAY)
+         ORDER BY S.SCHDL_DT
+                , S.SCHDL_SN
     </select>
 
     <select id="selectSchedule" parameterType="long" resultMap="scheduleResultMap">
@@ -216,5 +251,15 @@
          WHERE CKUP_RCD_SN IN ( SELECT C.CKUP_RCD_SN
                                   FROM CKUP_RCD C
                                  WHERE C.SCHDL_SN = #{schdlSn} )
+    </update>
+
+    <update id="deleteByPetSn">
+        /* 반려동물의 일정 전체 삭제 (반려동물 삭제) */
+        UPDATE SCHDL
+           SET DEL_YN   = 'Y'
+             , MDFR_ID  = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE PET_SN = #{petSn}
+           AND DEL_YN = 'N'
     </update>
 </mapper>

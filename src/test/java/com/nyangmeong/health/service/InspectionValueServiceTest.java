@@ -101,6 +101,18 @@ class InspectionValueServiceTest {
     }
 
     @Test
+    void SDMA는_공통코드_항목으로_저장한다() {
+        String sdma = InspectionArticle.SDMA.getCode();
+
+        List<InspectionValueResponse> saved = service.create(MBR, PET, request(
+                item(sdma, null, "14", "ug/dL", "0", "14")));
+
+        assertThat(saved).hasSize(1);
+        assertThat(saved.get(0).inspArtclCd()).isEqualTo("HLTC0078");
+        assertThat(saved.get(0).inspArtclDrctInptNm()).isNull();
+    }
+
+    @Test
     void 같은_검진기록에_이미_있는_항목은_건너뛰고_새_항목만_뒤에_붙인다() {
         InspectionValue wbc = stored(WBC, "");
         wbc.setSortSeq(5);

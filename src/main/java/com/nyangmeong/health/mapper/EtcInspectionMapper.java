@@ -40,4 +40,9 @@ public interface EtcInspectionMapper {
      * 기타검사 삭제
      */
     int deleteInspection(@Param("etcInspSn") Long etcInspSn, @Param("actorId") String actorId);
+
+    /**
+     * 반려동물의 기타검사 전체 삭제 (반려동물 삭제)
+     */
+    int deleteByPetSn(@Param("petSn") Long petSn, @Param("actorId") String actorId);
 }

@@ -328,4 +328,26 @@
          WHERE OBSRV_CYCL_SN = #{obsrvCyclSn}
            AND DEL_YN = 'N'
     </update>
+
+    <update id="deleteCyclesByPetSn">
+        /* 반려동물의 관찰 회차 전체 삭제 (반려동물 삭제) */
+        UPDATE OBSRV_CYCL Y
+          JOIN OBSRV_ARTCL A
+            ON A.OBSRV_ARTCL_SN = Y.OBSRV_ARTCL_SN
+           SET Y.DEL_YN   = 'Y'
+             , Y.MDFR_ID  = #{actorId}
+             , Y.MDFCN_DT = NOW()
+         WHERE A.PET_SN = #{petSn}
+           AND Y.DEL_YN = 'N'
+    </update>
+
+    <update id="deleteByPetSn">
+        /* 반려동물의 관찰 항목 전체 삭제 (반려동물 삭제) */
+        UPDATE OBSRV_ARTCL
+           SET DEL_YN   = 'Y'
+             , MDFR_ID  = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE PET_SN = #{petSn}
+           AND DEL_YN = 'N'
+    </update>
 </mapper>

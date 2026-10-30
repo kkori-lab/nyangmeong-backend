@@ -147,4 +147,14 @@
          WHERE COM_CD = #{comCd}
            AND COM_CD_PRNT_SN IS NOT NULL
     </select>
+
+    <update id="deleteByPetSn">
+        /* 반려동물의 반복 예방 관리 전체 삭제 (반려동물 삭제) */
+        UPDATE REPT_PRVNT_MNG
+           SET DEL_YN   = 'Y'
+             , MDFR_ID  = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE PET_SN = #{petSn}
+           AND DEL_YN = 'N'
+    </update>
 </mapper>

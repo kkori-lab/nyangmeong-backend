@@ -45,4 +45,9 @@ public interface RepeatPreventionMapper {
      * 공통코드명 조회
      */
     String selectCodeName(String comCd);
+
+    /**
+     * 반려동물의 반복 예방 관리 전체 삭제 (반려동물 삭제)
+     */
+    int deleteByPetSn(@Param("petSn") Long petSn, @Param("actorId") String actorId);
 }

@@ -182,4 +182,18 @@
          WHERE CKUP_RCD_ATCH_SN = #{ckupRcdAtchSn}
            AND DEL_YN = 'N'
     </update>
+
+    <update id="deleteByPetSn">
+        /* 반려동물의 검진기록 첨부 전체 삭제 (반려동물 삭제, 연결 일정 삭제 여부와 무관) */
+        UPDATE CKUP_RCD_ATCH A
+          JOIN CKUP_RCD C
+            ON C.CKUP_RCD_SN = A.CKUP_RCD_SN
+          JOIN SCHDL S
+            ON S.SCHDL_SN = C.SCHDL_SN
+           SET A.DEL_YN   = 'Y'
+             , A.MDFR_ID  = #{actorId}
+             , A.MDFCN_DT = NOW()
+         WHERE S.PET_SN = #{petSn}
+           AND A.DEL_YN = 'N'
+    </update>
 </mapper>

@@ -156,4 +156,14 @@ public interface CareItemMapper {
      * 반복 예방 시작일 조회
      */
     LocalDate selectRepeatPreventionBgngYmd(Long reptPrvntMngSn);
+
+    /**
+     * 반려동물의 케어 완료 기록 전체 삭제 (반려동물 삭제)
+     */
+    int deleteCompletionsByPetSn(@Param("petSn") Long petSn, @Param("actorId") String actorId);
+
+    /**
+     * 반려동물의 케어 항목 전체 삭제 (반려동물 삭제)
+     */
+    int deleteByPetSn(@Param("petSn") Long petSn, @Param("actorId") String actorId);
 }

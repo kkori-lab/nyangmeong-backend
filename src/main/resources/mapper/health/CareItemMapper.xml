@@ -503,4 +503,28 @@
          WHERE REPT_PRVNT_MNG_SN = #{reptPrvntMngSn}
            AND DEL_YN = 'N'
     </select>
+
+    <update id="deleteCompletionsByPetSn">
+        /* 반려동물의 케어 완료 기록 전체 삭제 (반려동물 삭제) */
+        UPDATE CARE_CMPTN_HSTRY H
+          JOIN CARE_ARTCL A
+            ON A.CARE_ARTCL_SN = H.CARE_ARTCL_SN
+           SET H.DEL_YN   = 'Y'
+             , H.MDFR_ID  = #{actorId}
+             , H.MDFCN_DT = NOW()
+         WHERE A.PET_SN = #{petSn}
+           AND H.DEL_YN = 'N'
+    </update>
+
+    <update id="deleteByPetSn">
+        /* 반려동물의 케어 항목 전체 삭제 (반려동물 삭제) */
+        UPDATE CARE_ARTCL
+           SET DEL_YN        = 'Y'
+             , MAIN_EXPSR_YN = 'N'
+             , MAIN_SORT_SEQ = 0
+             , MDFR_ID       = #{actorId}
+             , MDFCN_DT      = NOW()
+         WHERE PET_SN = #{petSn}
+           AND DEL_YN = 'N'
+    </update>
 </mapper>

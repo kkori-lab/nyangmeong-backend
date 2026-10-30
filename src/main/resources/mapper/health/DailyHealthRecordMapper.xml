@@ -168,4 +168,14 @@
          WHERE DAILY_HLTH_RCD_SN = #{dailyHlthRcdSn}
            AND DEL_YN = 'N'
     </update>
+
+    <update id="deleteByPetSn">
+        /* 반려동물의 일상 건강기록 전체 삭제 (반려동물 삭제) */
+        UPDATE DAILY_HLTH_RCD
+           SET DEL_YN   = 'Y'
+             , MDFR_ID  = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE PET_SN = #{petSn}
+           AND DEL_YN = 'N'
+    </update>
 </mapper>

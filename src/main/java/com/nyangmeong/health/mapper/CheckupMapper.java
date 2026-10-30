@@ -83,4 +83,9 @@ public interface CheckupMapper {
      */
     int updateLinkedRepeatPreventionsPet(@Param("ckupRcdSn") Long ckupRcdSn, @Param("petSn") Long petSn,
             @Param("actorId") String actorId);
+
+    /**
+     * 반려동물의 검진기록 전체 삭제 (반려동물 삭제)
+     */
+    int deleteByPetSn(@Param("petSn") Long petSn, @Param("actorId") String actorId);
 }
