@@ -89,10 +89,16 @@
         (L.LOST_TPOF_STTS_CD = #{foundCd} AND P.MBR_SN != #{mbrSn})
     </sql>
 
+    <!-- 게시 기간이 끝난 실종 글 (만료 상태이거나, 실종인데 만료 기준 일시가 지남) -->
+    <sql id="expiredCond">
+        (L.LOST_TPOF_STTS_CD = #{expiredCd}
+         OR (L.LOST_TPOF_STTS_CD = #{missingCd} AND L.EXPRY_CRTR_DT <![CDATA[<]]> NOW()))
+    </sql>
+
     <select id="selectList" resultMap="lostReportSummaryResultMap">
         SELECT L.LOST_TPOF_SN
              , P.PST_TTL
-             , L.LOST_TPOF_STTS_CD
+             , CASE WHEN <include refid="expiredCond" /> THEN #{expiredCd} ELSE L.LOST_TPOF_STTS_CD END AS LOST_TPOF_STTS_CD
              , L.DSCV_SWTC_DT
              , P.REG_DT
              , CASE WHEN <include refid="hiddenCard" /> THEN NULL ELSE L.PET_SE_CD END AS PET_SE_CD
@@ -118,10 +124,28 @@
           LEFT JOIN VRTY V
             ON V.VRTY_SN = L.VRTY_SN
          WHERE P.PST_STTS_CD = #{pstSttsCd}
+        <choose>
+            <when test="mineYn">
+           AND P.MBR_SN = #{mbrSn}
+            </when>
+            <otherwise>
            AND (L.LOST_TPOF_STTS_CD = #{foundCd}
                 OR (L.LOST_TPOF_STTS_CD = #{missingCd} AND L.EXPRY_CRTR_DT >= NOW()))
+            </otherwise>
+        </choose>
         <if test="lostTpofSttsCd != null">
+            <choose>
+                <when test="lostTpofSttsCd == expiredCd">
+           AND <include refid="expiredCond" />
+                </when>
+                <when test="lostTpofSttsCd == missingCd">
+           AND L.LOST_TPOF_STTS_CD = #{missingCd}
+           AND L.EXPRY_CRTR_DT >= NOW()
+                </when>
+                <otherwise>
            AND L.LOST_TPOF_STTS_CD = #{lostTpofSttsCd}
+                </otherwise>
+            </choose>
         </if>
         <if test="rgnSn != null">
            AND L.RGN_SN IN (WITH RECURSIVE T AS (SELECT RGN_SN
@@ -160,7 +184,9 @@
                 OR L.VRTY_DRCT_INPT_NM LIKE CONCAT('%', #{keyword}, '%')
                 OR L.CHRC_CN LIKE CONCAT('%', #{keyword}, '%'))
         </if>
-         ORDER BY CASE WHEN L.LOST_TPOF_STTS_CD = #{foundCd} THEN 1 ELSE 0 END
+         ORDER BY CASE WHEN L.LOST_TPOF_STTS_CD = #{foundCd} THEN 1
+                       WHEN <include refid="expiredCond" /> THEN 2
+                       ELSE 0 END
                 , P.REG_DT DESC
                 , L.LOST_TPOF_SN DESC
     </select>

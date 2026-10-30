@@ -1,6 +1,7 @@
 package com.nyangmeong.community.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -101,6 +102,16 @@ class LostReportControllerTest {
                 .param("wtnsPrd", "WEEK").param("keyword", "말티즈"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.content[0].lostTpofSn").value(5));
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 내_글만_보기_mineYn이_조건에_바인딩된다() throws Exception {
+        when(lostReportService.search(eq(1L), argThat(c -> c.isMineYn()), any()))
+                .thenReturn(new PageResponse<>(List.of(), 1, 12, 0, 0, false));
+
+        mockMvc.perform(get("/api/lost-reports").param("mineYn", "true").param("lostTpofSttsCd", "CMUC0008"))
+                .andExpect(status().isOk());
     }
 
     @Test

@@ -70,12 +70,15 @@ public class LostReportService {
     private final BreedService breedService;
 
     /**
-     * 목록 조회 (실종 먼저·찾았어요 뒤, 한 페이지 12건)
+     * 목록 조회 (실종 먼저·찾았어요 뒤, 한 페이지 12건. mineYn 이면 내 글만, 만료 글은 맨 뒤)
      */
     @Transactional(readOnly = true)
     public PageResponse<LostReportSummary> search(Long mbrSn, LostReportSearchCond cond, PageQuery pq) {
         String sttsCd = blankToNull(cond.getLostTpofSttsCd());
-        if (sttsCd != null && !LostReportStatus.MISSING.is(sttsCd) && !LostReportStatus.FOUND.is(sttsCd)) {
+        boolean mine = cond.isMineYn();
+        boolean allowed = LostReportStatus.MISSING.is(sttsCd) || LostReportStatus.FOUND.is(sttsCd)
+                || (mine && LostReportStatus.EXPIRED.is(sttsCd));
+        if (sttsCd != null && !allowed) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
         String petSeCd = blankToNull(cond.getPetSeCd());
@@ -91,7 +94,8 @@ public class LostReportService {
         PageHelper.startPage(pq.pageOrDefault(), pq.sizeOr(PAGE_SIZE));
         List<LostReportSummary> rows = lostReportMapper.selectList(mbrSn, sttsCd, cond.getRgnSn(), petSeCd, wtnsPrd,
                 keyword == null ? null : escapeLike(keyword.trim()), PostStatus.NORMAL.getCode(),
-                LostReportStatus.MISSING.getCode(), LostReportStatus.FOUND.getCode());
+                LostReportStatus.MISSING.getCode(), LostReportStatus.FOUND.getCode(),
+                LostReportStatus.EXPIRED.getCode(), mine);
         return PageResponse.of(new PageInfo<>(rows));
     }
 
@@ -323,6 +327,10 @@ public class LostReportService {
     }
 
     private LostReportResponse toResponse(Long mbrSn, LostReportDetail detail) {
+        /** 만료 배치가 없어 DB에는 실종으로 남으므로, 목록과 같이 만료 상태로 내린다 */
+        if (isExpired(detail)) {
+            detail.setLostTpofSttsCd(LostReportStatus.EXPIRED.getCode());
+        }
         List<PostImageSummary> imgs = postMapper.selectImages(detail.getPstSn()).stream()
                 .map(PostImageSummary::from).toList();
         return LostReportResponse.of(detail, fieldCryptoService.decrypt(detail.getCnplEnc()), imgs,
