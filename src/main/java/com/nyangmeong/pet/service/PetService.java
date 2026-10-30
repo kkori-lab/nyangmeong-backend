@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,12 +22,15 @@ import com.nyangmeong.pet.domain.BrupRel;
 import com.nyangmeong.pet.domain.LinkChangeType;
 import com.nyangmeong.pet.domain.Pet;
 import com.nyangmeong.pet.domain.PetCodeGroup;
+import com.nyangmeong.pet.domain.PetDeletedEvent;
 import com.nyangmeong.pet.domain.PetColor;
 import com.nyangmeong.pet.dto.CaregiverSummary;
 import com.nyangmeong.pet.dto.PetCreateRequest;
 import com.nyangmeong.pet.dto.PetResponse;
 import com.nyangmeong.pet.dto.PetSummary;
 import com.nyangmeong.pet.dto.PetUpdateRequest;
+import com.nyangmeong.pet.mapper.CareMissionMapper;
+import com.nyangmeong.pet.mapper.CaregiverInvitationMapper;
 import com.nyangmeong.pet.mapper.PetMapper;
 import com.nyangmeong.pet.mapper.PixelCharacterMapper;
 
@@ -37,7 +41,7 @@ import lombok.RequiredArgsConstructor;
  * - 내 반려동물 목록 (SCR-MYP-001·002), 다른 도메인도 이 목록을 씀
  * - 등록·수정·상세·대표 지정 (SCR-MYP-003, FN-MYP-010-05)
  * - 양육자 목록·연동 해제 (SCR-MYP-004·006), 연동 양육자 회원 번호는 다른 도메인도 씀
- * - 삭제 (SCR-MYP-002) : 위층 데이터(건강기록·AI 대화)는 PET.DEL_YN 으로 가려지므로 건드리지 않음 (docs/api/issues.md 마이페이지 3번)
+ * - 삭제 (SCR-MYP-002) : 가계부만 남기고 같은 트랜잭션에서 soft delete, 위층 기록은 PetDeletedEvent 를 받은 쪽이 지운다 (docs/api/issues.md 마이페이지 3번)
  * - 정렬 = 내 양육관계 등록순 (docs/api/issues.md 마이페이지 1번 결정 전까지)
  */
 @Service
@@ -55,6 +59,9 @@ public class PetService {
     private final CommonCodeService commonCodeService;
     private final PixelCharacterMapper pixelCharacterMapper;
     private final EventPublisher eventPublisher;
+    private final CareMissionMapper careMissionMapper;
+    private final CaregiverInvitationMapper invitationMapper;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     /**
      * 내 반려동물 목록 조회
@@ -206,7 +213,9 @@ public class PetService {
 
     /**
      * 반려동물 삭제
-     * - 주양육자만 (FN-MYP-002-05), 캐릭터·보유 아이템 함께 삭제, 지출은 유지 (FN-MYP-002-07)
+     * - 주양육자만 (FN-MYP-002-05), 지출만 유지하고 나머지는 한 트랜잭션에서 DEL_YN = 'Y' (FN-MYP-002-07)
+     * - pet 안 : 캐릭터·보유 아이템·캐릭터 생성 작업·캐릭터 사진·일별 미션·초대 대상
+     * - 위층(건강기록·AI 대화) : PetDeletedEvent 를 같은 트랜잭션에서 받아 지운다. 받는 쪽이 실패하면 삭제 전체가 롤백된다
      * - 공동양육 연동 자동 해제·알림 (FN-MYP-002-08), 대표였으면 남은 주양육 동물 첫 마리로 승계
      */
     @Transactional
@@ -220,7 +229,11 @@ public class PetService {
             throw new CustomException(ErrorCode.PET_NOT_FOUND);
         }
         pixelCharacterMapper.updateHeldItemDeleteByPetSn(petSn);
+        pixelCharacterMapper.updatePhotoDeleteByPetSn(petSn);
         pixelCharacterMapper.updateDeleteByPetSn(petSn, actorId);
+        pixelCharacterMapper.updateJobDeleteByPetSn(petSn);
+        careMissionMapper.updateDayMissionDeleteByPetSn(petSn);
+        invitationMapper.updateTargetPetDeleteByPetSn(petSn);
 
         for (BrupRel coParent : petMapper.selectLinkedCoParentRels(petSn, BrupRole.CO_PARENT.getCode())) {
             if (petMapper.updateBrupRelUnlink(coParent.getBrupRelSn(), actorId) == 0) {
@@ -242,6 +255,9 @@ public class PetService {
                     .findFirst()
                     .ifPresent(next -> petMapper.updateRepresentativeOn(mbrSn, next.getPetSn(), actorId));
         }
+
+        /** 알림·메일 이벤트가 아니라 EventPublisher 대신 직접 발행 (docs/convention/service.md, 이 메서드의 트랜잭션 안) */
+        applicationEventPublisher.publishEvent(new PetDeletedEvent(petSn));
     }
 
     /**

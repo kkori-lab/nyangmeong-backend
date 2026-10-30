@@ -1,15 +1,21 @@
 # SJM 핸드오프
 
 ## 지금 하는 것
-SCR-MYP-040 회원정보 수정 — 끝남: 검증 `확인 못 함 있음`(연결 남음만), 사람 확인 통과(Postman 38건, 시험 회원 번호·사진 원래대로 복구) (승인 2026-10-30 03:58, 시작 2026-10-30 03:54)
+SCR-MYP-002 추가-1 반려동물 삭제 시 가계부 외 soft delete — 끝남: 검증 `통과`(1회차), 사람 확인 통과(Postman 8건, 공용 DB 마이그레이션 적용·PET 1004 삭제 뒤 EXPND 유지 확인). SCR-MYP-040은 #73으로 병합됨
+
+### 추가 요청
+| 번호 | 바꿀 파일 | 완료 조건 | 요청 |
+| --- | --- | --- | --- |
+| 추가-1 | `db/migration/20261030_01_add_del_yn_for_pet_delete.sql`(새 파일), `pet/domain/PetDeletedEvent`(새 파일), `PetService.deletePet`, `CareMissionMapper`·`PixelCharacterMapper`·`CaregiverInvitationMapper`(Java·XML), `docs/convention/service.md`, `docs/api/issues.md` 마이페이지 3번, 관련 테스트 | 명령: `./gradlew build -q`(PetServiceTest에 삭제 시 일별 미션·캐릭터 생성 작업·캐릭터 사진·초대 대상 DEL_YN 처리와 `PetDeletedEvent` 발행 확인). 화면: 마이그레이션 실행 뒤 주양육자 토큰 `DELETE /api/pets/{petSn}` → 200, DB에서 그 반려동물의 DAY_MSN·CHAR_CRT_JOB·CHAR_PHOTO·INVTN_TRGT_PET이 `DEL_YN='Y'`, EXPND는 그대로 | 요청 2026-10-30 05:54 "반려동물 삭제 시 가계부만 남기고 나머지는 한 트랜잭션에서 soft delete. DEL_YN 없는 테이블(CKUP_RCD·DAY_MSN·CHAR_CRT_JOB·CHAR_PHOTO·INVTN_TRGT_PET)에 컬럼 추가는 migration으로, pet 쪽 이벤트 발행까지. health·ai 리스너는 JAJ·LJS" |
 
 ## 다음에 할 것
+- LJS와 정하기(SCR-MYP-002): 반려동물 삭제 때 AI 대화방(AI_CNVRS_ROOM, DEL_YN 없음)도 지울지와 방식. 지우기로 하면 ai 쪽에서 `PetDeletedEvent`를 같은 트랜잭션에서 받는다
 - 연결 남음(SCR-MYP-040): FN-MYP-040-02·03·08·09·13 프론트 SCR-MYP-040 6-2·6-3 프로필 요약·계정 정보, FN-MYP-040-02·05·08·11 프론트 6-2·6-3 사진 변경·기본 이미지로·휴대폰 번호 [수정]·[저장](프론트 저장소에서 /start). API: `GET /members/me`(`MemberResponse`에 `joinDt`·`lastLgnDt` 추가), `PATCH /members/me`(multipart `mblTelno`·`profilePhoto`·`profilePhotoReset`, 다른 회원 번호 409 PHONE_ALREADY_USED, 사진과 되돌리기 함께 400)
 - YAY와 정하기(SCR-MYP-040): 본인 확인(6-1)을 통과했는지 `PATCH /members/me`에서 서버가 검사하지 않는다. `POST /members/me/password-verification`을 만들 때 통과 표시를 어떻게 남길지 함께 정한다
 - 연결 남음(SCR-MYP-002): FN-MYP-002-07 프론트 SCR-MYP-002 ⋮ 메뉴 [반려동물 삭제]·2-3 삭제 확인 팝업·2-4 등록 카드 복귀(프론트 저장소에서 /start). API: `DELETE /pets/{petSn}`(주양육자만, 공동양육자 403 PET_PRIMARY_ONLY, data 없음). FN-MYP-002-08 LJS 알림함 COM-004에 공동양육 연동 해제 알림(CO_PARENTING, 이동 경로 `/mypage/pets`) 표시
-- JAJ에게 전달(SCR-MYP-002): `scheduler/CareScheduleAlarmJob`의 `HospitalScheduleFake`를 병원 일정 조회 service로 바꿀 때 `SCHDL.DEL_YN='N'`과 함께 PET JOIN `P.DEL_YN='N'`을 넣기(반려동물 삭제는 PET만 DEL_YN='Y', 빠뜨리면 삭제된 동물의 병원 일정 알림이 나간다). 앞으로 petSn 없이 여러 동물의 health 데이터를 읽는 배치·통계도 같다
+- JAJ에게 전달(SCR-MYP-002): `pet/domain/PetDeletedEvent(petSn)`를 `@TransactionalEventListener(phase = BEFORE_COMMIT)`(또는 `@EventListener`)로 받아 DAILY_HLTH_RCD·OBSRV_ARTCL·OBSRV_CYCL·SCHDL·CKUP_RCD(+하위)·REPT_PRVNT_MNG·CARE_ARTCL을 `DEL_YN='Y'`로 바꾸는 리스너, health 조회의 `CKUP_RCD.DEL_YN='N'` 조건. AFTER_COMMIT이면 실패해도 삭제가 커밋되므로 안 된다
 - 연결 남음(SCR-MYP-005): FN-MYP-005-01·02 프론트 5-1 초대 모달, FN-MYP-005-03·04 프론트 SCR-MYP-002 하단 보낸 초대, FN-MYP-005-05·07·08·09·10 프론트 5-3 수락·5-4 거절 모달·5-5 이메일 불일치·5-6 만료·종료(프론트 저장소에서 /start). API: `POST·GET /caregiver-invitations`, `GET /caregiver-invitations/{jntBrupInvtnSn}`, `POST …/accept`(petSns)·`…/reject`. 초대 링크는 프론트 `/mypage/invitations/{jntBrupInvtnSn}`
-- PR 본문에 "DB 변경 있음: `db/migration/20261029_01_add_invtn_trgt_pet_acpt_yn.sql`(공용 DB `pawever` 2026-10-29 적용 완료)"를 적는다
+- PR 본문에 "DB 변경 있음: `db/migration/20261030_01_add_del_yn_for_pet_delete.sql`(공용 DB `pawever` 2026-10-30 적용 완료)"를 적는다
 - 연결 남음(SCR-MYP-004): FN-MYP-004-01·03·04 프론트 SCR-MYP-002 슬라이드 카드 가족 영역·[✕], FN-MYP-006-02·04 프론트 SCR-MYP-006 확인 팝업·토스트(프론트 저장소에서 /start). API: `GET /pets/{petSn}/caregivers`(`linkYmd` 추가), `DELETE /pets/{petSn}/caregivers/{brupRelSn}`
 - LJS에게 알리기(SCR-MYP-004): `scheduler/CaregiverFake` → `PetService.searchCaregiverMbrSns(petSn)`, `expense/CaregiverPetFake` → `PetService.searchMyPets(mbrSn)`의 petSn·petNm으로 바꾸기
 - 연결 남음: FN-MYP-030-01~06·09~21 프론트 SCR-MYP-030 가계부 기본 화면·전체 내역·편집 모드·한도 설정·삭제 모달·월 피커(프론트 저장소에서 /start). API: `GET /expenses/statistics`·`/expenses`·`/totals`·`/months`·`/pets`, `PATCH`·`DELETE /expenses/{expndSn}`, `DELETE /expenses?expndSn=`, `POST /expenses/bulk-delete`, `PUT /members/me/expense-limit`
