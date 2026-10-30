@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,6 +20,7 @@ import com.nyangmeong.ai.dto.ConversationMessageCreateRequest;
 import com.nyangmeong.ai.dto.ConversationMessageResponse;
 import com.nyangmeong.ai.dto.ConversationResponse;
 import com.nyangmeong.ai.dto.ConversationSummary;
+import com.nyangmeong.ai.dto.ConversationTitleUpdateRequest;
 import com.nyangmeong.ai.service.AiConversationService;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
@@ -59,6 +61,13 @@ public class AiConversationController {
     public ResponseEntity<ApiResponse<ConversationResponse>> getConversation(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long aiCnvrsRoomSn) {
         return ResponseEntity.ok(ApiResponse.success(aiConversationService.getConversation(me.id(), aiCnvrsRoomSn)));
+    }
+
+    @Operation(summary = "AI 대화 제목 수정(첫 답변 요약 제목)")
+    @PatchMapping("/{aiCnvrsRoomSn}")
+    public ResponseEntity<ApiResponse<ConversationSummary>> updateTitle(@AuthenticationPrincipal LoginMember me,
+            @PathVariable Long aiCnvrsRoomSn, @Valid @RequestBody ConversationTitleUpdateRequest req) {
+        return ResponseEntity.ok(ApiResponse.success(aiConversationService.updateTitle(me.id(), aiCnvrsRoomSn, req)));
     }
 
     @Operation(summary = "AI 대화 메시지 추가")

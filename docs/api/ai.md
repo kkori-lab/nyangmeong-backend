@@ -20,6 +20,7 @@
 | GET | /internal/ai/conversations?petSn= | 대화 목록(최신순). petSn을 주면 그 태그만(태그 없는 「전체」 대화 제외) | AIM-011-08·09 | LJS | - | List<ConversationSummary> |
 | GET | /internal/ai/conversations/{aiCnvrsRoomSn} | 대화 상세(메시지 `msgSeq` 오름차순) | AIM-011-10 | LJS | - | ConversationResponse |
 | POST | /internal/ai/conversations/{aiCnvrsRoomSn}/messages | 메시지 추가(사용자·AI, 순서는 서버가 매김, 201) | AIM-011-10·14 | LJS | ConversationMessageCreateRequest | ConversationMessageResponse |
+| PATCH | /internal/ai/conversations/{aiCnvrsRoomSn} | 대화 제목 수정(첫 답변 요약 제목, Python이 1회 호출, 200) | AIM-011-11 | LJS | ConversationTitleUpdateRequest | ConversationSummary |
 | DELETE | /internal/ai/conversations/{aiCnvrsRoomSn} | 대화 삭제(물리 삭제, 메시지 CASCADE, 200) | AIM-011-13 | LJS | - | - |
 | GET | /internal/ai/settings | AI 설정값(응답 토큰 상한·대화 턴 수). 설정 행이 없으면 기본 4500·6 | AIM-002-02·11 | LJS | - | AiSettingResponse |
 | GET | /internal/ai/register-context | 등록 카드 컨텍스트. 쿠키 회원이 양육하는 반려동물 전부(공동양육 포함)와 각자의 케어 항목 이름. 반려동물이 없으면 빈 배열. 반려동물 목록은 외부 AI에 보내지 않는다 | AIM-012-04·08 | LJS | - | List<RegisterContextPet> |
@@ -46,8 +47,14 @@
 | cnvrsCn | String | Y | 사용자(`AIMC0024`) 1~1,000자, AI(`AIMC0025`) 1~10,000자. 넘으면 400 `INVALID_INPUT_VALUE`. AI 답변은 의료 고지를 포함해 자르지 않고 저장한다 | AI_CNVRS_MSG.CNVRS_CN_ENC, AIM-001-04, AIM-002-03 |
 | cmptnYn | Boolean | N | 기본 true. false면 미완료 답변 | AI_CNVRS_MSG.CMPTN_YN, AIM-002-07 |
 
+### ConversationTitleUpdateRequest
+쓰는 API: PATCH /internal/ai/conversations/{aiCnvrsRoomSn}
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| cnvrsTtl | String | Y | 1~200자, 공백만 불가, 서버가 암호화 | AI_CNVRS_ROOM.CNVRS_TTL_ENC, AIM-011-11 |
+
 ### ConversationSummary
-쓰는 API: POST·GET /internal/ai/conversations
+쓰는 API: POST·PATCH·GET /internal/ai/conversations
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | aiCnvrsRoomSn | Long | Y | | AI_CNVRS_ROOM.AI_CNVRS_ROOM_SN |

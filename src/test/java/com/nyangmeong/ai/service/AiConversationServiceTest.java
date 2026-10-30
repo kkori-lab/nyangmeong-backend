@@ -24,6 +24,7 @@ import com.nyangmeong.ai.dto.ConversationMessageCreateRequest;
 import com.nyangmeong.ai.dto.ConversationMessageResponse;
 import com.nyangmeong.ai.dto.ConversationResponse;
 import com.nyangmeong.ai.dto.ConversationSummary;
+import com.nyangmeong.ai.dto.ConversationTitleUpdateRequest;
 import com.nyangmeong.ai.mapper.AiConversationMapper;
 import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.CustomException;
@@ -276,6 +277,31 @@ class AiConversationServiceTest {
         ArgumentCaptor<AiConversationMessage> captor = ArgumentCaptor.forClass(AiConversationMessage.class);
         verify(aiConversationMapper).insertMessage(captor.capture());
         assertThat(captor.getValue().getCnvrsCnEnc()).isEqualTo("ENC(" + answer + ")");
+    }
+
+    @Test
+    void 제목을_수정하면_암호문으로_저장하고_복호화한_요약을_준다() {
+        when(aiConversationMapper.updateRoomTitle(MBR, ROOM, "ENC(새 제목)")).thenReturn(1);
+        AiConversationRoom updated = room(PET);
+        updated.setCnvrsTtlEnc("ENC(새 제목)");
+        when(aiConversationMapper.selectRoom(MBR, ROOM)).thenReturn(updated);
+
+        ConversationSummary result = service.updateTitle(MBR, ROOM, new ConversationTitleUpdateRequest("새 제목"));
+
+        verify(aiConversationMapper).updateRoomTitle(MBR, ROOM, "ENC(새 제목)");
+        assertThat(result.aiCnvrsRoomSn()).isEqualTo(ROOM);
+        assertThat(result.petSn()).isEqualTo(PET);
+        assertThat(result.cnvrsTtl()).isEqualTo("새 제목");
+    }
+
+    @Test
+    void 남의_대화나_없는_번호의_제목_수정은_NOT_FOUND다() {
+        when(aiConversationMapper.updateRoomTitle(MBR, 99L, "ENC(새 제목)")).thenReturn(0);
+
+        assertThatThrownBy(() -> service.updateTitle(MBR, 99L, new ConversationTitleUpdateRequest("새 제목")))
+                .isInstanceOfSatisfying(CustomException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.NOT_FOUND));
+        verify(aiConversationMapper, never()).selectRoom(anyLong(), anyLong());
     }
 
     @Test

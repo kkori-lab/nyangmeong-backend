@@ -2,10 +2,11 @@
 
 ## 지금 하는 것
 
-SCR-AIM-012 AI 일정 생성 확인 · 케어 항목 이름 연결 — 끝 (2026-10-30, 1회차 검증 통과·사람 확인). `CareArticleNameFake`를 지우고 `GET /internal/ai/register-context`의 `careArtclNms`를 JAJ `CareItemService.searchNamesByPets`(삭제 제외·등록순)로 채운다
+SCR-AIM-011 AI 대화창 (첫 답변 요약 제목: 제목 수정 내부 API) — 끝 (2026-10-30, 1회차 검증 통과·사람 확인). `PATCH /internal/ai/conversations/{aiCnvrsRoomSn}`가 쿠키 회원 본인 대화의 제목을 암호화해 바꾸고 `ConversationSummary`를 준다(ai-2e 요청, Python이 첫 답변 요약 제목을 1회 호출)
 
 ## 다음에 할 것
 
+- SCR-AIM-011 연결 남음: FN-AIM-011-11 (Python이 `PATCH /internal/ai/conversations/{번호}`를 실제로 부르는 확인, ai 저장소 `docs/api/internal.md` 초안 행 확정, ai 세션). PR을 올리면 PR 번호를 ai-2e 세션에 알린다
 - 기다림(ai 세션 연결) — 영수증 Python 중심 연결(백엔드 PR #64·#67, ai 세션 진행 중): Python `FakeReceiptRepository`를 `POST /internal/ai/receipts`(multipart `file`·`petSn`·`ocrDmndSrcCd` — Python의 `ocrRqstSrcCd` 값을 이 이름으로, 쿠키 + `X-Requested-With`, 201 `{recptSn}`)·`POST /internal/ai/receipts/{recptSn}/result`(JSON `{ocrRslt: RECOGNIZED|UNRECOGNIZED|TIMEOUT|API_ERROR|CANCELED, ocr?}`, 200 `{recptSn, ocrPrcsSttsCd}`, 분석중 아니면 409)로 바꾸고 ai `docs/api/internal.md` 미정 2행을 확정으로. 실패 때 `finally`로 `API_ERROR`·`TIMEOUT` 보고 요청 포함
 - SCR-AIM-013 연결 남음: FN-AIM-013-04 (프론트 연결 AI 대화창 [＋] 업로드는 Python `POST /ai/receipts` `ocrRqstSrcCd=AIMC0031`, 프론트 저장소에서 /start), FN-AIM-013-06 (프론트 연결 본창 "인식 결과 확인" 모달 `getChatReceiptResult`를 `GET /api/receipts/{recptSn}?petSn=`(`{recptSn, petSn, ocrPrcsSttsCd, failRsn, ocr}`)로, 프론트 저장소에서 /start, 모달 열기 파라미터는 JAJ와 협의). 프론트 저장소 마일스톤에 연결 절 넣기(옆 폴더가 없어 사람)
 - 팀에 알린다(SCR-AIM-013): 공통코드 `AIMC0031` AI 대화창은 migration 없이 기준 데이터 SQL에만 넣었다. 각자 로컬 DB에 그 한 줄을 직접 넣는다(공용 DB에는 이미 있음). 검증·확인 중 공용 DB에 만든 RECPT 504번 이후 행과 그 이력·ATCH_FILE 정리(사람, 2026-10-29 Python 중심 작업 확인분 포함). DMS 공통코드 정의서 AIMG07에 `AIMC0031` 추가(ai 세션은 아직 안 고쳤다)
