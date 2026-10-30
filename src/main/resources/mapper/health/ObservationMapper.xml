@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nyangmeong.health.mapper.ObservationMapper">
+
+    <resultMap id="observationItemSummaryResultMap" type="com.nyangmeong.health.dto.ObservationItemSummary">
+        <id     column="OBSRV_ARTCL_SN"       property="obsrvArtclSn" />
+        <result column="OBSRV_ARTCL_NM"       property="obsrvArtclNm" />
+        <result column="OBSRV_REGN_CD"        property="obsrvRegnCd" />
+        <result column="OBSRV_REGN_CD_NM"     property="obsrvRegnCdNm" />
+        <result column="OBSRV_REGN_DTL_NM"    property="obsrvRegnDtlNm" />
+        <result column="OBSRV_STTS_CD"        property="obsrvSttsCd" />
+        <result column="OBSRV_END_YMD"        property="obsrvEndYmd" />
+    </resultMap>
+
+    <resultMap id="observationCycleSummaryResultMap" type="com.nyangmeong.health.dto.ObservationCycleSummary">
+        <id     column="OBSRV_CYCL_SN"        property="obsrvCyclSn" />
+        <result column="OBSRV_ARTCL_SN"       property="obsrvArtclSn" />
+        <result column="CYCL_NO"              property="cyclNo" />
+        <result column="OBSRV_DT"             property="obsrvDt" />
+        <result column="OBSRV_SZ"             property="obsrvSz" />
+        <result column="OBSRV_CHG_CD"         property="obsrvChgCd" />
+        <result column="OBSRV_CHG_CD_NM"      property="obsrvChgCdNm" />
+        <result column="MEMO_CN"              property="memoCn" />
+    </resultMap>
+
+    <resultMap id="observationItemResultMap" type="com.nyangmeong.health.domain.ObservationItem">
+        <id     column="OBSRV_ARTCL_SN"       property="obsrvArtclSn" />
+        <result column="PET_SN"               property="petSn" />
+        <result column="OBSRV_REGN_CD"        property="obsrvRegnCd" />
+        <result column="OBSRV_STTS_CD"        property="obsrvSttsCd" />
+        <result column="OBSRV_ARTCL_NM"       property="obsrvArtclNm" />
+        <result column="OBSRV_REGN_DTL_NM"    property="obsrvRegnDtlNm" />
+        <result column="OBSRV_END_YMD"        property="obsrvEndYmd" />
+        <result column="REG_DT"               property="regDt" />
+        <result column="MDFCN_DT"             property="mdfcnDt" />
+        <result column="RGTR_ID"              property="rgtrId" />
+        <result column="MDFR_ID"              property="mdfrId" />
+        <result column="DEL_YN"               property="delYn" />
+    </resultMap>
+
+    <resultMap id="observationCycleResultMap" type="com.nyangmeong.health.domain.ObservationCycle">
+        <id     column="OBSRV_CYCL_SN"        property="obsrvCyclSn" />
+        <result column="OBSRV_ARTCL_SN"       property="obsrvArtclSn" />
+        <result column="ATCH_FILE_SN"         property="atchFileSn" />
+        <result column="OBSRV_CHG_CD"         property="obsrvChgCd" />
+        <result column="OBSRV_SZ"             property="obsrvSz" />
+        <result column="MEMO_CN"              property="memoCn" />
+        <result column="OBSRV_DT"             property="obsrvDt" />
+        <result column="DEL_YN"               property="delYn" />
+        <result column="REG_DT"               property="regDt" />
+        <result column="MDFCN_DT"             property="mdfcnDt" />
+        <result column="RGTR_ID"              property="rgtrId" />
+        <result column="MDFR_ID"              property="mdfrId" />
+    </resultMap>
+
+    <select id="selectItems" resultMap="observationItemSummaryResultMap">
+        /* 관찰 항목 목록 조회 */
+        SELECT A.OBSRV_ARTCL_SN
+             , A.OBSRV_ARTCL_NM
+             , A.OBSRV_REGN_CD
+             , C.COM_CD_NM AS OBSRV_REGN_CD_NM
+             , A.OBSRV_REGN_DTL_NM
+             , A.OBSRV_STTS_CD
+             , A.OBSRV_END_YMD
+          FROM OBSRV_ARTCL A
+          LEFT JOIN COM_CD C
+            ON C.COM_CD = A.OBSRV_REGN_CD
+         WHERE A.PET_SN = #{cond.petSn}
+           AND A.DEL_YN = 'N'
+        <if test="cond.obsrvSttsCd != null">
+           AND A.OBSRV_STTS_CD = #{cond.obsrvSttsCd}
+        </if>
+         ORDER BY A.OBSRV_ARTCL_SN
+    </select>
+
+    <select id="selectPetCycles" resultMap="observationCycleSummaryResultMap">
+        /* 반려동물의 모든 항목 회차 조회(항목, 관찰일 순) */
+        SELECT T.OBSRV_CYCL_SN
+             , T.OBSRV_ARTCL_SN
+             , T.CYCL_NO
+             , T.OBSRV_DT
+             , T.OBSRV_SZ
+             , T.OBSRV_CHG_CD
+             , C.COM_CD_NM AS OBSRV_CHG_CD_NM
+             , T.MEMO_CN
+          FROM (
+                SELECT Y.OBSRV_CYCL_SN
+                     , Y.OBSRV_ARTCL_SN
+                     , ROW_NUMBER() OVER (PARTITION BY Y.OBSRV_ARTCL_SN ORDER BY Y.OBSRV_DT, Y.OBSRV_CYCL_SN) AS CYCL_NO
+                     , Y.OBSRV_DT
+                     , Y.OBSRV_SZ
+                     , Y.OBSRV_CHG_CD
+                     , Y.MEMO_CN
+                  FROM OBSRV_CYCL Y
+                  JOIN OBSRV_ARTCL A
+                    ON A.OBSRV_ARTCL_SN = Y.OBSRV_ARTCL_SN
+                 WHERE A.PET_SN = #{petSn}
+                   AND A.DEL_YN = 'N'
+                   AND Y.DEL_YN = 'N'
+               ) T
+          LEFT JOIN COM_CD C
+            ON C.COM_CD = T.OBSRV_CHG_CD
+         ORDER BY T.OBSRV_ARTCL_SN, T.CYCL_NO
+    </select>
+
+    <select id="selectCycles" resultMap="observationCycleSummaryResultMap">
+        /* 관찰 회차 목록 조회(관찰일 오름차순) */
+        SELECT T.OBSRV_CYCL_SN
+             , T.OBSRV_ARTCL_SN
+             , T.CYCL_NO
+             , T.OBSRV_DT
+             , T.OBSRV_SZ
+             , T.OBSRV_CHG_CD
+             , C.COM_CD_NM AS OBSRV_CHG_CD_NM
+             , T.MEMO_CN
+          FROM (
+                SELECT Y.OBSRV_CYCL_SN
+                     , Y.OBSRV_ARTCL_SN
+                     , ROW_NUMBER() OVER (PARTITION BY Y.OBSRV_ARTCL_SN ORDER BY Y.OBSRV_DT, Y.OBSRV_CYCL_SN) AS CYCL_NO
+                     , Y.OBSRV_DT
+                     , Y.OBSRV_SZ
+                     , Y.OBSRV_CHG_CD
+                     , Y.MEMO_CN
+                  FROM OBSRV_CYCL Y
+                  JOIN OBSRV_ARTCL A
+                    ON A.OBSRV_ARTCL_SN = Y.OBSRV_ARTCL_SN
+                 WHERE A.PET_SN = #{cond.petSn}
+                   AND A.OBSRV_ARTCL_SN = #{cond.obsrvArtclSn}
+                   AND A.DEL_YN = 'N'
+                   AND Y.DEL_YN = 'N'
+               ) T
+          LEFT JOIN COM_CD C
+            ON C.COM_CD = T.OBSRV_CHG_CD
+        <where>
+            <if test="cond.obsrvCyclSn != null">
+           AND T.OBSRV_CYCL_SN = #{cond.obsrvCyclSn}
+            </if>
+        </where>
+         ORDER BY T.CYCL_NO
+    </select>
+
+    <select id="selectItem" resultMap="observationItemResultMap">
+        /* 관찰 항목 조회(경로 반려동물 기준) */
+        SELECT OBSRV_ARTCL_SN
+             , PET_SN
+             , OBSRV_REGN_CD
+             , OBSRV_STTS_CD
+             , OBSRV_ARTCL_NM
+             , OBSRV_REGN_DTL_NM
+             , OBSRV_END_YMD
+             , REG_DT
+             , MDFCN_DT
+             , RGTR_ID
+             , MDFR_ID
+             , DEL_YN
+          FROM OBSRV_ARTCL
+         WHERE OBSRV_ARTCL_SN = #{obsrvArtclSn}
+           AND PET_SN = #{petSn}
+           AND DEL_YN = 'N'
+    </select>
+
+    <select id="selectCycle" resultMap="observationCycleResultMap">
+        /* 관찰 회차 조회(경로 반려동물 기준) */
+        SELECT Y.OBSRV_CYCL_SN
+             , Y.OBSRV_ARTCL_SN
+             , Y.ATCH_FILE_SN
+             , Y.OBSRV_CHG_CD
+             , Y.OBSRV_SZ
+             , Y.MEMO_CN
+             , Y.OBSRV_DT
+             , Y.DEL_YN
+             , Y.REG_DT
+             , Y.MDFCN_DT
+             , Y.RGTR_ID
+             , Y.MDFR_ID
+          FROM OBSRV_CYCL Y
+          JOIN OBSRV_ARTCL A
+            ON A.OBSRV_ARTCL_SN = Y.OBSRV_ARTCL_SN
+         WHERE Y.OBSRV_CYCL_SN = #{obsrvCyclSn}
+           AND A.PET_SN = #{petSn}
+           AND A.DEL_YN = 'N'
+           AND Y.DEL_YN = 'N'
+    </select>
+
+    <select id="countCycles" resultType="int">
+        /* 항목의 남은 회차 수 */
+        SELECT COUNT(*)
+          FROM OBSRV_CYCL
+         WHERE OBSRV_ARTCL_SN = #{obsrvArtclSn}
+           AND DEL_YN = 'N'
+    </select>
+
+    <select id="selectObservingPetSns" resultType="long">
+        /* 관찰 중 항목이 있는 반려동물 번호 조회 */
+        SELECT DISTINCT PET_SN
+          FROM OBSRV_ARTCL
+         WHERE OBSRV_STTS_CD = #{obsrvSttsCd}
+           AND DEL_YN = 'N'
+    </select>
+
+    <select id="existsChildCode" resultType="boolean">
+        /* 공통코드 그룹의 하위 코드 존재 여부 */
+        SELECT EXISTS (
+               SELECT 1
+                 FROM COM_CD C
+                 JOIN COM_CD G
+                   ON G.COM_CD_SN = C.COM_CD_PRNT_SN
+                WHERE G.COM_CD = #{prntComCd}
+                  AND G.COM_CD_PRNT_SN IS NULL
+                  AND C.COM_CD = #{comCd}
+                  AND C.USE_YN = 'Y'
+               )
+    </select>
+
+    <insert id="insertItem" parameterType="com.nyangmeong.health.domain.ObservationItem"
+            useGeneratedKeys="true" keyProperty="obsrvArtclSn" keyColumn="OBSRV_ARTCL_SN">
+        /* 관찰 항목 등록 */
+        INSERT INTO OBSRV_ARTCL
+             ( PET_SN
+             , OBSRV_REGN_CD
+             , OBSRV_STTS_CD
+             , OBSRV_ARTCL_NM
+             , OBSRV_REGN_DTL_NM
+             , REG_DT
+             , MDFCN_DT
+             , RGTR_ID
+             , MDFR_ID
+             , DEL_YN )
+        VALUES
+             ( #{petSn}
+             , #{obsrvRegnCd}
+             , #{obsrvSttsCd}
+             , #{obsrvArtclNm}
+             , #{obsrvRegnDtlNm}
+             , NOW()
+             , NOW()
+             , #{rgtrId}
+             , #{mdfrId}
+             , 'N' )
+    </insert>
+
+    <insert id="insertItemStatusHistory">
+        /* 관찰 항목 상태 이력 등록 */
+        INSERT INTO OBSRV_ARTCL_STTS_HSTRY
+             ( OBSRV_ARTCL_SN
+             , MBR_SN
+             , BFR_STTS_CD
+             , AFTR_STTS_CD
+             , REG_DT )
+        VALUES
+             ( #{obsrvArtclSn}
+             , #{mbrSn}
+             , #{bfrSttsCd}
+             , #{aftrSttsCd}
+             , NOW() )
+    </insert>
+
+    <update id="updateItemEnd">
+        /* 관찰 종료(상태·종료일 변경) */
+        UPDATE OBSRV_ARTCL
+           SET OBSRV_STTS_CD = #{obsrvSttsCd}
+             , OBSRV_END_YMD = CURDATE()
+             , MDFR_ID       = #{actorId}
+             , MDFCN_DT      = NOW()
+         WHERE OBSRV_ARTCL_SN = #{obsrvArtclSn}
+           AND DEL_YN = 'N'
+    </update>
+
+    <update id="deleteItem">
+        /* 관찰 항목 삭제 */
+        UPDATE OBSRV_ARTCL
+           SET DEL_YN   = 'Y'
+             , MDFR_ID  = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE OBSRV_ARTCL_SN = #{obsrvArtclSn}
+           AND DEL_YN = 'N'
+    </update>
+
+    <insert id="insertCycle" parameterType="com.nyangmeong.health.domain.ObservationCycle"
+            useGeneratedKeys="true" keyProperty="obsrvCyclSn" keyColumn="OBSRV_CYCL_SN">
+        /* 관찰 회차 등록 */
+        INSERT INTO OBSRV_CYCL
+             ( OBSRV_ARTCL_SN
+             , ATCH_FILE_SN
+             , OBSRV_CHG_CD
+             , OBSRV_SZ
+             , MEMO_CN
+             , OBSRV_DT
+             , DEL_YN
+             , REG_DT
+             , MDFCN_DT
+             , RGTR_ID
+             , MDFR_ID )
+        VALUES
+             ( #{obsrvArtclSn}
+             , #{atchFileSn}
+             , #{obsrvChgCd}
+             , #{obsrvSz}
+             , #{memoCn}
+             , #{obsrvDt}
+             , 'N'
+             , NOW()
+             , NOW()
+             , #{rgtrId}
+             , #{mdfrId} )
+    </insert>
+
+    <update id="updateCycle">
+        /* 관찰 회차 수정 */
+        UPDATE OBSRV_CYCL
+           SET ATCH_FILE_SN = #{cycle.atchFileSn}
+             , OBSRV_CHG_CD = #{cycle.obsrvChgCd}
+             , OBSRV_SZ     = #{cycle.obsrvSz}
+             , MEMO_CN      = #{cycle.memoCn}
+             , OBSRV_DT     = #{cycle.obsrvDt}
+             , MDFR_ID      = #{actorId}
+             , MDFCN_DT     = NOW()
+         WHERE OBSRV_CYCL_SN = #{cycle.obsrvCyclSn}
+           AND DEL_YN = 'N'
+    </update>
+
+    <update id="deleteCycle">
+        /* 관찰 회차 삭제 */
+        UPDATE OBSRV_CYCL
+           SET DEL_YN   = 'Y'
+             , MDFR_ID  = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE OBSRV_CYCL_SN = #{obsrvCyclSn}
+           AND DEL_YN = 'N'
+    </update>
+</mapper>
