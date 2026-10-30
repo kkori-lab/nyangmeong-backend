@@ -62,6 +62,17 @@ public class CheckupService {
     }
 
     /**
+     * 반려동물의 완료 상태 검진기록 전체 조회 (검진일 최신순)
+     * - 종합 건강기록의 첨부·검사 수치·처방약·반복 예방 전체 조회용 (FN-HLT-011)
+     */
+    @Transactional(readOnly = true)
+    public List<CheckupSummary> searchAllCompleted(Long mbrSn, Long petSn) {
+        petAuthorizer.checkCaregiver(mbrSn, petSn);
+        return checkupMapper.selectList(petSn, new CheckupSearchCond(), ScheduleKind.HOSPITAL.getCode(),
+                CheckupStatus.COMPLETED.getCode());
+    }
+
+    /**
      * 검진기록 상세 조회
      */
     @Transactional(readOnly = true)
