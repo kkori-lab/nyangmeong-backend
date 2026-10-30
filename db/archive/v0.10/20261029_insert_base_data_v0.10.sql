@@ -1,10 +1,12 @@
 -- =====================================================================
 -- 냥멍케어 기준 데이터 v0.10 (2026-10-29)  |  공통코드 + 케어미션 마스터
 -- 대상 DDL : 20261029_create_tables_v0.10.sql  (테이블 COM_CD, CARE_MSN)
--- 범위     : [1] 공통코드 그룹 68개 전체 (269개 코드)  [2] 케어미션 마스터 21건
+-- 범위     : [1] 공통코드 그룹 68개 전체 (271개 코드)  [2] 케어미션 마스터 21건
 -- v0.9 → v0.10 변경 (모두 v0.9 위에 실행하던 db/migration 파일을 합친 것)
 --            (1) PETC0010 검정&황갈색 → 블랙탄, PETC0017 SORT_SEQ 130 → 200, PETC0028~PETC0034 추가 (20261026_01_update_petg03_colors)
 --            (2) MYPC0021 검진기록 등록 추가, 케어미션 마스터 21건 (20261027_02_update_care_msn_and_ckup_pnt)
+--            (3) CMUC0024 실종센터 추가 (20261029_02_add_cmug01_lost)
+--            (4) AIMC0031 AI 대화창 추가 (마이그레이션 없이 이 파일에 바로 넣은 것)
 --            새 코드는 기존 DB와 COM_CD_SN이 같도록 마이그레이션을 실행했던 순서대로 파일 끝에 둔다
 -- 채번 규칙: 그룹 = 도메인3자 + G + 2자리(ERD 그대로) / 코드 = 도메인3자 + C + 4자리
 --            삭제된 번호는 결번으로 두고 재사용하지 않으며, 신규 코드는 도메인 마지막 번호 뒤에 붙인다
@@ -454,6 +456,9 @@ INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT
 -- ■ MYP 마이페이지 — v0.10 추가: 검진기록 등록 포인트 (20261027_02_update_care_msn_and_ckup_pnt)
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='MYPG03') p),'MYPC0021','검진기록 등록','적립(+). 반려동물·검진일당 1회 20P, 등록일 기준 최근 7일 이내 검진일만 (FN-MYP-020-08)',15);
 
+-- ■ CMU 커뮤니티 — v0.10 추가: 실종센터 게시판 (20261029_02_add_cmug01_lost)
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='CMUG01') p),'CMUC0024','실종센터','LOST_TPOF와 1:1인 게시글',30);
+
 -- =====================================================================
 -- [2] 케어미션 마스터 (CARE_MSN) — 20261027_02_update_care_msn_and_ckup_pnt 의 최종 상태
 --     일상케어(MYPC0010) 9개, 활동기반(MYPC0011) 12개. 근거: FN-MYP-020-03·05, FN-HLT-003-12
@@ -482,4 +487,4 @@ INSERT INTO `CARE_MSN` (`MSN_POOL_CD`,`MSN_NM`,`CMPN_PNT`,`ACHV_CRTR_NMTM`,`MVMN
   ('MYPC0011','펫이야기 댓글 작성하기',5,1,'/community');
 
 COMMIT;
--- 합계: 공통코드 그룹 68건 + 코드 269건 = 337건, 케어미션 21건
+-- 합계: 공통코드 그룹 68건 + 코드 271건 = 339건, 케어미션 21건
