@@ -15,6 +15,8 @@ public class RepeatPreventionSummary {
     private Long reptPrvntMngSn;
     /** 검진기록일련번호 */
     private Long ckupRcdSn;
+    /** 병원명 (반려동물 전체 조회에서만, 출처 검진기록) */
+    private String hsptlNm;
     /** 반복예방항목공통코드(HLTG07) */
     private String reptPrvntArtclCd;
     /** 반복예방항목명 */

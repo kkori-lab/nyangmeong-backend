@@ -17,12 +17,14 @@ import com.nyangmeong.community.dto.LostReportSummary;
 public interface LostReportMapper {
 
     /**
-     * 목록 조회 (정상 게시글, 실종은 만료 전만, 실종 먼저·찾았어요 뒤)
+     * 목록 조회 (정상 게시글, 실종은 만료 전만, 실종 먼저·찾았어요 뒤.
+     * mineYn 이면 내 글만, 만료 글 포함·맨 뒤)
      */
     List<LostReportSummary> selectList(@Param("mbrSn") Long mbrSn, @Param("lostTpofSttsCd") String lostTpofSttsCd,
             @Param("rgnSn") Long rgnSn, @Param("petSeCd") String petSeCd, @Param("wtnsPrd") String wtnsPrd,
             @Param("keyword") String keyword, @Param("pstSttsCd") String pstSttsCd,
-            @Param("missingCd") String missingCd, @Param("foundCd") String foundCd);
+            @Param("missingCd") String missingCd, @Param("foundCd") String foundCd,
+            @Param("expiredCd") String expiredCd, @Param("mineYn") boolean mineYn);
 
     /**
      * 상세 조회 (게시글 상태 조건)

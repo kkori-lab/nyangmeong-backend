@@ -22,4 +22,6 @@ public class LostReportSummary {
     private String chrcCn;
     private Long thumbAtchFileSn;
     private LocalDateTime regDt;
+    /** 내가 쓴 글인지 (프론트의 「내 글」 배지) */
+    private Boolean owner;
 }

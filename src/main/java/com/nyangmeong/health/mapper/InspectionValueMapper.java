@@ -22,6 +22,12 @@ public interface InspectionValueMapper {
     List<InspectionValueSummary> selectList(@Param("cond") InspectionValueSearchCond cond);
 
     /**
+     * 검진기록들의 검사 수치 목록 조회
+     */
+    List<InspectionValueSummary> selectListByCheckups(@Param("ckupRcdSns") List<Long> ckupRcdSns,
+            @Param("cond") InspectionValueSearchCond cond);
+
+    /**
      * 검사 수치 목록 조회 (검사 항목만)
      */
     List<InspectionValueSummary> selectArticles(Long ckupRcdSn);
