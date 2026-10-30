@@ -134,6 +134,30 @@
            AND MBR_STTS_CD != #{withdrawnSttsCd}
     </update>
 
+    <update id="updateRecover">
+        /* 탈퇴 보관 회원 복구 : 보관 기간 안일 때만 정상으로 */
+        UPDATE MBR
+           SET MBR_STTS_CD = #{normalSttsCd}
+             , WHDWL_DT = NULL
+             , MDFR_ID = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE MBR_SN = #{mbrSn}
+           AND MBR_STTS_CD = #{withdrawnSttsCd}
+           AND WHDWL_DT IS NOT NULL
+           AND WHDWL_DT &gt; DATE_SUB(NOW(), INTERVAL #{keepDayCnt} DAY)
+    </update>
+
+    <update id="updatePhone">
+        /* 휴대전화번호 저장 : 번호가 없는 회원만 */
+        UPDATE MBR
+           SET MBL_TELNO_ENC = #{mblTelnoEnc}
+             , MBL_TELNO_HMAC = #{mblTelnoHmac}
+             , MDFR_ID = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE MBR_SN = #{mbrSn}
+           AND MBL_TELNO_HMAC IS NULL
+    </update>
+
     <update id="updateLastLogin">
         /* 최근 로그인 일시 갱신 */
         UPDATE MBR

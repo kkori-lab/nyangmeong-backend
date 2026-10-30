@@ -1,5 +1,6 @@
 package com.nyangmeong.member.service;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -78,6 +79,42 @@ public class TermsService {
             result.put(terms.getTrmsSn(), isAgreed);
         }
         return result;
+    }
+
+    /**
+     * 복구 때 다시 받아야 할 현재 필수 약관 : 이미 같은 버전으로 동의한 것은 빠진다
+     */
+    @Transactional(readOnly = true)
+    public List<TermsSummary> searchMissingEssential(Long mbrSn) {
+        return termsMapper.selectMissingEssential(mbrSn);
+    }
+
+    /**
+     * 복구 약관 동의 검사 : 빠진 필수 약관을 모두 동의해야 한다, 그 밖의 항목은 무시
+     * - 돌려주는 값은 저장할 약관 번호
+     */
+    @Transactional(readOnly = true, noRollbackFor = CustomException.class)
+    public List<Long> checkRecoveryAgreements(List<TermsSummary> missing, List<TermsAgreeRequest> items) {
+        Set<Long> agreed = new HashSet<>();
+        if (items != null) {
+            items.stream().filter(item -> Boolean.TRUE.equals(item.agreYn())).forEach(item -> agreed.add(item.trmsSn()));
+        }
+        List<Long> result = new ArrayList<>();
+        for (TermsSummary terms : missing) {
+            if (!agreed.contains(terms.getTrmsSn())) {
+                throw new CustomException(ErrorCode.REQUIRED_TERMS_NOT_AGREED);
+            }
+            result.add(terms.getTrmsSn());
+        }
+        return result;
+    }
+
+    /**
+     * 복구 필수 약관 동의 저장
+     */
+    @Transactional
+    public void createRecoveryAgreements(Long mbrSn, List<Long> trmsSns) {
+        trmsSns.forEach(trmsSn -> termsMapper.upsertAgreement(mbrSn, trmsSn, String.valueOf(mbrSn)));
     }
 
     /**

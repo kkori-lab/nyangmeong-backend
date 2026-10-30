@@ -11,11 +11,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.nyangmeong.expense.dto.ReceiptAnalyzeRequest;
 import com.nyangmeong.expense.dto.ReceiptCreateRequest;
 import com.nyangmeong.expense.dto.ReceiptResponse;
+import com.nyangmeong.expense.dto.ReceiptResultResponse;
 import com.nyangmeong.expense.service.ReceiptAnalyzer;
 import com.nyangmeong.expense.service.ReceiptService;
 import com.nyangmeong.global.file.StoredFile;
@@ -44,7 +46,15 @@ public class ReceiptController {
     public ResponseEntity<ApiResponse<ReceiptResponse>> create(@AuthenticationPrincipal LoginMember me,
             @Valid @ModelAttribute ReceiptCreateRequest req) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.created(receiptAnalyzer.create(me.id(), req.petSn(), req.file())));
+                .body(ApiResponse.created(receiptAnalyzer.create(me.id(), req.petSn(), req.file(),
+                        req.ocrDmndSrcCd())));
+    }
+
+    @Operation(summary = "영수증 분석 결과 다시 열기")
+    @GetMapping("/{recptSn}")
+    public ResponseEntity<ApiResponse<ReceiptResultResponse>> get(@AuthenticationPrincipal LoginMember me,
+            @PathVariable Long recptSn, @RequestParam Long petSn) {
+        return ResponseEntity.ok(ApiResponse.success(receiptAnalyzer.getResult(me.id(), recptSn, petSn)));
     }
 
     @Operation(summary = "영수증 원본 이미지")

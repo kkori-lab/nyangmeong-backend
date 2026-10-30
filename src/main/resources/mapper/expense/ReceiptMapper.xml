@@ -121,4 +121,13 @@
              , #{chgRsn}
              , NOW() )
     </insert>
+
+    <select id="selectLastChgRsn" resultType="string">
+        /* 마지막 상태 이력의 변경 사유 */
+        SELECT CHG_RSN
+          FROM RECPT_STTS_HSTRY
+         WHERE RECPT_SN = #{recptSn}
+         ORDER BY RECPT_STTS_HSTRY_SN DESC
+         LIMIT 1
+    </select>
 </mapper>

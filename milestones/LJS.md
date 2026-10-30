@@ -108,6 +108,22 @@
 - 완료 조건: `GET /internal/ai/register-context`가 쿠키 회원의 반려동물 전부를 `[{petSn, petNm, careArtclNms}]`로 준다. 반려동물이 없으면 빈 배열, 인증 없으면 401
 - 연결 남음: FN-AIM-012-08 (케어 항목 목록 service, JAJ), FN-AIM-012-04·08 (Python의 FakeRegisterContextRepository를 이 API로, ai 세션)
 
+## SCR-AIM-013 대화창 · 영수증 분석 (출처 코드 AI 대화창·결과 조회) — 끝
+- 기능: FN-AIM-013-04 분석 요청·대기(요청 출처 'AI 대화창' 기록), FN-AIM-013-06 확인 후 저장(본창 모달이 이 영수증의 분석 결과를 다시 연다), FN-AIM-013-08 원본 이미지 보관(기존 영수증 업로드 재사용). 기준 AI매니저_기능명세서_v0.10_20261029(DMS, 2026-10-29 확인)
+- 함께 만드는 것: 공통코드 `AIMC0031` AI 대화창(AIMG07, 2026-10-29 사람 결정, ai 세션 합의)
+- 기다리는 것: 없음(ai 저장소 PR과 같은 때 병합)
+- 완료 조건: `POST /api/receipts`에 출처 `AIMC0031`을 주면 `RECPT.OCR_DMND_SRC_CD`가 `AIMC0031`, 주지 않으면 `AIMC0026`이다. `GET /api/receipts/{recptSn}`이 본인 영수증의 분석 결과를 주고, 남의·없는 영수증은 404 `RECEIPT_NOT_FOUND`다
+- 연결 남음: FN-AIM-013-04 (프론트 연결 AI 대화창 [＋] 업로드가 `POST /api/receipts`에 `ocrDmndSrcCd=AIMC0031`, 프론트 저장소에서 /start), FN-AIM-013-06 (프론트 연결 본창 건강 일지 "인식 결과 확인" 모달을 `GET /api/receipts/{recptSn}?petSn=`로 열기, 프론트 저장소에서 /start. 모달 열기 파라미터는 JAJ와 협의)
+- 추가: 추가-1 일시 오류 `failRsn`을 마지막 상태 이력에서 읽는 Mapper 쿼리, 추가-2 공통코드는 migration 없이 기준 데이터 SQL에만(각 DB에 한 줄 직접 넣기)
+
+## SCR-AIM-013 대화창 · 영수증 분석 (Python 중심: 원본 저장·결과 보고 내부 API, 결과 조회) — 끝
+- 기능: FN-AIM-008-09·013-08 원본 이미지 보관(Python → Java 원본 저장), FN-AIM-010-06 실패해도 원본 유지, FN-AIM-010-01·013-04 판정·출처 기록(Python → Java 결과 보고), FN-AIM-013-06 확인 후 저장(React → Java 결과 조회를 `{recptSn, petSn, ocr}` 모양으로). 기준 AI매니저_기능명세서_v0.11_20261029(DMS, 2026-10-29 확인). 2026-10-29 사람 결정 (나): React → Python `POST /ai/receipts`가 분석 중심. 명세 기능 ID 추가 없음(대조 수 그대로)
+- 함께 만드는 것: 없음(`ReceiptService` 상태 처리 재사용)
+- 기다리는 것: 없음(ai 저장소 `FakeReceiptRepository` 연결은 ai 세션)
+- 완료 조건: Python이 쿠키로 원본을 올리면 RECPT(분석중)가 생기고 `recptSn`을 돌려받는다. 결과 보고가 RECPT 상태·OCR 응답·이력에 남는다. React가 본인 영수증 결과를 `{recptSn, petSn, ocrPrcsSttsCd, failRsn, ocr}`로 받는다
+- 연결 남음: FN-AIM-008-09·013-08·010-01·013-04 (Python `FakeReceiptRepository`를 원본 저장·결과 보고 내부 API로, ai 세션), FN-AIM-013-06 (프론트 연결 본창 "인식 결과 확인" 모달 `getChatReceiptResult`를 `GET /api/receipts/{recptSn}?petSn=`로, 프론트 저장소에서 /start)
+- 추가: 없음. `ocrRslt` 허용값 밖은 공통 요청 형식 오류 400 `BAD_REQUEST`(기획은 `INVALID_INPUT_VALUE`, 없을 때만 `INVALID_INPUT_VALUE`)
+
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
 - FN-COM-002-11: 채팅 안 읽은 수 API는 KSJ(채팅, 마일스톤 담당 표 COM-009)
@@ -143,10 +159,13 @@
 - FN-MYP-020-01~10: 포인트·케어미션은 SJM
 - FN-MYP-030-01~21, FN-MYP-031-01~06: 가계부는 SJM
 - FN-MYP-040-01~12: 회원정보 수정은 SJM
+- FN-AIM-013-01·02·03·05·07: 대화창 화면과 Python AI 서버(첨부 버튼·분기·반려동물 되묻기·결과 카드·실패 안내). 파일 검증과 결과 데이터는 SCR-AIM-008 `POST /receipts` 그대로
+- FN-AIM-013-09: 요약 메시지 작성은 Python AI 서버, 저장은 SCR-AIM-011 대화 저장 내부 API 그대로
 - FN-HLT-002-01·05·06·09~33, FN-HLT-003-01·12·13·21~24·29~40, FN-HLT-005-01~05·11~15, FN-HLT-007-01~06, FN-HLT-011-01~10: 건강기록은 JAJ(영수증 결과 확인인 002-34~46만 LJS)
 
 ## 대조
 - 공통레이아웃: 명세 117 = 마일스톤 35 + 제외 82
 - AI매니저: 명세 138 = 마일스톤 63 + 제외 75
 - 마이페이지: 명세 112 = 마일스톤 23 + 제외 89
+- AI매니저 v0.10 SCR-AIM-013(v0.9 신설): 명세 9 = 마일스톤 3 + 제외 6
 - 건강기록: 명세 86 = 마일스톤 13 + 제외 73

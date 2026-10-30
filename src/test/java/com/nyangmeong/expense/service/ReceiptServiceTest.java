@@ -65,7 +65,7 @@ class ReceiptServiceTest {
             return null;
         }).when(mapper).insert(any());
 
-        Long recptSn = service.create(1L, 10L, image);
+        Long recptSn = service.create(1L, 10L, image, null);
 
         ArgumentCaptor<Receipt> captor = ArgumentCaptor.forClass(Receipt.class);
         verify(mapper).insert(captor.capture());
@@ -85,7 +85,7 @@ class ReceiptServiceTest {
     void 연동되지_않은_반려동물이면_파일도_저장하지_않는다() {
         doThrow(new CustomException(ErrorCode.PET_ACCESS_DENIED)).when(petAuthorizer).checkCaregiver(1L, 99L);
 
-        assertThatThrownBy(() -> service.create(1L, 99L, image))
+        assertThatThrownBy(() -> service.create(1L, 99L, image, null))
                 .extracting("errorCode").isEqualTo(ErrorCode.PET_ACCESS_DENIED);
         verify(fileStore, never()).store(any(MockMultipartFile.class), anyString());
         verify(mapper, never()).insert(any());

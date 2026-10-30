@@ -128,4 +128,48 @@ class TermsServiceTest {
         assertThat(service.getTerms(5L).trmsCn()).isEqualTo("전문");
         assertThat(service.getTerms(5L).esntlAgreYn()).isTrue();
     }
+
+    @Test
+    void 복구는_빠진_필수_약관에_모두_동의해야_하고_그_밖의_항목은_무시한다() {
+        List<TermsSummary> missing = List.of(summary(2, true), summary(3, true));
+
+        List<Long> saved = service.checkRecoveryAgreements(missing, List.of(new TermsAgreeRequest(2L, true),
+                new TermsAgreeRequest(3L, true), new TermsAgreeRequest(4L, true), new TermsAgreeRequest(99L, true)));
+
+        assertThat(saved).containsExactly(2L, 3L);
+    }
+
+    @Test
+    void 복구는_빠진_필수_약관을_동의하지_않거나_보내지_않으면_거절한다() {
+        List<TermsSummary> missing = List.of(summary(2, true), summary(3, true));
+
+        assertThatThrownBy(() -> service.checkRecoveryAgreements(missing,
+                List.of(new TermsAgreeRequest(2L, true), new TermsAgreeRequest(3L, false))))
+                .satisfies(e -> assertCode(e, ErrorCode.REQUIRED_TERMS_NOT_AGREED));
+        assertThatThrownBy(() -> service.checkRecoveryAgreements(missing, List.of(new TermsAgreeRequest(2L, true))))
+                .satisfies(e -> assertCode(e, ErrorCode.REQUIRED_TERMS_NOT_AGREED));
+        assertThatThrownBy(() -> service.checkRecoveryAgreements(missing, null))
+                .satisfies(e -> assertCode(e, ErrorCode.REQUIRED_TERMS_NOT_AGREED));
+    }
+
+    @Test
+    void 복구는_빠진_필수_약관이_없으면_아무것도_보내지_않아도_된다() {
+        assertThat(service.checkRecoveryAgreements(List.of(), null)).isEmpty();
+        assertThat(service.checkRecoveryAgreements(List.of(), List.of())).isEmpty();
+    }
+
+    @Test
+    void 복구_약관_조회는_회원이_동의하지_않은_필수_약관을_그대로_돌려준다() {
+        when(termsMapper.selectMissingEssential(9L)).thenReturn(List.of(summary(2, true)));
+
+        assertThat(service.searchMissingEssential(9L)).extracting(TermsSummary::getTrmsSn).containsExactly(2L);
+    }
+
+    @Test
+    void 복구_동의_저장은_약관마다_동의로_남긴다() {
+        service.createRecoveryAgreements(9L, List.of(2L, 3L));
+
+        verify(termsMapper).upsertAgreement(9L, 2L, "9");
+        verify(termsMapper).upsertAgreement(9L, 3L, "9");
+    }
 }

@@ -68,7 +68,7 @@ class ReceiptControllerTest {
     void 업로드는_201과_분석_결과를_돌려준다() throws Exception {
         ReceiptResponse.Section tab = new ReceiptResponse.Section(null, 10L, 10_000L, null, 10_000L, "진찰료",
                 List.of(new ReceiptResponse.Line("진찰료", 10_000L)), List.of());
-        when(receiptAnalyzer.create(eq(1L), eq(10L), any())).thenReturn(new ReceiptResponse(3L, "AIMC0002", null,
+        when(receiptAnalyzer.create(eq(1L), eq(10L), any(), any())).thenReturn(new ReceiptResponse(3L, "AIMC0002", null,
                 "냥멍동물병원", LocalDate.of(2026, 10, 21), 10_000L, null, List.of(tab)));
 
         mockMvc.perform(multipart("/api/receipts").file(file).param("petSn", "10")
@@ -85,7 +85,7 @@ class ReceiptControllerTest {
     @Test
     @WithMockLoginMember
     void 일시_오류도_201에_상태와_사유로_구분한다() throws Exception {
-        when(receiptAnalyzer.create(eq(1L), eq(10L), any()))
+        when(receiptAnalyzer.create(eq(1L), eq(10L), any(), any()))
                 .thenReturn(ReceiptResponse.empty(3L, "AIMC0005", "TIMEOUT"));
 
         mockMvc.perform(multipart("/api/receipts").file(file).param("petSn", "10")
@@ -108,13 +108,13 @@ class ReceiptControllerTest {
                 .header("X-Requested-With", "XMLHttpRequest"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.data[0].field").value("petSn"));
-        verify(receiptAnalyzer, never()).create(any(), any(), any());
+        verify(receiptAnalyzer, never()).create(any(), any(), any(), any());
     }
 
     @Test
     @WithMockLoginMember
     void 형식이_다른_파일은_400_FILE_TYPE_NOT_ALLOWED() throws Exception {
-        when(receiptAnalyzer.create(eq(1L), eq(10L), any()))
+        when(receiptAnalyzer.create(eq(1L), eq(10L), any(), any()))
                 .thenThrow(new CustomException(ErrorCode.FILE_TYPE_NOT_ALLOWED));
 
         mockMvc.perform(multipart("/api/receipts").file(file).param("petSn", "10")

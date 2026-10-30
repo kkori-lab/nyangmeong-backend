@@ -9,7 +9,7 @@
 | GET | /auth/login-attempt-limits | 입력 아이디 기준 실패 횟수·캡챠 요구 상태 조회(`?email=`, 가입 여부 비공개) | ACC-002-03·22 | YAY | - | LoginAttemptLimitResponse |
 | GET | /members/me | 회원정보 수정 화면 조회. 이메일·닉네임·휴대전화·프로필 사진·가입 경로·연동 SNS | MYP-040-02·03·08·09 | SJM | - | MemberResponse |
 | GET | /members/me/dashboard-widgets | 메인 건강 지표 위젯의 표시 여부·순서 조회 | MAN-006·007 | YAY | - | List<DashboardWidgetSummary> |
-| GET | /members/me/recovery | 복구 대상 이메일·닉네임·남은 복구 기간·필요 동의·보관 번호 조회(복구 확인 권한) | ACC-001-44 | YAY | - | MemberRecoveryResponse |
+| POST | /members/recovery-info | 복구 대상 이메일·닉네임·남은 복구 기간·필요 동의·가린 보관 번호 조회. 로그인 없이 부르고, 토큰이 URL(로그)에 남지 않도록 본문 `MemberRecoveryInfoRequest`의 복구 확인 권한 토큰으로 본인확인한다. 권한 없음·만료·사용 완료·무효화·틀린 토큰은 이유를 가리지 않고 400 MEMBER_RECOVERY_NOT_AVAILABLE | ACC-001-44 | YAY | MemberRecoveryInfoRequest | MemberRecoveryResponse |
 | GET | /auth/me | 로그인한 회원 요약(회원 번호·권한·닉네임·프로필 사진·마스킹 이메일). 구현은 `auth` 도메인(nct-backend `nct.auth`와 같은 자리) | COM-002-15, COM-005-02 | LJS | - | AuthMeResponse |
 | GET | /internal/auth/check | 서버 간 내부 인증 확인(Python 미들웨어가 `/ai/**` 요청마다 사용자 쿠키를 넘겨 호출). `/api` 접두어 없음, 서버 간 키 없음(사용자 인증만). 세션 폐기 401 `UNAUTHORIZED`, 정지·탈퇴 403 `MEMBER_INACTIVE`(쿠키 삭제 `Set-Cookie`) | - (2026-10-26 사람 결정) | LJS | - | InternalAuthCheckResponse |
 | GET | /members/nickname-availability | 닉네임 형식(한글·영문·숫자 1~10자)·중복 확인 | ACC-001-08, MYP-040-04·10 (기능 분배 3.1절 2번) | YAY | - | MemberNicknameAvailabilityResponse |
@@ -21,13 +21,13 @@
 | POST | /auth/logout | 로그아웃(Refresh 토큰 폐기) | COM-005-07·08, AIM-011-17 (기능 분배 3.1절 28번) | YAY | - | - |
 | POST | /auth/refresh | Access 토큰 재발급. 토큰은 httpOnly 쿠키로만 주고 응답 `data`는 없다(`docs/convention/api.md`). 근거는 로그인 유지 기능(issues 6) | (명세 기능 ID 없음) | YAY | - | - |
 | POST | /auth/sns-login | 네이버·카카오·구글 인가 결과 처리: 기존 회원 로그인 / 신규 가입 확인 / 이메일 중복 / 30일 복구 분기 | ACC-002-09~11, ACC-001-22·31·38·40 | YAY | SnsLoginRequest | SnsLoginResponse |
-| POST | /email-certifications | 이메일 인증번호 발송·재전송(목적: 가입·비밀번호 찾기·복구). 가입 목적은 정상 회원 이메일 중복이면 거절(409 EMAIL_ALREADY_REGISTERED, 탈퇴 보관 이메일은 409 MEMBER_RECOVERY_AVAILABLE). 재전송 간격·횟수에 걸리면 400 EMAIL_CERT_RESEND_NOT_YET이고 data의 `resendAvailableDt`가 재시도 가능 시각. 지금은 가입(USRC0010)·비밀번호 찾기(USRC0011) 목적만 구현. 비밀번호 찾기는 가입 여부·SNS 전용 여부를 드러내지 않도록 회원을 조회하지 않고 같은 응답으로 발송 | ACC-001-03·04·38·41, ACC-011-03·07 | YAY | EmailCertificationCreateRequest | EmailCertificationResponse |
-| POST | /email-certifications/{emlCertSn}/invalidate | 인증번호·재설정 권한·복구 확인 권한 무효화. 일련번호가 순번이라 본문의 `certTrgtEml`이 그 인증의 이메일과 맞아야 한다(없음·불일치·다른 목적은 404 EMAIL_CERT_NOT_FOUND, 이미 무효·사용 완료는 200). 지금은 비밀번호 찾기 목적만 구현(재설정 취소 포함) | ACC-011-05, ACC-012-04, ACC-001-46 | YAY | EmailCertificationInvalidateRequest | - |
+| POST | /email-certifications | 이메일 인증번호 발송·재전송(목적: 가입·비밀번호 찾기·복구). 가입 목적은 정상 회원 이메일 중복이면 거절(409 EMAIL_ALREADY_REGISTERED, 탈퇴 보관 이메일은 409 MEMBER_RECOVERY_AVAILABLE). 재전송 간격·횟수에 걸리면 400 EMAIL_CERT_RESEND_NOT_YET이고 data의 `resendAvailableDt`가 재시도 가능 시각. 복구(USRC0012) 목적은 보관 기간 안의 탈퇴 회원에게만 발송한다(기간 지남 400 MEMBER_RECOVERY_EXPIRED, 정상·정지·미가입 404 MEMBER_NOT_FOUND). 비밀번호 찾기는 가입 여부·SNS 전용 여부를 드러내지 않도록 회원을 조회하지 않고 같은 응답으로 발송 | ACC-001-03·04·38·41, ACC-011-03·07 | YAY | EmailCertificationCreateRequest | EmailCertificationResponse |
+| POST | /email-certifications/{emlCertSn}/invalidate | 인증번호·재설정 권한·복구 확인 권한 무효화. 일련번호가 순번이라 본문의 `certTrgtEml`이 그 인증의 이메일과 맞아야 한다(없음·불일치·다른 목적은 404 EMAIL_CERT_NOT_FOUND, 이미 무효·사용 완료는 200). 비밀번호 찾기(재설정 취소 포함)와 복구(복구 취소) 목적을 받는다. 가입 목적은 404 | ACC-011-05, ACC-012-04, ACC-001-46 | YAY | EmailCertificationInvalidateRequest | - |
 | POST | /email-certifications/{emlCertSn}/password-reset | 본인확인 결과로 비밀번호 재설정, 대상 계정 기존 로그인 종료. 권한 없음·만료·사용 완료·무효화는 400 PASSWORD_RESET_NOT_AVAILABLE, `pswd`와 `pswdCnfrm` 불일치는 400 PASSWORD_MISMATCH. 재설정 권한 조회 GET은 두지 않는다(순번 일련번호 노출 방지, 만료는 verify의 `initAuthrtExpryDt`와 이 API의 400으로 안다) | ACC-012-01~03 | YAY | EmailCertificationPasswordResetRequest | - |
 | POST | /email-certifications/{emlCertSn}/verify | 인증번호 확인. 목적별 결과(가입 진행 / 재설정 대상·SNS 전용·미가입·탈퇴 보관 분기 / 복구 확인 권한) 반환 | ACC-001-06·40·43, ACC-011-08~10 | YAY | EmailCertificationVerifyRequest | EmailCertificationResponse |
 | POST | /members | 회원가입(이메일·SNS 공통). 약관별 동의·번호 암호문/HMAC·기본 닉네임·최초 상태 이력·SNS 연결 저장, 서버 재검사. 201과 함께 닉네임 설정 전용 쿠키 `ncnm_setup`(로그인 쿠키 아님)을 준다. 이메일 가입만 구현(SNS 가입은 SNS 로그인 마일스톤) | ACC-001-09·10·12·14·22·24·27·29·32·38 | YAY | MemberCreateRequest | MemberResponse |
 | POST | /members/me/password-verification | 현재 비밀번호 확인(회원정보 수정 진입·비밀번호 변경 전) *통합 때 추가* | MYP-040-01 | YAY | PasswordVerifyRequest | - |
-| POST | /members/me/recover | 30일 이내 탈퇴 회원 기존 정보 복구 실행(탈퇴 → 정상 이력) | ACC-001-45 | YAY | MemberRecoverRequest | - |
+| POST | /members/recovery | 30일 이내 탈퇴 회원 기존 정보 복구 실행(탈퇴 → 정상, 상태 이력 "재가입 복구" 한 번). 로그인 없이 부르고 본문의 복구 확인 권한 토큰으로 본인확인하며 성공해도 로그인 쿠키를 만들지 않는다. 권한 문제는 400 MEMBER_RECOVERY_NOT_AVAILABLE, 보관 기간 지남은 400 MEMBER_RECOVERY_EXPIRED, 빠진 필수 약관 미동의는 400 REQUIRED_TERMS_NOT_AGREED, 번호는 INVALID_PHONE_NUMBER·409 PHONE_ALREADY_USED. 이미 쓴 권한이라도 그 회원이 지금 정상이면 바꾸는 것 없이 200(중복 클릭·응답 유실) | ACC-001-45 | YAY | MemberRecoverRequest | - |
 | POST | /members/me/withdraw | 회원탈퇴(상태·이력 반영, 모든 로그인·인증 권한 종료, 30일 보관) | ACC-020-03·14·16, AIM-011-19, MYP-002-08 (기능 분배 3.1절 5번) | YAY | MemberWithdrawRequest | - |
 | PUT | /members/me/dashboard-widgets | 메인 건강 지표 위젯 표시 여부·순서 전체 저장 | MAN-007 | YAY | DashboardWidgetSaveRequest | List<DashboardWidgetSummary> |
 | PATCH | /members/me | 회원정보 수정. 휴대전화(저장 시 중복 재검사)·프로필 사진 | MYP-040-02·05·08·11 | SJM | MemberUpdateRequest | MemberResponse |
@@ -95,11 +95,11 @@
 | certExpryDt | LocalDateTime | Y | 남은 시간 표시 기준(서버 만료시각) | EML_CERT.CERT_EXPRY_DT, ACC-001-05 |
 | resendAvailableDt | LocalDateTime | N | 재전송 제한 중이면 재시도 가능 시점 | ACC-011-07 |
 | certCmptnDt | LocalDateTime | N | 인증 확인 성공 시각. verify 이후 | EML_CERT.CERT_CMPTN_DT |
-| certRslt | String | N | verify 결과 분기. 가입 목적은 `SIGNUP_READY`, 비밀번호 찾기 목적은 `PASSWORD_RESET_READY`(재설정 대상, 정지 회원 포함) / `SNS_ONLY`(비밀번호 없는 회원) / `MEMBER_NOT_FOUND`(미가입, 보관 기간이 지난 탈퇴) / `MEMBER_WITHDRAWN`(보관 기간 안의 탈퇴)로 확정. 복구 대상 값은 복구 마일스톤에서 확정 | ACC-001-06·43, ACC-011-08 |
+| certRslt | String | N | verify 결과 분기. 가입 목적은 `SIGNUP_READY`, 비밀번호 찾기 목적은 `PASSWORD_RESET_READY`(재설정 대상, 정지 회원 포함) / `SNS_ONLY`(비밀번호 없는 회원) / `MEMBER_NOT_FOUND`(미가입, 보관 기간이 지난 탈퇴) / `MEMBER_WITHDRAWN`(보관 기간 안의 탈퇴)로 확정. 복구 목적은 `RECOVERY_READY`(보관 기간 안의 탈퇴 회원, `rcvryAuthrtTkn`·`initAuthrtExpryDt` 포함)로 확정하고, 보관 기간 지남은 400 `MEMBER_RECOVERY_EXPIRED`, 정상·정지·미가입은 404 `MEMBER_NOT_FOUND` | ACC-001-06·43, ACC-011-08 |
 | snsOffrCds | List<String> | N | `certRslt`가 SNS 전용일 때 실제 연결된 제공자(USRG03) | SNS_ACNT_LINK.SNS_OFFR_CD, ACC-011-10 |
 | pswdInitTkn | String | N | 재설정 대상일 때만. 비밀번호 재설정 권한 토큰 원문 | EML_CERT.PSWD_INIT_TKN_HASH (해시 전 원문), ACC-011-08 |
 | initAuthrtExpryDt | LocalDateTime | N | 재설정 권한 만료 시각 | EML_CERT.INIT_AUTHRT_EXPRY_DT |
-| rcvryAuthrtTkn | String | N | 복구 대상일 때만. 복구 확인 권한 토큰(저장 컬럼 없음, issues 5) | ACC-001-43 |
+| rcvryAuthrtTkn | String | N | 복구 목적 `RECOVERY_READY`일 때만. 복구 확인 권한 토큰 원문. `EML_CERT.PSWD_INIT_TKN_HASH`에 `hmac("rcvry:"+토큰)`으로 저장하고(목적이 행마다 달라 재설정 토큰과 같은 칸을 쓴다) 만료는 `initAuthrtExpryDt` | EML_CERT.PSWD_INIT_TKN_HASH, ACC-001-43 |
 
 ### EmailCertificationInvalidateRequest
 쓰는 API: POST /email-certifications/{emlCertSn}/invalidate
@@ -174,16 +174,24 @@
 | normalizedMblTelno | String | Y | 공백·하이픈 제거, +82 표기를 국내 표기 숫자(`01012345678`)로 통일한 결과 | ACC-001-29 |
 | available | Boolean | Y | 초안 그대로 | ACC-001-30 |
 
-### MemberRecoverRequest
-쓰는 API: POST /members/me/recover
+### MemberRecoveryInfoRequest
+쓰는 API: POST /members/recovery-info
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
+| emlCertSn | Long | Y | 인증번호 확인 응답의 `emlCertSn` | EML_CERT.EML_CERT_SN, ACC-001-43 |
+| rcvryAuthrtTkn | String | Y | 인증번호 확인 응답의 복구 확인 권한 토큰(최대 100자) | EML_CERT.PSWD_INIT_TKN_HASH (해시 전 원문), ACC-001-43·44 |
+
+### MemberRecoverRequest
+쓰는 API: POST /members/recovery
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| emlCertSn | Long | Y | 인증번호 확인 응답의 `emlCertSn` | EML_CERT.EML_CERT_SN, ACC-001-45 |
+| rcvryAuthrtTkn | String | Y | 복구 확인 권한 토큰. 복구 실행 때 권한·만료·사용 여부와 보관 기간을 다시 검사한다 | EML_CERT.PSWD_INIT_TKN_HASH (해시 전 원문), ACC-001-45 |
 | trmsAgres | List<TermsAgreeRequest> | N | 같은 버전으로 이미 동의한 약관은 빼고, 빠진 현재 버전 필수 약관만. 빠진 필수 약관이 있으면 필수 | MBR_TRMS_AGRE, ACC-001-44·45 |
 | mblTelno | String | N | 보관 번호가 없을 때만 필수. 정규화·형식·중복 검사는 가입과 같다 | MBR.MBL_TELNO_ENC, ACC-001-29, ACC-001-44 |
-| idmptDmndId | String | N | 중복 클릭·응답 유실 시 같은 요청의 결과를 확인하는 식별값(저장 컬럼 없음, issues 5) | ACC-001-45 |
 
 ### MemberRecoveryResponse
-쓰는 API: GET /members/me/recovery
+쓰는 API: POST /members/recovery-info
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | acntEml | String | Y | 본인확인을 마친 복구 대상 이메일 | MBR.ACNT_EML_ENC, ACC-001-44 |

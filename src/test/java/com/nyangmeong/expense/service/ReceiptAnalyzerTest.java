@@ -47,7 +47,7 @@ class ReceiptAnalyzerTest {
 
     @BeforeEach
     void setUp() {
-        when(receiptService.create(1L, 10L, image)).thenReturn(3L);
+        when(receiptService.create(1L, 10L, image, null)).thenReturn(3L);
         when(receiptService.getImage(1L, 3L)).thenReturn(new StoredFile(new byte[] {1}, "image/png", "r.png"));
         when(receiptService.finish(eq(1L), eq(3L), any(), any(), any())).thenReturn(true);
         when(caregiverPetFake.search(1L)).thenReturn(List.of(new CaregiverPetSummary(10L, "미르")));
@@ -62,7 +62,7 @@ class ReceiptAnalyzerTest {
     void 인식_성공이면_결과를_저장하고_탭을_돌려준다() {
         when(ocrClient.recognize(any(), eq("image/png"))).thenReturn(recognized());
 
-        ReceiptResponse response = analyzer.create(1L, 10L, image);
+        ReceiptResponse response = analyzer.create(1L, 10L, image, null);
 
         assertThat(response.recptSn()).isEqualTo(3L);
         assertThat(response.ocrPrcsSttsCd()).isEqualTo(ReceiptStatus.RECOGNIZED.getCode());
@@ -78,7 +78,7 @@ class ReceiptAnalyzerTest {
         when(ocrClient.recognize(any(), anyString())).thenReturn(new ReceiptOcrResponse(null, null, null, null,
                 List.of()));
 
-        ReceiptResponse response = analyzer.create(1L, 10L, image);
+        ReceiptResponse response = analyzer.create(1L, 10L, image, null);
 
         assertThat(response.ocrPrcsSttsCd()).isEqualTo(ReceiptStatus.NOT_RECOGNIZED.getCode());
         assertThat(response.sections()).isEmpty();
@@ -90,7 +90,7 @@ class ReceiptAnalyzerTest {
         when(ocrClient.recognize(any(), anyString())).thenReturn(new ReceiptOcrResponse("냥멍동물병원", null,
                 null, null, List.of()));
 
-        ReceiptResponse response = analyzer.create(1L, 10L, image);
+        ReceiptResponse response = analyzer.create(1L, 10L, image, null);
 
         assertThat(response.ocrPrcsSttsCd()).isEqualTo(ReceiptStatus.PARTIAL.getCode());
         assertThat(response.hsptlNm()).isEqualTo("냥멍동물병원");
@@ -101,7 +101,7 @@ class ReceiptAnalyzerTest {
     void API_오류면_일시_오류_API_ERROR() {
         when(ocrClient.recognize(any(), anyString())).thenThrow(new IllegalStateException("500"));
 
-        ReceiptResponse response = analyzer.create(1L, 10L, image);
+        ReceiptResponse response = analyzer.create(1L, 10L, image, null);
 
         assertThat(response.ocrPrcsSttsCd()).isEqualTo(ReceiptStatus.TEMPORARY_ERROR.getCode());
         assertThat(response.failRsn()).isEqualTo("API_ERROR");
@@ -112,7 +112,7 @@ class ReceiptAnalyzerTest {
     void 클라이언트가_시간_초과를_알리면_일시_오류_TIMEOUT() {
         when(ocrClient.recognize(any(), anyString())).thenThrow(new OcrTimeoutException("timeout"));
 
-        ReceiptResponse response = analyzer.create(1L, 10L, image);
+        ReceiptResponse response = analyzer.create(1L, 10L, image, null);
 
         assertThat(response.failRsn()).isEqualTo("TIMEOUT");
         verify(receiptService).finish(1L, 3L, ReceiptStatus.TEMPORARY_ERROR, "TIMEOUT", null);
@@ -127,7 +127,7 @@ class ReceiptAnalyzerTest {
         });
 
         long started = System.nanoTime();
-        ReceiptResponse response = analyzer.create(1L, 10L, image);
+        ReceiptResponse response = analyzer.create(1L, 10L, image, null);
         long elapsedMillis = (System.nanoTime() - started) / 1_000_000;
 
         assertThat(response.ocrPrcsSttsCd()).isEqualTo(ReceiptStatus.TEMPORARY_ERROR.getCode());
@@ -140,7 +140,7 @@ class ReceiptAnalyzerTest {
         when(ocrClient.recognize(any(), anyString())).thenReturn(recognized());
         when(receiptService.finish(eq(1L), eq(3L), any(), any(), any())).thenReturn(false);
 
-        ReceiptResponse response = analyzer.create(1L, 10L, image);
+        ReceiptResponse response = analyzer.create(1L, 10L, image, null);
 
         assertThat(response.ocrPrcsSttsCd()).isEqualTo(ReceiptStatus.CANCELED.getCode());
         assertThat(response.sections()).isEmpty();
