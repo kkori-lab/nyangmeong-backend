@@ -32,6 +32,7 @@ public class PostService {
 - 알림은 `NotificationEvent`, 메일은 `MailEvent`를 발행한다. 알림 테이블에 직접 insert하지 않는다.
 - 이벤트를 받아 알림을 저장하는 service는 `notification` 도메인에 있다. 이벤트 클래스는 `global/notification`에 있다.
 - 이벤트는 `@Transactional` 메서드 안에서 `EventPublisher.publish()`로만 발행한다. `ApplicationEventPublisher`를 직접 쓰지 않는다. 직접 쓰면 트랜잭션 밖에서 발행한 이벤트를 리스너가 받지 않고 버리며 오류도 나지 않는다.
+- 예외: 알림·메일이 아닌 도메인 이벤트(예: `pet`의 `PetDeletedEvent`)는 `global`이 도메인 클래스를 알 수 없어 `EventPublisher`에 넣지 않는다. 발행하는 service의 `@Transactional` 메서드 안에서 `ApplicationEventPublisher.publishEvent()`로 발행하고, 받는 쪽은 같은 트랜잭션에서 처리한다(`@TransactionalEventListener(phase = BEFORE_COMMIT)` 또는 `@EventListener`). 이벤트 클래스는 발행하는 도메인의 `domain` 패키지에 두고, 위층이 그 클래스를 받는다(아래층이 위층을 부르지 않는다).
 - `EventPublisher.publish()`는 트랜잭션이 없으면 예외를 던진다. 같은 클래스의 `@Transactional` 메서드를 `this.메서드()`로 부른 경우에도 트랜잭션이 걸리지 않으므로 예외가 난다. 이때는 호출하는 메서드에 `@Transactional`을 붙인다.
 
 ```java

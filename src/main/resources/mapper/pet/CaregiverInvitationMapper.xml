@@ -81,6 +81,7 @@
           FROM JNT_BRUP_INVTN I
           JOIN INVTN_TRGT_PET T
             ON T.JNT_BRUP_INVTN_SN = I.JNT_BRUP_INVTN_SN
+           AND T.DEL_YN = 'N'
           JOIN PET P
             ON P.PET_SN = T.PET_SN
            AND P.DEL_YN = 'N'
@@ -105,6 +106,7 @@
             ON P.PET_SN = T.PET_SN
            AND P.DEL_YN = 'N'
          WHERE T.JNT_BRUP_INVTN_SN = #{jntBrupInvtnSn}
+           AND T.DEL_YN = 'N'
          ORDER BY T.INVTN_TRGT_PET_SN
     </select>
 
@@ -113,6 +115,7 @@
         SELECT PET_SN
           FROM INVTN_TRGT_PET
          WHERE JNT_BRUP_INVTN_SN = #{jntBrupInvtnSn}
+           AND DEL_YN = 'N'
          ORDER BY INVTN_TRGT_PET_SN
     </select>
 
@@ -122,6 +125,7 @@
           FROM JNT_BRUP_INVTN I
           JOIN INVTN_TRGT_PET T
             ON T.JNT_BRUP_INVTN_SN = I.JNT_BRUP_INVTN_SN
+           AND T.DEL_YN = 'N'
          WHERE I.INVTN_TRGT_EML_HMAC = #{invtnTrgtEmlHmac}
            AND T.PET_SN = #{petSn}
            AND I.INVTN_STTS_CD = #{pendingCd}
@@ -197,6 +201,14 @@
              , MDFCN_DT           = NOW()
          WHERE JNT_BRUP_INVTN_SN = #{jntBrupInvtnSn}
            AND INVTN_STTS_CD     = #{pendingCd}
+    </update>
+
+    <update id="updateTargetPetDeleteByPetSn" parameterType="long">
+        /* 반려동물 삭제 시 초대 대상 반려동물 삭제 처리 */
+        UPDATE INVTN_TRGT_PET
+           SET DEL_YN = 'Y'
+         WHERE PET_SN = #{petSn}
+           AND DEL_YN = 'N'
     </update>
 
     <update id="updateTargetPetsAcceptance">

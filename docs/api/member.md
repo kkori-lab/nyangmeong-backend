@@ -212,6 +212,8 @@
 | joinPathCd | String | Y | 가입 경로(USRG03). SNS 회원은 본인 확인 생략 | MBR.JOIN_PATH_CD, MYP-040-01 |
 | ncnmStngCmptnYn | boolean | Y | 닉네임 설정 완료 여부 | MBR.NCNM_STNG_CMPTN_YN, ACC-001-26·27 |
 | snsAcntLinks | List<MemberSnsAccountSummary> | Y | 연동된 SNS 계정. 없으면 빈 목록 | SNS_ACNT_LINK, MYP-040-09 |
+| joinDt | LocalDateTime | Y | 가입일(회원 등록일시). 계정 정보 표시 | MBR.REG_DT, MYP-040-13 |
+| lastLgnDt | LocalDateTime | N | 최근 로그인. 첫 로그인 전이면 null | MBR.LAST_LGN_DT, MYP-040-13 |
 
 #### MemberSnsAccountSummary (MemberResponse.snsAcntLinks)
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |

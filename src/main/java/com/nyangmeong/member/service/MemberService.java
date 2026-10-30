@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.security.crypto.FieldCryptoService;
 import com.nyangmeong.global.security.domain.MemberAuthority;
 import com.nyangmeong.global.security.domain.MemberStatus;
@@ -22,6 +23,7 @@ import com.nyangmeong.member.dto.MemberNicknameUpdateRequest;
 import com.nyangmeong.member.dto.MemberPhoneAvailabilityResponse;
 import com.nyangmeong.member.dto.MemberResponse;
 import com.nyangmeong.member.dto.MemberSnsAccountSummary;
+import com.nyangmeong.member.dto.MemberUpdateRequest;
 import com.nyangmeong.member.dto.EmailCertificationResponse;
 import com.nyangmeong.member.dto.PasswordResetAccount;
 import com.nyangmeong.member.mapper.MemberMapper;
@@ -31,7 +33,7 @@ import lombok.RequiredArgsConstructor;
 /**
  * [회원 서비스]
  * - 다른 도메인(auth 등)은 mapper 대신 이 서비스를 부른다
- * - 가입 때 이메일·번호·닉네임 중복 검사와 회원 저장, 닉네임 설정
+ * - 가입 때 이메일·번호·닉네임 중복 검사와 회원 저장, 닉네임 설정, 회원정보 수정(휴대전화번호·프로필 사진)
  */
 @Service
 @RequiredArgsConstructor
@@ -45,6 +47,7 @@ public class MemberService {
     private final MemberMapper memberMapper;
     private final FieldCryptoService fieldCryptoService;
     private final SystemSettingService systemSettingService;
+    private final FileStore fileStore;
 
     /**
      * 로그인용 회원 조회 : 없으면 null (없는 아이디도 불일치와 같게 다루기 위해)
@@ -256,6 +259,49 @@ public class MemberService {
     }
 
     /**
+     * 회원정보 수정 : 보낸 값만 바꾸고, 아무 값도 없으면 현재 값을 돌려준다
+     * - 휴대전화번호는 정규화 뒤 다른 회원이 쓰면 거절, 본인 번호면 그대로 통과 (저장 시 서버 재검사, FN-MYP-040-05)
+     * - 프로필 사진은 공개 이미지로 저장, 기본 이미지로는 비운다. 이전 사진 파일은 그대로 둔다
+     */
+    @Transactional
+    public MemberResponse updateMember(Long mbrSn, MemberUpdateRequest req) {
+        Member member = memberMapper.selectBySn(mbrSn);
+        if (member == null) {
+            throw new CustomException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+        if (MemberStatus.isInactive(member.getMbrSttsCd())) {
+            throw new CustomException(ErrorCode.MEMBER_INACTIVE);
+        }
+        boolean hasPhoto = req.profilePhoto() != null && !req.profilePhoto().isEmpty();
+        boolean photoReset = Boolean.TRUE.equals(req.profilePhotoReset());
+        if (hasPhoto && photoReset) {
+            throw new CustomException(ErrorCode.BAD_REQUEST);
+        }
+        String mblTelnoEnc = null;
+        String mblTelnoHmac = null;
+        if (req.mblTelno() != null) {
+            String normalized = PhoneNumberNormalizer.normalize(req.mblTelno());
+            mblTelnoHmac = fieldCryptoService.hmac(normalized);
+            Long owner = memberMapper.selectMbrSnByPhoneHmac(mblTelnoHmac);
+            if (owner != null && !owner.equals(mbrSn)) {
+                throw new CustomException(ErrorCode.PHONE_ALREADY_USED);
+            }
+            mblTelnoEnc = fieldCryptoService.encrypt(normalized);
+        }
+        if (mblTelnoHmac == null && !hasPhoto && !photoReset) {
+            return toResponse(member);
+        }
+        String actorId = String.valueOf(mbrSn);
+        Long atchFileSn = hasPhoto ? fileStore.storePublic(req.profilePhoto(), actorId) : null;
+        try {
+            memberMapper.updateProfile(mbrSn, mblTelnoEnc, mblTelnoHmac, atchFileSn, photoReset, actorId);
+        } catch (DuplicateKeyException e) {
+            throw duplicateException(e);
+        }
+        return toResponse(memberMapper.selectBySn(mbrSn));
+    }
+
+    /**
      * 회원 VO를 응답으로 변환
      */
     @Transactional(readOnly = true)
@@ -265,7 +311,7 @@ public class MemberService {
                 .toList();
         return new MemberResponse(fieldCryptoService.decrypt(member.getAcntEmlEnc()), member.getMbrNcnm(),
                 fieldCryptoService.decrypt(member.getMblTelnoEnc()), member.getAtchFileSn(), member.getJoinPathCd(),
-                "Y".equals(member.getNcnmStngCmptnYn()), snsLinks);
+                "Y".equals(member.getNcnmStngCmptnYn()), snsLinks, member.getRegDt(), member.getLastLgnDt());
     }
 
     /** 냥멍 + 숫자 8자리(10글자), 중복이면 다시 만든다 */

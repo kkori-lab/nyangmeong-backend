@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -19,10 +20,13 @@ import java.util.List;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -51,6 +55,7 @@ import com.nyangmeong.member.dto.MemberRecoverRequest;
 import com.nyangmeong.member.dto.MemberRecoveryInfoRequest;
 import com.nyangmeong.member.dto.MemberRecoveryResponse;
 import com.nyangmeong.member.dto.MemberResponse;
+import com.nyangmeong.member.dto.MemberUpdateRequest;
 import com.nyangmeong.member.service.MemberJoinService;
 import com.nyangmeong.member.service.MemberRecoveryService;
 import com.nyangmeong.member.service.MemberService;
@@ -96,7 +101,7 @@ class MemberControllerTest {
     AuthMemberMapper authMemberMapper;
 
     private final MemberResponse memberResponse = new MemberResponse("newbie@example.com", "냥멍12345678",
-            "01012345678", null, "USRC0006", false, List.of());
+            "01012345678", null, "USRC0006", false, List.of(), null, null);
 
     private MockHttpServletRequestBuilder join(String body) {
         return post("/api/members")
@@ -262,7 +267,7 @@ class MemberControllerTest {
     void 닉네임_설정_쿠키가_있으면_그_회원의_닉네임을_저장한다() throws Exception {
         when(memberService.updateNickname(eq(11L), any(MemberNicknameUpdateRequest.class)))
                 .thenReturn(new MemberResponse("newbie@example.com", "초코맘", "01012345678", null, "USRC0006", true,
-                        List.of()));
+                        List.of(), null, null));
 
         mockMvc.perform(nickname("{\"mbrNcnm\":\"초코맘\"}").cookie(setupCookie(11L)))
                 .andExpect(status().isOk())
@@ -390,5 +395,54 @@ class MemberControllerTest {
         assertThat(new MemberRecoveryInfoRequest(3L, "secret-tkn").toString()).doesNotContain("secret-tkn");
         assertThat(new MemberRecoverRequest(3L, "secret-tkn", null, "01012345678").toString())
                 .doesNotContain("secret-tkn", "01012345678");
+    }
+
+    @Test
+    @WithMockLoginMember(id = 5L)
+    void 회원정보_수정_조회는_로그인_회원의_정보를_준다() throws Exception {
+        when(memberService.getMember(5L)).thenReturn(new MemberResponse("newbie@example.com", "초코맘", "01012345678",
+                null, "USRC0006", true, List.of(), LocalDateTime.of(2026, 8, 14, 9, 0),
+                LocalDateTime.of(2026, 10, 21, 10, 42)));
+
+        mockMvc.perform(get("/api/members/me").header("X-Requested-With", "XMLHttpRequest"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.acntEml").value("newbie@example.com"))
+                .andExpect(jsonPath("$.data.mblTelno").value("01012345678"))
+                .andExpect(jsonPath("$.data.joinDt").exists())
+                .andExpect(jsonPath("$.data.lastLgnDt").exists());
+    }
+
+    @Test
+    void 회원정보_수정_조회는_로그인하지_않으면_401이다() throws Exception {
+        mockMvc.perform(get("/api/members/me").header("X-Requested-With", "XMLHttpRequest"))
+                .andExpect(status().isUnauthorized());
+
+        verify(memberService, never()).getMember(any());
+    }
+
+    @Test
+    @WithMockLoginMember(id = 5L)
+    void 회원정보_수정은_multipart로_번호와_사진을_받는다() throws Exception {
+        when(memberService.updateMember(eq(5L), any(MemberUpdateRequest.class))).thenReturn(memberResponse);
+        MockMultipartFile photo = new MockMultipartFile("profilePhoto", "me.png", "image/png", new byte[] {1, 2});
+
+        mockMvc.perform(multipart(HttpMethod.PATCH, "/api/members/me").file(photo)
+                .param("mblTelno", "+82 10-1234-5678")
+                .header("X-Requested-With", "XMLHttpRequest"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<MemberUpdateRequest> captor = ArgumentCaptor.forClass(MemberUpdateRequest.class);
+        verify(memberService).updateMember(eq(5L), captor.capture());
+        assertThat(captor.getValue().mblTelno()).isEqualTo("+82 10-1234-5678");
+        assertThat(captor.getValue().profilePhoto().getOriginalFilename()).isEqualTo("me.png");
+    }
+
+    @Test
+    void 회원정보_수정은_로그인하지_않으면_401이다() throws Exception {
+        mockMvc.perform(multipart(HttpMethod.PATCH, "/api/members/me").param("profilePhotoReset", "true")
+                .header("X-Requested-With", "XMLHttpRequest"))
+                .andExpect(status().isUnauthorized());
+
+        verify(memberService, never()).updateMember(any(), any());
     }
 }

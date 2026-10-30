@@ -66,6 +66,7 @@
         SELECT DISTINCT PET_SN
           FROM DAY_MSN
          WHERE MSN_CRTR_YMD = #{msnCrtrYmd}
+           AND DEL_YN = 'N'
     </select>
 
     <insert id="insertDayMission" parameterType="com.nyangmeong.pet.domain.DayMsn"
@@ -131,6 +132,7 @@
          WHERE D.PET_SN = #{petSn}
            AND D.MSN_CRTR_YMD = #{msnCrtrYmd}
            AND D.CARE_MSN_SN = #{careMsnSn}
+           AND D.DEL_YN = 'N'
            FOR UPDATE
     </select>
 
@@ -144,6 +146,7 @@
          WHERE D.MBR_SN = #{mbrSn}
            AND D.MSN_CRTR_YMD = #{msnCrtrYmd}
            AND D.CARE_MSN_SN = #{careMsnSn}
+           AND D.DEL_YN = 'N'
          ORDER BY D.DAY_MSN_SN
          LIMIT 1
            FOR UPDATE
@@ -180,8 +183,18 @@
            AND P.DEL_YN = 'N'
          WHERE D.MSN_CRTR_YMD = #{msnCrtrYmd}
            AND D.CLCLN_CFMTN_YN = 'N'
+           AND D.DEL_YN = 'N'
          ORDER BY D.DAY_MSN_SN
     </select>
+
+    <update id="updateDayMissionDeleteByPetSn">
+        /* 반려동물 삭제 시 일별미션 삭제 처리 */
+        UPDATE DAY_MSN
+           SET DEL_YN = 'Y'
+             , MDFCN_DT = NOW()
+         WHERE PET_SN = #{petSn}
+           AND DEL_YN = 'N'
+    </update>
 
     <update id="updateDayMissionSettled">
         /* 일별미션 정산 확정 */
@@ -222,6 +235,7 @@
            AND P.DEL_YN = 'N'
          WHERE D.PET_SN = #{petSn}
            AND D.MSN_CRTR_YMD = #{msnCrtrYmd}
+           AND D.DEL_YN = 'N'
          ORDER BY D.DAY_MSN_SN
     </select>
 
@@ -242,6 +256,7 @@
            AND P.DEL_YN = 'N'
          WHERE D.MBR_SN = #{mbrSn}
            AND D.MSN_CRTR_YMD = #{msnCrtrYmd}
+           AND D.DEL_YN = 'N'
     </select>
 
     <select id="selectPetNm" resultType="java.lang.String">
