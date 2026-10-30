@@ -11,6 +11,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,6 +31,9 @@ import com.nyangmeong.global.code.CommonCodeService;
 import com.nyangmeong.global.code.CommonCodeSummary;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.notification.EventPublisher;
+import com.nyangmeong.global.notification.NotificationEvent;
+import com.nyangmeong.global.notification.NotificationType;
 import com.nyangmeong.pet.domain.BrupLinkSttsHstry;
 import com.nyangmeong.pet.domain.BrupRel;
 import com.nyangmeong.pet.domain.Pet;
@@ -39,9 +43,10 @@ import com.nyangmeong.pet.dto.PetResponse;
 import com.nyangmeong.pet.dto.PetSummary;
 import com.nyangmeong.pet.dto.PetUpdateRequest;
 import com.nyangmeong.pet.mapper.PetMapper;
+import com.nyangmeong.pet.mapper.PixelCharacterMapper;
 
 /**
- * [검사 - 내 반려동물 목록·등록·수정·대표 지정·양육자 목록·연동 해제]
+ * [검사 - 내 반려동물 목록·등록·수정·대표 지정·양육자 목록·연동 해제·삭제]
  */
 class PetServiceTest {
 
@@ -60,7 +65,9 @@ class PetServiceTest {
     private final PetMapper mapper = mock(PetMapper.class);
     private final PetAuthorizer authorizer = mock(PetAuthorizer.class);
     private final CommonCodeService codes = mock(CommonCodeService.class);
-    private final PetService service = new PetService(mapper, authorizer, codes);
+    private final PixelCharacterMapper pixelMapper = mock(PixelCharacterMapper.class);
+    private final EventPublisher events = mock(EventPublisher.class);
+    private final PetService service = new PetService(mapper, authorizer, codes, pixelMapper, events);
 
     @BeforeEach
     void setUp() {
@@ -394,6 +401,97 @@ class PetServiceTest {
         rel.setPetSn(PET);
         rel.setMbrSn(mbrSn);
         return rel;
+    }
+
+    @Test
+    void 삭제는_반려동물_캐릭터_보유_아이템을_지우고_공동양육_연동을_해제하고_알린다() {
+        when(mapper.updatePetDelete(PET, "1")).thenReturn(1);
+        when(mapper.selectLinkedCoParentRels(PET, CO_PARENT))
+                .thenReturn(List.of(target(60L, 7L, CO_PARENT), target(61L, 8L, CO_PARENT)));
+        when(mapper.updateBrupRelUnlink(anyLong(), eq("1"))).thenReturn(1);
+
+        service.deletePet(MBR, PET);
+
+        InOrder order = inOrder(authorizer, mapper, pixelMapper);
+        order.verify(authorizer).checkPrimary(MBR, PET);
+        order.verify(mapper).updatePetDelete(PET, "1");
+        order.verify(pixelMapper).updateHeldItemDeleteByPetSn(PET);
+        order.verify(pixelMapper).updateDeleteByPetSn(PET, "1");
+        verify(mapper).updateBrupRelUnlink(60L, "1");
+        verify(mapper).updateBrupRelUnlink(61L, "1");
+
+        ArgumentCaptor<BrupLinkSttsHstry> history = ArgumentCaptor.forClass(BrupLinkSttsHstry.class);
+        verify(mapper, times(2)).insertLinkHistory(history.capture());
+        assertThat(history.getAllValues()).extracting(BrupLinkSttsHstry::getMbrSn).containsExactly(7L, 8L);
+        assertThat(history.getAllValues()).extracting(BrupLinkSttsHstry::getLinkChgTypeCd)
+                .containsOnly("PETC0027");
+
+        ArgumentCaptor<NotificationEvent> event = ArgumentCaptor.forClass(NotificationEvent.class);
+        verify(events, times(2)).publish(event.capture());
+        assertThat(event.getAllValues()).extracting(NotificationEvent::mbrSn).containsExactly(7L, 8L);
+        assertThat(event.getValue().type()).isEqualTo(NotificationType.CO_PARENTING);
+        assertThat(event.getValue().notiTtl()).isEqualTo("뭉치의 기록이 정리되어 공동양육 연동이 해제되었어요");
+        assertThat(event.getValue().mvmnPath()).isEqualTo("/mypage/pets");
+        verify(mapper, never()).updateRepresentativeOff(anyLong(), anyString());
+    }
+
+    @Test
+    void 공동양육자가_없으면_해제와_알림이_없다() {
+        when(mapper.updatePetDelete(PET, "1")).thenReturn(1);
+        when(mapper.selectLinkedCoParentRels(PET, CO_PARENT)).thenReturn(List.of());
+
+        service.deletePet(MBR, PET);
+
+        verify(mapper, never()).updateBrupRelUnlink(anyLong(), anyString());
+        verify(mapper, never()).insertLinkHistory(any());
+        verify(events, never()).publish(any(NotificationEvent.class));
+    }
+
+    @Test
+    void 대표를_삭제하면_남은_첫_주양육_동물이_대표가_된다() {
+        when(mapper.selectBrupRel(MBR, PET)).thenReturn(rel(PRIMARY, "Y"));
+        when(mapper.updatePetDelete(PET, "1")).thenReturn(1);
+        when(mapper.selectLinkedCoParentRels(PET, CO_PARENT)).thenReturn(List.of());
+        when(mapper.selectList(MBR, CO_PARENT)).thenReturn(List.of(pet(11L, CO_PARENT, false, 0, null),
+                pet(12L, PRIMARY, false, 0, null), pet(13L, PRIMARY, false, 0, null)));
+
+        service.deletePet(MBR, PET);
+
+        InOrder order = inOrder(mapper);
+        order.verify(mapper).updateRepresentativeOff(MBR, "1");
+        order.verify(mapper).updateRepresentativeOn(MBR, 12L, "1");
+    }
+
+    @Test
+    void 대표를_삭제하고_남은_주양육_동물이_없으면_대표가_없다() {
+        when(mapper.selectBrupRel(MBR, PET)).thenReturn(rel(PRIMARY, "Y"));
+        when(mapper.updatePetDelete(PET, "1")).thenReturn(1);
+        when(mapper.selectLinkedCoParentRels(PET, CO_PARENT)).thenReturn(List.of());
+        when(mapper.selectList(MBR, CO_PARENT)).thenReturn(List.of(pet(11L, CO_PARENT, false, 0, null)));
+
+        service.deletePet(MBR, PET);
+
+        verify(mapper).updateRepresentativeOff(MBR, "1");
+        verify(mapper, never()).updateRepresentativeOn(anyLong(), anyLong(), anyString());
+    }
+
+    @Test
+    void 공동양육자는_삭제할_수_없다() {
+        doThrow(new CustomException(ErrorCode.PET_PRIMARY_ONLY)).when(authorizer).checkPrimary(MBR, PET);
+
+        assertCode(() -> service.deletePet(MBR, PET), ErrorCode.PET_PRIMARY_ONLY);
+        verify(mapper, never()).updatePetDelete(anyLong(), anyString());
+        verify(pixelMapper, never()).updateDeleteByPetSn(anyLong(), anyString());
+        verify(events, never()).publish(any(NotificationEvent.class));
+    }
+
+    @Test
+    void 동시에_이미_삭제됐으면_404이고_나머지를_하지_않는다() {
+        when(mapper.updatePetDelete(PET, "1")).thenReturn(0);
+
+        assertCode(() -> service.deletePet(MBR, PET), ErrorCode.PET_NOT_FOUND);
+        verify(pixelMapper, never()).updateHeldItemDeleteByPetSn(anyLong());
+        verify(mapper, never()).selectLinkedCoParentRels(anyLong(), anyString());
     }
 
     private void assertCode(Runnable action, ErrorCode code) {

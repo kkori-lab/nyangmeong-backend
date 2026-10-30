@@ -47,6 +47,16 @@ public interface PixelCharacterMapper {
             @Param("actorId") String actorId);
 
     /**
+     * 반려동물의 픽셀 캐릭터 삭제
+     */
+    int updateDeleteByPetSn(@Param("petSn") Long petSn, @Param("actorId") String actorId);
+
+    /**
+     * 반려동물 캐릭터의 보유 아이템 삭제 (착용 해제 포함)
+     */
+    int updateHeldItemDeleteByPetSn(Long petSn);
+
+    /**
      * 생성 작업 조회
      */
     CharacterCreationJob selectJob(Long charCrtJobSn);

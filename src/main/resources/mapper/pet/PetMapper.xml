@@ -250,6 +250,24 @@
            AND PET_SN = #{petSn}
     </select>
 
+    <select id="selectLinkedCoParentRels" resultMap="brupRelResultMap">
+        /* 반려동물의 연동 중 공동양육 관계 조회 */
+        SELECT BRUP_REL_SN
+             , PET_SN
+             , MBR_SN
+             , BRUP_ROLE_CD
+             , RPRS_PET_YN
+             , USE_YN
+             , REG_DT
+             , MDFCN_DT
+             , MDFR_ID
+          FROM BRUP_REL
+         WHERE PET_SN = #{petSn}
+           AND BRUP_ROLE_CD = #{coParentRoleCd}
+           AND USE_YN = 'Y'
+         ORDER BY BRUP_REL_SN
+    </select>
+
     <select id="countLinkedCaregivers" resultType="int">
         /* 연동 중 공동양육자 수 조회 */
         SELECT COUNT(*)
@@ -360,6 +378,16 @@
              , MDFR_ID           = #{actorId}
              , MDFCN_DT          = NOW()
          WHERE PET_SN = #{pet.petSn}
+           AND DEL_YN = 'N'
+    </update>
+
+    <update id="updatePetDelete">
+        /* 반려동물 삭제 */
+        UPDATE PET
+           SET DEL_YN   = 'Y'
+             , MDFR_ID  = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE PET_SN = #{petSn}
            AND DEL_YN = 'N'
     </update>
 
