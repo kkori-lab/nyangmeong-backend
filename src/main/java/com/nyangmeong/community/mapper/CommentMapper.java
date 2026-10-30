@@ -30,6 +30,11 @@ public interface CommentMapper {
     int insertComment(Comment comment);
 
     /**
+     * 시스템 자동 댓글 등록 (찾았어요 완료 안내)
+     */
+    int insertAutoComment(Comment comment);
+
+    /**
      * 댓글 삭제 처리
      */
     int updateDeleted(Long cmntSn);

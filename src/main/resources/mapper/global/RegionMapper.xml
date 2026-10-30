@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nyangmeong.global.code.RegionMapper">
+
+    <resultMap id="regionSummaryResultMap" type="com.nyangmeong.global.code.RegionSummary">
+        <id     column="RGN_SN"     property="rgnSn" />
+        <result column="ADMDST_CD"  property="admdstCd" />
+        <result column="CTPV_NM"    property="ctpvNm" />
+        <result column="SGG_NM"     property="sggNm" />
+        <result column="EMD_NM"     property="emdNm" />
+        <result column="RGN_STP_CD" property="rgnStpCd" />
+    </resultMap>
+
+    <!-- 시도 단계 코드 RGNC0001 -->
+    <select id="selectList" resultMap="regionSummaryResultMap">
+        SELECT RGN_SN
+             , ADMDST_CD
+             , CTPV_NM
+             , SGG_NM
+             , EMD_NM
+             , RGN_STP_CD
+          FROM RGN
+         WHERE USE_YN = 'Y'
+        <choose>
+            <when test="upRgnSn != null">
+           AND UP_RGN_SN = #{upRgnSn}
+            </when>
+            <otherwise>
+           AND RGN_STP_CD = 'RGNC0001'
+            </otherwise>
+        </choose>
+         ORDER BY SORT_SEQ
+                , RGN_SN
+    </select>
+
+    <select id="selectRgnSnByAdmdstCd" resultType="long">
+        SELECT RGN_SN
+          FROM RGN
+         WHERE ADMDST_CD = #{admdstCd}
+           AND USE_YN = 'Y'
+    </select>
+</mapper>
