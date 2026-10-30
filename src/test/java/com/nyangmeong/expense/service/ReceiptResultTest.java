@@ -24,8 +24,6 @@ import com.nyangmeong.expense.mapper.ReceiptMapper;
 import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
-import com.nyangmeong.global.external.OcrClient;
-import com.nyangmeong.global.external.OcrProperties;
 import com.nyangmeong.global.external.ReceiptOcrResponse;
 import com.nyangmeong.global.external.ReceiptOcrResponse.Line;
 import com.nyangmeong.global.external.ReceiptOcrResponse.Section;
@@ -44,10 +42,8 @@ class ReceiptResultTest {
     private final PetAuthorizer petAuthorizer = mock(PetAuthorizer.class);
     private final ReceiptService service = new ReceiptService(mapper, fileStore, petAuthorizer);
 
-    private final CaregiverPetFake caregiverPetFake = mock(CaregiverPetFake.class);
     private final ObjectMapper objectMapper = JsonMapper.builder().build();
-    private final ReceiptAnalyzer analyzer = new ReceiptAnalyzer(service, mock(OcrClient.class),
-            new OcrProperties(), caregiverPetFake, objectMapper);
+    private final ReceiptAnalyzer analyzer = new ReceiptAnalyzer(service, objectMapper);
 
     private final MockMultipartFile image = new MockMultipartFile("file", "r.png", "image/png", new byte[] {1});
 

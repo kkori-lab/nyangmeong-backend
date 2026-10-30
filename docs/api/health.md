@@ -25,7 +25,7 @@
 | POST | /pets/{petSn}/care-items | 케어 항목 추가(마지막으로 한 날은 완료 기록으로 함께 저장). AI 대화 등록도 같은 API | HLT-003-21~24·38, AIM-012-07·09·13 | JAJ | CareItemCreateRequest | CareItemResponse |
 | POST | /pets/{petSn}/care-schedules | 일정 등록(종류별 필수값 서버 재검증, 출처 SCHDL_SRC_CD). AI 대화 등록도 같은 API | HLT-003-32~37, AIM-012-09·12~14 | JAJ | CareScheduleCreateRequest | CareScheduleResponse |
 | POST | /pets/{petSn}/checkup-attachments | 첨부 등록(multipart, 유형·영상 종류·촬영 부위) | HLT-005-01 | JAJ | CheckupAttachmentCreateRequest | CheckupAttachmentResponse |
-| POST | /pets/{petSn}/checkup-attachments/{ckupRcdAtchSn}/analyses | 검사결과지 PDF 분석 요청(인식 결과만 반환, 저장 안 함, 중복 요청 차단). 요청 안에서 동기로 분석하고 제한 시간(설정값, 영수증 OCR의 `app.ocr.timeout`과 같은 방식)을 넘기면 일시 오류로 돌려준다. 성공·실패 모두 200, 결과는 `anlysRslt`로 구분(JAJ 확인) | HLT-005-04, HLT-007-06 | JAJ | - | InspectionAnalysisResponse |
+| POST | /pets/{petSn}/checkup-attachments/{ckupRcdAtchSn}/analyses | 검사결과지 PDF 분석 요청(인식 결과만 반환, 저장 안 함, 중복 요청 차단). 요청 안에서 동기로 분석하고 제한 시간(설정값)을 넘기면 일시 오류로 돌려준다. 성공·실패 모두 200, 결과는 `anlysRslt`로 구분(JAJ 확인) | HLT-005-04, HLT-007-06 | JAJ | - | InspectionAnalysisResponse |
 | POST | /pets/{petSn}/checkups | 검진기록 직접 등록(같은 날짜 병원 일정 자동 연결·없으면 생성, 가까운 일정 옮겨 연결 선택) | HLT-002-26~29·31·46 | JAJ | CheckupCreateRequest | CheckupResponse |
 | POST | /pets/{petSn}/daily-health-records | 오늘 기록 추가(식사량·음수량·산책·체중·배변상태) | HLT-002-11 | JAJ | DailyHealthRecordCreateRequest | DailyHealthRecordResponse |
 | POST | /pets/{petSn}/etc-inspections | 기타검사 입력(검사명·결과 500자·메모 200자) | HLT-005-11~14 | JAJ | EtcInspectionCreateRequest | EtcInspectionResponse |

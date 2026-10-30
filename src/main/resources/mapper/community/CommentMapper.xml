@@ -40,8 +40,11 @@
           FROM CMNT C
           JOIN MBR M
             ON M.MBR_SN = C.MBR_SN
+          JOIN CMNT RT
+            ON RT.CMNT_SN = COALESCE(C.PRNT_CMNT_SN, C.CMNT_SN)
          WHERE C.PST_SN = #{pstSn}
-         ORDER BY COALESCE(C.PRNT_CMNT_SN, C.CMNT_SN)
+         ORDER BY CASE WHEN RT.SYS_AUTO_CRT_YN = 'Y' THEN 0 ELSE 1 END
+                , COALESCE(C.PRNT_CMNT_SN, C.CMNT_SN)
                 , C.PRNT_CMNT_SN IS NOT NULL
                 , C.REG_DT
                 , C.CMNT_SN
@@ -79,6 +82,27 @@
              , #{mbrSn}
              , #{cmntCn}
              , 'N'
+             , 'N'
+             , NOW()
+             , NOW() )
+    </insert>
+
+    <!-- 찾았어요 완료 안내 : 시스템 자동 댓글, 작성자는 게시글 작성자 -->
+    <insert id="insertAutoComment" parameterType="com.nyangmeong.community.domain.Comment"
+            useGeneratedKeys="true" keyProperty="cmntSn" keyColumn="CMNT_SN">
+        INSERT INTO CMNT
+             ( PST_SN
+             , MBR_SN
+             , CMNT_CN
+             , SYS_AUTO_CRT_YN
+             , DEL_YN
+             , REG_DT
+             , MDFCN_DT )
+        VALUES
+             ( #{pstSn}
+             , #{mbrSn}
+             , #{cmntCn}
+             , 'Y'
              , 'N'
              , NOW()
              , NOW() )

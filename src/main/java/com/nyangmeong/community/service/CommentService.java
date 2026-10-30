@@ -6,11 +6,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.nyangmeong.community.domain.Comment;
+import com.nyangmeong.community.domain.LostReport;
+import com.nyangmeong.community.domain.LostReportStatus;
+import com.nyangmeong.community.domain.Post;
 import com.nyangmeong.community.domain.PostStatus;
 import com.nyangmeong.community.dto.CommentCreateRequest;
 import com.nyangmeong.community.dto.CommentResponse;
 import com.nyangmeong.community.dto.CommentSummary;
 import com.nyangmeong.community.mapper.CommentMapper;
+import com.nyangmeong.community.mapper.LostReportMapper;
 import com.nyangmeong.community.mapper.PostMapper;
 import com.nyangmeong.global.auth.OwnerAuthorizer;
 import com.nyangmeong.global.error.CustomException;
@@ -29,6 +33,7 @@ public class CommentService {
 
     private final CommentMapper commentMapper;
     private final PostMapper postMapper;
+    private final LostReportMapper lostReportMapper;
     private final OwnerAuthorizer ownerAuthorizer;
 
     /**
@@ -36,7 +41,12 @@ public class CommentService {
      */
     @Transactional(readOnly = true)
     public List<CommentSummary> search(Long mbrSn, Long pstSn) {
-        checkPost(pstSn);
+        Post post = checkPost(pstSn);
+        /** 찾았어요 처리된 실종 글의 댓글은 작성자만 본다 */
+        LostReport lostReport = lostReportMapper.selectByPstSn(pstSn);
+        if (isFound(lostReport) && !mbrSn.equals(post.getMbrSn())) {
+            return List.of();
+        }
         return commentMapper.selectList(pstSn, mbrSn);
     }
 
@@ -46,6 +56,9 @@ public class CommentService {
     @Transactional
     public CommentResponse create(Long mbrSn, Long pstSn, CommentCreateRequest req) {
         checkPost(pstSn);
+        if (isFound(lostReportMapper.selectByPstSn(pstSn))) {
+            throw new CustomException(ErrorCode.LOST_REPORT_CLOSED);
+        }
         Long prntCmntSn = null;
         if (req.prntCmntSn() != null) {
             Comment parent = commentMapper.selectComment(req.prntCmntSn());
@@ -82,9 +95,15 @@ public class CommentService {
     /**
      * 정상 상태 게시글 확인
      */
-    private void checkPost(Long pstSn) {
-        if (postMapper.selectPost(pstSn, PostStatus.NORMAL.getCode()) == null) {
+    private Post checkPost(Long pstSn) {
+        Post post = postMapper.selectPost(pstSn, PostStatus.NORMAL.getCode());
+        if (post == null) {
             throw new CustomException(ErrorCode.POST_NOT_FOUND);
         }
+        return post;
+    }
+
+    private boolean isFound(LostReport lostReport) {
+        return lostReport != null && LostReportStatus.FOUND.is(lostReport.getLostTpofSttsCd());
     }
 }

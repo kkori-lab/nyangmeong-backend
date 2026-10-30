@@ -25,6 +25,16 @@ public interface TermsMapper {
     Terms selectUsableBySn(Long trmsSn);
 
     /**
+     * 회원이 동의(AGRE_YN='Y')하지 않은 현재 사용 중 필수 약관 (정렬순서)
+     */
+    List<TermsSummary> selectMissingEssential(Long mbrSn);
+
+    /**
+     * 복구 때 필수 약관 동의 저장 (이미 행이 있으면 동의로 갱신)
+     */
+    int upsertAgreement(@Param("mbrSn") Long mbrSn, @Param("trmsSn") Long trmsSn, @Param("actorId") String actorId);
+
+    /**
      * 회원 약관 동의 등록
      */
     int insertAgreement(@Param("mbrSn") Long mbrSn, @Param("trmsSn") Long trmsSn, @Param("agreYn") String agreYn,

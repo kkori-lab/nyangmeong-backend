@@ -20,6 +20,7 @@ import com.nyangmeong.community.domain.Post;
 import com.nyangmeong.community.dto.CommentCreateRequest;
 import com.nyangmeong.community.dto.CommentResponse;
 import com.nyangmeong.community.mapper.CommentMapper;
+import com.nyangmeong.community.mapper.LostReportMapper;
 import com.nyangmeong.community.mapper.PostMapper;
 import com.nyangmeong.global.auth.OwnerAuthorizer;
 import com.nyangmeong.global.error.CustomException;
@@ -38,7 +39,9 @@ class CommentServiceTest {
 
     private final CommentMapper commentMapper = mock(CommentMapper.class);
     private final PostMapper postMapper = mock(PostMapper.class);
-    private final CommentService service = new CommentService(commentMapper, postMapper, new OwnerAuthorizer());
+    private final LostReportMapper lostReportMapper = mock(LostReportMapper.class);
+    private final CommentService service = new CommentService(commentMapper, postMapper, lostReportMapper,
+            new OwnerAuthorizer());
 
     private Comment comment(Long cmntSn, Long prntCmntSn, Long pstSn, Long mbrSn) {
         Comment comment = new Comment();
@@ -115,6 +118,41 @@ class CommentServiceTest {
                 ErrorCode.COMMENT_NOT_FOUND);
         assertError(() -> service.create(MBR, PST, new CommentCreateRequest("답글", 11L)),
                 ErrorCode.COMMENT_NOT_FOUND);
+        verify(commentMapper, never()).insertComment(any(Comment.class));
+    }
+
+    private void stubFoundLostReport() {
+        Post post = new Post();
+        post.setMbrSn(MBR);
+        when(postMapper.selectPost(PST, NORMAL)).thenReturn(post);
+        com.nyangmeong.community.domain.LostReport lostReport = new com.nyangmeong.community.domain.LostReport();
+        lostReport.setLostTpofSttsCd("CMUC0007");
+        when(lostReportMapper.selectByPstSn(PST)).thenReturn(lostReport);
+    }
+
+    @Test
+    void 찾았어요_글의_댓글은_다른_회원에게_빈_목록() {
+        stubFoundLostReport();
+
+        assertThat(service.search(OTHER, PST)).isEmpty();
+        verify(commentMapper, never()).selectList(any(), any());
+    }
+
+    @Test
+    void 찾았어요_글의_댓글은_작성자에게는_그대로_보인다() {
+        stubFoundLostReport();
+
+        service.search(MBR, PST);
+
+        verify(commentMapper).selectList(PST, MBR);
+    }
+
+    @Test
+    void 찾았어요_글에는_댓글을_달_수_없다() {
+        stubFoundLostReport();
+
+        assertError(() -> service.create(OTHER, PST, new CommentCreateRequest("제보", null)),
+                ErrorCode.LOST_REPORT_CLOSED);
         verify(commentMapper, never()).insertComment(any(Comment.class));
     }
 

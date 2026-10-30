@@ -27,7 +27,7 @@ app.cookie.secure=false
 # 쿠키를 실어 보낼 수 있는 프론트 오리진(쉼표 구분). 개발은 Vite 주소
 app.cors.allowed-origins=http://localhost:5173
 # 로그인 없이 여는 경로(쉼표 구분). 목록 밖은 전부 인증이 필요하다. 생략하면 아래와 같은 기본값
-app.security.permit-all-paths=/api/auth/dev-tokens,/api/auth/login,/api/auth/login-attempt-limits,/api/auth/captchas,/api/auth/refresh,/api/auth/logout,/api/terms,/api/terms/*,/api/email-certifications,/api/email-certifications/*/verify,/api/email-certifications/*/invalidate,/api/email-certifications/*/password-reset,/api/members,/api/members/nickname-availability,/api/members/phone-availability,/api/members/me/nickname,/api/files/public/**,/swagger-ui/**,/swagger-ui.html,/v3/api-docs/**
+app.security.permit-all-paths=/api/auth/dev-tokens,/api/auth/login,/api/auth/login-attempt-limits,/api/auth/captchas,/api/auth/refresh,/api/auth/logout,/api/terms,/api/terms/*,/api/email-certifications,/api/email-certifications/*/verify,/api/email-certifications/*/invalidate,/api/email-certifications/*/password-reset,/api/members,/api/members/nickname-availability,/api/members/phone-availability,/api/members/recovery-info,/api/members/recovery,/api/members/me/nickname,/api/files/public/**,/swagger-ui/**,/swagger-ui.html,/v3/api-docs/**
 
 # 이메일 인증·가입(SCR-ACC-001). 모두 생략 가능, 생략하면 아래와 같은 기본값(초·분 단위는 키 이름 끝)
 app.email-cert.code-validity-seconds=180
@@ -48,6 +48,8 @@ spring.servlet.multipart.max-request-size=100MB
 # app.log.dir=
 # 캐릭터 생성기. 외부 API가 정해지기 전에는 fake(가짜 성공), 실패 시험은 fake-fail
 app.character.generator=fake
+# 목격 장소 좌표 → 행정구역 변환(SCR-CMU-002). 카카오 로컬 API 연결 전에는 fake(전주시), 시험은 fake-outside(전북 밖)·fake-none(찾지 못함)
+app.region.client=fake
 
 # 알림 메일(SCR-AIM-006). 메일 본문 링크(케어 캘린더·알림 설정)의 프론트 주소. 생략하면 아래와 같은 기본값
 app.front-base-url=http://localhost:5173
