@@ -2,10 +2,12 @@
 
 ## 지금 하는 것
 
-SCR-AIM-011 AI 대화창 (첫 답변 요약 제목: 제목 수정 내부 API) — 끝 (2026-10-30, 1회차 검증 통과·사람 확인). `PATCH /internal/ai/conversations/{aiCnvrsRoomSn}`가 쿠키 회원 본인 대화의 제목을 암호화해 바꾸고 `ConversationSummary`를 준다(ai-2e 요청, Python이 첫 답변 요약 제목을 1회 호출)
+관리자(ADM) 페이지 기획 정리 — 끝 (2026-10-30, 코드 없음). 구현 계획 `docs/admin/implementation-plan.md`(결정 33건), DMS `관리자_기능명세서_v0.1_20261030`(SCR-ADM-001~114, 기능 134건)·`02_IA 구조도_v0.3_2026_10_30`(총관리자·통합운영플랫폼 현행화) 업로드, 담당 표에 관리자 추가(PR #79 병합), 프론트 세션(frontend-83)에 화면 작업 인계
 
 ## 다음에 할 것
 
+- 관리자 첫 마일스톤: `/start`로 SCR-ADM-110 운영 설정(감사 로그 `MNGR_TASK_LOG` 기반 포함). 그 전에 구현 계획 6절 확인 항목(정지 회원 요청마다 차단 여부, 인기 포토 제외·RSS 피드·알림 기본값 저장 위치, 기준정보 28번)과 REQ-ADM-014~022 요구사항정의서 반영(사람). 다른 담당 도메인 화면은 계획 2절 "협의" 표대로 먼저 이야기한다
+- 관리자 문서 후속(사람): DMS 기능명세서 폴더에 "관리자" 하위 폴더를 만들어 명세서를 옮긴다(도구로는 폴더 생성 불가). 공통레이아웃 FN-COM-006-04 건강기록 2차 메뉴명과 랜딩 화면 ID(SCR-LAN-001 vs SCR-MAN-002) 정리. 프론트 저장소 `milestone.md` 담당 표에도 관리자 추가(frontend-83에 전달함)
 - SCR-AIM-011 연결 남음: FN-AIM-011-11 (Python이 `PATCH /internal/ai/conversations/{번호}`를 실제로 부르는 확인, ai 저장소 `docs/api/internal.md` 초안 행 확정, ai 세션). PR을 올리면 PR 번호를 ai-2e 세션에 알린다
 - 기다림(ai 세션 연결) — 영수증 Python 중심 연결(백엔드 PR #64·#67, ai 세션 진행 중): Python `FakeReceiptRepository`를 `POST /internal/ai/receipts`(multipart `file`·`petSn`·`ocrDmndSrcCd` — Python의 `ocrRqstSrcCd` 값을 이 이름으로, 쿠키 + `X-Requested-With`, 201 `{recptSn}`)·`POST /internal/ai/receipts/{recptSn}/result`(JSON `{ocrRslt: RECOGNIZED|UNRECOGNIZED|TIMEOUT|API_ERROR|CANCELED, ocr?}`, 200 `{recptSn, ocrPrcsSttsCd}`, 분석중 아니면 409)로 바꾸고 ai `docs/api/internal.md` 미정 2행을 확정으로. 실패 때 `finally`로 `API_ERROR`·`TIMEOUT` 보고 요청 포함
 - SCR-AIM-013 연결 남음: FN-AIM-013-04 (프론트 연결 AI 대화창 [＋] 업로드는 Python `POST /ai/receipts` `ocrRqstSrcCd=AIMC0031`, 프론트 저장소에서 /start), FN-AIM-013-06 (프론트 연결 본창 "인식 결과 확인" 모달 `getChatReceiptResult`를 `GET /api/receipts/{recptSn}?petSn=`(`{recptSn, petSn, ocrPrcsSttsCd, failRsn, ocr}`)로, 프론트 저장소에서 /start, 모달 열기 파라미터는 JAJ와 협의). 프론트 저장소 마일스톤에 연결 절 넣기(옆 폴더가 없어 사람)
@@ -43,13 +45,12 @@ SCR-AIM-011 AI 대화창 (첫 답변 요약 제목: 제목 수정 내부 API) �
 - SJM에게 확인: 가계부 모달의 영수증 저장을 `ExpenseService`가 직접 하는지. 영수증 쪽이 하라면 `receipt`(4층) 분리를 다시 검토한다(`docs/OPEN_ISSUES.md` 영수증 행)
 - SCR-AIM-006 연결 남음: health 병원 일정 조회(JAJ)가 나오면 `scheduler/HospitalScheduleFake`를, pet 연동 양육자 조회(SJM)가 나오면 `scheduler/CaregiverFake`를 그 service로. 그 뒤 FN-AIM-006-11·13 화면과 01·02·20 실제 조회를 공용 DB 병원 일정으로 확인한다 / SCR-AIM-006 연결 남음: 팀이 SMTP 계정을 정하면 `spring-boot-starter-mail`과 `MailSender` SMTP 구현. 그 전까지 메일은 로그만
 - SCR-MYP-011 연결 남음: 포인트 조회·차감(SJM, FN-MYP-020)이 나오면 `pet/service/PointFake`를 그 service로. 구매의 `idmptDmndId`를 포인트 원장에 넘긴다
-- SCR-MYP-010 연결 남음: FN-MYP-010-24 1:1 문의 작성(SCR-CSC-003, KSJ)이 `PixelCharacterService.receiveErrorInquiry(mbrSn, pixelCharSn, otoInqrySn)`를 부르고 결과 ATCH_FILE_SN을 첨부한다 / SCR-MYP-010 연결 남음: FN-MYP-010-23 관리자 확인 화면(담당 미정)이 `finishErrorCheck(pixelCharSn, regenerate)`를 부른다
+- SCR-MYP-010 연결 남음: FN-MYP-010-24 1:1 문의 작성(SCR-CSC-003, KSJ)이 `PixelCharacterService.receiveErrorInquiry(mbrSn, pixelCharSn, otoInqrySn)`를 부르고 결과 ATCH_FILE_SN을 첨부한다 / SCR-MYP-010 연결 남음: FN-MYP-010-23 관리자 확인 화면(SCR-ADM-042 1:1 문의 상세, LJS)이 `finishErrorCheck(pixelCharSn, regenerate)`를 부른다
 - FN-MYP-010-19: 캐릭터 생성 외부 API가 정해지면 `CharacterGenerator` 실제 구현과 베이스 캐릭터 선택 방식을 판단한다. 기본 캐릭터 이미지(`resources/character/default-*.png`)도 디자인 이미지로
 - SCR-COM-004 연결 남음: FN-COM-004-08 공동양육 초대 수락·거절(SJM) API가 나오면 알림 행 버튼과 연결하고 초대 알림 `mvmnPath` 형식을 SJM과 맞춘다
 - SCR-COM-002 연결 남음: `/auth/me`의 프로필 이미지 URL은 `FileStore`·파일 조회 API 뒤 연결. 지금은 `atchFileSn`만
 - 정하기: HLD_ITEM 유일 키 `UK_HLD_ITEM_1`에 DEL_YN이 없다. 보유 아이템 소프트 삭제가 생기면 재구매가 막히므로 그때 키를 고친다
-- 팀에 알린다: 배치 패키지 `job` → `scheduler`(기능 분배 정본은 아직 `job`과 AIM-006 담당 YAY), 케어 일정 사전 알림 `CareScheduleAlarmEvent`, 메일 `global/mail/MailSender`(로그만), 스케줄러 `global/batch/SchedulingConfig`
-- 팀에 알린다: 알림은 `EventPublisher.publish(new NotificationEvent(...))`(@Transactional 안), 반려동물 권한 `global/auth/PetAuthorizer`, 파일 `global/file/FileStore`, 공통코드 `GET /api/common-codes?prntComCd=`.
+- 팀에 알린다: 배치 패키지 `job` → `scheduler`(기능 분배 정본은 아직 `job`과 AIM-006 담당 YAY), 케어 일정 사전 알림 `CareScheduleAlarmEvent`, 메일 `global/mail/MailSender`(로그만), 스케줄러 `global/batch/SchedulingConfig`. 알림은 `EventPublisher.publish(new NotificationEvent(...))`(@Transactional 안), 반려동물 권한 `global/auth/PetAuthorizer`, 파일 `global/file/FileStore`, 공통코드 `GET /api/common-codes?prntComCd=`.
 - 팀에 알린다: 개인 로컬 DB는 `application-local.properties`(git 제외)에 `spring.datasource.*` 세 줄. `nyangmeong_` 접두어 스키마에 `db/` 기준 SQL 두 개와 `db/migration/`을 차례로 실행해 만든다
 - YAY에게 알린다: 로그인·재발급·로그아웃은 `auth/controller/AuthController`에 `LoginSessionManager`의 `issue`·`rotate`·`revoke`로. 새 공개 경로는 `app.security.permit-all-paths`에. 로그인이 생기면 `DevTokenController` 삭제. 스타터 분석(캡챠 LGN_ATMPT_LMT, 회원 조회 ACNT_EML_HMAC, 소셜 SNS_ACNT_LINK)과 nct-backend OAuth2 핸들러·`CustomOAuth2UserService`(위치는 `docs/OPEN_ISSUES.md`)도 넘긴다
 - `global/validation`은 처음 필요한 YAY(닉네임·휴대전화·비밀번호 검증)가 요청하면 만든다
