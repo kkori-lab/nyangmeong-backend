@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nyangmeong.support.mapper.FaqMapper">
+
+    <resultMap id="faqSummaryResultMap" type="com.nyangmeong.support.dto.FaqSummary">
+        <id     column="FAQ_SN"        property="faqSn" />
+        <result column="FAQ_CLSF_CD"   property="faqClsfCd" />
+        <result column="FAQ_CLSF_CD_NM" property="faqClsfCdNm" />
+        <result column="QSTN_TTL"      property="qstnTtl" />
+        <result column="ANS_CN"        property="ansCn" />
+    </resultMap>
+
+    <select id="selectList" resultMap="faqSummaryResultMap">
+        /* FAQ 목록 조회 */
+        SELECT F.FAQ_SN
+             , F.FAQ_CLSF_CD
+             , C.COM_CD_NM AS FAQ_CLSF_CD_NM
+             , F.QSTN_TTL
+             , F.ANS_CN
+          FROM FAQ F
+          LEFT JOIN COM_CD C
+            ON C.COM_CD = F.FAQ_CLSF_CD
+           AND C.COM_CD_PRNT_SN IS NOT NULL
+         WHERE F.USE_YN = 'Y'
+        <if test="faqClsfCd != null">
+           AND F.FAQ_CLSF_CD = #{faqClsfCd}
+        </if>
+        <if test="keyword != null">
+           AND ( F.QSTN_TTL LIKE CONCAT('%', #{keyword}, '%')
+              OR F.ANS_CN LIKE CONCAT('%', #{keyword}, '%') )
+        </if>
+         ORDER BY F.SORT_SEQ ASC, F.FAQ_SN ASC
+    </select>
+
+</mapper>
