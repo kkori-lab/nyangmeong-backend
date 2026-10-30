@@ -1,22 +1,15 @@
 package com.nyangmeong.expense.controller;
 
 import org.springframework.http.CacheControl;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.nyangmeong.expense.dto.ReceiptAnalyzeRequest;
-import com.nyangmeong.expense.dto.ReceiptCreateRequest;
-import com.nyangmeong.expense.dto.ReceiptResponse;
 import com.nyangmeong.expense.dto.ReceiptResultResponse;
 import com.nyangmeong.expense.service.ReceiptAnalyzer;
 import com.nyangmeong.expense.service.ReceiptService;
@@ -25,13 +18,12 @@ import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
 
 import io.swagger.v3.oas.annotations.Operation;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 /**
  * [영수증 컨트롤러]
- * - 검진 경로 영수증 업로드·OCR 분석·취소 (SCR-AIM-008, 확인 화면은 SCR-HLT-002)
- * - 분석 실패도 200·201 : 상태는 ocrPrcsSttsCd 로 구분
+ * - 분석 결과 다시 열기·원본 이미지 (SCR-AIM-008·013, 확인 화면은 SCR-HLT-002)
+ * - 업로드·분석은 Python AI 서버 (내부 API ReceiptInternalController)
  */
 @RestController
 @RequiredArgsConstructor
@@ -40,15 +32,6 @@ public class ReceiptController {
 
     private final ReceiptAnalyzer receiptAnalyzer;
     private final ReceiptService receiptService;
-
-    @Operation(summary = "영수증 업로드와 OCR 분석")
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<ReceiptResponse>> create(@AuthenticationPrincipal LoginMember me,
-            @Valid @ModelAttribute ReceiptCreateRequest req) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.created(receiptAnalyzer.create(me.id(), req.petSn(), req.file(),
-                        req.ocrDmndSrcCd())));
-    }
 
     @Operation(summary = "영수증 분석 결과 다시 열기")
     @GetMapping("/{recptSn}")
@@ -65,20 +48,5 @@ public class ReceiptController {
                 .cacheControl(CacheControl.noCache())
                 .contentType(MediaType.parseMediaType(image.contentType()))
                 .body(image.content());
-    }
-
-    @Operation(summary = "영수증 다시 분석(취소·인식 실패·일시 오류 뒤)")
-    @PostMapping("/{recptSn}/analyze")
-    public ResponseEntity<ApiResponse<ReceiptResponse>> analyze(@AuthenticationPrincipal LoginMember me,
-            @PathVariable Long recptSn, @Valid @RequestBody ReceiptAnalyzeRequest req) {
-        return ResponseEntity.ok(ApiResponse.success(receiptAnalyzer.analyze(me.id(), recptSn, req.petSn())));
-    }
-
-    @Operation(summary = "영수증 분석 취소")
-    @PostMapping("/{recptSn}/cancel")
-    public ResponseEntity<ApiResponse<Void>> cancel(@AuthenticationPrincipal LoginMember me,
-            @PathVariable Long recptSn) {
-        receiptService.cancel(me.id(), recptSn);
-        return ResponseEntity.ok(ApiResponse.success());
     }
 }

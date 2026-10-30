@@ -124,6 +124,14 @@
 - 연결 남음: FN-AIM-008-09·013-08·010-01·013-04 (Python `FakeReceiptRepository`를 원본 저장·결과 보고 내부 API로, ai 세션), FN-AIM-013-06 (프론트 연결 본창 "인식 결과 확인" 모달 `getChatReceiptResult`를 `GET /api/receipts/{recptSn}?petSn=`로, 프론트 저장소에서 /start)
 - 추가: 없음. `ocrRslt` 허용값 밖은 공통 요청 형식 오류 400 `BAD_REQUEST`(기획은 `INVALID_INPUT_VALUE`, 없을 때만 `INVALID_INPUT_VALUE`)
 
+## SCR-AIM-013 대화창 · 영수증 분석 (영수증 정리: Java 동기 OCR 삭제) — 끝
+- 기능: FN-AIM-008-07 다시 분석·취소·제한 시간(이제 Python 몫, Java 경로 삭제). 기준 AI매니저_기능명세서_v0.11_20261029(DMS, 2026-10-29 확인). 근거: 2026-10-29 결정 (나), frontend-62 회신(프론트에 Java `POST /api/receipts` 호출 없음)
+- 함께 만드는 것: 없음
+- 기다리는 것: 없음
+- 완료 조건: `POST /api/receipts`·`/{recptSn}/analyze`·`/{recptSn}/cancel`이 없고(404), `OcrClient`·`FakeOcrClient`·`OcrProperties`·동기 분석 코드가 없다. 결과 조회·원본 이미지·저장·내부 API는 그대로 동작한다
+- 연결 남음: 없음. 분석중으로 남은 RECPT 정리 배치는 뺐다(2026-10-30 사람 결정, Python이 실패 때 `finally`로 보고)
+- 추가: 추가-1 `docs/api/health.md` 검사결과지 분석 설명의 `app.ocr.timeout` 빗댐 문구를 "(설정값)"으로
+
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
 - FN-COM-002-11: 채팅 안 읽은 수 API는 KSJ(채팅, 마일스톤 담당 표 COM-009)

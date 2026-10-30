@@ -1,12 +1,7 @@
 package com.nyangmeong.expense.controller;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -17,11 +12,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.nyangmeong.expense.dto.ReceiptResponse;
 import com.nyangmeong.expense.dto.ReceiptResultResponse;
 import com.nyangmeong.expense.service.ReceiptAnalyzer;
 import com.nyangmeong.expense.service.ReceiptService;
@@ -43,7 +36,7 @@ import com.nyangmeong.global.security.jwt.JwtTokenProvider;
 import com.nyangmeong.global.security.jwt.TokenCookies;
 
 /**
- * [검사 - AI 대화창 업로드 출처·분석 결과 다시 열기 API] (FN-AIM-013-04·06)
+ * [검사 - 분석 결과 다시 열기 API] (FN-AIM-013-06)
  */
 @WebMvcTest(controllers = ReceiptController.class)
 @Import({SecurityConfig.class, JwtTokenProvider.class, JwtProperties.class, TokenCookies.class,
@@ -62,34 +55,6 @@ class ReceiptResultControllerTest {
 
     @MockitoBean
     AuthMemberMapper authMemberMapper;
-
-    private final MockMultipartFile file = new MockMultipartFile("file", "r.png", "image/png", new byte[] {1});
-
-    @Test
-    @WithMockLoginMember
-    void 업로드는_요청_출처를_넘긴다() throws Exception {
-        when(receiptAnalyzer.create(eq(1L), eq(10L), any(), eq("AIMC0031")))
-                .thenReturn(ReceiptResponse.empty(3L, "AIMC0003", null));
-
-        mockMvc.perform(multipart("/api/receipts").file(file).param("petSn", "10").param("ocrDmndSrcCd", "AIMC0031")
-                .header("X-Requested-With", "XMLHttpRequest"))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.recptSn").value(3));
-        verify(receiptAnalyzer).create(eq(1L), eq(10L), any(), eq("AIMC0031"));
-    }
-
-    @Test
-    @WithMockLoginMember
-    void 허용하지_않는_출처는_400_INVALID_INPUT_VALUE() throws Exception {
-        for (String code : List.of("AIMC0027", "AIMC0028", "chat")) {
-            mockMvc.perform(multipart("/api/receipts").file(file).param("petSn", "10").param("ocrDmndSrcCd", code)
-                    .header("X-Requested-With", "XMLHttpRequest"))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.code").value("INVALID_INPUT_VALUE"))
-                    .andExpect(jsonPath("$.data[0].field").value("ocrDmndSrcCd"));
-        }
-        verify(receiptAnalyzer, never()).create(any(), any(), any(), any());
-    }
 
     @Test
     @WithMockLoginMember
