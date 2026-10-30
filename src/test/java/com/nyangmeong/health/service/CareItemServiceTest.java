@@ -35,6 +35,8 @@ import com.nyangmeong.health.domain.CareCycle;
 import com.nyangmeong.health.domain.CareItem;
 import com.nyangmeong.health.domain.CareZone;
 import com.nyangmeong.health.dto.CareCompletionCreateRequest;
+import com.nyangmeong.health.dto.CareCompletionSearchCond;
+import com.nyangmeong.health.dto.CareCompletionSummary;
 import com.nyangmeong.health.dto.CareItemCreateRequest;
 import com.nyangmeong.health.dto.CareItemExposureSaveRequest;
 import com.nyangmeong.health.dto.CareItemSearchCond;
@@ -460,7 +462,7 @@ class CareItemServiceTest {
     }
 
     @Test
-    void 투약_항목_취소는_마지막_1회만_줄인다() {
+    void 기록_내용에서_투약_항목을_취소하면_회차와_관계없이_그날_기록을_지운다() {
         CareItem medication = item("약", CareZone.DAILY, null, false);
         medication.setPrscSn(PRSC);
         when(mapper.selectCompletion(CMPTN)).thenReturn(completion(2, "N"));
@@ -469,8 +471,69 @@ class CareItemServiceTest {
 
         service.cancel(MBR, PET, CMPTN);
 
+        verify(mapper).deleteCompletion(CMPTN, "1");
+        verify(mapper, never()).updateCompletionCycle(anyLong(), anyInt(), anyString());
+    }
+
+    @Test
+    void 기록_내용_조회는_권한을_검사하고_Mapper_결과를_그대로_돌려준다() {
+        CareCompletionSearchCond cond = new CareCompletionSearchCond();
+        CareCompletionSummary filled = new CareCompletionSummary();
+        filled.setCareCmptnHstrySn(CMPTN);
+        filled.setCmptnCycl(2);
+        when(mapper.selectCompletionList(PET, cond)).thenReturn(List.of(filled));
+
+        assertThat(service.searchCompletions(MBR, PET, cond)).containsExactly(filled);
+        verify(petAuthorizer).checkCaregiver(MBR, PET);
+    }
+
+    @Test
+    void 투약_마지막_1회_취소는_오늘_회차를_1_내리고_1회였으면_기록을_지운다() {
+        CareItem medication = item("약", CareZone.DAILY, null, false);
+        medication.setPrscSn(PRSC);
+        when(mapper.selectItemForUpdate(ITEM)).thenReturn(medication);
+
+        when(mapper.selectCompletionByDateForUpdate(ITEM, today)).thenReturn(completion(2, "N"));
+        service.cancelLastToday(MBR, PET, ITEM);
         verify(mapper).updateCompletionCycle(CMPTN, 1, "1");
         verify(mapper, never()).deleteCompletion(anyLong(), anyString());
+
+        when(mapper.selectCompletionByDateForUpdate(ITEM, today)).thenReturn(completion(1, "N"));
+        service.cancelLastToday(MBR, PET, ITEM);
+        verify(mapper).deleteCompletion(CMPTN, "1");
+        verify(mapper, times(2)).updateItem(any(), eq("1"));
+    }
+
+    @Test
+    void 투약_마지막_1회_취소는_오늘_기록이_없거나_삭제됐으면_404() {
+        CareItem medication = item("약", CareZone.DAILY, null, false);
+        medication.setPrscSn(PRSC);
+        when(mapper.selectItemForUpdate(ITEM)).thenReturn(medication);
+
+        when(mapper.selectCompletionByDateForUpdate(ITEM, today)).thenReturn(null);
+        assertThat(thrown(() -> service.cancelLastToday(MBR, PET, ITEM)).getErrorCode())
+                .isEqualTo(ErrorCode.CARE_COMPLETION_NOT_FOUND);
+
+        when(mapper.selectCompletionByDateForUpdate(ITEM, today)).thenReturn(completion(1, "Y"));
+        assertThat(thrown(() -> service.cancelLastToday(MBR, PET, ITEM)).getErrorCode())
+                .isEqualTo(ErrorCode.CARE_COMPLETION_NOT_FOUND);
+        verify(mapper, never()).deleteCompletion(anyLong(), anyString());
+        verify(mapper, never()).updateCompletionCycle(anyLong(), anyInt(), anyString());
+    }
+
+    @Test
+    void 투약이_아니거나_다른_반려동물의_항목은_마지막_1회_취소를_할_수_없다() {
+        when(mapper.selectItemForUpdate(ITEM)).thenReturn(item("양치", CareZone.DAILY, null, true));
+        assertThat(thrown(() -> service.cancelLastToday(MBR, PET, ITEM)).getErrorCode())
+                .isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+
+        CareItem other = item("약", CareZone.DAILY, null, false);
+        other.setPrscSn(PRSC);
+        other.setPetSn(OTHER_PET);
+        when(mapper.selectItemForUpdate(ITEM)).thenReturn(other);
+        assertThat(thrown(() -> service.cancelLastToday(MBR, PET, ITEM)).getErrorCode())
+                .isEqualTo(ErrorCode.CARE_ITEM_NOT_FOUND);
+        verify(mapper, never()).selectCompletionByDateForUpdate(anyLong(), any());
     }
 
     @Test

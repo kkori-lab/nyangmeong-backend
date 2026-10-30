@@ -294,6 +294,7 @@ public class CareItemService {
 
     /**
      * 케어 완료 취소
+     * - 기록 내용 아이콘 : 그날 완료 기록 전부 취소, 투약은 회차와 관계없이 그날 체크 전부
      */
     @Transactional
     public void cancel(Long mbrSn, Long petSn, Long careCmptnHstrySn) {
@@ -312,10 +313,32 @@ public class CareItemService {
         }
 
         String actorId = String.valueOf(mbrSn);
-        if (item.getPrscSn() != null && completion.getCmptnCycl() > 1) {
-            careItemMapper.updateCompletionCycle(careCmptnHstrySn, completion.getCmptnCycl() - 1, actorId);
+        careItemMapper.deleteCompletion(careCmptnHstrySn, actorId);
+        refreshDates(item, actorId);
+    }
+
+    /**
+     * 투약 오늘 마지막 1회 취소
+     * - 케어리스트 [마지막 1회 취소] : 오늘 회차를 1 내리고, 1회였으면 기록 삭제
+     */
+    @Transactional
+    public void cancelLastToday(Long mbrSn, Long petSn, Long careArtclSn) {
+        petAuthorizer.checkCaregiver(mbrSn, petSn);
+        CareItem item = getOwnItem(petSn, careArtclSn);
+        if (item.getPrscSn() == null) {
+            throw invalid();
+        }
+        CareCompletion completion = careItemMapper.selectCompletionByDateForUpdate(careArtclSn, today());
+        if (completion == null || !"N".equals(completion.getDelYn())) {
+            throw notFoundCompletion();
+        }
+
+        String actorId = String.valueOf(mbrSn);
+        if (completion.getCmptnCycl() > 1) {
+            careItemMapper.updateCompletionCycle(completion.getCareCmptnHstrySn(), completion.getCmptnCycl() - 1,
+                    actorId);
         } else {
-            careItemMapper.deleteCompletion(careCmptnHstrySn, actorId);
+            careItemMapper.deleteCompletion(completion.getCareCmptnHstrySn(), actorId);
         }
         refreshDates(item, actorId);
     }
