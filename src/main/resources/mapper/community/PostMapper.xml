@@ -80,6 +80,7 @@
                                    FROM (SELECT PST_SN
                                            FROM PST
                                           WHERE PST_STTS_CD = #{pstSttsCd}
+                                            AND BBS_CD IN ('CMUC0001', 'CMUC0002')
                                             AND RCMDTN_CNT > 0
                                             AND REG_DT >= DATE_SUB(NOW(), INTERVAL 7 DAY)
                                           ORDER BY RCMDTN_CNT DESC, REG_DT DESC, PST_SN DESC
@@ -93,9 +94,14 @@
           JOIN MBR M
             ON M.MBR_SN = P.MBR_SN
          WHERE P.PST_STTS_CD = #{pstSttsCd}
-        <if test="bbsCd != null">
+        <choose>
+            <when test="bbsCd != null">
            AND P.BBS_CD = #{bbsCd}
-        </if>
+            </when>
+            <otherwise>
+           AND P.BBS_CD IN ('CMUC0001', 'CMUC0002')
+            </otherwise>
+        </choose>
         <if test="keyword != null">
            AND (P.PST_TTL LIKE CONCAT('%', #{keyword}, '%')
                 OR P.PST_CN LIKE CONCAT('%', #{keyword}, '%'))
