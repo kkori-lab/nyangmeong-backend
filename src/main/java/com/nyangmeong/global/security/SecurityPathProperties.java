@@ -35,6 +35,8 @@ public class SecurityPathProperties {
             "/api/members",
             "/api/members/nickname-availability",
             "/api/members/phone-availability",
+            "/api/members/recovery-info",
+            "/api/members/recovery",
             "/api/members/me/nickname",
             "/swagger-ui/**",
             "/swagger-ui.html",

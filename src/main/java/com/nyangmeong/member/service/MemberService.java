@@ -40,6 +40,7 @@ public class MemberService {
     private static final String NICKNAME_PREFIX = "냥멍";
     private static final int NICKNAME_MAX_TRY = 5;
     private static final String SIGNUP_REASON = "회원가입";
+    private static final String RECOVERY_REASON = "재가입 복구";
 
     private final MemberMapper memberMapper;
     private final FieldCryptoService fieldCryptoService;
@@ -75,6 +76,58 @@ public class MemberService {
             throw new CustomException(ErrorCode.MEMBER_RECOVERY_AVAILABLE);
         }
         throw new CustomException(ErrorCode.EMAIL_ALREADY_REGISTERED);
+    }
+
+    /**
+     * 복구 대상 회원 확인 : 보관 기간 안의 탈퇴 회원만
+     * - 정상·정지·미가입은 MEMBER_NOT_FOUND, 보관 기간이 지났으면(탈퇴일시를 몰라 기간을 셀 수 없는 경우 포함) MEMBER_RECOVERY_EXPIRED
+     * - 인증 확인처럼 실패 횟수를 남기는 호출자의 트랜잭션이 롤백 표시되지 않도록 CustomException 에는 롤백하지 않는다
+     */
+    @Transactional(readOnly = true, noRollbackFor = CustomException.class)
+    public Member getRecoverableMember(String acntEmlHmac) {
+        Member member = memberMapper.selectByEmailHmac(acntEmlHmac);
+        if (member == null || !MemberStatus.WITHDRAWN.is(member.getMbrSttsCd())) {
+            throw new CustomException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+        if (member.getWhdwlDt() == null || !getRecoveryExpiryDt(member).isAfter(LocalDateTime.now())) {
+            throw new CustomException(ErrorCode.MEMBER_RECOVERY_EXPIRED);
+        }
+        return member;
+    }
+
+    /**
+     * 복구 보관 만료시각 : 탈퇴일시 + 탈퇴회원보관일수
+     */
+    @Transactional(readOnly = true)
+    public LocalDateTime getRecoveryExpiryDt(Member member) {
+        return member.getWhdwlDt().plusDays(systemSettingService.get().getWhdwlMbrKpngDayCnt());
+    }
+
+    /**
+     * 기존 정보 복구 : 탈퇴 → 정상, 이력 한 번, 보관 번호가 없던 회원은 받은 번호를 저장
+     * - 상태 변경은 보관 기간 조건을 함께 걸어서 파기 배치와 겹쳐도 기간이 지난 회원은 되살리지 않는다(0행이면 기간 경과)
+     * - 닉네임·비밀번호·최종로그인 등 다른 값은 건드리지 않는다
+     */
+    @Transactional
+    public void recover(Member member, String normalizedMblTelno) {
+        Long mbrSn = member.getMbrSn();
+        int keepDayCnt = systemSettingService.get().getWhdwlMbrKpngDayCnt().intValue();
+        if (memberMapper.updateRecover(mbrSn, MemberStatus.NORMAL.getCode(), MemberStatus.WITHDRAWN.getCode(),
+                keepDayCnt, String.valueOf(mbrSn)) != 1) {
+            throw new CustomException(ErrorCode.MEMBER_RECOVERY_EXPIRED);
+        }
+        memberMapper.insertStatusHistory(mbrSn, MemberStatus.WITHDRAWN.getCode(), MemberStatus.NORMAL.getCode(),
+                RECOVERY_REASON);
+        if (normalizedMblTelno != null) {
+            try {
+                if (memberMapper.updatePhone(mbrSn, fieldCryptoService.encrypt(normalizedMblTelno),
+                        fieldCryptoService.hmac(normalizedMblTelno), String.valueOf(mbrSn)) != 1) {
+                    throw new CustomException(ErrorCode.ALREADY_PROCESSED);
+                }
+            } catch (DuplicateKeyException e) {
+                throw duplicateException(e);
+            }
+        }
     }
 
     /**

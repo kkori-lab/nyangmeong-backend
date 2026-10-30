@@ -1,5 +1,6 @@
 package com.nyangmeong.member.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -13,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.hamcrest.Matchers;
@@ -45,8 +47,12 @@ import com.nyangmeong.member.dto.MemberJoinResult;
 import com.nyangmeong.member.dto.MemberNicknameAvailabilityResponse;
 import com.nyangmeong.member.dto.MemberNicknameUpdateRequest;
 import com.nyangmeong.member.dto.MemberPhoneAvailabilityResponse;
+import com.nyangmeong.member.dto.MemberRecoverRequest;
+import com.nyangmeong.member.dto.MemberRecoveryInfoRequest;
+import com.nyangmeong.member.dto.MemberRecoveryResponse;
 import com.nyangmeong.member.dto.MemberResponse;
 import com.nyangmeong.member.service.MemberJoinService;
+import com.nyangmeong.member.service.MemberRecoveryService;
 import com.nyangmeong.member.service.MemberService;
 import com.nyangmeong.member.service.NicknameSetupTokenManager;
 
@@ -82,6 +88,9 @@ class MemberControllerTest {
 
     @MockitoBean
     MemberJoinService memberJoinService;
+
+    @MockitoBean
+    MemberRecoveryService memberRecoveryService;
 
     @MockitoBean
     AuthMemberMapper authMemberMapper;
@@ -299,5 +308,87 @@ class MemberControllerTest {
                 .andExpect(status().isBadRequest());
 
         verify(memberService, never()).updateNickname(any(), any());
+    }
+
+    private MockHttpServletRequestBuilder recovery(String path, String body) {
+        return post(path)
+                .header("X-Requested-With", "XMLHttpRequest")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body);
+    }
+
+    @Test
+    void 복구_안내는_로그인_쿠키_없이_200이고_보관_정보를_준다() throws Exception {
+        when(memberRecoveryService.getRecovery(any(MemberRecoveryInfoRequest.class)))
+                .thenReturn(new MemberRecoveryResponse("newbie@example.com", "초코맘",
+                        LocalDateTime.of(2026, 10, 20, 9, 0), LocalDateTime.of(2026, 11, 19, 9, 0), "010-****-5678",
+                        List.of()));
+
+        mockMvc.perform(recovery("/api/members/recovery-info", "{\"emlCertSn\":3,\"rcvryAuthrtTkn\":\"tkn\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.acntEml").value("newbie@example.com"))
+                .andExpect(jsonPath("$.data.mbrNcnm").value("초코맘"))
+                .andExpect(jsonPath("$.data.maskedMblTelno").value("010-****-5678"))
+                .andExpect(jsonPath("$.data.missingTrms").isEmpty());
+    }
+
+    @Test
+    void 보관_번호가_없으면_복구_안내에서_가린_번호가_빠진다() throws Exception {
+        when(memberRecoveryService.getRecovery(any(MemberRecoveryInfoRequest.class)))
+                .thenReturn(new MemberRecoveryResponse("newbie@example.com", "초코맘",
+                        LocalDateTime.of(2026, 10, 20, 9, 0), LocalDateTime.of(2026, 11, 19, 9, 0), null, List.of()));
+
+        mockMvc.perform(recovery("/api/members/recovery-info", "{\"emlCertSn\":3,\"rcvryAuthrtTkn\":\"tkn\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.maskedMblTelno").doesNotExist());
+    }
+
+    @Test
+    void 복구_안내는_값이_비면_400이고_서비스를_부르지_않는다() throws Exception {
+        mockMvc.perform(recovery("/api/members/recovery-info", "{\"emlCertSn\":3,\"rcvryAuthrtTkn\":\" \"}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(recovery("/api/members/recovery-info", "{\"rcvryAuthrtTkn\":\"tkn\"}"))
+                .andExpect(status().isBadRequest());
+
+        verify(memberRecoveryService, never()).getRecovery(any());
+    }
+
+    @Test
+    void 복구_권한이_없으면_400이다() throws Exception {
+        when(memberRecoveryService.getRecovery(any(MemberRecoveryInfoRequest.class)))
+                .thenThrow(new CustomException(ErrorCode.MEMBER_RECOVERY_NOT_AVAILABLE));
+
+        mockMvc.perform(recovery("/api/members/recovery-info", "{\"emlCertSn\":3,\"rcvryAuthrtTkn\":\"tkn\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("복구 확인 시간이 지났습니다. 이메일 인증을 다시 진행해 주세요."));
+    }
+
+    @Test
+    void 복구_실행은_로그인_쿠키_없이_200이고_쿠키를_내리지_않는다() throws Exception {
+        mockMvc.perform(recovery("/api/members/recovery",
+                "{\"emlCertSn\":3,\"rcvryAuthrtTkn\":\"tkn\",\"trmsAgres\":[{\"trmsSn\":1,\"agreYn\":true}],"
+                        + "\"mblTelno\":\"010-1234-5678\"}"))
+                .andExpect(status().isOk())
+                .andExpect(header().doesNotExist("Set-Cookie"));
+
+        verify(memberRecoveryService).recover(any(MemberRecoverRequest.class));
+    }
+
+    @Test
+    void 복구_실행은_약관_항목이_틀리거나_값이_비면_400이다() throws Exception {
+        mockMvc.perform(recovery("/api/members/recovery",
+                "{\"emlCertSn\":3,\"rcvryAuthrtTkn\":\"tkn\",\"trmsAgres\":[{\"trmsSn\":1}]}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(recovery("/api/members/recovery", "{\"emlCertSn\":3}"))
+                .andExpect(status().isBadRequest());
+
+        verify(memberRecoveryService, never()).recover(any());
+    }
+
+    @Test
+    void 복구_요청_문자열에_권한_토큰이_남지_않는다() {
+        assertThat(new MemberRecoveryInfoRequest(3L, "secret-tkn").toString()).doesNotContain("secret-tkn");
+        assertThat(new MemberRecoverRequest(3L, "secret-tkn", null, "01012345678").toString())
+                .doesNotContain("secret-tkn", "01012345678");
     }
 }
