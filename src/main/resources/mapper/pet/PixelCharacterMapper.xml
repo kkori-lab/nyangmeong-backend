@@ -179,6 +179,28 @@
            AND DEL_YN = 'N'
     </update>
 
+    <update id="updateDeleteByPetSn">
+        /* 반려동물의 픽셀 캐릭터 삭제 */
+        UPDATE PIXEL_CHAR
+           SET DEL_YN = 'Y'
+             , MDFR_ID = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE PET_SN = #{petSn}
+           AND DEL_YN = 'N'
+    </update>
+
+    <update id="updateHeldItemDeleteByPetSn" parameterType="long">
+        /* 반려동물 캐릭터의 보유 아이템 삭제 */
+        UPDATE HLD_ITEM H
+          JOIN PIXEL_CHAR C
+            ON C.PIXEL_CHAR_SN = H.PIXEL_CHAR_SN
+           SET H.DEL_YN = 'Y'
+             , H.EQUIP_YN = 'N'
+             , H.MDFCN_DT = NOW()
+         WHERE C.PET_SN = #{petSn}
+           AND H.DEL_YN = 'N'
+    </update>
+
     <select id="selectJob" parameterType="long" resultMap="jobResultMap">
         /* 캐릭터 생성 작업 단건 조회 */
         SELECT <include refid="jobColumns" />

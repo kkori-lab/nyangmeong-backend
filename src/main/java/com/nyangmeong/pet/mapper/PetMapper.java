@@ -13,7 +13,7 @@ import com.nyangmeong.pet.dto.PetSummary;
 
 /**
  * [반려동물 Mapper]
- * - PET·BRUP_REL 조회·저장 (반려동물 관리), BRUP_LINK_STTS_HSTRY 저장 (연동 해제·초대 수락)
+ * - PET·BRUP_REL 조회·저장·삭제 (반려동물 관리), BRUP_LINK_STTS_HSTRY 저장 (연동 해제·초대 수락)
  */
 @Mapper
 public interface PetMapper {
@@ -65,6 +65,11 @@ public interface PetMapper {
     BrupRel selectBrupRelIncludingUnlinked(@Param("mbrSn") Long mbrSn, @Param("petSn") Long petSn);
 
     /**
+     * 반려동물의 연동 중 공동양육 관계 조회
+     */
+    List<BrupRel> selectLinkedCoParentRels(@Param("petSn") Long petSn, @Param("coParentRoleCd") String coParentRoleCd);
+
+    /**
      * 반려동물의 연동 중 공동양육자 수
      */
     int countLinkedCaregivers(@Param("petSn") Long petSn, @Param("coParentRoleCd") String coParentRoleCd);
@@ -88,6 +93,11 @@ public interface PetMapper {
      * 반려동물 수정
      */
     int updatePet(@Param("pet") Pet pet, @Param("actorId") String actorId);
+
+    /**
+     * 반려동물 삭제
+     */
+    int updatePetDelete(@Param("petSn") Long petSn, @Param("actorId") String actorId);
 
     /**
      * 회원의 대표 해제

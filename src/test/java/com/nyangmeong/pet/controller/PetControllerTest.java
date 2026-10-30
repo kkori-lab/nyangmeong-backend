@@ -234,6 +234,25 @@ class PetControllerTest {
                 .andExpect(jsonPath("$.httpCode").value(404));
     }
 
+    @Test
+    @WithMockLoginMember
+    void 삭제는_200() throws Exception {
+        mockMvc.perform(delete("/api/pets/10").header("X-Requested-With", "XMLHttpRequest"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.httpCode").value(200));
+        verify(petService).deletePet(1L, 10L);
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 공동양육자의_삭제는_403() throws Exception {
+        doThrow(new CustomException(ErrorCode.PET_PRIMARY_ONLY)).when(petService).deletePet(1L, 10L);
+
+        mockMvc.perform(delete("/api/pets/10").header("X-Requested-With", "XMLHttpRequest"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.httpCode").value(403));
+    }
+
     private MockHttpServletRequestBuilder json(MockHttpServletRequestBuilder builder, String body) {
         return builder.header("X-Requested-With", "XMLHttpRequest")
                 .contentType(MediaType.APPLICATION_JSON)

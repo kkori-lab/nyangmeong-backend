@@ -13,6 +13,9 @@ import com.nyangmeong.global.code.CommonCodeService;
 import com.nyangmeong.global.code.CommonCodeSummary;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.notification.EventPublisher;
+import com.nyangmeong.global.notification.NotificationEvent;
+import com.nyangmeong.global.notification.NotificationType;
 import com.nyangmeong.pet.domain.BrupLinkSttsHstry;
 import com.nyangmeong.pet.domain.BrupRel;
 import com.nyangmeong.pet.domain.LinkChangeType;
@@ -25,6 +28,7 @@ import com.nyangmeong.pet.dto.PetResponse;
 import com.nyangmeong.pet.dto.PetSummary;
 import com.nyangmeong.pet.dto.PetUpdateRequest;
 import com.nyangmeong.pet.mapper.PetMapper;
+import com.nyangmeong.pet.mapper.PixelCharacterMapper;
 
 import lombok.RequiredArgsConstructor;
 
@@ -33,6 +37,7 @@ import lombok.RequiredArgsConstructor;
  * - 내 반려동물 목록 (SCR-MYP-001·002), 다른 도메인도 이 목록을 씀
  * - 등록·수정·상세·대표 지정 (SCR-MYP-003, FN-MYP-010-05)
  * - 양육자 목록·연동 해제 (SCR-MYP-004·006), 연동 양육자 회원 번호는 다른 도메인도 씀
+ * - 삭제 (SCR-MYP-002) : 위층 데이터(건강기록·AI 대화)는 PET.DEL_YN 으로 가려지므로 건드리지 않음 (docs/api/issues.md 마이페이지 3번)
  * - 정렬 = 내 양육관계 등록순 (docs/api/issues.md 마이페이지 1번 결정 전까지)
  */
 @Service
@@ -42,9 +47,14 @@ public class PetService {
     /** 계정당 주양육 반려동물 상한 */
     private static final int MAX_PET_COUNT = 10;
 
+    /** 삭제 해제 알림 이동 경로 */
+    private static final String PET_LIST_PATH = "/mypage/pets";
+
     private final PetMapper petMapper;
     private final PetAuthorizer petAuthorizer;
     private final CommonCodeService commonCodeService;
+    private final PixelCharacterMapper pixelCharacterMapper;
+    private final EventPublisher eventPublisher;
 
     /**
      * 내 반려동물 목록 조회
@@ -192,6 +202,46 @@ public class PetService {
         String actorId = String.valueOf(mbrSn);
         petMapper.updateRepresentativeOff(mbrSn, actorId);
         petMapper.updateRepresentativeOn(mbrSn, petSn, actorId);
+    }
+
+    /**
+     * 반려동물 삭제
+     * - 주양육자만 (FN-MYP-002-05), 캐릭터·보유 아이템 함께 삭제, 지출은 유지 (FN-MYP-002-07)
+     * - 공동양육 연동 자동 해제·알림 (FN-MYP-002-08), 대표였으면 남은 주양육 동물 첫 마리로 승계
+     */
+    @Transactional
+    public void deletePet(Long mbrSn, Long petSn) {
+        petAuthorizer.checkPrimary(mbrSn, petSn);
+        Pet pet = loadPet(petSn);
+        BrupRel own = petMapper.selectBrupRel(mbrSn, petSn);
+        String actorId = String.valueOf(mbrSn);
+
+        if (petMapper.updatePetDelete(petSn, actorId) == 0) {
+            throw new CustomException(ErrorCode.PET_NOT_FOUND);
+        }
+        pixelCharacterMapper.updateHeldItemDeleteByPetSn(petSn);
+        pixelCharacterMapper.updateDeleteByPetSn(petSn, actorId);
+
+        for (BrupRel coParent : petMapper.selectLinkedCoParentRels(petSn, BrupRole.CO_PARENT.getCode())) {
+            if (petMapper.updateBrupRelUnlink(coParent.getBrupRelSn(), actorId) == 0) {
+                continue;
+            }
+            BrupLinkSttsHstry history = new BrupLinkSttsHstry();
+            history.setBrupRelSn(coParent.getBrupRelSn());
+            history.setMbrSn(coParent.getMbrSn());
+            history.setLinkChgTypeCd(LinkChangeType.PET_DELETED.getCode());
+            petMapper.insertLinkHistory(history);
+            eventPublisher.publish(new NotificationEvent(coParent.getMbrSn(), NotificationType.CO_PARENTING,
+                    pet.getPetNm() + "의 기록이 정리되어 공동양육 연동이 해제되었어요", null, PET_LIST_PATH));
+        }
+
+        if (own != null && "Y".equals(own.getRprsPetYn())) {
+            petMapper.updateRepresentativeOff(mbrSn, actorId);
+            searchMyPets(mbrSn).stream()
+                    .filter(summary -> BrupRole.PRIMARY.is(summary.getBrupRoleCd()))
+                    .findFirst()
+                    .ifPresent(next -> petMapper.updateRepresentativeOn(mbrSn, next.getPetSn(), actorId));
+        }
     }
 
     /**
