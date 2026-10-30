@@ -8,7 +8,7 @@
 
 | 도메인 | 파일 | API | DTO | 담당(API 수) |
 | --- | --- | --- | --- | --- |
-| 공통(global) | [`global.md`](global.md) | 1 | 1 | LJS 1 |
+| 공통(global) | [`global.md`](global.md) | 5 | 4 | LJS 4, KSJ 1 |
 | 회원(member) | [`member.md`](member.md) | 27 | 28 | YAY 24, SJM 2, LJS 1 |
 | 반려동물(pet) | [`pet.md`](pet.md) | 25 | 19 | SJM 16, LJS 8, KSJ 1 |
 | 건강기록(health) | [`health.md`](health.md) | 50 | 49 | JAJ 50 |
@@ -19,7 +19,7 @@
 | 커뮤니티(community) | [`community.md`](community.md) | 41 | 35 | KSJ 41 |
 | 고객센터(support) | [`support.md`](support.md) | 7 | 7 | KSJ 7 |
 | AI 대화(ai, 내부 API) | [`ai.md`](ai.md) | 5 | 5 | LJS 5 |
-| 합계 | | 181 | 172 | |
+| 합계 | | 185 | 175 | |
 
 | 그 밖의 파일 | 내용 |
 | --- | --- |

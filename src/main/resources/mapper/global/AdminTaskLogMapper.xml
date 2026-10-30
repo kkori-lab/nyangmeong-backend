@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nyangmeong.global.log.AdminTaskLogMapper">
+
+    <insert id="insert" parameterType="com.nyangmeong.global.log.AdminTaskLog"
+            useGeneratedKeys="true" keyProperty="mngrTaskLogSn">
+        /* 관리자 작업 로그 추가 */
+        INSERT INTO MNGR_TASK_LOG (MBR_SN
+                                 , TASK_TYPE_CD
+                                 , TRGT_TBL_NM
+                                 , TRGT_SN
+                                 , TASK_SMRY_CN
+                                 , CHG_BFR_CN
+                                 , CHG_AFTR_CN
+                                 , CNTN_IP_ADDR)
+        VALUES (#{mbrSn}
+              , #{taskTypeCd}
+              , #{trgtTblNm}
+              , #{trgtSn}
+              , #{taskSmryCn}
+              , #{chgBfrCn}
+              , #{chgAftrCn}
+              , #{cntnIpAddr})
+    </insert>
+</mapper>

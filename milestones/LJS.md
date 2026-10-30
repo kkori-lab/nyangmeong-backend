@@ -146,11 +146,12 @@
 - 완료 조건: `PATCH /internal/ai/conversations/{aiCnvrsRoomSn}`이 쿠키 회원 본인 대화의 제목을 암호문으로 바꾸고 200 `ConversationSummary`를 준다. 남의·없는 대화는 404 `NOT_FOUND`, 빈 값·공백만·201자는 400
 - 연결 남음: FN-AIM-011-11 (Python이 이 API를 실제로 부르는 확인과 ai `docs/api/internal.md` 초안 행 확정, ai 세션)
 
-## SCR-ADM-110 운영 설정 — 진행
+## SCR-ADM-110 운영 설정 — 끝
 - 기능: FN-ADM-110-01 설정 조회, FN-ADM-110-02 설정 수정, FN-ADM-110-03 최저시급 설정, FN-ADM-110-04 AI 대화 설정
 - 함께 만드는 것: `MNGR_TASK_LOG` 테이블(기준 파일 v0.11과 그 변경 절)과 `global/log` 감사 로그 기록 수단(관리자 API 전부가 쓴다)
 - 기다리는 것: 없음
 - 완료 조건: `PATCH /api/admin/settings`가 범위 밖 값을 400으로 막는다. 저장하면 바뀐 항목의 전후 값이 `MNGR_TASK_LOG`에 남고 다음 `GET`에 바로 보인다
+- 연결 남음: FN-ADM-110-01~04 (프론트 연결 관리자 운영 설정 화면 SCR-ADM-110, 프론트 저장소에서 /start)
 
 ## SCR-ADM-114 감사 로그 — 대기
 - 기능: FN-ADM-114-01 감사 로그 조회, FN-ADM-114-02 감사 로그 상세, FN-ADM-114-03 기록 대상, FN-ADM-114-04 수정·삭제 불가
