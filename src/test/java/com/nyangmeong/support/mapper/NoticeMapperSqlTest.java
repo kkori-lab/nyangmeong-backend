@@ -54,9 +54,9 @@ class NoticeMapperSqlTest {
     }
 
     @Test
-    void 검색어가_있으면_제목_LIKE_조건이_붙는다() {
+    void 검색어가_있으면_제목_또는_본문_LIKE_조건이_붙는다() {
         String sql = listSql("점검", false);
 
-        assertThat(sql).contains("AND N.NTC_MTTR_TTL LIKE CONCAT('%', ?, '%')");
+        assertThat(sql).contains("AND ( N.NTC_MTTR_TTL LIKE CONCAT('%', ?, '%') OR N.NTC_MTTR_CN LIKE CONCAT('%', ?, '%') )");
     }
 }

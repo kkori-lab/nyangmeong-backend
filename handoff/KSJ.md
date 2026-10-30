@@ -17,6 +17,11 @@ SCR-CSC-001 공지사항 — 끝남 (승인 2026-10-30 14:49, 시작 2026-10-30 
 이번에 하지 않는 것: 비로그인 공지 열람(명세에 없음, 열려면 `permit-all-paths` 결정 필요), 공지 본문 이미지(issues 10, 첨부 테이블 없음 — `NTC_MTTR_CN` 텍스트 그대로 내린다), 관리자 작성
 새 의존성: 없음
 
+### 추가 요청
+| 번호 | 바꿀 파일 | 완료 조건 | 요청 |
+| --- | --- | --- | --- |
+| 추가-1 | `mapper/support/NoticeMapper.xml`(`selectList`), `NoticeMapperSqlTest.java`, `docs/api/support.md` | 명령: `./gradlew build -q` 통과, `NoticeMapperSqlTest`에 keyword가 있으면 제목 OR 본문 LIKE 조건이 붙는 케이스. 화면: `GET /api/notices?keyword=<본문에만 있는 단어>` → 그 공지가 나옴, 제목에만 있는 단어도 그대로 나옴 | 요청 2026-10-30 15:20 "공지 검색 범위를 제목·내용으로 바꿔 줘" |
+
 ## 다음에 할 것
 - 연결 남음: SCR-CSC-001 공지사항 화면 (프론트 연결 공지 리스트(검색·고정 배경·전체 n건·0건 안내·페이지네이션)와 상세, 상세 하단 최신 5개는 `?latestYn=true&size=5`, 조회수 표시는 뺀다, 프론트 저장소에서 /start)
 - 사람이 할 일: 공지 정렬 확인으로 `UPEND_FIX_YN='Y'`로 바꾼 공지가 있으면 `UPDATE NTC_MTTR SET UPEND_FIX_YN='N' WHERE NTC_MTTR_SN=<번호>;`로 되돌린다. 공지 작성은 DB가 아닌 관리자 화면이 생기기 전까지 직접 넣는다

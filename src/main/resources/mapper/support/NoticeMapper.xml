@@ -29,7 +29,8 @@
           FROM NTC_MTTR N
          WHERE N.USE_YN = 'Y'
         <if test="keyword != null">
-           AND N.NTC_MTTR_TTL LIKE CONCAT('%', #{keyword}, '%')
+           AND ( N.NTC_MTTR_TTL LIKE CONCAT('%', #{keyword}, '%')
+              OR N.NTC_MTTR_CN LIKE CONCAT('%', #{keyword}, '%') )
         </if>
         <choose>
             <when test="latest">
