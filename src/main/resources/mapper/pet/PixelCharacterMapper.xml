@@ -127,7 +127,8 @@
           LEFT JOIN CHAR_CRT_JOB J
             ON J.CHAR_CRT_JOB_SN = (SELECT MAX(LJ.CHAR_CRT_JOB_SN)
                                       FROM CHAR_CRT_JOB LJ
-                                     WHERE LJ.PET_SN = P.PET_SN)
+                                     WHERE LJ.PET_SN = P.PET_SN
+                                       AND LJ.DEL_YN = 'N')
          WHERE R.MBR_SN = #{mbrSn}
            AND R.USE_YN = 'Y'
          ORDER BY P.REG_DT
@@ -201,15 +202,36 @@
            AND H.DEL_YN = 'N'
     </update>
 
+    <update id="updateJobDeleteByPetSn" parameterType="long">
+        /* 반려동물의 캐릭터 생성 작업 삭제 : 진행 중이던 작업은 이후 조회되지 않아 결과를 저장하지 않는다 */
+        UPDATE CHAR_CRT_JOB
+           SET DEL_YN = 'Y'
+             , MDFCN_DT = NOW()
+         WHERE PET_SN = #{petSn}
+           AND DEL_YN = 'N'
+    </update>
+
+    <update id="updatePhotoDeleteByPetSn" parameterType="long">
+        /* 반려동물 캐릭터의 사진 삭제 */
+        UPDATE CHAR_PHOTO H
+          JOIN PIXEL_CHAR C
+            ON C.PIXEL_CHAR_SN = H.PIXEL_CHAR_SN
+           SET H.DEL_YN = 'Y'
+             , H.MDFCN_DT = NOW()
+         WHERE C.PET_SN = #{petSn}
+           AND H.DEL_YN = 'N'
+    </update>
+
     <select id="selectJob" parameterType="long" resultMap="jobResultMap">
         /* 캐릭터 생성 작업 단건 조회 */
         SELECT <include refid="jobColumns" />
           FROM CHAR_CRT_JOB
          WHERE CHAR_CRT_JOB_SN = #{charCrtJobSn}
+           AND DEL_YN = 'N'
     </select>
 
     <select id="selectJobByIdmptDmndId" parameterType="string" resultMap="jobResultMap">
-        /* 멱등 요청 ID로 캐릭터 생성 작업 조회 */
+        /* 멱등 요청 ID로 캐릭터 생성 작업 조회 : 같은 키를 다시 쓰지 않도록 삭제된 작업도 본다 */
         SELECT <include refid="jobColumns" />
           FROM CHAR_CRT_JOB
          WHERE IDMPT_DMND_ID = #{idmptDmndId}
@@ -220,6 +242,7 @@
         SELECT <include refid="jobColumns" />
           FROM CHAR_CRT_JOB
          WHERE PET_SN = #{petSn}
+           AND DEL_YN = 'N'
          ORDER BY CHAR_CRT_JOB_SN DESC
          LIMIT 1
     </select>
@@ -324,6 +347,7 @@
           FROM CHAR_PHOTO
          WHERE CHAR_CRT_JOB_SN = #{charCrtJobSn}
            AND PHOTO_ROLE_CD = #{photoRoleCd}
+           AND DEL_YN = 'N'
          ORDER BY SORT_SEQ
                 , CHAR_PHOTO_SN
          LIMIT 1
@@ -335,6 +359,7 @@
           FROM CHAR_PHOTO
          WHERE PIXEL_CHAR_SN = #{pixelCharSn}
            AND NOW_INDCT_YN = 'Y'
+           AND DEL_YN = 'N'
     </select>
 
     <update id="updatePhotoHidden" parameterType="long">

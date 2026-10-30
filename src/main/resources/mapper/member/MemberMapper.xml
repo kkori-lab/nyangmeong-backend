@@ -15,6 +15,7 @@
         <result column="LAST_LGN_DT"        property="lastLgnDt" />
         <result column="WHDWL_DT"           property="whdwlDt" />
         <result column="NCNM_STNG_CMPTN_YN" property="ncnmStngCmptnYn" />
+        <result column="REG_DT"             property="regDt" />
     </resultMap>
 
     <select id="selectByEmailHmac" parameterType="string" resultMap="memberResultMap">
@@ -47,6 +48,7 @@
              , MBR_NCNM
              , LAST_LGN_DT
              , NCNM_STNG_CMPTN_YN
+             , REG_DT
           FROM MBR
          WHERE MBR_SN = #{mbrSn}
     </select>
@@ -156,6 +158,24 @@
              , MDFCN_DT = NOW()
          WHERE MBR_SN = #{mbrSn}
            AND MBL_TELNO_HMAC IS NULL
+    </update>
+
+    <update id="updateProfile">
+        /* 회원정보 수정 : 보낸 값만 바꾼다(휴대전화번호, 프로필 사진 교체·기본 이미지로) */
+        UPDATE MBR
+           SET MDFR_ID = #{actorId}
+             , MDFCN_DT = NOW()
+        <if test="mblTelnoHmac != null">
+             , MBL_TELNO_ENC = #{mblTelnoEnc}
+             , MBL_TELNO_HMAC = #{mblTelnoHmac}
+        </if>
+        <if test="atchFileSn != null">
+             , ATCH_FILE_SN = #{atchFileSn}
+        </if>
+        <if test="atchFileSn == null and photoReset">
+             , ATCH_FILE_SN = NULL
+        </if>
+         WHERE MBR_SN = #{mbrSn}
     </update>
 
     <update id="updateLastLogin">

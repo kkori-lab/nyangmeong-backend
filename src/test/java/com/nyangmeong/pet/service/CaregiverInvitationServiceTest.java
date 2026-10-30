@@ -445,7 +445,7 @@ class CaregiverInvitationServiceTest {
     }
 
     private MemberResponse member(String email, String nickname) {
-        return new MemberResponse(email, nickname, "01012345678", null, "USRC0001", true, List.of());
+        return new MemberResponse(email, nickname, "01012345678", null, "USRC0001", true, List.of(), null, null);
     }
 
     private Member memberVo(Long mbrSn) {
