@@ -13,6 +13,7 @@ import com.nyangmeong.ai.dto.ConversationMessageCreateRequest;
 import com.nyangmeong.ai.dto.ConversationMessageResponse;
 import com.nyangmeong.ai.dto.ConversationResponse;
 import com.nyangmeong.ai.dto.ConversationSummary;
+import com.nyangmeong.ai.dto.ConversationTitleUpdateRequest;
 import com.nyangmeong.ai.mapper.AiConversationMapper;
 import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.CustomException;
@@ -72,6 +73,18 @@ public class AiConversationService {
                 .map(this::toMessageResponse).toList();
         return new ConversationResponse(room.getAiCnvrsRoomSn(), room.getPetSn(),
                 fieldCryptoService.decrypt(room.getCnvrsTtlEnc()), room.getRegDt(), messages);
+    }
+
+    /**
+     * 대화 제목 수정 (첫 답변 요약 제목, 본인 대화만)
+     */
+    @Transactional
+    public ConversationSummary updateTitle(Long mbrSn, Long aiCnvrsRoomSn, ConversationTitleUpdateRequest req) {
+        if (aiConversationMapper.updateRoomTitle(mbrSn, aiCnvrsRoomSn,
+                fieldCryptoService.encrypt(req.cnvrsTtl())) == 0) {
+            throw new CustomException(ErrorCode.NOT_FOUND);
+        }
+        return toSummary(getOwnedRoomOrThrow(mbrSn, aiCnvrsRoomSn));
     }
 
     /**

@@ -139,6 +139,13 @@
 - 완료 조건: `GET /internal/ai/register-context`의 `careArtclNms`가 CARE_ARTCL의 삭제 안 된 항목명을 등록순으로 준다. `CareArticleNameFake`가 없다
 - 연결 남음: 없음(FN-AIM-012-04·08 Python 연결은 위 "등록 카드 컨텍스트 내부 API" 절에 그대로)
 
+## SCR-AIM-011 AI 대화창 (첫 답변 요약 제목: 제목 수정 내부 API) — 끝
+- 기능: FN-AIM-011-11 대화 제목 자동 생성(첫 답변 요약 제목을 방 생성 뒤 한 번 저장, 명세 기능 ID 추가 없음). 기준 AI매니저_기능명세서_v0.11_20261029(DMS, 2026-10-30 확인). ai 세션 요청(2026-10-30, ai-2e)
+- 함께 만드는 것: 없음(`AiConversationService`·`FieldCryptoService` 재사용)
+- 기다리는 것: 없음(ai 저장소 Python 구현은 끝, 가짜 Java로 테스트 통과)
+- 완료 조건: `PATCH /internal/ai/conversations/{aiCnvrsRoomSn}`이 쿠키 회원 본인 대화의 제목을 암호문으로 바꾸고 200 `ConversationSummary`를 준다. 남의·없는 대화는 404 `NOT_FOUND`, 빈 값·공백만·201자는 400
+- 연결 남음: FN-AIM-011-11 (Python이 이 API를 실제로 부르는 확인과 ai `docs/api/internal.md` 초안 행 확정, ai 세션)
+
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
 - FN-COM-002-11: 채팅 안 읽은 수 API는 KSJ(채팅, 마일스톤 담당 표 COM-009)

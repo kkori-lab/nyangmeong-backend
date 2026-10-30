@@ -23,7 +23,7 @@ class AiConversationMapperXmlTest {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
         Element mapper = factory.newDocumentBuilder().parse(XML.toFile()).getDocumentElement();
-        for (String tag : new String[] { "select", "delete" }) {
+        for (String tag : new String[] { "select", "update", "delete" }) {
             NodeList nodes = mapper.getElementsByTagName(tag);
             for (int i = 0; i < nodes.getLength(); i++) {
                 Element node = (Element) nodes.item(i);
@@ -50,6 +50,12 @@ class AiConversationMapperXmlTest {
     void 단건_조회와_삭제는_회원_번호도_함께_비교한다() throws Exception {
         assertThat(sql("selectRoom")).contains("AND MBR_SN = #{mbrSn}");
         assertThat(sql("deleteRoom")).contains("AND MBR_SN = #{mbrSn}");
+    }
+
+    @Test
+    void 제목_수정은_제목만_바꾸고_회원_번호도_함께_비교한다() throws Exception {
+        assertThat(sql("updateRoomTitle")).contains("SET CNVRS_TTL_ENC = #{cnvrsTtlEnc}")
+                .contains("WHERE AI_CNVRS_ROOM_SN = #{aiCnvrsRoomSn}").contains("AND MBR_SN = #{mbrSn}");
     }
 
     @Test
