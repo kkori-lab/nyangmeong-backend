@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nyangmeong.support.mapper.NoticeMapper">
+
+    <resultMap id="noticeResultMap" type="com.nyangmeong.support.domain.Notice">
+        <id     column="NTC_MTTR_SN"   property="ntcMttrSn" />
+        <result column="NTC_MTTR_TTL"  property="ntcMttrTtl" />
+        <result column="NTC_MTTR_CN"   property="ntcMttrCn" />
+        <result column="INQ_CNT"       property="inqCnt" />
+        <result column="UPEND_FIX_YN"  property="upendFixYn" />
+        <result column="USE_YN"        property="useYn" />
+        <result column="REG_DT"        property="regDt" />
+        <result column="MDFCN_DT"      property="mdfcnDt" />
+    </resultMap>
+
+    <resultMap id="noticeSummaryResultMap" type="com.nyangmeong.support.dto.NoticeSummary">
+        <id     column="NTC_MTTR_SN"   property="ntcMttrSn" />
+        <result column="NTC_MTTR_TTL"  property="ntcMttrTtl" />
+        <result column="UPEND_FIX_YN"  property="upendFixYn" />
+        <result column="REG_DT"        property="regDt" />
+    </resultMap>
+
+    <select id="selectList" resultMap="noticeSummaryResultMap">
+        /* 공지사항 목록 조회 */
+        SELECT N.NTC_MTTR_SN
+             , N.NTC_MTTR_TTL
+             , CASE WHEN N.UPEND_FIX_YN = 'Y' THEN TRUE ELSE FALSE END AS UPEND_FIX_YN
+             , N.REG_DT
+          FROM NTC_MTTR N
+         WHERE N.USE_YN = 'Y'
+        <if test="keyword != null">
+           AND ( N.NTC_MTTR_TTL LIKE CONCAT('%', #{keyword}, '%')
+              OR N.NTC_MTTR_CN LIKE CONCAT('%', #{keyword}, '%') )
+        </if>
+        <choose>
+            <when test="latest">
+         ORDER BY N.REG_DT DESC, N.NTC_MTTR_SN DESC
+            </when>
+            <otherwise>
+         ORDER BY N.UPEND_FIX_YN DESC, N.REG_DT DESC, N.NTC_MTTR_SN DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="selectNotice" resultMap="noticeResultMap">
+        /* 공지사항 단건 조회 */
+        SELECT N.NTC_MTTR_SN
+             , N.NTC_MTTR_TTL
+             , N.NTC_MTTR_CN
+             , N.INQ_CNT
+             , N.UPEND_FIX_YN
+             , N.USE_YN
+             , N.REG_DT
+             , N.MDFCN_DT
+          FROM NTC_MTTR N
+         WHERE N.NTC_MTTR_SN = #{ntcMttrSn}
+           AND N.USE_YN = 'Y'
+    </select>
+
+</mapper>
