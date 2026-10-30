@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.nyangmeong.ai.dto.RegisterContextPet;
+import com.nyangmeong.health.service.CareItemService;
 import com.nyangmeong.pet.dto.PetSummary;
 import com.nyangmeong.pet.service.PetService;
 
@@ -22,7 +23,7 @@ import lombok.RequiredArgsConstructor;
 public class AiRegisterContextService {
 
     private final PetService petService;
-    private final CareArticleNameFake careArticleNameFake;
+    private final CareItemService careItemService;
 
     /**
      * 등록 카드 컨텍스트 조회
@@ -33,8 +34,8 @@ public class AiRegisterContextService {
         if (pets.isEmpty()) {
             return List.of();
         }
-        Map<Long, List<String>> careArtclNms = careArticleNameFake
-                .searchNames(pets.stream().map(PetSummary::getPetSn).toList());
+        Map<Long, List<String>> careArtclNms = careItemService
+                .searchNamesByPets(pets.stream().map(PetSummary::getPetSn).toList());
         return pets.stream()
                 .map(pet -> new RegisterContextPet(pet.getPetSn(), pet.getPetNm(),
                         careArtclNms.getOrDefault(pet.getPetSn(), List.of())))
