@@ -170,7 +170,8 @@ class LostReportServiceTest {
     void 목록은_정상_글만_기본_12건으로_조회한다() {
         service.search(MBR, new LostReportSearchCond(), new PageQuery(null, null, null));
 
-        verify(lostReportMapper).selectList(MBR, null, null, null, null, null, NORMAL, MISSING, FOUND);
+        verify(lostReportMapper).selectList(MBR, null, null, null, null, null, NORMAL, MISSING, FOUND, "CMUC0008",
+                false);
     }
 
     @Test
@@ -186,7 +187,7 @@ class LostReportServiceTest {
 
         verify(breedService).checkPetSe("PETC0002");
         verify(lostReportMapper).selectList(MBR, FOUND, 10L, "PETC0002", "WEEK", "50\\%\\_말티즈", NORMAL, MISSING,
-                FOUND);
+                FOUND, "CMUC0008", false);
     }
 
     @Test
@@ -202,6 +203,18 @@ class LostReportServiceTest {
                 ErrorCode.INVALID_INPUT_VALUE);
     }
 
+    @Test
+    void 내_글만_보기는_mineYn을_넘기고_만료_상태_필터도_받는다() {
+        LostReportSearchCond cond = new LostReportSearchCond();
+        cond.setMineYn(true);
+        cond.setLostTpofSttsCd("CMUC0008");
+
+        service.search(MBR, cond, new PageQuery(null, null, null));
+
+        verify(lostReportMapper).selectList(MBR, "CMUC0008", null, null, null, null, NORMAL, MISSING, FOUND,
+                "CMUC0008", true);
+    }
+
     // ===== 상세 =====
 
     @Test
@@ -215,6 +228,17 @@ class LostReportServiceTest {
         assertThat(res.expryCrtrDt()).isNotNull();
         assertThat(res.owner()).isTrue();
         assertThat(res.vrtyNm()).isEqualTo("말티즈");
+    }
+
+    @Test
+    void 만료된_글의_작성자_상세는_만료_상태로_내린다() {
+        when(lostReportMapper.selectDetail(LOST, NORMAL))
+                .thenReturn(detail(MISSING, LocalDateTime.now().minusDays(1)));
+        when(fieldCryptoService.decrypt("enc")).thenReturn("010-1234-5678");
+
+        LostReportResponse res = service.getReport(MBR, LOST);
+
+        assertThat(res.lostTpofSttsCd()).isEqualTo("CMUC0008");
     }
 
     @Test

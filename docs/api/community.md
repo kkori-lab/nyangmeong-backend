@@ -14,7 +14,7 @@
 | GET | /chat-rooms/{otoChatRoomSn} | 채팅방 상단 게시글 카드·매칭 진행 상태·내 역할 조회(참여자만) | CMU-005-01·11, COM-009 | KSJ | - | ChatRoomResponse |
 | GET | /chat-rooms/{otoChatRoomSn}/messages | 대화 메시지 조회(커서 방식, 최신순). `?beforeChatMsgSn=&size=30` — 처음은 `beforeChatMsgSn` 없이, 위로 스크롤하면 받은 것 중 가장 오래된 `chatMsgSn`을 넘긴다. `size` 최대 50 | CMU-005-04, COM-009 | KSJ | - | ChatMessageSliceResponse |
 | GET | /community-ai-commentaries | 오늘의 이야기 조회(`?cmtryCrtrYmd=`) | CMU-001-05 | KSJ | - | CommunityAiCommentaryResponse |
-| GET | /lost-reports | 실종 제보 목록(상태·지역·동물 구분·최종 목격 기간·키워드, 12건) | CMU-002-01~04 | KSJ | - | Page<LostReportSummary> |
+| GET | /lost-reports | 실종 제보 목록(상태·지역·동물 구분·최종 목격 기간·키워드, 12건), `mineYn=true`면 내 글만(만료 글 포함) | CMU-002-01~04 | KSJ | - | Page<LostReportSummary> |
 | GET | /lost-reports/{lostTpofSn} | 실종 제보 상세(목격 장소 좌표, 찾았어요 후 비공개 처리) | CMU-002-05·06 | KSJ | - | LostReportResponse |
 | GET | /news | 펫뉴스 목록(카테고리·키워드, 10건) | CMU-003-01~04 | KSJ | - | Page<NewsSummary> |
 | GET | /news/{newsSn} | 펫뉴스 상세 | CMU-003-04 | KSJ | - | NewsResponse |
@@ -453,7 +453,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | --- | --- | --- | --- | --- |
 | lostTpofSn | Long | Y | | LOST_TPOF.LOST_TPOF_SN |
 | pstTtl | String | Y | | PST.PST_TTL, CMU-002-09 |
-| lostTpofSttsCd | String | Y | 배지·톤다운 구분. 공통코드 CMUG03 | LOST_TPOF.LOST_TPOF_STTS_CD, CMU-002-02 |
+| lostTpofSttsCd | String | Y | 배지·톤다운 구분. 공통코드 CMUG03. 만료(CMUC0008)는 `mineYn=true` 목록에서만 나온다 | LOST_TPOF.LOST_TPOF_STTS_CD, CMU-002-02 |
 | dscvSwtcDt | LocalDateTime | N | | LOST_TPOF.DSCV_SWTC_DT, CMU-002-09 |
 | petSeCd | String | N | 공통코드 PETG01. 카드의 강아지·고양이 구분 | LOST_TPOF.PET_SE_CD, CMU-002-01 |
 | petNm | String | N | 이름 | LOST_TPOF.PET_NM, CMU-002-01 |
@@ -463,6 +463,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | rgnNm | String | N | 지역. 시도·시군구·읍면동 조합 | RGN.CTPV_NM, RGN.SGG_NM, RGN.EMD_NM, CMU-002-01 |
 | colrNm | String | N | 털색상 | LOST_TPOF.COLR_NM, CMU-002-01 |
 | chrcCn | String | N | 특징 | LOST_TPOF.CHRC_CN, CMU-002-01 |
+| owner | Boolean | Y | 내가 쓴 글이면 true(「내 글」 배지). `mineYn` 없는 전체 목록에서도 채운다. 상세 응답의 owner와 같은 이름 | PST.MBR_SN, 추가 요청 2026-10-30 |
 
 ### NewsResponse
 쓰는 API: GET /news/{newsSn}
