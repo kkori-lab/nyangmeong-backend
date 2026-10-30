@@ -56,23 +56,6 @@ public class ReceiptService {
     }
 
     /**
-     * 다시 분석 시작
-     */
-    @Transactional
-    public void restart(Long mbrSn, Long recptSn, Long petSn) {
-        petAuthorizer.checkCaregiver(mbrSn, petSn);
-        ReceiptStatus before = ReceiptStatus.from(getOwned(mbrSn, recptSn).getOcrPrcsSttsCd());
-        if (!ReceiptStatus.RETRYABLE.contains(before)) {
-            throw conflict(before);
-        }
-        if (receiptMapper.updateStatus(recptSn, codes(ReceiptStatus.RETRYABLE),
-                ReceiptStatus.ANALYZING.getCode()) == 0) {
-            throw new CustomException(ErrorCode.RECEIPT_ANALYZING);
-        }
-        insertHistory(recptSn, mbrSn, before, ReceiptStatus.ANALYZING, null);
-    }
-
-    /**
      * 회원 영수증 조회 : 결과 다시 열기 (FN-AIM-013-06)
      */
     @Transactional(readOnly = true)
@@ -122,22 +105,6 @@ public class ReceiptService {
         if (!finish(mbrSn, recptSn, after, chgRsn, ocrRspnsJson)) {
             throw new CustomException(ErrorCode.ALREADY_PROCESSED);
         }
-    }
-
-    /**
-     * 분석 취소
-     */
-    @Transactional
-    public void cancel(Long mbrSn, Long recptSn) {
-        ReceiptStatus before = ReceiptStatus.from(getOwned(mbrSn, recptSn).getOcrPrcsSttsCd());
-        if (before != ReceiptStatus.ANALYZING) {
-            throw conflict(before);
-        }
-        if (receiptMapper.updateStatus(recptSn, codes(List.of(ReceiptStatus.ANALYZING)),
-                ReceiptStatus.CANCELED.getCode()) == 0) {
-            throw new CustomException(ErrorCode.ALREADY_PROCESSED);
-        }
-        insertHistory(recptSn, mbrSn, before, ReceiptStatus.CANCELED, null);
     }
 
     /**

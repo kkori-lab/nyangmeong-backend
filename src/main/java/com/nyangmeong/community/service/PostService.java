@@ -103,7 +103,7 @@ public class PostService {
      */
     @Transactional
     public PostResponse getPost(Long mbrSn, Long pstSn) {
-        Post post = getNormalOrThrow(pstSn);
+        Post post = getPetStoryOrThrow(pstSn);
         /** 같은 회원·같은 날 이력이 이미 있으면 0건 */
         if (postMapper.insertViewIgnore(pstSn, mbrSn) > 0) {
             postMapper.updateInqCnt(pstSn);
@@ -145,7 +145,7 @@ public class PostService {
      */
     @Transactional
     public PostResponse update(Long mbrSn, Long pstSn, PostUpdateRequest req) {
-        Post post = getNormalOrThrow(pstSn);
+        Post post = getPetStoryOrThrow(pstSn);
         ownerAuthorizer.checkOwner(mbrSn, post.getMbrSn());
         if (req.bbsCd() != null) {
             checkBoard(req.bbsCd());
@@ -185,7 +185,7 @@ public class PostService {
      */
     @Transactional
     public void delete(Long mbrSn, Long pstSn) {
-        Post post = getNormalOrThrow(pstSn);
+        Post post = getPetStoryOrThrow(pstSn);
         ownerAuthorizer.checkOwner(mbrSn, post.getMbrSn());
         if (postMapper.updateStatus(pstSn, PostStatus.NORMAL.getCode(), PostStatus.DELETED.getCode(),
                 actorId(mbrSn)) == 0) {
@@ -227,6 +227,17 @@ public class PostService {
     private Post getNormalOrThrow(Long pstSn) {
         Post post = postMapper.selectPost(pstSn, PostStatus.NORMAL.getCode());
         if (post == null) {
+            throw new CustomException(ErrorCode.POST_NOT_FOUND);
+        }
+        return post;
+    }
+
+    /**
+     * 정상 상태 펫이야기 게시글 조회 (실종센터 글은 /api/lost-reports 로만 다룸)
+     */
+    private Post getPetStoryOrThrow(Long pstSn) {
+        Post post = getNormalOrThrow(pstSn);
+        if (!BoardType.exists(post.getBbsCd())) {
             throw new CustomException(ErrorCode.POST_NOT_FOUND);
         }
         return post;

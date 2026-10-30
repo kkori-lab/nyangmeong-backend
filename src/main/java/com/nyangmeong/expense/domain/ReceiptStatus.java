@@ -1,7 +1,6 @@
 package com.nyangmeong.expense.domain;
 
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * [영수증 OCR 처리 상태 코드]
@@ -15,9 +14,6 @@ public enum ReceiptStatus {
     TEMPORARY_ERROR("AIMC0005"),
     CANCELED("AIMC0006"),
     SAVED("AIMC0007");
-
-    /** 다시 분석할 수 있는 상태 (FN-AIM-008-07·010-03) */
-    public static final List<ReceiptStatus> RETRYABLE = List.of(CANCELED, NOT_RECOGNIZED, TEMPORARY_ERROR);
 
     private final String code;
 

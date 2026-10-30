@@ -106,7 +106,7 @@
 - 함께 만드는 것: 없음(`pet` PetService.searchMyPets 재사용)
 - 기다리는 것: 케어 항목 목록 service(JAJ, SCR-HLT-003 토탈 케어리스트 대기). 그 전까지 가짜
 - 완료 조건: `GET /internal/ai/register-context`가 쿠키 회원의 반려동물 전부를 `[{petSn, petNm, careArtclNms}]`로 준다. 반려동물이 없으면 빈 배열, 인증 없으면 401
-- 연결 남음: FN-AIM-012-08 (케어 항목 목록 service, JAJ), FN-AIM-012-04·08 (Python의 FakeRegisterContextRepository를 이 API로, ai 세션)
+- 연결 남음: FN-AIM-012-04·08 (Python의 FakeRegisterContextRepository를 이 API로, ai 세션)
 
 ## SCR-AIM-013 대화창 · 영수증 분석 (출처 코드 AI 대화창·결과 조회) — 끝
 - 기능: FN-AIM-013-04 분석 요청·대기(요청 출처 'AI 대화창' 기록), FN-AIM-013-06 확인 후 저장(본창 모달이 이 영수증의 분석 결과를 다시 연다), FN-AIM-013-08 원본 이미지 보관(기존 영수증 업로드 재사용). 기준 AI매니저_기능명세서_v0.10_20261029(DMS, 2026-10-29 확인)
@@ -123,6 +123,21 @@
 - 완료 조건: Python이 쿠키로 원본을 올리면 RECPT(분석중)가 생기고 `recptSn`을 돌려받는다. 결과 보고가 RECPT 상태·OCR 응답·이력에 남는다. React가 본인 영수증 결과를 `{recptSn, petSn, ocrPrcsSttsCd, failRsn, ocr}`로 받는다
 - 연결 남음: FN-AIM-008-09·013-08·010-01·013-04 (Python `FakeReceiptRepository`를 원본 저장·결과 보고 내부 API로, ai 세션), FN-AIM-013-06 (프론트 연결 본창 "인식 결과 확인" 모달 `getChatReceiptResult`를 `GET /api/receipts/{recptSn}?petSn=`로, 프론트 저장소에서 /start)
 - 추가: 없음. `ocrRslt` 허용값 밖은 공통 요청 형식 오류 400 `BAD_REQUEST`(기획은 `INVALID_INPUT_VALUE`, 없을 때만 `INVALID_INPUT_VALUE`)
+
+## SCR-AIM-013 대화창 · 영수증 분석 (영수증 정리: Java 동기 OCR 삭제) — 끝
+- 기능: FN-AIM-008-07 다시 분석·취소·제한 시간(이제 Python 몫, Java 경로 삭제). 기준 AI매니저_기능명세서_v0.11_20261029(DMS, 2026-10-29 확인). 근거: 2026-10-29 결정 (나), frontend-62 회신(프론트에 Java `POST /api/receipts` 호출 없음)
+- 함께 만드는 것: 없음
+- 기다리는 것: 없음
+- 완료 조건: `POST /api/receipts`·`/{recptSn}/analyze`·`/{recptSn}/cancel`이 없고(404), `OcrClient`·`FakeOcrClient`·`OcrProperties`·동기 분석 코드가 없다. 결과 조회·원본 이미지·저장·내부 API는 그대로 동작한다
+- 연결 남음: 없음. 분석중으로 남은 RECPT 정리 배치는 뺐다(2026-10-30 사람 결정, Python이 실패 때 `finally`로 보고)
+- 추가: 추가-1 `docs/api/health.md` 검사결과지 분석 설명의 `app.ocr.timeout` 빗댐 문구를 "(설정값)"으로
+
+## SCR-AIM-012 AI 일정 생성 확인 · 케어 항목 이름 연결 — 끝
+- 기능: FN-AIM-012-08 같은 이름 케어 항목 안내(연결만, 명세 기능 ID 추가 없음). `CareArticleNameFake`를 JAJ `CareItemService.searchNamesByPets`로 바꾼다
+- 함께 만드는 것: 없음(`health` CareItemService 재사용, ai 3층 → health 2층)
+- 기다리는 것: 없음
+- 완료 조건: `GET /internal/ai/register-context`의 `careArtclNms`가 CARE_ARTCL의 삭제 안 된 항목명을 등록순으로 준다. `CareArticleNameFake`가 없다
+- 연결 남음: 없음(FN-AIM-012-04·08 Python 연결은 위 "등록 카드 컨텍스트 내부 API" 절에 그대로)
 
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)

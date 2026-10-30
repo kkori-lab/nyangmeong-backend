@@ -8,56 +8,14 @@
 
 | 메서드 | 경로 | 설명 | 기능 ID | 담당 | 요청 DTO | 응답 DTO |
 | --- | --- | --- | --- | --- | --- | --- |
-| POST | /receipts | 영수증 이미지 업로드(multipart, 확장자·파일 시그니처 검증) → 요청 안에서 동기 OCR(제한 시간 `app.ocr.timeout`, 기본 15초) → 상태·추출 결과. 인식 실패·일시 오류도 201이고 `ocrPrcsSttsCd`·`failRsn`으로 구분. 오류: `FILE_TYPE_NOT_ALLOWED`·`FILE_TOO_LARGE`(400) | AIM-008-04~06·09, AIM-013-04·08, AIM-009-04·16·20·21, AIM-010-01·05 | LJS | ReceiptCreateRequest | ReceiptResponse |
 | GET | /receipts/{recptSn}?petSn= | 분석 결과 다시 열기(대화창 [확인 후 저장] → 본창 인식 결과 확인 모달). 모양은 Python `POST /ai/receipts` 응답 `{recptSn, ocr}`에 `petSn`·상태를 더한 것이다. `ocr`은 저장된 OCR 응답 그대로(가공 없음)이고 인식 성공·부분 인식·저장 완료일 때만, 그 밖은 null. 일시 오류는 `failRsn`. `petSn`은 진입 반려동물(돌봄 권한 검사)이고 요청값을 그대로 돌려준다. 올린 회원 본인만 조회한다(공동양육자 불가). 오류: `RECEIPT_NOT_FOUND`(404, 남의·없는 영수증) | AIM-013-06 | LJS | - | ReceiptResultResponse |
 | GET | /receipts/{recptSn}/image | 영수증 원본 이미지. 남의·없는 영수증은 404 `RECEIPT_NOT_FOUND` | AIM-009-01 | LJS | - | 이미지 파일 |
-| POST | /receipts/{recptSn}/analyze | 다시 분석(취소·인식 실패·일시 오류 뒤). 200. 오류: `RECEIPT_ANALYZING`·`ALREADY_PROCESSED`(409) | AIM-008-07, AIM-010-05 | LJS | ReceiptAnalyzeRequest | ReceiptResponse |
-| POST | /receipts/{recptSn}/cancel | 분석 취소(영수증 상태 '취소'). 오류: `RECEIPT_ALREADY_CANCELED`(409) | AIM-008-07 | LJS | - | - |
 | POST | /receipts/{recptSn}/save-check | 저장 전 확인. 가계부 중복 후보와 검진일 앞뒤 7일의 미연결 병원 일정. 저장하지 않는다 | AIM-009-22·23, HLT-002-46 | LJS | ReceiptSaveCheckRequest | ReceiptSaveCheckResponse |
 | POST | /receipts/{recptSn}/save | 확인 후 저장. 반려동물별 검진기록·병원 일정 연결/생성·처방약·가계부 지출을 한 트랜잭션으로, 영수증 상태 저장완료. 처음 201, 같은 `idmptDmndId` 재전송은 200과 같은 응답. 오류: `RECEIPT_NOT_SAVABLE`·`RECEIPT_ALREADY_SAVED`·`RECEIPT_ALREADY_CANCELED`·`RECEIPT_ANALYZING`·`ALREADY_PROCESSED`(409), `RECEIPT_NOT_FOUND`(404) | AIM-009-07~11·24·26·27, AIM-010-06, HLT-002-31·35·37~41·45 | LJS | ReceiptSaveRequest | ReceiptSaveResponse |
 | POST | /internal/ai/receipts | Python AI 서버가 분석 전에 원본을 저장한다(2026-10-29 결정 (나): React → Python `POST /ai/receipts`가 분석 중심). multipart, 확장자·파일 시그니처 검증, 쿠키 회원·`X-Requested-With`. 원본 파일(ATCH_FILE)과 RECPT(상태 분석중, 출처)를 만들고 201 `recptSn`. 분석이 실패해도 원본은 남는다. 오류: `FILE_TYPE_NOT_ALLOWED`·`FILE_TOO_LARGE`·`INVALID_INPUT_VALUE`(400), `PET_ACCESS_DENIED`(양육하지 않는 반려동물) | AIM-008-09, AIM-010-06, AIM-013-08 | LJS | ReceiptOriginalRequest | ReceiptOriginalResponse |
 | POST | /internal/ai/receipts/{recptSn}/result | Python AI 서버가 분석 결과·상태를 보고한다. 분석중인 본인 영수증만. `RECOGNIZED`는 Java가 OCR 응답으로 인식 성공·부분 인식·인식 실패를 나누고, `TIMEOUT`·`API_ERROR`는 일시 오류로 두고 사유를 상태 이력에 남긴다. 200. 오류: `INVALID_INPUT_VALUE`(400, `ocrRslt` 없음·`RECOGNIZED`인데 `ocr` 없음), `BAD_REQUEST`(400, `ocrRslt` 허용값 밖), `RECEIPT_NOT_FOUND`(404), `RECEIPT_ALREADY_CANCELED`·`RECEIPT_ALREADY_SAVED`·`ALREADY_PROCESSED`(409, 분석중이 아님) | AIM-010-01, AIM-013-04 | LJS | ReceiptReportRequest | ReceiptReportResponse |
 
 ## DTO
-
-### ReceiptAnalyzeRequest
-쓰는 API: POST /receipts/{recptSn}/analyze
-| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
-| --- | --- | --- | --- | --- |
-| petSn | Long | Y | 진입한 반려동물. 로그인 회원과 연동된 반려동물 | PET.PET_SN, AIM-009-17 |
-
-### ReceiptCreateRequest
-쓰는 API: POST /receipts (multipart/form-data)
-| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
-| --- | --- | --- | --- | --- |
-| file | MultipartFile | Y | jpg·jpeg·png·webp, 1건당 10MB 이하, 확장자·실제 형식 이중 검증. PDF 불가 | RECPT.ATCH_FILE_SN (AIM-008-05) |
-| petSn | Long | Y | 진입한 반려동물. 로그인 회원과 연동된 반려동물 | PET.PET_SN, AIM-009-17 |
-| ocrDmndSrcCd | String | N | 요청 출처 AIMG07. `AIMC0026` 건강 일지(생략 시)·`AIMC0031` AI 대화창만, 그 밖은 400 `INVALID_INPUT_VALUE` | RECPT.OCR_DMND_SRC_CD, AIM-013-04 |
-
-### ReceiptResponse
-쓰는 API: POST /receipts; POST /receipts/{recptSn}/analyze
-| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
-| --- | --- | --- | --- | --- |
-| recptSn | Long | Y | | RECPT.RECPT_SN |
-| ocrPrcsSttsCd | String | Y | AIMG01 | RECPT.OCR_PRCS_STTS_CD (인식 실패·일시 오류 구분, AIM-010-01) |
-| failRsn | String | N | 일시 오류 사유 `TIMEOUT`·`API_ERROR`(화면 문구 2종) | RECPT_STTS_HSTRY.CHG_RSN, AIM-010-07 |
-| hsptlNm | String | N | 추출 병원명 | AIM-009-02 |
-| ckupYmd | LocalDate | N | 추출 검진일 | AIM-009-02 |
-| recptAmt | Long | N | 영수증 최종 결제 금액 | AIM-009-02 |
-| dstrbDscntAmt | Long | N | 구역에 나눠 준 하단 할인 합계 | AIM-009-20, HLT-002-42 |
-| sections | List<Section> | N | 반려동물 구역별 구역명·진료 품목·금액·약품 행 | AIM-009-16 |
-
-#### Section (ReceiptResponse.sections)
-| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
-| --- | --- | --- | --- | --- |
-| sectionNm | String | N | 구역의 반려동물 이름(예: 미르). 구역 없는 영수증은 null인 구역 1개 | AIM-009-16·17 |
-| petSn | Long | N | 구역 이름이 회원의 반려동물 이름과 공백 제외 일치하면 자동 연결, 못 하면 null | PET.PET_SN, AIM-009-17 |
-| sbttlAmt | Long | N | 구역 소계 | HLT-002-39, AIM-009-20 |
-| dscntAmt | Long | N | 구역 할인(하단 할인을 비율 배분한 몫 포함) | AIM-009-20, HLT-002-42 |
-| sectionAmt | Long | N | `sbttlAmt - dscntAmt` | AIM-009-20 |
-| ckupCn | String | N | 진료 품목으로 채운 검진 내용 | AIM-009-21, HLT-002-38 |
-| items | List<Line> | Y | 진료 품목(약품 제외). 0건이면 빈 목록. `Line`은 `itemNm`(String)·`itemAmt`(Long) | AIM-009-19·21 |
-| prescriptions | List<Prescription> | Y | 약품 행. 0건이면 빈 목록. `Prescription`은 `mdcnNm`·`mdcnBgngYmd`·`mdcnEndYmd`(검진일 + 일수 − 1)·`dayMdcnNmtm`·`prscSttsCd`(HLTG06)·`mdcnAmt`(대조용, 저장 안 함), 인식 실패 칸은 null | AIM-009-03·04 |
 
 ### ReceiptResultResponse
 쓰는 API: GET /receipts/{recptSn}

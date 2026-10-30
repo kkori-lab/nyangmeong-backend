@@ -36,7 +36,9 @@
 | POST | /chat-rooms/{otoChatRoomSn}/read | 활성 대화창에 표시된 메시지까지 읽음 처리 | CMU-005-03, COM-009 | KSJ | ChatRoomReadRequest | - |
 | POST | /lost-reports | 실종 제보 등록(게시글+제보, 품종 마스터/직접입력, 목격 좌표, 개인정보 동의) | CMU-002-10·13 | KSJ | LostReportCreateRequest | LostReportResponse |
 | POST | /lost-reports/{lostTpofSn}/found | 찾았어요 전환(완료 안내 댓글 자동 생성) | CMU-002-09 | KSJ | - | - |
-| POST | /lost-reports/{lostTpofSn}/renew | 만료 전 게시 기간 갱신 | CMU-002-09 | KSJ | - | - |
+| POST | /lost-reports/{lostTpofSn}/renew | 만료 전 게시 기간 갱신(종료 7일 전부터 종료 전까지 한 번) | CMU-002-09 | KSJ | - | - |
+| PATCH | /lost-reports/{lostTpofSn} | 실종 제보 수정(작성자, 실종 상태만, 모든 항목, 사진 유지·추가, 좌표가 바뀌면 지역 재계산) | 명세 없음(화면설계서 SCR-CMU-002-03·06) | KSJ | LostReportUpdateRequest | LostReportResponse |
+| DELETE | /lost-reports/{lostTpofSn} | 실종 제보 삭제(작성자, 찾았어요·만료 글도 가능, 게시글 상태를 삭제로) | 명세 없음(화면설계서 SCR-CMU-002-03) | KSJ | - | - |
 | POST | /posts | 펫이야기 게시글 작성(사진 최대 10장) | CMU-001-14 | KSJ | PostCreateRequest | PostResponse |
 | POST | /posts/{pstSn}/comments | 댓글·대댓글(1depth) 등록 | CMU-001-11, CMU-002-07 | KSJ | CommentCreateRequest | CommentResponse |
 | POST | /posts/{pstSn}/likes | 좋아요 등록. 멱등: 이미 누른 상태여도 200과 현재 좋아요 수(`UK_PST_RCMDTN_1`로 중복 행을 막는다) | CMU-001-09, CMU-002-08, CMU-004-12 | KSJ | - | PostLikeResponse |
@@ -384,33 +386,42 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | cmtryCn | String | Y | 없으면 기본 내용 | CMNTY_AI_CMTRY.CMTRY_CN, SYS_STNG.AI_CMTRY_BSC_CN, CMU-001-05 |
 
 ### LostReportCreateRequest
-쓰는 API: POST /lost-reports
+쓰는 API: POST /lost-reports (multipart/form-data)
+실종지역(`rgnSn`)은 받지 않는다. 서버가 목격 장소 좌표를 역지오코딩해 계산하고, 전북 밖이면 400 `LOST_REPORT_REGION_NOT_ALLOWED`다(화면설계서 SCR-CMU-002-05). `lastWtnsDt`는 ISO 일시(`2026-10-29T17:00:00`)이고 미래는 400이다.
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | petSeCd | String | Y | 공통코드 PETG01 | LOST_TPOF.PET_SE_CD, CMU-002-10 |
-| petNm | String | Y | 최대 100자 | LOST_TPOF.PET_NM, CMU-002-10 |
+| petNm | String | Y | 최대 20자(명세) | LOST_TPOF.PET_NM, CMU-002-10 |
 | vrtySn | Long | N | `vrtySn`·`vrtyDrctInptNm` 중 하나 필수. 해당 구분의 품종 마스터여야 한다 | LOST_TPOF.VRTY_SN, CMU-002-13 |
-| vrtyDrctInptNm | String | N | '기타' 선택 시 직접 입력. 최대 100자. 마스터에 등록하지 않는다 | LOST_TPOF.VRTY_DRCT_INPT_NM, CMU-002-13 |
-| colrNm | String | Y | 털 색상. 최대 100자 | LOST_TPOF.COLR_NM, CMU-002-10 |
+| vrtyDrctInptNm | String | N | '기타' 선택 시 직접 입력. 최대 20자(명세). 마스터에 등록하지 않는다 | LOST_TPOF.VRTY_DRCT_INPT_NM, CMU-002-13 |
+| colrNm | String | Y | 털 색상. 최대 20자(명세) | LOST_TPOF.COLR_NM, CMU-002-10 |
 | chrcCn | String | N | 특징. 최대 40자 | LOST_TPOF.CHRC_CN, CMU-002-10 |
 | lastWtnsDt | LocalDateTime | Y | 마지막 목격 날짜(화면은 날짜, 컬럼은 일시, issues 12) | LOST_TPOF.LAST_WTNS_DT, CMU-002-10 |
-| rgnSn | Long | Y | 실종지역 | LOST_TPOF.RGN_SN, CMU-002-10 |
 | wtnsPlcNm | String | N | 목격 장소명. 최대 200자 | LOST_TPOF.WTNS_PLC_NM, CMU-002-10 |
 | wtnsPlcLat | BigDecimal | Y | 지도 핀 좌표 | LOST_TPOF.WTNS_PLC_LAT, CMU-002-11 |
 | wtnsPlcLot | BigDecimal | Y | 지도 핀 좌표 | LOST_TPOF.WTNS_PLC_LOT, CMU-002-11 |
-| cnpl | String | Y | 전화번호. 형식은 명세 없음 | LOST_TPOF.CNPL_ENC, CMU-002-10 |
-| pstTtl | String | Y | 최대 200자. 펫이야기는 50자로 바뀌었으니 SCR-CMU-002 기획에서 명세로 확정 | PST.PST_TTL, CMU-002-10, CMU-001-14 |
-| pstCn | String | Y | 최대 4000자. 펫이야기는 2000자로 바뀌었으니 SCR-CMU-002 기획에서 명세로 확정 | PST.PST_CN, CMU-002-10, CMU-001-14 |
-| atchFileSns | List<Long> | N | 최대 10장, 장당 10MB, 확장자 검증(펫이야기와 동일) | PST_IMG.ATCH_FILE_SN, CMU-002-10 |
+| cnpl | String | Y | 전화번호. 숫자와 하이픈 9~13자(명세 "숫자 입력, 최대 13자") | LOST_TPOF.CNPL_ENC, CMU-002-10 |
+| pstTtl | String | Y | 최대 50자(명세, 펫이야기와 동일) | PST.PST_TTL, CMU-002-10, CMU-001-14 |
+| pstCn | String | Y | 최대 2000자(명세, 펫이야기와 동일) | PST.PST_CN, CMU-002-10, CMU-001-14 |
+| images | List<MultipartFile> | N | multipart/form-data, 최대 10장, 장당 10MB, 확장자 검증(펫이야기와 동일). 첫 번째 사진이 대표 | PST_IMG.ATCH_FILE_SN, CMU-002-10 |
 | prvcRlsAgreYn | Boolean | Y | 개인정보 수집·이용 및 게시글 공개 동의. true여야 등록 | LOST_TPOF.PRVC_RLS_AGRE_YN, CMU-002-10 |
 
+### LostReportUpdateRequest
+쓰는 API: PATCH /lost-reports/{lostTpofSn} (multipart/form-data)
+`LostReportCreateRequest`와 같은 필드·같은 검증을 모두 다시 보낸다(수정 범위 전체). 아래 필드만 더한다. 상태·게시 종료일·조회수·좋아요·댓글은 바뀌지 않는다. 좌표가 그대로면 실종지역을 유지한다. 개인정보 동의는 수정 때도 true여야 한다(화면설계서 SCR-CMU-002-06 9번).
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| keepAtchFileSns | List<Long> | N | 남길 기존 사진. 보내면 목록에 없는 기존 사진은 삭제, 보내지 않으면 기존 사진 유지. 남긴 수 + `images` 수가 10장 이하 | PST_IMG.ATCH_FILE_SN, 화면설계서 SCR-CMU-002-06 7번 |
+
 ### LostReportResponse
-쓰는 API: GET /lost-reports/{lostTpofSn}; POST /lost-reports
+쓰는 API: GET /lost-reports/{lostTpofSn}; POST /lost-reports; PATCH /lost-reports/{lostTpofSn}
 찾았어요 상태면 작성자가 아닌 회원에게 제목·상태·처리 시각만 주고 나머지 N 필드는 null이다(CMU-002-09).
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | lostTpofSn | Long | Y | | LOST_TPOF.LOST_TPOF_SN |
 | pstSn | Long | Y | 좋아요·댓글·신고에 쓴다 | LOST_TPOF.PST_SN |
+| mbrNcnm | String | N | 작성자 닉네임(화면 "토리맘 · 등록일시") | MBR.MBR_NCNM, 화면설계서 SCR-CMU-002-02 |
+| regDt | LocalDateTime | N | 게시글 등록 일시 | PST.REG_DT, 화면설계서 SCR-CMU-002-02 |
 | pstTtl | String | Y | | PST.PST_TTL, CMU-002-09 |
 | lostTpofSttsCd | String | Y | 공통코드 CMUG03(실종·찾았어요) | LOST_TPOF.LOST_TPOF_STTS_CD, CMU-002-09 |
 | dscvSwtcDt | LocalDateTime | N | 찾았어요 전환 시각 | LOST_TPOF.DSCV_SWTC_DT, CMU-002-09 |
@@ -428,7 +439,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | wtnsPlcLat | BigDecimal | N | 지도 표시 | LOST_TPOF.WTNS_PLC_LAT, CMU-002-06 |
 | wtnsPlcLot | BigDecimal | N | 지도 표시 | LOST_TPOF.WTNS_PLC_LOT, CMU-002-06 |
 | cnpl | String | N | 작성자 입력값 그대로(복호화). 로그인 회원만 | LOST_TPOF.CNPL_ENC, CMU-002-05 |
-| expryCrtrDt | LocalDateTime | N | 실종 상태 만료 기준 일시(갱신 버튼) | LOST_TPOF.EXPRY_CRTR_DT, CMU-002-09 |
+| expryCrtrDt | LocalDateTime | N | 실종 상태 만료 기준 일시(갱신 버튼). 작성자에게만 준다 | LOST_TPOF.EXPRY_CRTR_DT, CMU-002-09 |
 | imgs | List<ImageItem> | N | | PST_IMG, CMU-002-05 |
 | inqCnt | Integer | N | | PST.INQ_CNT, CMU-002-07 |
 | rcmdtnCnt | Integer | N | | PST.RCMDTN_CNT, CMU-002-08 |
@@ -444,7 +455,11 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | pstTtl | String | Y | | PST.PST_TTL, CMU-002-09 |
 | lostTpofSttsCd | String | Y | 배지·톤다운 구분. 공통코드 CMUG03 | LOST_TPOF.LOST_TPOF_STTS_CD, CMU-002-02 |
 | dscvSwtcDt | LocalDateTime | N | | LOST_TPOF.DSCV_SWTC_DT, CMU-002-09 |
+| petSeCd | String | N | 공통코드 PETG01. 카드의 강아지·고양이 구분 | LOST_TPOF.PET_SE_CD, CMU-002-01 |
 | petNm | String | N | 이름 | LOST_TPOF.PET_NM, CMU-002-01 |
+| vrtyNm | String | N | 품종. 마스터 품종명, 없으면 직접입력명(카드 "보리 (몰티즈)") | VRTY.VRTY_NM, LOST_TPOF.VRTY_DRCT_INPT_NM, 화면설계서 SCR-CMU-002-01 |
+| thumbAtchFileSn | Long | N | 대표 사진(첫 번째). 사진이 없으면 null | PST_IMG.ATCH_FILE_SN, 화면설계서 SCR-CMU-002-01 4번 |
+| regDt | LocalDateTime | Y | 게시글 등록 일시(카드 "2시간 전") | PST.REG_DT, 화면설계서 SCR-CMU-002-01 |
 | rgnNm | String | N | 지역. 시도·시군구·읍면동 조합 | RGN.CTPV_NM, RGN.SGG_NM, RGN.EMD_NM, CMU-002-01 |
 | colrNm | String | N | 털색상 | LOST_TPOF.COLR_NM, CMU-002-01 |
 | chrcCn | String | N | 특징 | LOST_TPOF.CHRC_CN, CMU-002-01 |

@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nyangmeong.community.mapper.LostReportMapper">
+
+    <resultMap id="lostReportResultMap" type="com.nyangmeong.community.domain.LostReport">
+        <id     column="LOST_TPOF_SN"       property="lostTpofSn" />
+        <result column="PST_SN"             property="pstSn" />
+        <result column="RGN_SN"             property="rgnSn" />
+        <result column="PET_SE_CD"          property="petSeCd" />
+        <result column="LOST_TPOF_STTS_CD"  property="lostTpofSttsCd" />
+        <result column="PET_NM"             property="petNm" />
+        <result column="COLR_NM"            property="colrNm" />
+        <result column="CNPL_ENC"           property="cnplEnc" />
+        <result column="WTNS_PLC_LAT"       property="wtnsPlcLat" />
+        <result column="WTNS_PLC_LOT"       property="wtnsPlcLot" />
+        <result column="PSTG_PRD_UPDT_NMTM" property="pstgPrdUpdtNmtm" />
+        <result column="LAST_WTNS_DT"       property="lastWtnsDt" />
+        <result column="EXPRY_CRTR_DT"      property="expryCrtrDt" />
+        <result column="DSCV_SWTC_DT"       property="dscvSwtcDt" />
+        <result column="WTNS_PLC_NM"        property="wtnsPlcNm" />
+        <result column="PRVC_RLS_AGRE_YN"   property="prvcRlsAgreYn" />
+        <result column="REG_DT"             property="regDt" />
+        <result column="MDFCN_DT"           property="mdfcnDt" />
+        <result column="VRTY_SN"            property="vrtySn" />
+        <result column="VRTY_DRCT_INPT_NM"  property="vrtyDrctInptNm" />
+        <result column="CHRC_CN"            property="chrcCn" />
+    </resultMap>
+
+    <resultMap id="lostReportDetailResultMap" type="com.nyangmeong.community.domain.LostReportDetail"
+               extends="lostReportResultMap">
+        <result column="MBR_SN"      property="mbrSn" />
+        <result column="MBR_NCNM"    property="mbrNcnm" />
+        <result column="PST_STTS_CD" property="pstSttsCd" />
+        <result column="PST_TTL"     property="pstTtl" />
+        <result column="PST_CN"      property="pstCn" />
+        <result column="INQ_CNT"     property="inqCnt" />
+        <result column="RCMDTN_CNT"  property="rcmdtnCnt" />
+        <result column="PST_REG_DT"  property="pstRegDt" />
+        <result column="VRTY_NM"     property="vrtyNm" />
+        <result column="RGN_NM"      property="rgnNm" />
+    </resultMap>
+
+    <resultMap id="lostReportSummaryResultMap" type="com.nyangmeong.community.dto.LostReportSummary">
+        <id     column="LOST_TPOF_SN"       property="lostTpofSn" />
+        <result column="PST_TTL"            property="pstTtl" />
+        <result column="LOST_TPOF_STTS_CD"  property="lostTpofSttsCd" />
+        <result column="DSCV_SWTC_DT"       property="dscvSwtcDt" />
+        <result column="PET_SE_CD"          property="petSeCd" />
+        <result column="PET_NM"             property="petNm" />
+        <result column="VRTY_NM"            property="vrtyNm" />
+        <result column="RGN_NM"             property="rgnNm" />
+        <result column="COLR_NM"            property="colrNm" />
+        <result column="CHRC_CN"            property="chrcCn" />
+        <result column="THUMB_ATCH_FILE_SN" property="thumbAtchFileSn" />
+        <result column="REG_DT"             property="regDt" />
+    </resultMap>
+
+    <sql id="lostReportColumns">
+          L.LOST_TPOF_SN
+        , L.PST_SN
+        , L.RGN_SN
+        , L.PET_SE_CD
+        , L.LOST_TPOF_STTS_CD
+        , L.PET_NM
+        , L.COLR_NM
+        , L.CNPL_ENC
+        , L.WTNS_PLC_LAT
+        , L.WTNS_PLC_LOT
+        , L.PSTG_PRD_UPDT_NMTM
+        , L.LAST_WTNS_DT
+        , L.EXPRY_CRTR_DT
+        , L.DSCV_SWTC_DT
+        , L.WTNS_PLC_NM
+        , L.PRVC_RLS_AGRE_YN
+        , L.REG_DT
+        , L.MDFCN_DT
+        , L.VRTY_SN
+        , L.VRTY_DRCT_INPT_NM
+        , L.CHRC_CN
+    </sql>
+
+    <!-- 시도·시군구·읍면동을 공백으로 이음 (시도 행의 시군구는 빈 문자열) -->
+    <sql id="regionName">
+        CONCAT_WS(' ', R.CTPV_NM, NULLIF(R.SGG_NM, ''), R.EMD_NM)
+    </sql>
+
+    <!-- 찾았어요 카드는 작성자가 아니면 제목·상태·전환 시각 외를 비움 -->
+    <sql id="hiddenCard">
+        (L.LOST_TPOF_STTS_CD = #{foundCd} AND P.MBR_SN != #{mbrSn})
+    </sql>
+
+    <select id="selectList" resultMap="lostReportSummaryResultMap">
+        SELECT L.LOST_TPOF_SN
+             , P.PST_TTL
+             , L.LOST_TPOF_STTS_CD
+             , L.DSCV_SWTC_DT
+             , P.REG_DT
+             , CASE WHEN <include refid="hiddenCard" /> THEN NULL ELSE L.PET_SE_CD END AS PET_SE_CD
+             , CASE WHEN <include refid="hiddenCard" /> THEN NULL ELSE L.PET_NM END AS PET_NM
+             , CASE WHEN <include refid="hiddenCard" /> THEN NULL
+                    ELSE COALESCE(V.VRTY_NM, L.VRTY_DRCT_INPT_NM) END AS VRTY_NM
+             , CASE WHEN <include refid="hiddenCard" /> THEN NULL
+                    ELSE <include refid="regionName" /> END AS RGN_NM
+             , CASE WHEN <include refid="hiddenCard" /> THEN NULL ELSE L.COLR_NM END AS COLR_NM
+             , CASE WHEN <include refid="hiddenCard" /> THEN NULL ELSE L.CHRC_CN END AS CHRC_CN
+             , CASE WHEN <include refid="hiddenCard" /> THEN NULL
+                    ELSE (SELECT I.ATCH_FILE_SN
+                            FROM PST_IMG I
+                           WHERE I.PST_SN = L.PST_SN
+                             AND I.DEL_YN = 'N'
+                           ORDER BY I.SORT_SEQ, I.PST_IMG_SN
+                           LIMIT 1) END AS THUMB_ATCH_FILE_SN
+          FROM LOST_TPOF L
+          JOIN PST P
+            ON P.PST_SN = L.PST_SN
+          JOIN RGN R
+            ON R.RGN_SN = L.RGN_SN
+          LEFT JOIN VRTY V
+            ON V.VRTY_SN = L.VRTY_SN
+         WHERE P.PST_STTS_CD = #{pstSttsCd}
+           AND (L.LOST_TPOF_STTS_CD = #{foundCd}
+                OR (L.LOST_TPOF_STTS_CD = #{missingCd} AND L.EXPRY_CRTR_DT >= NOW()))
+        <if test="lostTpofSttsCd != null">
+           AND L.LOST_TPOF_STTS_CD = #{lostTpofSttsCd}
+        </if>
+        <if test="rgnSn != null">
+           AND L.RGN_SN IN (WITH RECURSIVE T AS (SELECT RGN_SN
+                                                   FROM RGN
+                                                  WHERE RGN_SN = #{rgnSn}
+                                                  UNION ALL
+                                                 SELECT C.RGN_SN
+                                                   FROM RGN C
+                                                   JOIN T
+                                                     ON C.UP_RGN_SN = T.RGN_SN)
+                            SELECT RGN_SN
+                              FROM T)
+        </if>
+        <if test="petSeCd != null">
+           AND L.PET_SE_CD = #{petSeCd}
+        </if>
+        <if test="wtnsPrd != null">
+            <choose>
+                <when test="wtnsPrd == 'TODAY'">
+           AND L.LAST_WTNS_DT >= CURDATE()
+                </when>
+                <when test="wtnsPrd == 'WEEK'">
+           AND L.LAST_WTNS_DT >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                </when>
+                <when test="wtnsPrd == 'MONTH'">
+           AND L.LAST_WTNS_DT >= DATE_SUB(NOW(), INTERVAL 1 MONTH)
+                </when>
+                <otherwise>
+           AND L.LAST_WTNS_DT <![CDATA[<]]> DATE_SUB(NOW(), INTERVAL 1 MONTH)
+                </otherwise>
+            </choose>
+        </if>
+        <if test="keyword != null">
+           AND (<include refid="regionName" /> LIKE CONCAT('%', #{keyword}, '%')
+                OR V.VRTY_NM LIKE CONCAT('%', #{keyword}, '%')
+                OR L.VRTY_DRCT_INPT_NM LIKE CONCAT('%', #{keyword}, '%')
+                OR L.CHRC_CN LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+         ORDER BY CASE WHEN L.LOST_TPOF_STTS_CD = #{foundCd} THEN 1 ELSE 0 END
+                , P.REG_DT DESC
+                , L.LOST_TPOF_SN DESC
+    </select>
+
+    <select id="selectDetail" resultMap="lostReportDetailResultMap">
+        SELECT <include refid="lostReportColumns" />
+             , P.MBR_SN
+             , M.MBR_NCNM
+             , P.PST_STTS_CD
+             , P.PST_TTL
+             , P.PST_CN
+             , P.INQ_CNT
+             , P.RCMDTN_CNT
+             , P.REG_DT AS PST_REG_DT
+             , V.VRTY_NM
+             , <include refid="regionName" /> AS RGN_NM
+          FROM LOST_TPOF L
+          JOIN PST P
+            ON P.PST_SN = L.PST_SN
+          JOIN MBR M
+            ON M.MBR_SN = P.MBR_SN
+          JOIN RGN R
+            ON R.RGN_SN = L.RGN_SN
+          LEFT JOIN VRTY V
+            ON V.VRTY_SN = L.VRTY_SN
+         WHERE L.LOST_TPOF_SN = #{lostTpofSn}
+           AND P.PST_STTS_CD = #{pstSttsCd}
+    </select>
+
+    <select id="selectByPstSn" parameterType="long" resultMap="lostReportResultMap">
+        SELECT <include refid="lostReportColumns" />
+          FROM LOST_TPOF L
+         WHERE L.PST_SN = #{pstSn}
+    </select>
+
+    <insert id="insertLostReport" parameterType="com.nyangmeong.community.domain.LostReport"
+            useGeneratedKeys="true" keyProperty="lostTpofSn" keyColumn="LOST_TPOF_SN">
+        INSERT INTO LOST_TPOF
+             ( PST_SN
+             , RGN_SN
+             , PET_SE_CD
+             , LOST_TPOF_STTS_CD
+             , PET_NM
+             , COLR_NM
+             , CNPL_ENC
+             , WTNS_PLC_LAT
+             , WTNS_PLC_LOT
+             , LAST_WTNS_DT
+             , EXPRY_CRTR_DT
+             , WTNS_PLC_NM
+             , PRVC_RLS_AGRE_YN
+             , VRTY_SN
+             , VRTY_DRCT_INPT_NM
+             , CHRC_CN
+             , REG_DT
+             , MDFCN_DT )
+        VALUES
+             ( #{pstSn}
+             , #{rgnSn}
+             , #{petSeCd}
+             , #{lostTpofSttsCd}
+             , #{petNm}
+             , #{colrNm}
+             , #{cnplEnc}
+             , #{wtnsPlcLat}
+             , #{wtnsPlcLot}
+             , #{lastWtnsDt}
+             , DATE_ADD(NOW(), INTERVAL 30 DAY)
+             , #{wtnsPlcNm}
+             , #{prvcRlsAgreYn}
+             , #{vrtySn}
+             , #{vrtyDrctInptNm}
+             , #{chrcCn}
+             , NOW()
+             , NOW() )
+    </insert>
+
+    <insert id="insertStatusHistory" parameterType="com.nyangmeong.community.domain.LostReportStatusHistory"
+            useGeneratedKeys="true" keyProperty="lostTpofSttsHstrySn" keyColumn="LOST_TPOF_STTS_HSTRY_SN">
+        INSERT INTO LOST_TPOF_STTS_HSTRY
+             ( LOST_TPOF_SN
+             , MBR_SN
+             , BFR_STTS_CD
+             , AFTR_STTS_CD
+             , CHG_RSN
+             , REG_DT )
+        VALUES
+             ( #{lostTpofSn}
+             , #{mbrSn}
+             , #{bfrSttsCd}
+             , #{aftrSttsCd}
+             , #{chgRsn}
+             , NOW() )
+    </insert>
+
+    <!-- 상태·만료 기준 일시·갱신 횟수는 바꾸지 않음 -->
+    <update id="updateLostReport">
+        UPDATE LOST_TPOF
+           SET RGN_SN = #{report.rgnSn}
+             , PET_SE_CD = #{report.petSeCd}
+             , PET_NM = #{report.petNm}
+             , COLR_NM = #{report.colrNm}
+             , CNPL_ENC = #{report.cnplEnc}
+             , WTNS_PLC_LAT = #{report.wtnsPlcLat}
+             , WTNS_PLC_LOT = #{report.wtnsPlcLot}
+             , LAST_WTNS_DT = #{report.lastWtnsDt}
+             , WTNS_PLC_NM = #{report.wtnsPlcNm}
+             , PRVC_RLS_AGRE_YN = #{report.prvcRlsAgreYn}
+             , VRTY_SN = #{report.vrtySn}
+             , VRTY_DRCT_INPT_NM = #{report.vrtyDrctInptNm}
+             , CHRC_CN = #{report.chrcCn}
+             , MDFCN_DT = NOW()
+         WHERE LOST_TPOF_SN = #{report.lostTpofSn}
+           AND LOST_TPOF_STTS_CD = #{missingCd}
+    </update>
+
+    <update id="updateFound">
+        UPDATE LOST_TPOF
+           SET LOST_TPOF_STTS_CD = #{foundCd}
+             , DSCV_SWTC_DT = NOW()
+             , MDFCN_DT = NOW()
+         WHERE LOST_TPOF_SN = #{lostTpofSn}
+           AND LOST_TPOF_STTS_CD = #{missingCd}
+    </update>
+
+    <!-- 연장하면 종료 7일 전 창에서 벗어나 같은 요청이 두 번 반영되지 않음 -->
+    <update id="updateRenewed">
+        UPDATE LOST_TPOF
+           SET EXPRY_CRTR_DT = DATE_ADD(EXPRY_CRTR_DT, INTERVAL 30 DAY)
+             , PSTG_PRD_UPDT_NMTM = PSTG_PRD_UPDT_NMTM + 1
+             , MDFCN_DT = NOW()
+         WHERE LOST_TPOF_SN = #{lostTpofSn}
+           AND LOST_TPOF_STTS_CD = #{missingCd}
+           AND NOW() >= DATE_SUB(EXPRY_CRTR_DT, INTERVAL 7 DAY)
+           AND NOW() <![CDATA[<=]]> EXPRY_CRTR_DT
+    </update>
+</mapper>

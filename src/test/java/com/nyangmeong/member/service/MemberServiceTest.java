@@ -3,6 +3,7 @@ package com.nyangmeong.member.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -364,5 +365,105 @@ class MemberServiceTest {
         when(memberMapper.selectByEmailHmac(crypto.hmac(EMAIL))).thenReturn(expired);
         assertThat(service.resolvePasswordResetAccount(crypto.hmac(EMAIL)).certRslt())
                 .isEqualTo(EmailCertificationResponse.MEMBER_NOT_FOUND);
+    }
+
+    private Member withdrawn(int daysAgo) {
+        Member member = stored(7L, MemberStatus.WITHDRAWN.getCode(), "냥멍", "Y");
+        member.setWhdwlDt(LocalDateTime.now().minusDays(daysAgo));
+        return member;
+    }
+
+    @Test
+    void 복구_대상은_보관_기간_안의_탈퇴_회원이다() {
+        when(systemSettingService.get()).thenReturn(new SystemSetting());
+        Member keeping = withdrawn(29);
+        when(memberMapper.selectByEmailHmac("h")).thenReturn(keeping);
+
+        assertThat(service.getRecoverableMember("h")).isSameAs(keeping);
+        assertThat(service.getRecoveryExpiryDt(keeping)).isEqualTo(keeping.getWhdwlDt().plusDays(30));
+    }
+
+    @Test
+    void 복구_대상이_아닌_회원과_미가입은_회원_없음이다() {
+        when(memberMapper.selectByEmailHmac("normal"))
+                .thenReturn(stored(1L, MemberStatus.NORMAL.getCode(), "a", "Y"));
+        when(memberMapper.selectByEmailHmac("suspended"))
+                .thenReturn(stored(2L, MemberStatus.SUSPENDED.getCode(), "a", "Y"));
+        when(memberMapper.selectByEmailHmac("none")).thenReturn(null);
+
+        for (String hmac : List.of("normal", "suspended", "none")) {
+            assertThatThrownBy(() -> service.getRecoverableMember(hmac))
+                    .satisfies(e -> assertCode(e, ErrorCode.MEMBER_NOT_FOUND));
+        }
+    }
+
+    @Test
+    void 보관_기간이_지났거나_탈퇴일시를_모르면_복구_기간_경과이다() {
+        when(systemSettingService.get()).thenReturn(new SystemSetting());
+        when(memberMapper.selectByEmailHmac("expired")).thenReturn(withdrawn(31));
+        Member unknown = stored(8L, MemberStatus.WITHDRAWN.getCode(), "냥멍", "Y");
+        when(memberMapper.selectByEmailHmac("unknown")).thenReturn(unknown);
+
+        assertThatThrownBy(() -> service.getRecoverableMember("expired"))
+                .satisfies(e -> assertCode(e, ErrorCode.MEMBER_RECOVERY_EXPIRED));
+        assertThatThrownBy(() -> service.getRecoverableMember("unknown"))
+                .satisfies(e -> assertCode(e, ErrorCode.MEMBER_RECOVERY_EXPIRED));
+    }
+
+    @Test
+    void 복구하면_정상으로_바꾸고_탈퇴에서_정상_이력을_한_번_남긴다() {
+        when(systemSettingService.get()).thenReturn(new SystemSetting());
+        when(memberMapper.updateRecover(7L, "USRC0001", "USRC0003", 30, "7")).thenReturn(1);
+
+        service.recover(withdrawn(3), null);
+
+        verify(memberMapper).insertStatusHistory(7L, "USRC0003", "USRC0001", "재가입 복구");
+        verify(memberMapper, never()).updatePhone(anyLong(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void 보관_번호가_없던_회원은_받은_번호를_암호화해_저장한다() {
+        when(systemSettingService.get()).thenReturn(new SystemSetting());
+        when(memberMapper.updateRecover(anyLong(), anyString(), anyString(), anyInt(), anyString())).thenReturn(1);
+        when(memberMapper.updatePhone(eq(7L), anyString(), anyString(), eq("7"))).thenReturn(1);
+
+        service.recover(withdrawn(3), PHONE);
+
+        ArgumentCaptor<String> enc = ArgumentCaptor.forClass(String.class);
+        verify(memberMapper).updatePhone(eq(7L), enc.capture(), eq(crypto.hmac(PHONE)), eq("7"));
+        assertThat(crypto.decrypt(enc.getValue())).isEqualTo(PHONE);
+    }
+
+    @Test
+    void 상태_변경이_0행이면_기간_경과이고_이력도_번호도_남기지_않는다() {
+        when(systemSettingService.get()).thenReturn(new SystemSetting());
+        when(memberMapper.updateRecover(anyLong(), anyString(), anyString(), anyInt(), anyString())).thenReturn(0);
+
+        assertThatThrownBy(() -> service.recover(withdrawn(3), PHONE))
+                .satisfies(e -> assertCode(e, ErrorCode.MEMBER_RECOVERY_EXPIRED));
+
+        verify(memberMapper, never()).insertStatusHistory(anyLong(), anyString(), anyString(), anyString());
+        verify(memberMapper, never()).updatePhone(anyLong(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void 번호_저장이_0행이면_이미_처리된_요청이다() {
+        when(systemSettingService.get()).thenReturn(new SystemSetting());
+        when(memberMapper.updateRecover(anyLong(), anyString(), anyString(), anyInt(), anyString())).thenReturn(1);
+        when(memberMapper.updatePhone(anyLong(), anyString(), anyString(), anyString())).thenReturn(0);
+
+        assertThatThrownBy(() -> service.recover(withdrawn(3), PHONE))
+                .satisfies(e -> assertCode(e, ErrorCode.ALREADY_PROCESSED));
+    }
+
+    @Test
+    void 번호_저장_중_다른_회원과_겹치면_번호_중복이다() {
+        when(systemSettingService.get()).thenReturn(new SystemSetting());
+        when(memberMapper.updateRecover(anyLong(), anyString(), anyString(), anyInt(), anyString())).thenReturn(1);
+        when(memberMapper.updatePhone(anyLong(), anyString(), anyString(), anyString()))
+                .thenThrow(new DuplicateKeyException("Duplicate entry for key 'MBR.UK_MBR_3'"));
+
+        assertThatThrownBy(() -> service.recover(withdrawn(3), PHONE))
+                .satisfies(e -> assertCode(e, ErrorCode.PHONE_ALREADY_USED));
     }
 }

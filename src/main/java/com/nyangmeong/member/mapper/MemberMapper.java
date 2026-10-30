@@ -62,6 +62,19 @@ public interface MemberMapper {
             @Param("withdrawnSttsCd") String withdrawnSttsCd, @Param("actorId") String actorId);
 
     /**
+     * 탈퇴 → 정상 복구, 보관 기간 안의 탈퇴 회원만 바뀐다 (0이면 기간 경과나 이미 복구)
+     */
+    int updateRecover(@Param("mbrSn") Long mbrSn, @Param("normalSttsCd") String normalSttsCd,
+            @Param("withdrawnSttsCd") String withdrawnSttsCd, @Param("keepDayCnt") int keepDayCnt,
+            @Param("actorId") String actorId);
+
+    /**
+     * 보관 번호가 없던 회원의 휴대전화번호 저장 (이미 번호가 있으면 0)
+     */
+    int updatePhone(@Param("mbrSn") Long mbrSn, @Param("mblTelnoEnc") String mblTelnoEnc,
+            @Param("mblTelnoHmac") String mblTelnoHmac, @Param("actorId") String actorId);
+
+    /**
      * 최종 로그인 일시 갱신
      */
     int updateLastLogin(@Param("mbrSn") Long mbrSn, @Param("actorId") String actorId);

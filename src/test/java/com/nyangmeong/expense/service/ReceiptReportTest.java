@@ -26,8 +26,6 @@ import com.nyangmeong.expense.dto.ReceiptReportResponse;
 import com.nyangmeong.expense.mapper.ReceiptMapper;
 import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.ErrorCode;
-import com.nyangmeong.global.external.OcrClient;
-import com.nyangmeong.global.external.OcrProperties;
 import com.nyangmeong.global.external.ReceiptOcrResponse;
 import com.nyangmeong.global.external.ReceiptOcrResponse.Line;
 import com.nyangmeong.global.external.ReceiptOcrResponse.Section;
@@ -43,8 +41,7 @@ class ReceiptReportTest {
     private final ReceiptMapper mapper = mock(ReceiptMapper.class);
     private final ReceiptService service = new ReceiptService(mapper, mock(FileStore.class),
             mock(PetAuthorizer.class));
-    private final ReceiptAnalyzer analyzer = new ReceiptAnalyzer(service, mock(OcrClient.class),
-            new OcrProperties(), mock(CaregiverPetFake.class), JsonMapper.builder().build());
+    private final ReceiptAnalyzer analyzer = new ReceiptAnalyzer(service, JsonMapper.builder().build());
 
     private final String analyzing = ReceiptStatus.ANALYZING.getCode();
 
