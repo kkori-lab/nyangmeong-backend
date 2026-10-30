@@ -65,7 +65,7 @@
 - 연결 남음: FN-MYP-002-07 (프론트 연결 SCR-MYP-002 ⋮ 메뉴 [반려동물 삭제]·2-3 삭제 확인 팝업·2-4 등록 카드 복귀, 프론트 저장소에서 /start)
 - 연결 남음: FN-MYP-002-08 (알림함 COM-004에 공동양육 연동 해제 알림 표시, LJS)
 
-## SCR-MYP-040 회원정보 수정 — 대기
+## SCR-MYP-040 회원정보 수정 — 진행
 - 기능: FN-MYP-040-02 프로필 사진, FN-MYP-040-03 이메일(로그인 아이디), FN-MYP-040-05 휴대폰 번호 변경, FN-MYP-040-08 프로필 사진(SNS), FN-MYP-040-09 계정 표시(SNS), FN-MYP-040-11 휴대폰 번호 변경(SNS), FN-MYP-040-13 계정 정보
 - API가 남의 것: FN-MYP-040-05·11 휴대폰 번호 중복 확인 `GET /members/phone-availability` (YAY)
 - 기다리는 것: 닉네임·휴대전화·비밀번호 검증 (YAY), `GET /members/me` 경로 겹침(docs/api/issues.md 마이페이지 14번)
