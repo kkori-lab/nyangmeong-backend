@@ -57,6 +57,16 @@ public interface PixelCharacterMapper {
     int updateHeldItemDeleteByPetSn(Long petSn);
 
     /**
+     * 반려동물의 캐릭터 생성 작업 삭제 (없으면 0)
+     */
+    int updateJobDeleteByPetSn(Long petSn);
+
+    /**
+     * 반려동물 캐릭터의 사진 삭제 (없으면 0)
+     */
+    int updatePhotoDeleteByPetSn(Long petSn);
+
+    /**
      * 생성 작업 조회
      */
     CharacterCreationJob selectJob(Long charCrtJobSn);

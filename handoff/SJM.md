@@ -3,6 +3,11 @@
 ## 지금 하는 것
 SCR-MYP-040 회원정보 수정 — 끝남: 검증 `확인 못 함 있음`(연결 남음만), 사람 확인 통과(Postman 38건, 시험 회원 번호·사진 원래대로 복구) (승인 2026-10-30 03:58, 시작 2026-10-30 03:54)
 
+### 추가 요청
+| 번호 | 바꿀 파일 | 완료 조건 | 요청 |
+| --- | --- | --- | --- |
+| 추가-1 | `db/migration/20261030_01_add_del_yn_for_pet_delete.sql`(새 파일), `pet/domain/PetDeletedEvent`(새 파일), `PetService.deletePet`, `CareMissionMapper`·`PixelCharacterMapper`·`CaregiverInvitationMapper`(Java·XML), `docs/convention/service.md`, `docs/api/issues.md` 마이페이지 3번, 관련 테스트 | 명령: `./gradlew build -q`(PetServiceTest에 삭제 시 일별 미션·캐릭터 생성 작업·캐릭터 사진·초대 대상 DEL_YN 처리와 `PetDeletedEvent` 발행 확인). 화면: 마이그레이션 실행 뒤 주양육자 토큰 `DELETE /api/pets/{petSn}` → 200, DB에서 그 반려동물의 DAY_MSN·CHAR_CRT_JOB·CHAR_PHOTO·INVTN_TRGT_PET이 `DEL_YN='Y'`, EXPND는 그대로 | 요청 2026-10-30 05:54 "반려동물 삭제 시 가계부만 남기고 나머지는 한 트랜잭션에서 soft delete. DEL_YN 없는 테이블(CKUP_RCD·DAY_MSN·CHAR_CRT_JOB·CHAR_PHOTO·INVTN_TRGT_PET)에 컬럼 추가는 migration으로, pet 쪽 이벤트 발행까지. health·ai 리스너는 JAJ·LJS" |
+
 ## 다음에 할 것
 - 연결 남음(SCR-MYP-040): FN-MYP-040-02·03·08·09·13 프론트 SCR-MYP-040 6-2·6-3 프로필 요약·계정 정보, FN-MYP-040-02·05·08·11 프론트 6-2·6-3 사진 변경·기본 이미지로·휴대폰 번호 [수정]·[저장](프론트 저장소에서 /start). API: `GET /members/me`(`MemberResponse`에 `joinDt`·`lastLgnDt` 추가), `PATCH /members/me`(multipart `mblTelno`·`profilePhoto`·`profilePhotoReset`, 다른 회원 번호 409 PHONE_ALREADY_USED, 사진과 되돌리기 함께 400)
 - YAY와 정하기(SCR-MYP-040): 본인 확인(6-1)을 통과했는지 `PATCH /members/me`에서 서버가 검사하지 않는다. `POST /members/me/password-verification`을 만들 때 통과 표시를 어떻게 남길지 함께 정한다
