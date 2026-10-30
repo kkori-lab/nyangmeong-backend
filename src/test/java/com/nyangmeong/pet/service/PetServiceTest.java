@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
+import org.springframework.context.ApplicationEventPublisher;
 
 import com.nyangmeong.global.auth.BrupRole;
 import com.nyangmeong.global.auth.PetAuthorizer;
@@ -37,11 +38,14 @@ import com.nyangmeong.global.notification.NotificationType;
 import com.nyangmeong.pet.domain.BrupLinkSttsHstry;
 import com.nyangmeong.pet.domain.BrupRel;
 import com.nyangmeong.pet.domain.Pet;
+import com.nyangmeong.pet.domain.PetDeletedEvent;
 import com.nyangmeong.pet.dto.CaregiverSummary;
 import com.nyangmeong.pet.dto.PetCreateRequest;
 import com.nyangmeong.pet.dto.PetResponse;
 import com.nyangmeong.pet.dto.PetSummary;
 import com.nyangmeong.pet.dto.PetUpdateRequest;
+import com.nyangmeong.pet.mapper.CareMissionMapper;
+import com.nyangmeong.pet.mapper.CaregiverInvitationMapper;
 import com.nyangmeong.pet.mapper.PetMapper;
 import com.nyangmeong.pet.mapper.PixelCharacterMapper;
 
@@ -67,7 +71,11 @@ class PetServiceTest {
     private final CommonCodeService codes = mock(CommonCodeService.class);
     private final PixelCharacterMapper pixelMapper = mock(PixelCharacterMapper.class);
     private final EventPublisher events = mock(EventPublisher.class);
-    private final PetService service = new PetService(mapper, authorizer, codes, pixelMapper, events);
+    private final CareMissionMapper missionMapper = mock(CareMissionMapper.class);
+    private final CaregiverInvitationMapper invitationMapper = mock(CaregiverInvitationMapper.class);
+    private final ApplicationEventPublisher domainEvents = mock(ApplicationEventPublisher.class);
+    private final PetService service = new PetService(mapper, authorizer, codes, pixelMapper, events, missionMapper,
+            invitationMapper, domainEvents);
 
     @BeforeEach
     void setUp() {
@@ -436,6 +444,20 @@ class PetServiceTest {
     }
 
     @Test
+    void 삭제는_가계부를_뺀_pet_안의_기록을_지우고_위층에_삭제_이벤트를_발행한다() {
+        when(mapper.updatePetDelete(PET, "1")).thenReturn(1);
+        when(mapper.selectLinkedCoParentRels(PET, CO_PARENT)).thenReturn(List.of());
+
+        service.deletePet(MBR, PET);
+
+        verify(pixelMapper).updatePhotoDeleteByPetSn(PET);
+        verify(pixelMapper).updateJobDeleteByPetSn(PET);
+        verify(missionMapper).updateDayMissionDeleteByPetSn(PET);
+        verify(invitationMapper).updateTargetPetDeleteByPetSn(PET);
+        verify(domainEvents).publishEvent(new PetDeletedEvent(PET));
+    }
+
+    @Test
     void 공동양육자가_없으면_해제와_알림이_없다() {
         when(mapper.updatePetDelete(PET, "1")).thenReturn(1);
         when(mapper.selectLinkedCoParentRels(PET, CO_PARENT)).thenReturn(List.of());
@@ -492,6 +514,8 @@ class PetServiceTest {
         assertCode(() -> service.deletePet(MBR, PET), ErrorCode.PET_NOT_FOUND);
         verify(pixelMapper, never()).updateHeldItemDeleteByPetSn(anyLong());
         verify(mapper, never()).selectLinkedCoParentRels(anyLong(), anyString());
+        verify(missionMapper, never()).updateDayMissionDeleteByPetSn(anyLong());
+        verify(domainEvents, never()).publishEvent(any(Object.class));
     }
 
     private void assertCode(Runnable action, ErrorCode code) {

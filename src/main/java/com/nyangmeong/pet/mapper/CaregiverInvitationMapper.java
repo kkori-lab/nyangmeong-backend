@@ -75,6 +75,11 @@ public interface CaregiverInvitationMapper {
             @Param("actorId") String actorId);
 
     /**
+     * 반려동물 삭제 시 초대 대상 반려동물 삭제 처리 (없으면 0)
+     */
+    int updateTargetPetDeleteByPetSn(Long petSn);
+
+    /**
      * 반려동물별 수락 여부 저장
      */
     int updateTargetPetsAcceptance(@Param("jntBrupInvtnSn") Long jntBrupInvtnSn,

@@ -73,6 +73,11 @@ public interface CareMissionMapper {
     List<DayMsn> selectUnsettledDayMissions(@Param("msnCrtrYmd") LocalDate msnCrtrYmd);
 
     /**
+     * 반려동물 삭제 시 일별미션 삭제 처리 (없으면 0)
+     */
+    int updateDayMissionDeleteByPetSn(Long petSn);
+
+    /**
      * 일별미션 정산 확정
      */
     int updateDayMissionSettled(@Param("dayMsnSn") Long dayMsnSn, @Param("givePnt") int givePnt);
