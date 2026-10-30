@@ -2,9 +2,24 @@
 
 ## 지금 하는 것
 
-관리자(ADM) 페이지 기획 정리 — 끝 (2026-10-30, 코드 없음). 구현 계획 `docs/admin/implementation-plan.md`(결정 33건), DMS `관리자_기능명세서_v0.1_20261030`(SCR-ADM-001~114, 기능 134건)·`02_IA 구조도_v0.3_2026_10_30`(총관리자·통합운영플랫폼 현행화) 업로드, 담당 표에 관리자 추가(PR #79 병합), 프론트 세션(frontend-83)에 화면 작업 인계
+SCR-ADM-110 운영 설정 — 기획 (시작 2026-10-30 16:31)
+
+기준: 관리자_기능명세서_v0.1_20261030(DMS), `docs/admin/implementation-plan.md` 결정 29·31. 관리자 화면설계서는 아직 없다. `docs/api/`에 ADM 행이 없어 경로·DTO를 이 기획에서 정하고 구현 전에 `docs/api/global.md`에 먼저 넣는다.
+
+- 0 (초안 먼저): `docs/api/global.md`에 `GET /admin/settings`·`PATCH /admin/settings` 행과 DTO `AdminSettingResponse`·`AdminSettingUpdateRequest`를 넣는다. `docs/api/README.md` 분류표 global 수 갱신. 완료 조건: `명령:` `sh scripts/api-row.sh FN-ADM-110-01`이 행을 찾는다
+- 함께 만드는 것(감사 로그 기록 수단, 결정 31): `MNGR_TASK_LOG` 테이블과 공통코드 SYSG01(SYSC0001 등록·0002 수정·0003 삭제·0004 처리·0005 로그인)은 PR #80의 v0.11 (1)에 이미 있다(이 마일스톤에서 SQL은 고치지 않는다). 변경 전·후 내용은 JSON 문자열(`CHG_BFR_CN`·`CHG_AFTR_CN`), 접속 IP는 `CNTN_IP_ADDR`. UPDATE·DELETE 쿼리를 두지 않는다 — FN-ADM-114-04. `global/log`에 `AdminTaskLog`(VO)·`AdminTaskType`(enum)·`AdminTaskLogMapper`(+`mapper/global/AdminTaskLogMapper.xml`, insert만)·`AdminTaskLogService.record(관리자 번호, 작업유형, 대상 테이블, 대상 번호, 요약, 전 객체, 후 객체)`. `@Transactional(propagation = MANDATORY)`로 호출한 관리자 작업과 같은 트랜잭션에서 남기고(롤백되면 로그도 없다), IP는 `MdcUtils.CLIENT_IP`에서 읽는다(service에 `HttpServletRequest`를 넘기지 않는다). AOP 대신 명시 호출: 전후 값을 아는 곳이 service라서. 완료 조건: `명령:` `./gradlew build -q`, `AdminTaskLogServiceTest`(트랜잭션 밖 호출은 예외, 전후 값 JSON 저장)
+- FN-ADM-110-01 설정 조회: `global/setting/AdminSystemSettingController` `GET /api/admin/settings` → `SystemSettingService.get()` 재사용, 응답 `AdminSettingResponse`를 묶음별 record로: 회원·반려동물(petMaxCnt, jntBrupMaxNope, invtnVldDayCnt, lgnFailLmtNmtm, whdwlMbrKpngDayCnt, dshbdCareMaxExpsrCnt), 커뮤니티(pstImgMaxCnt, blindDclrAcmlCnt, lostTpofExpryCrtrDayCnt, mtchNoRspnsEndCrtrDayCnt, lowstHrwgAplcnYr, lowstHrwgAmt, dscvAutoCmntCn, aiCmtryBscCn), 알림(notiHideCrtrDayCnt), AI(aiCnvrsTurnCnt, aiTknUplmtCnt), 파일(fileMaxSz), 그리고 mdfcnDt·mdfrId. 완료 조건: `화면:` 관리자 쿠키로 200과 다섯 묶음, 일반 회원 403, 비로그인 401
+- FN-ADM-110-02 설정 수정: `PATCH /api/admin/settings` 요청 `AdminSettingUpdateRequest`(평평한 필드, 모두 선택, 보낸 것만 바꾼다). 범위(제안, DDL 자릿수 안): 개수·횟수 1~100(dshbdCareMaxExpsrCnt 1~20), 2자리 일수(LOST_TPOF·NOTI_HIDE·MTCH_NO_RSPNS) 1~99, 4자리 일수(초대·탈퇴보관) 1~3650, fileMaxSz 1048576~52428800(1~50MB), 문구 1~1000자 공백 불가. `SystemSettingService.update(LoginMember, request)`: 현재 값에 덮어써 `SystemSettingMapper.upsert`(행이 없으면 SN=1로 INSERT, `MDFR_ID`=관리자 번호), 바뀐 항목만 모아 `AdminTaskLogService.record(..., SYSC0002 수정, "SYS_STNG", 1, ...)`. 바뀐 게 없으면 저장·로그 없이 현재 값을 돌려준다. 조회가 매번 DB를 읽으므로 저장하면 바로 반영된다. 완료 조건: `명령:` `AdminSystemSettingControllerTest`(범위 밖 400 `INVALID_INPUT_VALUE`, 일반 회원 403), `SystemSettingServiceTest`(바뀐 항목만 로그, 행 없을 때 upsert, 변경 없으면 로그 없음). `화면:` Swagger에서 PATCH 뒤 GET에 새 값, MNGR_TASK_LOG에 전후 값 1행
+- FN-ADM-110-03 최저시급 설정: 110-02의 lowstHrwgAplcnYr(`^\d{4}$`, 2020~2100)·lowstHrwgAmt(0~1,000,000). 펫돌봄 시급 검증·안내 문구는 KSJ가 `SystemSettingService.get()`을 읽는 쪽이라 이 마일스톤에서 고치지 않는다. 완료 조건: `명령:` 연도 형식 오류 400 테스트
+- FN-ADM-110-04 AI 대화 설정: 110-02의 aiCnvrsTurnCnt(1~50)·aiTknUplmtCnt(500~100000). Python은 기존 `GET /internal/ai/settings`(SCR-AIM-002)로 매번 읽으므로 바로 반영된다. 완료 조건: `화면:` PATCH 뒤 `/internal/ai/settings`에 새 값
+- 프론트 연결: 관리자 운영 설정 화면 SCR-ADM-110 (프론트 저장소에서 /start)
+
+새 의존성: 없음
 
 ## 다음에 할 것
+
+- SCR-ADM-110 기획 승인(사람) 뒤 `/impl`. 다른 PC에서 이어 간다. 허용 범위 제안값(개수·횟수 1~100, 파일 1~50MB, AI 턴 1~50 등)은 승인 때 확인
+- DB 규칙 PR #80 병합 완료(2026-10-30): 마이그레이션 폐지, v0.10 보관(`db/archive/v0.10/`), v0.11 + v0.11 (1) 관리자 테이블 5개(MNGR_TASK_LOG·BTCH_EXCN_HSTRY·EXTL_API_CALL_LOG·AI_ROUT_MPNG·KWRD_DICT), 공통코드 SYSG01~06·AIMG09·10, 부록 A 라우팅 45건·부록 B 등록 판정 16건. 공용 DB는 v0.11 기준 파일로 새로 만들고 시드를 다시 넣었다(확인: 회원 200·반려동물 1,000·게시글 1,000, 테이블 91). 남은 것(사람): PR #80에 공용 DB 적용 완료 댓글, 팀 공지(이 세션에서 초안 작성), 각자 로컬 DB에 v0.11 (1). ERDCloud(복사본 "Copy of 냥멍케어_ERD_v0.4")에 5개 테이블 반영함 — 원본 ERD가 따로 있으면 거기에도, 회원일련번호 컬럼이 목록 맨 아래라 화면에서 옮기기. 물리명 표준사전 등록. 가계부·뉴스 분류 키워드(AIMC0038·0039)는 데이터 없음. 구현 계획 4절의 `MBR`·`DCLR`·`NTC_MTTR` 컬럼과 CMUG08은 그 화면 마일스톤에서
 
 - 관리자 첫 마일스톤: `/start`로 SCR-ADM-110 운영 설정(감사 로그 `MNGR_TASK_LOG` 기반 포함). 그 전에 구현 계획 6절 확인 항목(정지 회원 요청마다 차단 여부, 인기 포토 제외·RSS 피드·알림 기본값 저장 위치, 기준정보 28번)과 REQ-ADM-014~022 요구사항정의서 반영(사람). 다른 담당 도메인 화면은 계획 2절 "협의" 표대로 먼저 이야기한다
 - 관리자 문서 후속(사람): DMS 기능명세서 폴더에 "관리자" 하위 폴더를 만들어 명세서를 옮긴다(도구로는 폴더 생성 불가). 공통레이아웃 FN-COM-006-04 건강기록 2차 메뉴명과 랜딩 화면 ID(SCR-LAN-001 vs SCR-MAN-002) 정리. 프론트 저장소 `milestone.md` 담당 표에도 관리자 추가(frontend-83에 전달함)
