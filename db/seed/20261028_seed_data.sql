@@ -1,5 +1,5 @@
 -- =====================================================================
--- 냥멍케어 시드 데이터  |  v0.10 기준 SQL(20261029_create_tables_v0.10.sql → 20261029_insert_base_data_v0.10.sql) 위에 실행
+-- 냥멍케어 시드 데이터  |  v0.11 기준 SQL(20261030_create_tables_v0.11.sql → 20261030_insert_base_data_v0.11.sql) 위에 실행 (v0.10 위에서 만든 것, v0.11은 기본값 있는 컬럼만 늘어 그대로 들어간다)
 -- 생성기(src/seed) seedData -Ptarget=local, scale 1 결과를 2026-10-28에 mysqldump로 뜬 것 (151,592행)
 -- 넣지 않는 테이블: COM_CD(기준 데이터), NOTI_TMPLT, RFRSH_TKN·LGN_ATMPT_LMT·EML_CERT·NOTI_SNDNG_LOG(실행 중 쌓이는 기록)
 -- 이미지 파일은 없다. ATCH_FILE 행만 있어 시드 이미지는 404다
