@@ -17,7 +17,7 @@
 | GET | /pets/{petSn}/etc-inspections | 기타검사 목록. `?ckupRcdSn=` — `ckupRcdSn` 필수 | HLT-005-02 | JAJ | - | List<EtcInspectionSummary> |
 | GET | /pets/{petSn}/inspection-values | 혈액검사 수치 목록. `?ckupRcdSn=&inspArtclCd=` — 검진상세 결과·최근 검사·수치 추이. `ckupRcdSn` 필수(반려동물 전체 조회는 HLT-011에서 추가) | HLT-005-02, HLT-011-02·06·07 | JAJ | - | List<InspectionValueSummary> |
 | GET | /pets/{petSn}/observation-cycles | 관찰 회차 목록(관찰일 순). `?obsrvArtclSn=` | HLT-002-17~19 | JAJ | - | List<ObservationCycleSummary> |
-| GET | /pets/{petSn}/observation-cycles/{obsrvCyclSn}/photo | 관찰 사진 원본·썸네일(보호 파일, 파일 자체 반환) | HLT-002-17·19, HLT-011-10 | JAJ | - | 파일 |
+| GET | /pets/{petSn}/observation-cycles/{obsrvCyclSn}/photo | 관찰 사진 원본(보호 파일, 파일 자체 반환) | HLT-002-17·19, HLT-011-10 | JAJ | - | 파일 |
 | GET | /pets/{petSn}/observation-items | 관찰 항목 목록(첫·최근 회차 요약 포함). `?obsrvSttsCd=` | HLT-002-15, HLT-011-10 | JAJ | - | List<ObservationItemSummary> |
 | GET | /pets/{petSn}/prescriptions | 처방약 목록(복용 중 우선·최신순). `?ckupRcdSn=&prscSttsCd=` — `ckupRcdSn` 필수(반려동물 전체 조회는 HLT-011에서 추가) | HLT-005-03, HLT-011-02·08 | JAJ | - | List<PrescriptionSummary> |
 | GET | /pets/{petSn}/repeat-preventions | 반복 예방 관리 목록. `?ckupRcdSn=` — `ckupRcdSn` 필수 | HLT-005-05 | JAJ | - | List<RepeatPreventionSummary> |
