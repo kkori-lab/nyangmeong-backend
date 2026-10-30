@@ -2,11 +2,12 @@
 
 ## 지금 하는 것
 
-관리자(ADM) 페이지 기획 정리 — 끝 (2026-10-30, 코드 없음). 구현 계획 `docs/admin/implementation-plan.md`(결정 33건), DMS `관리자_기능명세서_v0.1_20261030`(SCR-ADM-001~114, 기능 134건)·`02_IA 구조도_v0.3_2026_10_30`(총관리자·통합운영플랫폼 현행화) 업로드, 담당 표에 관리자 추가(PR #79 병합), 프론트 세션(frontend-83)에 화면 작업 인계
-
+SCR-ADM-110 운영 설정 — 끝 (2026-10-30). `GET`·`PATCH /api/admin/settings`, 감사 로그 기록 수단 `global/log/AdminTaskLogService`. 수정 로직은 기획 수정 뒤 `AdminSystemSettingService`에 뒀다(`SystemSettingService`는 조회 전용)
 ## 다음에 할 것
 
-- 관리자 첫 마일스톤: `/start`로 SCR-ADM-110 운영 설정(감사 로그 `MNGR_TASK_LOG` 기반 포함). 그 전에 구현 계획 6절 확인 항목(정지 회원 요청마다 차단 여부, 인기 포토 제외·RSS 피드·알림 기본값 저장 위치, 기준정보 28번)과 REQ-ADM-014~022 요구사항정의서 반영(사람). 다른 담당 도메인 화면은 계획 2절 "협의" 표대로 먼저 이야기한다
+- DB 규칙 PR #80 병합 완료(2026-10-30): 마이그레이션 폐지, v0.10 보관(`db/archive/v0.10/`), v0.11 + v0.11 (1) 관리자 테이블 5개(MNGR_TASK_LOG·BTCH_EXCN_HSTRY·EXTL_API_CALL_LOG·AI_ROUT_MPNG·KWRD_DICT), 공통코드 SYSG01~06·AIMG09·10, 부록 A 라우팅 45건·부록 B 등록 판정 16건. 공용 DB는 v0.11 기준 파일로 새로 만들고 시드를 다시 넣었다(확인: 회원 200·반려동물 1,000·게시글 1,000, 테이블 91). 남은 것(사람): PR #80에 공용 DB 적용 완료 댓글, 팀 공지(이 세션에서 초안 작성), 각자 로컬 DB에 v0.11 (1). ERDCloud(복사본 "Copy of 냥멍케어_ERD_v0.4")에 5개 테이블 반영함 — 원본 ERD가 따로 있으면 거기에도, 회원일련번호 컬럼이 목록 맨 아래라 화면에서 옮기기. 물리명 표준사전 등록. 가계부·뉴스 분류 키워드(AIMC0038·0039)는 데이터 없음. 구현 계획 4절의 `MBR`·`DCLR`·`NTC_MTTR` 컬럼과 CMUG08은 그 화면 마일스톤에서
+- 관리자 다음 마일스톤 전 확인(사람): 구현 계획 6절 확인 항목(정지 회원 요청마다 차단 여부, 인기 포토 제외·RSS 피드·알림 기본값 저장 위치, 기준정보 28번). REQ-ADM-014~022 요구사항정의서 반영은 별도 에이전트가 맡는다(2026-10-30 사람). 다른 담당 도메인 화면은 계획 2절 "협의" 표대로 먼저 이야기한다. 감사 로그가 필요한 관리자 기능은 `AdminTaskLogService.record`를 `@Transactional` 안에서 부른다
+- SCR-ADM-110 연결 남음: FN-ADM-110-01~04 (프론트 연결 관리자 운영 설정 화면 SCR-ADM-110, 프론트 저장소에서 /start. 프론트 마일스톤에 절 있음)
 - 관리자 문서 후속(사람): DMS 기능명세서 폴더에 "관리자" 하위 폴더를 만들어 명세서를 옮긴다(도구로는 폴더 생성 불가). 공통레이아웃 FN-COM-006-04 건강기록 2차 메뉴명과 랜딩 화면 ID(SCR-LAN-001 vs SCR-MAN-002) 정리. 프론트 저장소 `milestone.md` 담당 표에도 관리자 추가(frontend-83에 전달함)
 - SCR-AIM-011 연결 남음: FN-AIM-011-11 (Python이 `PATCH /internal/ai/conversations/{번호}`를 실제로 부르는 확인, ai 저장소 `docs/api/internal.md` 초안 행 확정, ai 세션). PR을 올리면 PR 번호를 ai-2e 세션에 알린다
 - 기다림(ai 세션 연결) — 영수증 Python 중심 연결(백엔드 PR #64·#67, ai 세션 진행 중): Python `FakeReceiptRepository`를 `POST /internal/ai/receipts`(multipart `file`·`petSn`·`ocrDmndSrcCd` — Python의 `ocrRqstSrcCd` 값을 이 이름으로, 쿠키 + `X-Requested-With`, 201 `{recptSn}`)·`POST /internal/ai/receipts/{recptSn}/result`(JSON `{ocrRslt: RECOGNIZED|UNRECOGNIZED|TIMEOUT|API_ERROR|CANCELED, ocr?}`, 200 `{recptSn, ocrPrcsSttsCd}`, 분석중 아니면 409)로 바꾸고 ai `docs/api/internal.md` 미정 2행을 확정으로. 실패 때 `finally`로 `API_ERROR`·`TIMEOUT` 보고 요청 포함
@@ -19,13 +20,10 @@
 - 팀에 알린다(파일 저장): 각자 `application.properties`의 `app.security.permit-all-paths`에 `/api/files/public/**` 추가, 기존 `uploads/` 파일은 새 경로로 옮기거나 `seedFiles` 다시. 공용 DB(`pawever`)는 옛 시드라 `public/` 행이 없어 시드 사진이 404 → 다음에 공용 시드를 넣을 때 반영
 - 운영(사람): 서버에 저장 폴더와 쓰기 권한, nginx `client_max_body_size` 10m 이상. SJM에게 공개·비공개 분류 확인(반려동물·캐릭터를 공동양육자에게만 보이게 할지)
 - AIM-011 연결(ai 세션): Python이 쿠키·`X-Requested-With`를 그대로 넘겨 이 API를 부른 뒤 실제 연결 확인. 이때 탈퇴 보관일수 경계 SQL(`MemberMapper.xml` `selectExpiredWithdrawnMbrSns`)은 mock 테스트라 실제 DB에서 아직 실행하지 않았다
-- `app.seed.password` 필수값 제외(2026-10-26 사람 요청, 범위 미정): (가) `/start` 설정 키 경고에서만 빼기(`scripts/start-check.sh:51` 제외 목록) (나) `seedData`도 값 없이(기본 비밀번호가 공개 저장소에 들어감). 추천 (가)
 - 팀에 알린다(2026-10-26): 공용 DB(`pawever`) 시드를 `seedClean`→`seedData`로 다시 넣었다(팀원 테스트 데이터 삭제됨, 원인 판단 착오로 불필요했던 작업). 예전 시드는 지금 디스코드 키와 다른 AES 키로 암호화돼 있었다. 각 PC는 `./gradlew seedFiles`를 다시. 로컬 서버는 `spring.profiles.default=local`이라 로컬 DB를 쓴다(로컬 데이터가 예전 키면 `seedData -Ptarget=local -Preset`)
 - 디스코드 공유 `application.properties`에 `app.seed.password`(새 값) 추가, `app.internal.*` 줄은 지운다(서버 간 키 제거, 사람). 각 PC 로컬 파일의 `app.internal.inbound-key`도 지운다
 - 키 제거가 develop에 반영되면 Python 세션(nyangmeong-ai-8a)에 알린다. 그쪽은 이 알림 뒤에 `X-Internal-Key` 헤더·`INTERNAL_API_KEY` 검사·`BACKEND_INTERNAL_KEY` 정리와 실제 연결 확인(`BACKEND_BASE_URL=http://localhost:8080`)을 한다. 그 전에 Python이 헤더를 먼저 빼도 키 제거된 Spring은 무시한다 / Spring→Python HTTP 클라이언트(OCR·캐릭터 실제 구현)는 키 없이 호출한다. Python의 `INTERNAL_API_KEY` 검사가 지워진 뒤에 붙인다
-- PR 병합 뒤 공용 DB에 `db/migration/20261025_01_add_expnd_plcus_nm.sql` 실행하고 PR에 완료 댓글(사람). 그 뒤 시드 `ExpenseSeeder`의 OCR 지출을 사용처 = 병원명, 세부사항 = null로 맞춘다
 - 요청자에게 알린다: AI매니저 FN-AIM-009-10·21과 건강기록 FN-HLT-002-41 명세서에 아직 "내용 = 병원명". 사용처로 고치고 SCR-HLT-002에 사용처 칸(선택, 80자, 병원명 기본값)을 넣는다
-- KSJ에게 확인: 실종 제보·펫돌봄 모집 글의 `PST.BBS_CD` 규칙이 없어 시드는 펫일상으로 넣었다. 정해지면 `CommunitySeeder`를 맞춘다
 - 로컬 테스트 DB `nyangmeong_seedtest`가 필요 없으면 `DROP DATABASE nyangmeong_seedtest`(사람)
 - 프론트엔드: `getMe` → `/auth/me` 변경(frontend 세션, 커밋 전)과 아래 프론트 변경을 커밋한다
 - 하네스 공통화(2026-10-22)의 `scripts/` 5개 수정을 공용 하네스 PR로 올린다(커밋에서 뺐다)
