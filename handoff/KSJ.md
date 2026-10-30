@@ -23,9 +23,10 @@ SCR-CMU-002 실종센터 · 내 글만 보기 — 끝남 (승인 2026-10-30 12:2
 | 번호 | 바꿀 파일 | 완료 조건 | 요청 |
 | --- | --- | --- | --- |
 | 추가-1 | `community/service/LostReportService.java`(`toResponse`), `LostReportServiceTest.java` | 명령: `./gradlew build -q` 통과, 만료된 실종 글의 작성자 상세 응답 `lostTpofSttsCd`가 `CMUC0008`. 화면: 만료시킨 글의 `GET /api/lost-reports/{lostTpofSn}`(작성자) → `CMUC0008`, 만료 전 글은 `CMUC0006` 그대로 | 요청 2026-10-30 12:39 "작성자 상세의 상태도 목록처럼 만료면 CMUC0008로 맞춰 줘" |
+| 추가-2 | `community/dto/LostReportSummary.java`(`owner`), `mapper/community/LostReportMapper.xml`(`selectList`, resultMap), `LostReportControllerTest.java`, `docs/api/community.md` | 명령: `./gradlew build -q` 통과. 화면: `GET /api/lost-reports`(`mineYn` 없이)에서 내가 쓴 글의 `owner=true`, 남의 글은 `false`. `mineYn=true`면 모두 `true` | 요청 2026-10-30 13:26 "목록 응답에 내 글 여부 필드(owner)를 넣어 내 글 배지를 붙일 수 있게 해 줘" |
 
 ## 다음에 할 것
-- 연결 남음: SCR-CMU-002 실종센터 · 내 글만 보기 (프론트 연결 리스트의 「내 글만 보기」 토글(`mineYn=true`)과 만료 배지(`CMUC0008`), 프론트 저장소에서 /start)
+- 연결 남음: SCR-CMU-002 실종센터 · 내 글만 보기 (프론트 연결 리스트의 「내 글만 보기」 토글(`mineYn=true`), 만료 배지(`CMUC0008`), 목록 `owner`로 「내 글」 배지(전체 목록에서도), 프론트 저장소에서 /start)
 - 연결 남음: SCR-CMU-002 실종센터 화면 전체 (프론트 연결 리스트·상세·작성자 상세·글쓰기·찾았어요/연장 모달·목격 장소 모달, 프론트 저장소에서 /start). 목격 장소 선택은 YAY의 `GET /places` 결과 좌표를 등록 요청에 넣는다
 - 사람이 할 일: 병합 직후 공용 DB에 `db/migration/20261029_02_add_cmug01_lost.sql` 실행(PR에 완료 댓글), PR 본문에 "DB 변경 있음". 공용 DB `RGN`에 전북 시군구·읍면동이 거의 없다(시드에 전북 2건). 지역 데이터 적재 담당을 정한다
 - 정리: 시험용 실종 글 101~104(공용 DB) 중 지우지 않은 것은 `DELETE /api/lost-reports/{lostTpofSn}`로 지운다. `app.region.client`는 `fake`로 되돌린다

@@ -53,6 +53,7 @@
         <result column="CHRC_CN"            property="chrcCn" />
         <result column="THUMB_ATCH_FILE_SN" property="thumbAtchFileSn" />
         <result column="REG_DT"             property="regDt" />
+        <result column="OWNER_YN"           property="owner" />
     </resultMap>
 
     <sql id="lostReportColumns">
@@ -101,6 +102,7 @@
              , CASE WHEN <include refid="expiredCond" /> THEN #{expiredCd} ELSE L.LOST_TPOF_STTS_CD END AS LOST_TPOF_STTS_CD
              , L.DSCV_SWTC_DT
              , P.REG_DT
+             , (P.MBR_SN = #{mbrSn}) AS OWNER_YN
              , CASE WHEN <include refid="hiddenCard" /> THEN NULL ELSE L.PET_SE_CD END AS PET_SE_CD
              , CASE WHEN <include refid="hiddenCard" /> THEN NULL ELSE L.PET_NM END AS PET_NM
              , CASE WHEN <include refid="hiddenCard" /> THEN NULL

@@ -463,6 +463,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | rgnNm | String | N | 지역. 시도·시군구·읍면동 조합 | RGN.CTPV_NM, RGN.SGG_NM, RGN.EMD_NM, CMU-002-01 |
 | colrNm | String | N | 털색상 | LOST_TPOF.COLR_NM, CMU-002-01 |
 | chrcCn | String | N | 특징 | LOST_TPOF.CHRC_CN, CMU-002-01 |
+| owner | Boolean | Y | 내가 쓴 글이면 true(「내 글」 배지). `mineYn` 없는 전체 목록에서도 채운다. 상세 응답의 owner와 같은 이름 | PST.MBR_SN, 추가 요청 2026-10-30 |
 
 ### NewsResponse
 쓰는 API: GET /news/{newsSn}
