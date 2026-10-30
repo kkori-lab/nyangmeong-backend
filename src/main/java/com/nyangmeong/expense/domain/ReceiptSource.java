@@ -6,7 +6,8 @@ package com.nyangmeong.expense.domain;
  */
 public enum ReceiptSource {
     HEALTH("AIMC0026"),
-    EXPENSE("AIMC0027");
+    EXPENSE("AIMC0027"),
+    CHAT("AIMC0031");
 
     private final String code;
 

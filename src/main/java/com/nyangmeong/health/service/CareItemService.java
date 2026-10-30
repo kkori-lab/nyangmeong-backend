@@ -21,6 +21,8 @@ import com.nyangmeong.health.domain.CareCompletion;
 import com.nyangmeong.health.domain.CareCycle;
 import com.nyangmeong.health.domain.CareItem;
 import com.nyangmeong.health.domain.CareZone;
+import com.nyangmeong.health.domain.Prescription;
+import com.nyangmeong.health.domain.RepeatPrevention;
 import com.nyangmeong.health.dto.CareCompletionCreateRequest;
 import com.nyangmeong.health.dto.CareCompletionResponse;
 import com.nyangmeong.health.dto.CareCompletionSearchCond;
@@ -49,6 +51,8 @@ public class CareItemService {
     private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
     private static final int MAIN_LIMIT = 6;
     private static final String DEFAULT_ICON = "task_alt";
+    private static final String MEDICATION_ICON = "medication";
+    private static final String PREVENTION_ICON = "vaccines";
 
     /** 기본 항목 완료 시 반영할 케어미션 */
     private static final Map<BasicCareItem, CareMission> MISSIONS = new EnumMap<>(BasicCareItem.class);
@@ -307,6 +311,68 @@ public class CareItemService {
     }
 
     /**
+     * 처방약 투약 항목 추가
+     * - 일상관리, 목표 횟수·표시 종료일은 처방약을 따름 : 이미 있으면 그대로
+     */
+    @Transactional
+    public void createMedicationItem(Long mbrSn, Long petSn, Prescription prescription) {
+        if (careItemMapper.existsPrescriptionItem(prescription.getPrscSn())) {
+            return;
+        }
+        CareItem item = linkedItem(mbrSn, petSn, CareZone.DAILY, prescription.getMdcnNm(), MEDICATION_ICON);
+        item.setPrscSn(prescription.getPrscSn());
+        careItemMapper.insertItem(item);
+    }
+
+    /**
+     * 처방약 투약 항목 삭제 (완료 기록 유지)
+     */
+    @Transactional
+    public void deleteMedicationItem(Long prscSn, String actorId) {
+        careItemMapper.deletePrescriptionItems(prscSn, actorId);
+    }
+
+    /**
+     * 반복 예방 정기관리 항목 추가
+     * - 첫 예정일 = 시작일 -> 다음 예정일 반환
+     */
+    @Transactional
+    public LocalDate createPreventionItem(Long mbrSn, RepeatPrevention prevention, String careArtclNm) {
+        CareItem item = linkedItem(mbrSn, prevention.getPetSn(), CareZone.REGULAR, careArtclNm, PREVENTION_ICON);
+        item.setReptPrvntMngSn(prevention.getReptPrvntMngSn());
+        item.setCareCycleCd(prevention.getReptCycleCd());
+        item.setCycleDrctInptDayCnt(prevention.getCycleDrctInptDayCnt());
+        item.setNxtmPrnmntYmd(prevention.getBgngYmd());
+        careItemMapper.insertItem(item);
+        return item.getNxtmPrnmntYmd();
+    }
+
+    /**
+     * 반복 예방 정기관리 항목 삭제 (완료 기록 유지)
+     */
+    @Transactional
+    public void deletePreventionItem(Long reptPrvntMngSn, String actorId) {
+        careItemMapper.deleteRepeatPreventionItems(reptPrvntMngSn, actorId);
+    }
+
+    /**
+     * 처방약·반복 예방 연동 항목 생성
+     */
+    private CareItem linkedItem(Long mbrSn, Long petSn, CareZone zone, String careArtclNm, String rprsIconId) {
+        CareItem item = new CareItem();
+        item.setPetSn(petSn);
+        item.setCareZoneCd(zone.getCode());
+        item.setCareArtclNm(careArtclNm);
+        item.setRprsIconId(rprsIconId);
+        item.setMainExpsrYn("N");
+        item.setMainSortSeq(0);
+        item.setBscArtclYn("N");
+        item.setRgtrId(String.valueOf(mbrSn));
+        item.setMdfrId(String.valueOf(mbrSn));
+        return item;
+    }
+
+    /**
      * 기본 항목 생성
      */
     private void createBasicItems(Long mbrSn, Long petSn) {
@@ -354,7 +420,13 @@ public class CareItemService {
             CareCycle cycle = CareCycle.of(item.getCareCycleCd()).orElse(null);
             boolean isCycleReady = cycle != null
                     && (cycle != CareCycle.CUSTOM || item.getCycleDrctInptDayCnt() != null);
-            if (isCycleReady) {
+            LocalDate bgngYmd = latest == null && item.getReptPrvntMngSn() != null
+                    ? careItemMapper.selectRepeatPreventionBgngYmd(item.getReptPrvntMngSn())
+                    : null;
+            if (bgngYmd != null) {
+                /** 반복 예방은 완료 기록이 없으면 시작일이 첫 예정일 */
+                item.setNxtmPrnmntYmd(bgngYmd);
+            } else if (isCycleReady) {
                 LocalDate base = latest != null ? latest : item.getRegDt().toLocalDate();
                 item.setNxtmPrnmntYmd(cycle.next(base, item.getCycleDrctInptDayCnt()));
             }

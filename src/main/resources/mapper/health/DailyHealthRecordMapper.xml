@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nyangmeong.health.mapper.DailyHealthRecordMapper">
+
+    <resultMap id="dailyHealthRecordSummaryResultMap" type="com.nyangmeong.health.dto.DailyHealthRecordSummary">
+        <id     column="DAILY_HLTH_RCD_SN"  property="dailyHlthRcdSn" />
+        <result column="DAILY_RCD_IDCT_CD"  property="dailyRcdIdctCd" />
+        <result column="RCD_NVL"            property="rcdNvl" />
+        <result column="CRSD_STTS_CD"       property="crsdSttsCd" />
+        <result column="CRSD_STTS_CD_NM"    property="crsdSttsCdNm" />
+        <result column="RCD_DT"             property="rcdDt" />
+    </resultMap>
+
+    <resultMap id="dailyHealthRecordResultMap" type="com.nyangmeong.health.domain.DailyHealthRecord">
+        <id     column="DAILY_HLTH_RCD_SN"  property="dailyHlthRcdSn" />
+        <result column="PET_SN"             property="petSn" />
+        <result column="DAILY_RCD_IDCT_CD"  property="dailyRcdIdctCd" />
+        <result column="CRSD_STTS_CD"       property="crsdSttsCd" />
+        <result column="RCD_NVL"            property="rcdNvl" />
+        <result column="RCD_DT"             property="rcdDt" />
+        <result column="DEL_YN"             property="delYn" />
+        <result column="REG_DT"             property="regDt" />
+        <result column="MDFCN_DT"           property="mdfcnDt" />
+        <result column="RGTR_ID"            property="rgtrId" />
+        <result column="MDFR_ID"            property="mdfrId" />
+    </resultMap>
+
+    <select id="selectList" resultMap="dailyHealthRecordSummaryResultMap">
+        /* 일상 건강기록 목록 조회(최신 N건을 기록 시각 오름차순) */
+        SELECT T.DAILY_HLTH_RCD_SN
+             , T.DAILY_RCD_IDCT_CD
+             , T.RCD_NVL
+             , T.CRSD_STTS_CD
+             , C.COM_CD_NM AS CRSD_STTS_CD_NM
+             , T.RCD_DT
+          FROM (
+                SELECT R.DAILY_HLTH_RCD_SN
+                     , R.DAILY_RCD_IDCT_CD
+                     , R.RCD_NVL
+                     , R.CRSD_STTS_CD
+                     , R.RCD_DT
+                  FROM DAILY_HLTH_RCD R
+                 WHERE R.PET_SN = #{cond.petSn}
+                   AND R.DEL_YN = 'N'
+                <if test="cond.dailyRcdIdctCd != null">
+                   AND R.DAILY_RCD_IDCT_CD = #{cond.dailyRcdIdctCd}
+                </if>
+                <if test="cond.fromYmd != null">
+                   AND R.RCD_DT >= #{cond.fromYmd}
+                </if>
+                <if test="cond.toYmd != null">
+                   AND R.RCD_DT &lt; DATE_ADD(#{cond.toYmd}, INTERVAL 1 DAY)
+                </if>
+                 ORDER BY R.RCD_DT DESC, R.DAILY_HLTH_RCD_SN DESC
+                <if test="cond.size != null">
+                 LIMIT #{cond.size}
+                </if>
+               ) T
+          LEFT JOIN COM_CD C
+            ON C.COM_CD = T.CRSD_STTS_CD
+         ORDER BY T.RCD_DT, T.DAILY_HLTH_RCD_SN
+    </select>
+
+    <select id="selectRecord" resultMap="dailyHealthRecordResultMap">
+        /* 일상 건강기록 조회(경로 반려동물 기준) */
+        SELECT DAILY_HLTH_RCD_SN
+             , PET_SN
+             , DAILY_RCD_IDCT_CD
+             , CRSD_STTS_CD
+             , RCD_NVL
+             , RCD_DT
+             , DEL_YN
+             , REG_DT
+             , MDFCN_DT
+             , RGTR_ID
+             , MDFR_ID
+          FROM DAILY_HLTH_RCD
+         WHERE DAILY_HLTH_RCD_SN = #{dailyHlthRcdSn}
+           AND PET_SN = #{petSn}
+           AND DEL_YN = 'N'
+    </select>
+
+    <select id="selectSummary" resultMap="dailyHealthRecordSummaryResultMap">
+        /* 일상 건강기록 응답용 조회(배변상태 이름 포함) */
+        SELECT R.DAILY_HLTH_RCD_SN
+             , R.DAILY_RCD_IDCT_CD
+             , R.RCD_NVL
+             , R.CRSD_STTS_CD
+             , C.COM_CD_NM AS CRSD_STTS_CD_NM
+             , R.RCD_DT
+          FROM DAILY_HLTH_RCD R
+          LEFT JOIN COM_CD C
+            ON C.COM_CD = R.CRSD_STTS_CD
+         WHERE R.DAILY_HLTH_RCD_SN = #{dailyHlthRcdSn}
+           AND R.DEL_YN = 'N'
+    </select>
+
+    <select id="selectLatestWeight" resultType="java.math.BigDecimal">
+        /* 반려동물의 최신 체중 기록 수치 조회 */
+        SELECT RCD_NVL
+          FROM DAILY_HLTH_RCD
+         WHERE PET_SN = #{petSn}
+           AND DAILY_RCD_IDCT_CD = #{weightCd}
+           AND DEL_YN = 'N'
+         ORDER BY RCD_DT DESC, DAILY_HLTH_RCD_SN DESC
+         LIMIT 1
+    </select>
+
+    <select id="existsChildCode" resultType="boolean">
+        /* 공통코드 그룹의 하위 코드 존재 여부 */
+        SELECT EXISTS (
+               SELECT 1
+                 FROM COM_CD C
+                 JOIN COM_CD G
+                   ON G.COM_CD_SN = C.COM_CD_PRNT_SN
+                WHERE G.COM_CD = #{prntComCd}
+                  AND G.COM_CD_PRNT_SN IS NULL
+                  AND C.COM_CD = #{comCd}
+                  AND C.USE_YN = 'Y'
+               )
+    </select>
+
+    <insert id="insertRecord" parameterType="com.nyangmeong.health.domain.DailyHealthRecord"
+            useGeneratedKeys="true" keyProperty="dailyHlthRcdSn" keyColumn="DAILY_HLTH_RCD_SN">
+        /* 일상 건강기록 등록 */
+        INSERT INTO DAILY_HLTH_RCD
+             ( PET_SN
+             , DAILY_RCD_IDCT_CD
+             , CRSD_STTS_CD
+             , RCD_NVL
+             , RCD_DT
+             , DEL_YN
+             , REG_DT
+             , MDFCN_DT
+             , RGTR_ID
+             , MDFR_ID )
+        VALUES
+             ( #{petSn}
+             , #{dailyRcdIdctCd}
+             , #{crsdSttsCd}
+             , #{rcdNvl}
+             , #{rcdDt}
+             , 'N'
+             , NOW()
+             , NOW()
+             , #{rgtrId}
+             , #{mdfrId} )
+    </insert>
+
+    <update id="updateRecord">
+        /* 일상 건강기록 수정 */
+        UPDATE DAILY_HLTH_RCD
+           SET CRSD_STTS_CD = #{record.crsdSttsCd}
+             , RCD_NVL      = #{record.rcdNvl}
+             , RCD_DT       = #{record.rcdDt}
+             , MDFR_ID      = #{actorId}
+             , MDFCN_DT     = NOW()
+         WHERE DAILY_HLTH_RCD_SN = #{record.dailyHlthRcdSn}
+           AND DEL_YN = 'N'
+    </update>
+
+    <update id="deleteRecord">
+        /* 일상 건강기록 삭제 */
+        UPDATE DAILY_HLTH_RCD
+           SET DEL_YN   = 'Y'
+             , MDFR_ID  = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE DAILY_HLTH_RCD_SN = #{dailyHlthRcdSn}
+           AND DEL_YN = 'N'
+    </update>
+</mapper>

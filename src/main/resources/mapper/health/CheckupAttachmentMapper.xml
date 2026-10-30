@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nyangmeong.health.mapper.CheckupAttachmentMapper">
+
+    <resultMap id="checkupAttachmentSummaryResultMap" type="com.nyangmeong.health.dto.CheckupAttachmentSummary">
+        <id     column="CKUP_RCD_ATCH_SN"  property="ckupRcdAtchSn" />
+        <result column="CKUP_RCD_SN"       property="ckupRcdSn" />
+        <result column="ATCH_TYPE_CD"      property="atchTypeCd" />
+        <result column="ATCH_TYPE_CD_NM"   property="atchTypeCdNm" />
+        <result column="IMG_KND_CD"        property="imgKndCd" />
+        <result column="IMG_KND_CD_NM"     property="imgKndCdNm" />
+        <result column="SHT_REGN_CD"       property="shtRegnCd" />
+        <result column="SHT_REGN_CD_NM"    property="shtRegnCdNm" />
+        <result column="ORGNL_FILE_NM"     property="orgnlFileNm" />
+        <result column="FILE_EXTN_CD"      property="fileExtnCd" />
+        <result column="REG_DT"            property="regDt" />
+    </resultMap>
+
+    <resultMap id="checkupAttachmentResultMap" type="com.nyangmeong.health.domain.CheckupAttachment">
+        <id     column="CKUP_RCD_ATCH_SN"  property="ckupRcdAtchSn" />
+        <result column="CKUP_RCD_SN"       property="ckupRcdSn" />
+        <result column="ATCH_FILE_SN"      property="atchFileSn" />
+        <result column="ATCH_TYPE_CD"      property="atchTypeCd" />
+        <result column="IMG_KND_CD"        property="imgKndCd" />
+        <result column="SHT_REGN_CD"       property="shtRegnCd" />
+        <result column="DEL_YN"            property="delYn" />
+        <result column="REG_DT"            property="regDt" />
+        <result column="MDFCN_DT"          property="mdfcnDt" />
+        <result column="RGTR_ID"           property="rgtrId" />
+        <result column="MDFR_ID"           property="mdfrId" />
+    </resultMap>
+
+    <sql id="checkupAttachmentSummaryColumns">
+          A.CKUP_RCD_ATCH_SN
+        , A.CKUP_RCD_SN
+        , A.ATCH_TYPE_CD
+        , T.COM_CD_NM AS ATCH_TYPE_CD_NM
+        , A.IMG_KND_CD
+        , K.COM_CD_NM AS IMG_KND_CD_NM
+        , A.SHT_REGN_CD
+        , R.COM_CD_NM AS SHT_REGN_CD_NM
+        , F.ORGNL_FILE_NM
+        , F.FILE_EXTN_CD
+        , A.REG_DT
+    </sql>
+
+    <select id="selectList" resultMap="checkupAttachmentSummaryResultMap">
+        /* 검진기록 첨부 목록 조회(최신순) */
+        SELECT
+        <include refid="checkupAttachmentSummaryColumns" />
+          FROM CKUP_RCD_ATCH A
+          JOIN ATCH_FILE F
+            ON F.ATCH_FILE_SN = A.ATCH_FILE_SN
+          LEFT JOIN COM_CD T
+            ON T.COM_CD = A.ATCH_TYPE_CD
+           AND T.COM_CD_PRNT_SN IS NOT NULL
+          LEFT JOIN COM_CD K
+            ON K.COM_CD = A.IMG_KND_CD
+           AND K.COM_CD_PRNT_SN IS NOT NULL
+          LEFT JOIN COM_CD R
+            ON R.COM_CD = A.SHT_REGN_CD
+           AND R.COM_CD_PRNT_SN IS NOT NULL
+         WHERE A.CKUP_RCD_SN = #{cond.ckupRcdSn}
+           AND A.DEL_YN = 'N'
+        <if test="cond.atchTypeCd != null and cond.atchTypeCd != ''">
+           AND A.ATCH_TYPE_CD = #{cond.atchTypeCd}
+        </if>
+         ORDER BY A.REG_DT DESC
+                , A.CKUP_RCD_ATCH_SN DESC
+    </select>
+
+    <select id="selectSummary" resultMap="checkupAttachmentSummaryResultMap">
+        /* 검진기록 첨부 단건 조회 */
+        SELECT
+        <include refid="checkupAttachmentSummaryColumns" />
+          FROM CKUP_RCD_ATCH A
+          JOIN ATCH_FILE F
+            ON F.ATCH_FILE_SN = A.ATCH_FILE_SN
+          LEFT JOIN COM_CD T
+            ON T.COM_CD = A.ATCH_TYPE_CD
+           AND T.COM_CD_PRNT_SN IS NOT NULL
+          LEFT JOIN COM_CD K
+            ON K.COM_CD = A.IMG_KND_CD
+           AND K.COM_CD_PRNT_SN IS NOT NULL
+          LEFT JOIN COM_CD R
+            ON R.COM_CD = A.SHT_REGN_CD
+           AND R.COM_CD_PRNT_SN IS NOT NULL
+         WHERE A.CKUP_RCD_ATCH_SN = #{ckupRcdAtchSn}
+           AND A.DEL_YN = 'N'
+    </select>
+
+    <select id="selectAttachment" resultMap="checkupAttachmentResultMap">
+        /* 검진기록 첨부 조회 */
+        SELECT CKUP_RCD_ATCH_SN
+             , CKUP_RCD_SN
+             , ATCH_FILE_SN
+             , ATCH_TYPE_CD
+             , IMG_KND_CD
+             , SHT_REGN_CD
+             , DEL_YN
+             , REG_DT
+             , MDFCN_DT
+             , RGTR_ID
+             , MDFR_ID
+          FROM CKUP_RCD_ATCH
+         WHERE CKUP_RCD_ATCH_SN = #{ckupRcdAtchSn}
+           AND DEL_YN = 'N'
+    </select>
+
+    <insert id="insertAttachment" parameterType="com.nyangmeong.health.domain.CheckupAttachment"
+            useGeneratedKeys="true" keyProperty="ckupRcdAtchSn" keyColumn="CKUP_RCD_ATCH_SN">
+        /* 검진기록 첨부 등록 */
+        INSERT INTO CKUP_RCD_ATCH
+             ( CKUP_RCD_SN
+             , ATCH_FILE_SN
+             , ATCH_TYPE_CD
+             , IMG_KND_CD
+             , SHT_REGN_CD
+             , DEL_YN
+             , REG_DT
+             , MDFCN_DT
+             , RGTR_ID
+             , MDFR_ID )
+        VALUES
+             ( #{ckupRcdSn}
+             , #{atchFileSn}
+             , #{atchTypeCd}
+             , #{imgKndCd}
+             , #{shtRegnCd}
+             , 'N'
+             , NOW()
+             , NOW()
+             , #{rgtrId}
+             , #{mdfrId} )
+    </insert>
+
+    <update id="updateAttachment">
+        /* 검진기록 첨부 수정(파일 교체·유형) */
+        UPDATE CKUP_RCD_ATCH
+           SET ATCH_FILE_SN = #{attachment.atchFileSn}
+             , ATCH_TYPE_CD = #{attachment.atchTypeCd}
+             , IMG_KND_CD   = #{attachment.imgKndCd}
+             , SHT_REGN_CD  = #{attachment.shtRegnCd}
+             , MDFR_ID      = #{actorId}
+             , MDFCN_DT     = NOW()
+         WHERE CKUP_RCD_ATCH_SN = #{attachment.ckupRcdAtchSn}
+           AND DEL_YN = 'N'
+    </update>
+
+    <update id="deleteAttachment">
+        /* 검진기록 첨부 삭제 */
+        UPDATE CKUP_RCD_ATCH
+           SET DEL_YN   = 'Y'
+             , MDFR_ID  = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE CKUP_RCD_ATCH_SN = #{ckupRcdAtchSn}
+           AND DEL_YN = 'N'
+    </update>
+</mapper>
