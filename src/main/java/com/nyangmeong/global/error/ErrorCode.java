@@ -66,6 +66,7 @@ public enum ErrorCode {
     TERMS_NOT_FOUND(HttpStatus.NOT_FOUND, "약관을 찾을 수 없습니다."),
     WITHDRAW_PHRASE_MISMATCH(HttpStatus.BAD_REQUEST, "탈퇴 확인 문구가 일치하지 않습니다."),
     MEMBER_RECOVERY_EXPIRED(HttpStatus.BAD_REQUEST, "복구 가능 기간이 지난 계정입니다."),
+    MEMBER_RECOVERY_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "복구 확인 시간이 지났습니다. 이메일 인증을 다시 진행해 주세요."),
     DASHBOARD_WIDGET_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "메인에 표시할 위젯은 최대 5개입니다."),
 
     /** pet */

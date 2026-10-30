@@ -1,5 +1,7 @@
 package com.nyangmeong.member.service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
@@ -31,11 +33,11 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * [이메일 인증 서비스]
- * - 가입용·비밀번호 찾기용 인증번호 발송·재전송·확인, 가입 때 인증 검사와 사용 처리
+ * - 가입용·비밀번호 찾기용·복구용 인증번호 발송·재전송·확인, 가입 때 인증 검사와 사용 처리
  * - 인증번호 원문은 저장하지 않고 이메일 HMAC 가 섞인 해시만 저장한다
  * - 비밀번호 찾기는 회원 조회 없이 발송하고 확인 때 계정을 가려 재설정 대상에게만 토큰을 준다
  * - 재설정 권한 토큰으로 비밀번호를 바꾸고 그 회원의 기존 로그인을 모두 끝낸다
- * - 복구(USRC0012) 목적은 해당 마일스톤에서 연다
+ * - 복구는 탈퇴 보관 기간 안의 회원에게만 발송하고, 확인하면 복구 확인 권한 토큰을 준다(재설정 토큰과 같은 칸에 해시)
  */
 @Service
 @RequiredArgsConstructor
@@ -44,6 +46,7 @@ public class EmailCertificationService {
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final String MAIL_SUBJECT = "[냥멍케어] 이메일 인증번호 안내";
     private static final String PASSWORD_RESET_MAIL_SUBJECT = "[냥멍케어] 비밀번호 찾기 인증번호 안내";
+    private static final String RECOVERY_MAIL_SUBJECT = "[냥멍케어] 재가입 복구 인증번호 안내";
     private static final int PASSWORD_RESET_TOKEN_BYTES = 32;
 
     private final EmailCertificationMapper emailCertificationMapper;
@@ -65,6 +68,8 @@ public class EmailCertificationService {
         /** 비밀번호 찾기는 가입 여부가 드러나지 않게 회원을 조회하지 않는다 */
         if (purpose == EmailCertPurpose.SIGNUP) {
             memberService.checkEmailAvailable(emailHmac);
+        } else if (purpose == EmailCertPurpose.RECOVERY) {
+            memberService.getRecoverableMember(emailHmac);
         }
 
         LocalDateTime now = LocalDateTime.now();
@@ -88,8 +93,7 @@ public class EmailCertificationService {
         emailCertificationMapper.insert(cert);
 
         long minutes = Math.max(1, (properties.getCodeValiditySeconds() + 59) / 60);
-        eventPublisher.publish(new CertificationMailEvent(email,
-                purpose == EmailCertPurpose.SIGNUP ? MAIL_SUBJECT : PASSWORD_RESET_MAIL_SUBJECT,
+        eventPublisher.publish(new CertificationMailEvent(email, mailSubject(purpose),
                 "인증번호는 " + certNo + " 입니다. " + minutes + "분 안에 입력해 주세요."));
         return EmailCertificationResult.success(EmailCertificationResponse.sent(cert));
     }
@@ -114,7 +118,10 @@ public class EmailCertificationService {
         }
         checkCertNo(cert, req.certNo(), now);
         boolean isPasswordReset = EmailCertPurpose.PASSWORD_RESET.is(cert.getEmlCertPrpsCd());
-        if (!isPasswordReset) {
+        boolean isRecovery = EmailCertPurpose.RECOVERY.is(cert.getEmlCertPrpsCd());
+        if (isRecovery) {
+            memberService.getRecoverableMember(cert.getCertTrgtEmlHmac());
+        } else if (!isPasswordReset) {
             memberService.checkEmailAvailable(cert.getCertTrgtEmlHmac());
         }
 
@@ -122,18 +129,21 @@ public class EmailCertificationService {
             emailCertificationMapper.updateCompleted(emlCertSn, now);
         }
         LocalDateTime completedDt = isCompleted ? cert.getCertCmptnDt() : now;
+        if (isRecovery) {
+            return verifiedForRecovery(cert, completedDt);
+        }
         return isPasswordReset ? verifiedForPasswordReset(cert, completedDt)
                 : EmailCertificationResponse.verified(cert, completedDt);
     }
 
     /**
-     * 비밀번호 찾기 인증 무효화 : 일련번호는 순번이라 인증한 이메일이 맞아야 한다, 이미 무효·사용 완료면 그대로 둔다
+     * 비밀번호 찾기·복구 인증 무효화 : 일련번호는 순번이라 인증한 이메일이 맞아야 한다, 이미 무효·사용 완료면 그대로 둔다
      */
     @Transactional
     public void invalidate(Long emlCertSn, EmailCertificationInvalidateRequest req) {
         EmailCertification cert = emailCertificationMapper.selectBySn(emlCertSn);
         String emailHmac = fieldCryptoService.hmac(fieldCryptoService.normalizeEmail(req.certTrgtEml()));
-        if (cert == null || !EmailCertPurpose.PASSWORD_RESET.is(cert.getEmlCertPrpsCd())
+        if (cert == null || !isInvalidatablePurpose(cert.getEmlCertPrpsCd())
                 || !emailHmac.equals(cert.getCertTrgtEmlHmac())) {
             throw new CustomException(ErrorCode.EMAIL_CERT_NOT_FOUND);
         }
@@ -167,6 +177,55 @@ public class EmailCertificationService {
         }
         memberService.changePassword(account.mbrSn(), passwordEncoder.encode(req.pswd()));
         loginSessionManager.revokeAll(account.mbrSn());
+    }
+
+    /**
+     * 복구 확인 권한 인증 찾기 : 복구 목적·인증 완료·무효화 안 됨·토큰 일치, 쓴 것인지와 만료는 보지 않는다
+     * - 권한 문제는 이유를 가리지 않고 한 오류로 답한다
+     */
+    @Transactional(readOnly = true, noRollbackFor = CustomException.class)
+    public EmailCertification findRecoveryCert(Long emlCertSn, String rcvryAuthrtTkn) {
+        EmailCertification cert = emailCertificationMapper.selectBySn(emlCertSn);
+        if (cert == null || !EmailCertPurpose.RECOVERY.is(cert.getEmlCertPrpsCd()) || cert.getCertCmptnDt() == null
+                || cert.getCertInvldDt() != null || cert.getPswdInitTknHash() == null
+                || !MessageDigest.isEqual(cert.getPswdInitTknHash().getBytes(StandardCharsets.UTF_8),
+                        recoveryTokenHash(rcvryAuthrtTkn).getBytes(StandardCharsets.UTF_8))) {
+            throw new CustomException(ErrorCode.MEMBER_RECOVERY_NOT_AVAILABLE);
+        }
+        return cert;
+    }
+
+    /**
+     * 복구 확인 권한이 아직 쓸 수 있는지 : 쓰지 않았고 권한 만료 전
+     */
+    @Transactional(readOnly = true, noRollbackFor = CustomException.class)
+    public void checkRecoveryUsable(EmailCertification cert) {
+        if (cert.getCertUseCmptnDt() != null || cert.getInitAuthrtExpryDt() == null
+                || !cert.getInitAuthrtExpryDt().isAfter(LocalDateTime.now())) {
+            throw new CustomException(ErrorCode.MEMBER_RECOVERY_NOT_AVAILABLE);
+        }
+    }
+
+    /**
+     * 복구 확인 권한 확인 : 찾기 + 쓸 수 있는지
+     */
+    @Transactional(readOnly = true, noRollbackFor = CustomException.class)
+    public EmailCertification checkRecoveryAuthority(Long emlCertSn, String rcvryAuthrtTkn) {
+        EmailCertification cert = findRecoveryCert(emlCertSn, rcvryAuthrtTkn);
+        checkRecoveryUsable(cert);
+        return cert;
+    }
+
+    /**
+     * 복구 확인 권한 사용 처리 : 한 번만, 먼저 쓴 요청이 있으면 1행이 아니라서 거절
+     */
+    @Transactional
+    public void useRecoveryAuthority(Long emlCertSn, String rcvryAuthrtTkn) {
+        int claimed = emailCertificationMapper.updatePasswordResetUsed(emlCertSn, EmailCertPurpose.RECOVERY.getCode(),
+                recoveryTokenHash(rcvryAuthrtTkn), LocalDateTime.now());
+        if (claimed != 1) {
+            throw new CustomException(ErrorCode.MEMBER_RECOVERY_NOT_AVAILABLE);
+        }
     }
 
     /**
@@ -219,7 +278,32 @@ public class EmailCertificationService {
         return EmailCertificationResponse.passwordReset(cert, completedDt, account, token, authrtExpryDt);
     }
 
-    /** 발송 목적 : 가입·비밀번호 찾기, 복구는 아직 받지 않는다 */
+    /**
+     * 복구 인증 확인 뒤 토큰 발급 : 같은 번호로 다시 확인하면 새 토큰이고 이전 토큰은 쓸 수 없다, 권한 만료는 인증 완료 시각 기준 그대로
+     */
+    private EmailCertificationResponse verifiedForRecovery(EmailCertification cert, LocalDateTime completedDt) {
+        byte[] bytes = new byte[PASSWORD_RESET_TOKEN_BYTES];
+        RANDOM.nextBytes(bytes);
+        String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        LocalDateTime authrtExpryDt = completedDt.plusMinutes(properties.getVerifiedKeepMinutes());
+        emailCertificationMapper.updatePasswordResetToken(cert.getEmlCertSn(), recoveryTokenHash(token),
+                authrtExpryDt);
+        return EmailCertificationResponse.recovery(cert, completedDt, token, authrtExpryDt);
+    }
+
+    private String recoveryTokenHash(String token) {
+        return fieldCryptoService.hmac("rcvry:" + token);
+    }
+
+    private String mailSubject(EmailCertPurpose purpose) {
+        return switch (purpose) {
+            case SIGNUP -> MAIL_SUBJECT;
+            case PASSWORD_RESET -> PASSWORD_RESET_MAIL_SUBJECT;
+            case RECOVERY -> RECOVERY_MAIL_SUBJECT;
+        };
+    }
+
+    /** 발송 목적 : 가입·비밀번호 찾기·복구 */
     private EmailCertPurpose sendablePurpose(String code) {
         if (EmailCertPurpose.SIGNUP.is(code)) {
             return EmailCertPurpose.SIGNUP;
@@ -227,11 +311,20 @@ public class EmailCertificationService {
         if (EmailCertPurpose.PASSWORD_RESET.is(code)) {
             return EmailCertPurpose.PASSWORD_RESET;
         }
+        if (EmailCertPurpose.RECOVERY.is(code)) {
+            return EmailCertPurpose.RECOVERY;
+        }
         throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
     }
 
     private boolean isVerifiablePurpose(String code) {
-        return EmailCertPurpose.SIGNUP.is(code) || EmailCertPurpose.PASSWORD_RESET.is(code);
+        return EmailCertPurpose.SIGNUP.is(code) || EmailCertPurpose.PASSWORD_RESET.is(code)
+                || EmailCertPurpose.RECOVERY.is(code);
+    }
+
+    /** 가입 인증은 가입 요청이 쓰므로 무효화 대상이 아니다 */
+    private boolean isInvalidatablePurpose(String code) {
+        return EmailCertPurpose.PASSWORD_RESET.is(code) || EmailCertPurpose.RECOVERY.is(code);
     }
 
     /** 틀리면 횟수를 올리고, 제한에 닿으면 그 인증을 무효화 */
