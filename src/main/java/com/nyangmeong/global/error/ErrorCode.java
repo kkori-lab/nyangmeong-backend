@@ -108,8 +108,6 @@ public enum ErrorCode {
     CARE_SCHEDULE_NOT_FOUND(HttpStatus.NOT_FOUND, "일정을 찾을 수 없습니다."),
     CHECKUP_NOT_FOUND(HttpStatus.NOT_FOUND, "검진기록을 찾을 수 없습니다."),
     CHECKUP_ATTACHMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "첨부 파일을 찾을 수 없습니다."),
-    CHECKUP_ATTACHMENT_NOT_ANALYZABLE(HttpStatus.BAD_REQUEST, "검사결과지 PDF만 분석할 수 있습니다."),
-    CHECKUP_ANALYSIS_IN_PROGRESS(HttpStatus.CONFLICT, "이미 분석을 요청한 파일입니다."),
     DAILY_HEALTH_RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "건강 일지 기록을 찾을 수 없습니다."),
     ETC_INSPECTION_NOT_FOUND(HttpStatus.NOT_FOUND, "기타검사를 찾을 수 없습니다."),
     INSPECTION_VALUE_NOT_FOUND(HttpStatus.NOT_FOUND, "검사 수치를 찾을 수 없습니다."),

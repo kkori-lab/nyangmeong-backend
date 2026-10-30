@@ -59,4 +59,9 @@ public interface PrescriptionMapper {
      */
     int insertStatusHistory(@Param("prscSn") Long prscSn, @Param("mbrSn") Long mbrSn,
             @Param("bfrSttsCd") String bfrSttsCd, @Param("aftrSttsCd") String aftrSttsCd);
+
+    /**
+     * 반려동물의 처방약 전체 삭제 (반려동물 삭제)
+     */
+    int deleteByPetSn(@Param("petSn") Long petSn, @Param("actorId") String actorId);
 }

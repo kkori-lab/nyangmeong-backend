@@ -43,6 +43,7 @@
          WHERE S.PET_SN = #{petSn}
            AND S.SCHDL_KND_CD = #{hospitalCd}
            AND C.CKUP_RCD_STTS_CD = #{completedCd}
+           AND C.DEL_YN = 'N'
         <if test="cond.year != null">
            AND S.SCHDL_DT &gt;= MAKEDATE(#{cond.year}, 1)
            AND S.SCHDL_DT &lt; DATE_ADD(MAKEDATE(#{cond.year}, 1), INTERVAL 1 YEAR)
@@ -74,6 +75,7 @@
            AND T.COM_CD_PRNT_SN IS NOT NULL
          WHERE C.CKUP_RCD_SN = #{ckupRcdSn}
            AND C.CKUP_RCD_STTS_CD = #{completedCd}
+           AND C.DEL_YN = 'N'
     </select>
 
     <select id="selectHospitalScheduleSn" resultType="long">
@@ -96,6 +98,7 @@
                  FROM CKUP_RCD
                 WHERE SCHDL_SN = #{schdlSn}
                   AND CKUP_RCD_STTS_CD = #{completedCd}
+                  AND DEL_YN = 'N'
                )
     </select>
 
@@ -216,5 +219,17 @@
              , MDFR_ID  = #{actorId}
              , MDFCN_DT = NOW()
          WHERE CKUP_RCD_SN = #{ckupRcdSn}
+    </update>
+
+    <update id="deleteByPetSn">
+        /* 반려동물의 검진기록 전체 삭제 (반려동물 삭제, 연결 일정 삭제 여부와 무관) */
+        UPDATE CKUP_RCD C
+          JOIN SCHDL S
+            ON S.SCHDL_SN = C.SCHDL_SN
+           SET C.DEL_YN   = 'Y'
+             , C.MDFR_ID  = #{actorId}
+             , C.MDFCN_DT = NOW()
+         WHERE S.PET_SN = #{petSn}
+           AND C.DEL_YN = 'N'
     </update>
 </mapper>

@@ -99,4 +99,18 @@
          WHERE ETC_INSP_SN = #{etcInspSn}
            AND DEL_YN = 'N'
     </update>
+
+    <update id="deleteByPetSn">
+        /* 반려동물의 기타검사 전체 삭제 (반려동물 삭제, 연결 일정 삭제 여부와 무관) */
+        UPDATE ETC_INSP E
+          JOIN CKUP_RCD C
+            ON C.CKUP_RCD_SN = E.CKUP_RCD_SN
+          JOIN SCHDL S
+            ON S.SCHDL_SN = C.SCHDL_SN
+           SET E.DEL_YN   = 'Y'
+             , E.MDFR_ID  = #{actorId}
+             , E.MDFCN_DT = NOW()
+         WHERE S.PET_SN = #{petSn}
+           AND E.DEL_YN = 'N'
+    </update>
 </mapper>

@@ -17,7 +17,8 @@ import org.mockito.ArgumentCaptor;
 
 import com.nyangmeong.global.notification.CareScheduleAlarmEvent;
 import com.nyangmeong.global.notification.EventPublisher;
-import com.nyangmeong.scheduler.HospitalScheduleFake.HospitalScheduleSummary;
+import com.nyangmeong.health.dto.HospitalScheduleSummary;
+import com.nyangmeong.health.service.CareScheduleService;
 
 /**
  * [검사 - 케어 일정 사전 알림 스캔]
@@ -26,35 +27,43 @@ class CareScheduleAlarmJobTest {
 
     private static final LocalDate BASE = LocalDate.of(2026, 10, 21);
 
-    private final HospitalScheduleFake hospitalScheduleFake = mock(HospitalScheduleFake.class);
+    private final CareScheduleService careScheduleService = mock(CareScheduleService.class);
     private final CaregiverFake caregiverFake = mock(CaregiverFake.class);
     private final EventPublisher eventPublisher = mock(EventPublisher.class);
-    private final CareScheduleAlarmJob job = new CareScheduleAlarmJob(hospitalScheduleFake, caregiverFake,
+    private final CareScheduleAlarmJob job = new CareScheduleAlarmJob(careScheduleService, caregiverFake,
             eventPublisher);
 
     private HospitalScheduleSummary schedule(long schdlSn, LocalDate schdlYmd) {
-        return new HospitalScheduleSummary(schdlSn, 10L, "초코", schdlYmd.atTime(14, 30), true, "냥멍동물병원", "예방접종");
+        HospitalScheduleSummary schedule = new HospitalScheduleSummary();
+        schedule.setSchdlSn(schdlSn);
+        schedule.setPetSn(10L);
+        schedule.setPetNm("초코");
+        schedule.setSchdlDt(schdlYmd.atTime(14, 30));
+        schedule.setHrInptYn(true);
+        schedule.setHsptlNm("냥멍동물병원");
+        schedule.setCkupTypeNm("예방접종");
+        return schedule;
     }
 
     @Test
     void 기준일_D0_1_3_7_일정일만_조회한다() {
-        when(hospitalScheduleFake.search(any())).thenReturn(List.of());
+        when(careScheduleService.searchHospitalSchedules(any())).thenReturn(List.of());
 
         job.scan(BASE);
 
-        verify(hospitalScheduleFake).search(LocalDate.of(2026, 10, 21));
-        verify(hospitalScheduleFake).search(LocalDate.of(2026, 10, 22));
-        verify(hospitalScheduleFake).search(LocalDate.of(2026, 10, 24));
-        verify(hospitalScheduleFake).search(LocalDate.of(2026, 10, 28));
-        verify(hospitalScheduleFake, never()).search(LocalDate.of(2026, 10, 23));
-        verify(hospitalScheduleFake, times(4)).search(any());
+        verify(careScheduleService).searchHospitalSchedules(LocalDate.of(2026, 10, 21));
+        verify(careScheduleService).searchHospitalSchedules(LocalDate.of(2026, 10, 22));
+        verify(careScheduleService).searchHospitalSchedules(LocalDate.of(2026, 10, 24));
+        verify(careScheduleService).searchHospitalSchedules(LocalDate.of(2026, 10, 28));
+        verify(careScheduleService, never()).searchHospitalSchedules(LocalDate.of(2026, 10, 23));
+        verify(careScheduleService, times(4)).searchHospitalSchedules(any());
     }
 
     @Test
     void 일정마다_연동_양육자_수만큼_이벤트를_발행한다() {
         LocalDate d1 = BASE.plusDays(1);
-        when(hospitalScheduleFake.search(any())).thenReturn(List.of());
-        when(hospitalScheduleFake.search(d1)).thenReturn(List.of(schedule(100L, d1)));
+        when(careScheduleService.searchHospitalSchedules(any())).thenReturn(List.of());
+        when(careScheduleService.searchHospitalSchedules(d1)).thenReturn(List.of(schedule(100L, d1)));
         when(caregiverFake.search(10L)).thenReturn(List.of(1L, 2L));
 
         job.scan(BASE);
@@ -73,7 +82,7 @@ class CareScheduleAlarmJobTest {
 
     @Test
     void 양육자가_없으면_발행하지_않는다() {
-        when(hospitalScheduleFake.search(any())).thenReturn(List.of(schedule(100L, BASE)));
+        when(careScheduleService.searchHospitalSchedules(any())).thenReturn(List.of(schedule(100L, BASE)));
         when(caregiverFake.search(10L)).thenReturn(List.of());
 
         job.scan(BASE);

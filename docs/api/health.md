@@ -25,7 +25,6 @@
 | POST | /pets/{petSn}/care-items | 케어 항목 추가(마지막으로 한 날은 완료 기록으로 함께 저장). AI 대화 등록도 같은 API | HLT-003-21~24·38, AIM-012-07·09·13 | JAJ | CareItemCreateRequest | CareItemResponse |
 | POST | /pets/{petSn}/care-schedules | 일정 등록(종류별 필수값 서버 재검증, 출처 SCHDL_SRC_CD). AI 대화 등록도 같은 API | HLT-003-32~37, AIM-012-09·12~14 | JAJ | CareScheduleCreateRequest | CareScheduleResponse |
 | POST | /pets/{petSn}/checkup-attachments | 첨부 등록(multipart, 유형·영상 종류·촬영 부위) | HLT-005-01 | JAJ | CheckupAttachmentCreateRequest | CheckupAttachmentResponse |
-| POST | /pets/{petSn}/checkup-attachments/{ckupRcdAtchSn}/analyses | 검사결과지 PDF 분석 요청(인식 결과만 반환, 저장 안 함, 중복 요청 차단). 요청 안에서 동기로 분석하고 제한 시간(설정값)을 넘기면 일시 오류로 돌려준다. 성공·실패 모두 200, 결과는 `anlysRslt`로 구분(JAJ 확인) | HLT-005-04, HLT-007-06 | JAJ | - | InspectionAnalysisResponse |
 | POST | /pets/{petSn}/checkups | 검진기록 직접 등록(같은 날짜 병원 일정 자동 연결·없으면 생성, 가까운 일정 옮겨 연결 선택) | HLT-002-26~29·31·46 | JAJ | CheckupCreateRequest | CheckupResponse |
 | POST | /pets/{petSn}/daily-health-records | 오늘 기록 추가(식사량·음수량·산책·체중·배변상태) | HLT-002-11 | JAJ | DailyHealthRecordCreateRequest | DailyHealthRecordResponse |
 | POST | /pets/{petSn}/etc-inspections | 기타검사 입력(검사명·결과 500자·메모 200자) | HLT-005-11~14 | JAJ | EtcInspectionCreateRequest | EtcInspectionResponse |
@@ -255,7 +254,7 @@
 | --- | --- | --- | --- | --- |
 | ckupRcdAtchSn | Long | Y | 파일은 GET …/checkup-attachments/{ckupRcdAtchSn} | CKUP_RCD_ATCH.CKUP_RCD_ATCH_SN |
 | ckupRcdSn | Long | Y | [전체 보기] → 그 검진상세 | CKUP_RCD_ATCH.CKUP_RCD_SN, HLT-011-09 |
-| atchTypeCd | String | Y | HLTG20. 검사결과지 PDF만 [PDF 분석] | CKUP_RCD_ATCH.ATCH_TYPE_CD, HLT-005-04 |
+| atchTypeCd | String | Y | HLTG20. 검사결과지 PDF만 [PDF 분석]. 분석은 화면이 Python `POST /ai/checkups/lab-results`로 직접 요청한다(Java API 없음) | CKUP_RCD_ATCH.ATCH_TYPE_CD, HLT-005-04 |
 | atchTypeCdNm | String | Y | | COM_CD.COM_CD_NM, HLT-005-01 |
 | imgKndCd | String | N | HLTG23 | CKUP_RCD_ATCH.IMG_KND_CD |
 | imgKndCdNm | String | N | 영상검사 칩의 영상 종류 | COM_CD.COM_CD_NM, HLT-005-02 |
@@ -398,28 +397,6 @@
 | inspNm | String | N | 최대 100자. 비울 수 없음(필수 항목) | ETC_INSP.INSP_NM, HLT-005-11 |
 | inspRsltCn | String | N | 1~500자. 비울 수 없음(필수 항목) | ETC_INSP.INSP_RSLT_CN, HLT-005-12 |
 | memoCn | String | N | 최대 200자 | ETC_INSP.MEMO_CN, HLT-005-13 |
-
-### InspectionAnalysisItem
-쓰는 API: POST /pets/{petSn}/checkup-attachments/{ckupRcdAtchSn}/analyses (InspectionAnalysisResponse.items의 요소. 중첩 record)
-| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
-| --- | --- | --- | --- | --- |
-| inspArtclCd | String | N | HLTG12. 12종 중 인식한 항목 | INSP_NVL.INSP_ARTCL_CD, HLT-007-04 |
-| inspArtclDrctInptNm | String | N | 12종에 없는 항목명 | INSP_NVL.INSP_ARTCL_DRCT_INPT_NM, HLT-007-04 |
-| rsltNvl | BigDecimal | N | 인식 실패·저품질이면 null | INSP_NVL.RSLT_NVL, HLT-007-04 |
-| unitNm | String | N | 인식 실패면 null | INSP_NVL.UNIT_NM, HLT-007-04 |
-| refLlmtNvl | BigDecimal | N | | INSP_NVL.REF_LLMT_NVL, HLT-007-04 |
-| refUplmtNvl | BigDecimal | N | | INSP_NVL.REF_UPLMT_NVL, HLT-007-04 |
-| registered | Boolean | Y | 같은 검진기록에 이미 있는 항목이면 true → "이미 등록됨", 저장 대상 제외 | HLT-007-04 |
-
-### InspectionAnalysisResponse
-쓰는 API: POST /pets/{petSn}/checkup-attachments/{ckupRcdAtchSn}/analyses (저장 안 함)
-| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
-| --- | --- | --- | --- | --- |
-| ckupRcdAtchSn | Long | Y | 분석한 첨부 | CKUP_RCD_ATCH.CKUP_RCD_ATCH_SN, HLT-005-04 |
-| ckupRcdSn | Long | Y | 저장할 검진기록(SCR-HLT-007 진입) | CKUP_RCD_ATCH.CKUP_RCD_SN, HLT-005-04 |
-| anlysRslt | String | Y | 분석 결과 구분: 성공 / 인식 실패 / 일시 오류(제한 시간 초과·외부 API 오류). 실패도 200으로 주고 이 값으로 문구를 고른다. 값은 공통코드가 아닌 문자열 `SUCCESS`(성공)·`NOT_RECOGNIZED`(인식 실패)·`TEMPORARY_ERROR`(일시 오류)(JAJ 결정 2026-10-29) | HLT-005-04, HLT-007-06 |
-| items | List<InspectionAnalysisItem> | Y | 혈액검사 항목만. 0건이면 빈 목록 | HLT-007-04·05 |
-| excludedArtclNms | List<String> | N | 혈액검사가 아니라서 뺀 항목 이름(안내용, issues 10) | HLT-007-05 |
 
 ### InspectionValueCreateRequest
 쓰는 API: POST /pets/{petSn}/inspection-values (혈액검사 고정)

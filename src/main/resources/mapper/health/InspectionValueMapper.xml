@@ -70,17 +70,6 @@
                 , V.INSP_NVL_SN
     </select>
 
-    <select id="selectArticles" resultMap="inspectionValueSummaryResultMap">
-        /* 검진기록의 등록된 검사 항목 조회 */
-        SELECT INSP_NVL_SN
-             , CKUP_RCD_SN
-             , INSP_ARTCL_CD
-             , NULLIF(INSP_ARTCL_DRCT_INPT_NM, '') AS INSP_ARTCL_DRCT_INPT_NM
-          FROM INSP_NVL
-         WHERE CKUP_RCD_SN = #{ckupRcdSn}
-           AND DEL_YN = 'N'
-    </select>
-
     <select id="selectCheckupSns" resultType="long">
         /* 검사 수치별 검진기록 번호 */
         SELECT CKUP_RCD_SN
@@ -232,5 +221,19 @@
              , MDFCN_DT      = NOW()
          WHERE INSP_NVL_SN = #{value.inspNvlSn}
            AND DEL_YN = 'N'
+    </update>
+
+    <update id="deleteByPetSn">
+        /* 반려동물의 검사 수치 전체 삭제 (반려동물 삭제, 연결 일정 삭제 여부와 무관) */
+        UPDATE INSP_NVL V
+          JOIN CKUP_RCD C
+            ON C.CKUP_RCD_SN = V.CKUP_RCD_SN
+          JOIN SCHDL S
+            ON S.SCHDL_SN = C.SCHDL_SN
+           SET V.DEL_YN   = 'Y'
+             , V.MDFR_ID  = #{actorId}
+             , V.MDFCN_DT = NOW()
+         WHERE S.PET_SN = #{petSn}
+           AND V.DEL_YN = 'N'
     </update>
 </mapper>
