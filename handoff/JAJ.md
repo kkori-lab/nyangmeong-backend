@@ -2,7 +2,7 @@
 
 ## 지금 하는 것
 
-SCR-HLT-011 종합 건강기록 — 끝남: 검증 `확인 못 함 있음`(연결 남음만), 사람 확인 통과 (승인 2026-10-30 12:58, 시작 2026-10-30 12:54). 이후 추가 요청 1~6 — `./gradlew build -q` 통과, 사람 확인 전에 커밋(2026-10-30)
+SCR-HLT-011 종합 건강기록 — 끝남: 검증 `확인 못 함 있음`(연결 남음만), 사람 확인 통과 (승인 2026-10-30 12:58, 시작 2026-10-30 12:54). 이후 추가 요청 1~9 — `./gradlew build -q` 통과, 사람 확인 통과(2026-10-30)
 
 공통: 이 화면은 조회 전용이고 새 API를 만들지 않는다. 이미 있는 목록 API 4개(첨부·검사 수치·처방약·반복 예방)의 `ckupRcdSn`을 선택값으로 바꿔, 생략하면 반려동물 전체를 준다. 전체 조회는 `CheckupService.searchCompletedCheckups(petSn)`(새 메서드, 기존 `CheckupMapper.selectList`를 조건 없이 써서 완료 상태 검진기록 전부, 연결 일정이 삭제된 것 포함 — 건강 일지 검진기록 목록과 같은 범위)로 검진기록 번호를 얻은 뒤 각 Mapper에서 `CKUP_RCD_SN IN (...)`으로 읽는다. 그래서 다른 Mapper에 SCHDL 조인이 생기지 않고 `MapperXmlRuleTest` 예외 목록도 늘리지 않는다. 검진기록이 0건이면 쿼리 없이 빈 목록. 권한은 `petAuthorizer.checkCaregiver`(검진기록 1건 조회 때와 같이 403). 조회는 모두 `DEL_YN='N'`. SearchCond 4개의 `@NotNull` 제거·주석 갱신. ErrorCode 추가 없음.
 - FN-HLT-011-01 반려동물 선택 탭: 서버 작업 없음. `GET /api/pets`(SJM, 있음)로 칩을 그린다. 프론트 연결: 종합 건강기록 반려동물 탭 (프론트 저장소에서 /start)
@@ -29,13 +29,14 @@ SCR-HLT-011 종합 건강기록 — 끝남: 검증 `확인 못 함 있음`(연�
 | 추가-4 | 없음(SQL 문만 전달, DB·SQL 파일은 사람이 직접). HLTG12 하드코딩 코드가 있으면 그 파일 | 사람이 SQL 실행. "SDMA = (코드값)" 한 줄 | 요청 2026-10-30 13:55 "HLTG12에 SDMA 공통코드 추가, SQL과 설명만 보내고 손대지 말 것" |
 | 추가-5 | `CareItemService`(`searchNamesByPets`에서 기본 케어 항목 생성 재사용)·테스트 | 명령: `./gradlew build -q`(연 적 없는 반려동물 → 기본 11개 이름 포함, 두 번 호출해도 11개) | 요청 2026-10-30 13:55 "이름 조회 시 기본 케어 항목이 없으면 기존 생성 로직으로 생성, 중복 금지" |
 | 추가-6 | 없음(확인만) | [항목 / 일치 여부 / 근거 코드] 표 보고 | 요청 2026-10-30 13:55 "AIM 담당자에게 안내한 care-schedules·care-items·searchNamesByPets 계약 검증" |
+| 추가-7 | `health/service/HealthPetDeleteListener`(새)·health Mapper 10개(+xml `deleteByPetSn`)·테스트 | 명령: `./gradlew build -q`(리스너가 Mapper 10개 삭제를 petSn·SYSTEM으로 호출, 하나 실패 시 예외 전파, BEFORE_COMMIT, Mapper XML 경로·DEL_YN 조건). 화면: 반려동물 삭제 후 그 반려동물의 health 12개 테이블 행이 DEL_YN='Y' | 요청 2026-10-30 "PetDeletedEvent를 BEFORE_COMMIT으로 받아 health 기록 DEL_YN='Y', 예외 삼키지 말 것" |
+| 추가-8 | `CheckupMapper.xml`(selectList·selectDetail·existsLinkedCheckup)·`CareScheduleMapper.xml`(selectList 검진 건수)·`CheckupRecord`(delYn)·`src/test/resources/del-yn-tables.txt`(CKUP_RCD)·Mapper XML 테스트 | 명령: `./gradlew build -q`(CKUP_RCD DEL_YN 조건 테스트) | 요청 2026-10-30 "CKUP_RCD.DEL_YN을 health 조회에 반영" |
+| 추가-9 | 없음(정리 SQL 전달, 실행은 사람). `selectExpired`는 바꾸지 않음 | 사람이 건수 SELECT·정리 UPDATE 실행 | 요청 2026-10-30 "이미 삭제된 반려동물의 health 데이터를 정리 SQL로 DEL_YN='Y'(1안), 건수 SELECT 함께" |
 
 ## 다음에 할 것
 
-- 사람 확인 남음: 추가-1(`…/analyses` 404, `POST inspection-values` 그대로)·추가-2(삭제된 반려동물의 병원 일정이 `selectHospitalSchedules` 결과에서 빠지는지 DB로 비교)·추가-4(SDMA 저장 200)·추가-5(케어리스트를 연 적 없는 반려동물로 `GET /internal/ai/register-context` → 기본 11개, 두 번 불러도 11개)
-- 사람이 실행: HLTG12 SDMA 공통코드 INSERT(`HLTC0078`, SORT_SEQ 115). 코드(`InspectionArticle.SDMA`)는 이미 받는다. `db/migration` 파일로 올리면 PR에 "DB 변경 있음". Python 담당에게 `SDMA = HLTC0078` 전달
-- 결정 필요: `PrescriptionExpiryJob`(`PrescriptionMapper.selectExpired`)에 `P.DEL_YN='N'`이 없어 삭제된 반려동물의 처방약도 매일 종료 처리된다(추가-3 조사). `selectObservingPetSns`도 조건이 없지만 받는 쪽 출제 SQL이 거른다
 - 알림: AIM 담당(LJS)에게 `searchNamesByPets`가 이제 기본 항목을 만들고 새 트랜잭션(REQUIRES_NEW)으로 돈다고 전한다
+- 참고: 반려동물 삭제는 `HealthPetDeleteListener`(PetDeletedEvent, BEFORE_COMMIT)가 health 12개 테이블을 `DEL_YN='Y'`(MDFR_ID SYSTEM)로 바꾼다. 검진기록 쪽은 `SCHDL.PET_SN`으로 찾고 `S.DEL_YN`은 보지 않는다. 새 health 테이블을 만들면 이 리스너에도 넣는다
 - 연결 남음: FN-HLT-011-01~10 (프론트 연결 종합 건강기록 화면 전체, 프론트 저장소에서 /start — 마일스톤 "SCR-HLT-011 종합 건강기록 · API 연결"). 반려동물 전체 조회는 첨부·검사 수치·처방약·반복 예방 목록에서 `ckupRcdSn`을 빼고 부른다. 반복 예방 전체 조회에만 `hsptlNm`이 채워진다
 - 연결 남음: FN-HLT-002-15~25·32 (프론트 연결 건강 일지 지속 관찰 탭·관찰 기록 등록 모달 A/B, 프론트 저장소에서 /start — 마일스톤 "SCR-HLT-002 건강 일지 · 지속 관찰 API 연결")
 - 참고: 관찰 회차 PATCH는 보낸 값만 바꿔 크기·메모를 비울 수 없다. 확인용 데이터를 지워도 업로드 파일 행·`OBSRV_ARTCL_STTS_HSTRY` 행은 공용 DB에 남는다(반려동물 2)
@@ -49,7 +50,6 @@ SCR-HLT-011 종합 건강기록 — 끝남: 검증 `확인 못 함 있음`(연�
 - 결정 필요: AI로 등록한 케어 항목의 출처 저장(LJS 질문). `CARE_ARTCL`에 출처 컬럼이 없어 지금은 저장하지 않는다. 저장하려면 `db/migration` 추가를 팀과 맞춘다. 일정은 `schdlSrcCd`=HLTC0067로 이미 저장된다
 - 참고: `CareItemCreateRequest.cycleDrctInptDayCnt`의 1~9999 검사가 일상관리 요청에도 걸린다(0을 보내면 400). AI 카드는 일상관리일 때 이 필드를 보내지 않는다
 - 참고: 시드 기본 항목 이름("빗질하기", "발톱 정리" 등)이 `BasicCareItem` 이름과 달라 시드 반려동물의 기본 항목 완료는 케어미션에 반영되지 않는다(시드는 고치지 않기로 함)
-- 공용 DB 정리: 반려동물 1의 확인용 항목 "검증용 정기"(3272·3273)가 남아 있으면 `DELETE /api/pets/1/care-items/{번호}`로 지운다
 - 연결 남음: FN-HLT-002-05·06·14·26~31·46 (프론트 연결 검진기록 탭, 프론트 저장소에서 /start — 마일스톤 "SCR-HLT-002 건강 일지 · 검진기록 API 연결"). 목록 건수 필드는 `totalElements`(기획의 `totalCount` 아님)
 - 연결 남음: FN-HLT-002-31 영수증 [직접 입력] 경로의 영수증 연결·상태 변경, `CheckupRecordFake`를 `CheckupService`로 바꾸기 (LJS와 맞춘다)
 - 연결 남음: 추가-1 (프론트 연결 `features/health/api.js` 등 일정 화면, 프론트 저장소에서 /start — 마일스톤 "SCR-HLT-003 케어 캘린더 · 일정 API 연결")

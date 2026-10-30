@@ -222,4 +222,18 @@
          WHERE INSP_NVL_SN = #{value.inspNvlSn}
            AND DEL_YN = 'N'
     </update>
+
+    <update id="deleteByPetSn">
+        /* 반려동물의 검사 수치 전체 삭제 (반려동물 삭제, 연결 일정 삭제 여부와 무관) */
+        UPDATE INSP_NVL V
+          JOIN CKUP_RCD C
+            ON C.CKUP_RCD_SN = V.CKUP_RCD_SN
+          JOIN SCHDL S
+            ON S.SCHDL_SN = C.SCHDL_SN
+           SET V.DEL_YN   = 'Y'
+             , V.MDFR_ID  = #{actorId}
+             , V.MDFCN_DT = NOW()
+         WHERE S.PET_SN = #{petSn}
+           AND V.DEL_YN = 'N'
+    </update>
 </mapper>

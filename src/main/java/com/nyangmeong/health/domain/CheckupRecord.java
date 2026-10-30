@@ -29,6 +29,8 @@ public class CheckupRecord {
     private String ckupCn;
     /** 검진메모내용 */
     private String ckupMemoCn;
+    /** 삭제여부 */
+    private String delYn;
     /** 등록일시 */
     private LocalDateTime regDt;
     /** 수정일시 */

@@ -95,4 +95,14 @@ public interface ObservationMapper {
      * 관찰 회차 삭제
      */
     int deleteCycle(@Param("obsrvCyclSn") Long obsrvCyclSn, @Param("actorId") String actorId);
+
+    /**
+     * 반려동물의 관찰 회차 전체 삭제 (반려동물 삭제)
+     */
+    int deleteCyclesByPetSn(@Param("petSn") Long petSn, @Param("actorId") String actorId);
+
+    /**
+     * 반려동물의 관찰 항목 전체 삭제 (반려동물 삭제)
+     */
+    int deleteByPetSn(@Param("petSn") Long petSn, @Param("actorId") String actorId);
 }

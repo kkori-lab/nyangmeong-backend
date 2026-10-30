@@ -92,4 +92,9 @@ class CareScheduleMapperXmlTest {
                 .contains("S.SCHDL_DT < DATE_ADD(#{schdlYmd}, INTERVAL 1 DAY)")
                 .contains("ORDER BY S.SCHDL_DT , S.SCHDL_SN");
     }
+
+    @Test
+    void 연결_검진기록_수는_삭제된_검진기록을_세지_않는다() throws Exception {
+        assertThat(sql("selectList")).contains("AND C.DEL_YN = 'N' ) AS CKUP_RCD_CNT");
+    }
 }

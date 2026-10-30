@@ -67,4 +67,9 @@ public interface InspectionValueMapper {
      * 검사 수치 수정
      */
     int updateValue(@Param("value") InspectionValue value, @Param("actorId") String actorId);
+
+    /**
+     * 반려동물의 검사 수치 전체 삭제 (반려동물 삭제)
+     */
+    int deleteByPetSn(@Param("petSn") Long petSn, @Param("actorId") String actorId);
 }

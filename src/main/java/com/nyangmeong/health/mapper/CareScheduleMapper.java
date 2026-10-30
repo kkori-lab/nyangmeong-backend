@@ -66,4 +66,9 @@ public interface CareScheduleMapper {
      */
     int updateLinkedRepeatPreventionsPet(@Param("schdlSn") Long schdlSn, @Param("petSn") Long petSn,
             @Param("actorId") String actorId);
+
+    /**
+     * 반려동물의 일정 전체 삭제 (반려동물 삭제)
+     */
+    int deleteByPetSn(@Param("petSn") Long petSn, @Param("actorId") String actorId);
 }

@@ -64,7 +64,8 @@
              , ( SELECT COUNT(*)
                    FROM CKUP_RCD C
                   WHERE C.SCHDL_SN = S.SCHDL_SN
-                    AND C.CKUP_RCD_STTS_CD = #{completedCd} ) AS CKUP_RCD_CNT
+                    AND C.CKUP_RCD_STTS_CD = #{completedCd}
+                    AND C.DEL_YN = 'N' ) AS CKUP_RCD_CNT
           FROM SCHDL S
           LEFT JOIN COM_CD K
             ON K.COM_CD = S.SCHDL_KND_CD
@@ -250,5 +251,15 @@
          WHERE CKUP_RCD_SN IN ( SELECT C.CKUP_RCD_SN
                                   FROM CKUP_RCD C
                                  WHERE C.SCHDL_SN = #{schdlSn} )
+    </update>
+
+    <update id="deleteByPetSn">
+        /* 반려동물의 일정 전체 삭제 (반려동물 삭제) */
+        UPDATE SCHDL
+           SET DEL_YN   = 'Y'
+             , MDFR_ID  = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE PET_SN = #{petSn}
+           AND DEL_YN = 'N'
     </update>
 </mapper>

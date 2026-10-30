@@ -189,4 +189,18 @@
              , #{aftrSttsCd}
              , NOW() )
     </insert>
+
+    <update id="deleteByPetSn">
+        /* 반려동물의 처방약 전체 삭제 (반려동물 삭제, 연결 일정 삭제 여부와 무관) */
+        UPDATE PRSC R
+          JOIN CKUP_RCD C
+            ON C.CKUP_RCD_SN = R.CKUP_RCD_SN
+          JOIN SCHDL S
+            ON S.SCHDL_SN = C.SCHDL_SN
+           SET R.DEL_YN   = 'Y'
+             , R.MDFR_ID  = #{actorId}
+             , R.MDFCN_DT = NOW()
+         WHERE S.PET_SN = #{petSn}
+           AND R.DEL_YN = 'N'
+    </update>
 </mapper>
