@@ -1,7 +1,7 @@
 # SJM 핸드오프
 
 ## 지금 하는 것
-SCR-MYP-040 회원정보 수정 — 기획 (시작 2026-10-30 03:54)
+SCR-MYP-040 회원정보 수정 — 구현 중 (승인 2026-10-30 03:58, 시작 2026-10-30 03:54)
 - 범위: 조회(FN-MYP-040-02·03·08·09·13)와 휴대폰 번호·프로필 사진 저장(FN-MYP-040-02·05·08·11)만 한다. 닉네임 변경(04·10)은 이미 있는 `PATCH /members/me/nickname`, 본인 확인·비밀번호 변경(01·06)은 YAY, 탈퇴 링크(07·12)는 화면만 있다. 휴대폰 중복확인 `GET /members/phone-availability`(YAY)는 이미 있어 가짜 응답이 필요 없다
 - 초안 고치기(구현 전): `docs/api/issues.md` 마이페이지 14번에 `[2026-10-30 결정]`을 적는다. `GET /members/me`는 회원정보 수정 조회(SJM)로 쓰고, 헤더용 회원 요약은 이미 있는 `GET /auth/me`(`AuthMeResponse`)가 맡아 경로가 겹치지 않는다. 5번·15번: 초안 그대로 multipart `profilePhoto` + `profilePhotoReset`으로 정한다. 사진은 공개 이미지(`FileStore.storePublic`, `GET /api/files/public/{atchFileSn}`)이고 형식·용량은 공통 규칙(이미지만, 10MB)을 따른다. `docs/api/member.md` `MemberResponse`에 `joinDt`(LocalDateTime, Y, MBR.REG_DT, MYP-040-13)와 `lastLgnDt`(LocalDateTime, N, MBR.LAST_LGN_DT, MYP-040-13)를 넣는다. 초안 표에 계정 정보(가입일·최근 로그인) 필드가 없어서다. 가입 방식은 기존 `joinPathCd`·`snsAcntLinks`로 화면이 만든다
 - FN-MYP-040-02·03·08·09·13 조회: `MemberController` `GET /me` → `MemberService.getMember(mbrSn)`(이미 있음) → `MemberResponse`. `Member` VO에 `regDt`, `MemberMapper.xml` `memberResultMap`·`selectBySn`에 `REG_DT`, `toResponse`에 `joinDt`·`lastLgnDt`를 더한다(가입·닉네임 응답에도 같이 붙는다). 명령: `./gradlew build -q`(MemberControllerTest `GET /me` 200·비로그인 401, MemberServiceTest getMember의 joinDt·lastLgnDt). 화면: 이메일 회원 토큰으로 `GET /api/members/me` → 복호화한 `acntEml`·`mblTelno`, `joinPathCd`, 빈 `snsAcntLinks`, `joinDt`, `lastLgnDt`. 프론트 연결: SCR-MYP-040 6-2·6-3 프로필 요약·계정 정보(프론트 저장소에서 /start)

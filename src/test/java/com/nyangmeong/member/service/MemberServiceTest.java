@@ -2,11 +2,14 @@ package com.nyangmeong.member.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -20,9 +23,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.nyangmeong.global.error.BaseException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.security.crypto.CryptoProperties;
 import com.nyangmeong.global.security.crypto.FieldCryptoService;
 import com.nyangmeong.global.security.domain.MemberAuthority;
@@ -33,13 +39,14 @@ import com.nyangmeong.member.domain.JoinPath;
 import com.nyangmeong.member.domain.Member;
 import com.nyangmeong.member.dto.MemberNicknameUpdateRequest;
 import com.nyangmeong.member.dto.MemberResponse;
+import com.nyangmeong.member.dto.MemberUpdateRequest;
 import com.nyangmeong.member.dto.EmailCertificationResponse;
 import com.nyangmeong.member.dto.PasswordResetAccount;
 import com.nyangmeong.member.mapper.MemberMapper;
 
 /**
  * [검사 - 회원 서비스]
- * - 이메일·번호·닉네임 중복 판단, 회원 저장 값, 닉네임 설정
+ * - 이메일·번호·닉네임 중복 판단, 회원 저장 값, 닉네임 설정, 회원정보 수정(번호·프로필 사진)
  */
 class MemberServiceTest {
 
@@ -49,7 +56,8 @@ class MemberServiceTest {
     private final MemberMapper memberMapper = mock(MemberMapper.class);
     private final SystemSettingService systemSettingService = mock(SystemSettingService.class);
     private final FieldCryptoService crypto = cryptoService();
-    private final MemberService service = new MemberService(memberMapper, crypto, systemSettingService);
+    private final FileStore fileStore = mock(FileStore.class);
+    private final MemberService service = new MemberService(memberMapper, crypto, systemSettingService, fileStore);
 
     /** Mockito 는 Long 반환을 0으로 채우므로 "쓰는 회원 없음"을 null 로 명시 */
     @BeforeEach
@@ -295,6 +303,136 @@ class MemberServiceTest {
         assertThat(response.snsAcntLinks().get(0).snsOffrCd()).isEqualTo(JoinPath.KAKAO.getCode());
         assertThat(response.joinPathCd()).isEqualTo(JoinPath.EMAIL.getCode());
         verify(memberMapper).selectSnsOffrCds(eq(5L));
+    }
+
+    @Test
+    void 회원_응답은_가입일과_최근_로그인을_담는다() {
+        Member member = stored(5L, MemberStatus.NORMAL.getCode(), "초코맘", "Y");
+        member.setRegDt(LocalDateTime.of(2026, 8, 14, 9, 0));
+        member.setLastLgnDt(LocalDateTime.of(2026, 10, 21, 10, 42));
+        when(memberMapper.selectBySn(5L)).thenReturn(member);
+
+        MemberResponse response = service.getMember(5L);
+
+        assertThat(response.joinDt()).isEqualTo(LocalDateTime.of(2026, 8, 14, 9, 0));
+        assertThat(response.lastLgnDt()).isEqualTo(LocalDateTime.of(2026, 10, 21, 10, 42));
+        assertThat(response.mblTelno()).isEqualTo(PHONE);
+    }
+
+    private static MultipartFile png() {
+        return new MockMultipartFile("profilePhoto", "me.png", "image/png", new byte[] {1, 2, 3});
+    }
+
+    private void givenNormalMember(long mbrSn) {
+        when(memberMapper.selectBySn(mbrSn)).thenReturn(stored(mbrSn, MemberStatus.NORMAL.getCode(), "초코맘", "Y"));
+    }
+
+    @Test
+    void 회원정보_수정은_정규화한_번호를_암호문과_HMAC으로_저장한다() {
+        givenNormalMember(5L);
+
+        service.updateMember(5L, new MemberUpdateRequest("+82 10-9876-5432", null, null));
+
+        ArgumentCaptor<String> enc = ArgumentCaptor.forClass(String.class);
+        verify(memberMapper).updateProfile(eq(5L), enc.capture(), eq(crypto.hmac("01098765432")), isNull(),
+                eq(false), eq("5"));
+        assertThat(crypto.decrypt(enc.getValue())).isEqualTo("01098765432");
+    }
+
+    @Test
+    void 회원정보_수정은_다른_회원이_쓰는_번호를_저장하지_않는다() {
+        givenNormalMember(5L);
+        when(memberMapper.selectMbrSnByPhoneHmac(crypto.hmac("01098765432"))).thenReturn(9L);
+
+        Throwable thrown = catchThrowable(
+                () -> service.updateMember(5L, new MemberUpdateRequest("010-9876-5432", null, null)));
+
+        assertCode(thrown, ErrorCode.PHONE_ALREADY_USED);
+        verify(memberMapper, never()).updateProfile(anyLong(), any(), any(), any(), anyBoolean(), any());
+    }
+
+    @Test
+    void 회원정보_수정은_본인_번호를_그대로_보내도_저장한다() {
+        givenNormalMember(5L);
+        when(memberMapper.selectMbrSnByPhoneHmac(crypto.hmac(PHONE))).thenReturn(5L);
+
+        service.updateMember(5L, new MemberUpdateRequest(PHONE, null, null));
+
+        verify(memberMapper).updateProfile(eq(5L), anyString(), eq(crypto.hmac(PHONE)), isNull(), eq(false), eq("5"));
+    }
+
+    @Test
+    void 회원정보_수정은_형식이_틀린_번호를_거절한다() {
+        givenNormalMember(5L);
+
+        Throwable thrown = catchThrowable(
+                () -> service.updateMember(5L, new MemberUpdateRequest("12345", null, null)));
+
+        assertCode(thrown, ErrorCode.INVALID_PHONE_NUMBER);
+    }
+
+    @Test
+    void 회원정보_수정은_사진을_공개_이미지로_저장한다() {
+        givenNormalMember(5L);
+        MultipartFile photo = png();
+        when(fileStore.storePublic(photo, "5")).thenReturn(77L);
+
+        service.updateMember(5L, new MemberUpdateRequest(null, photo, null));
+
+        verify(memberMapper).updateProfile(eq(5L), isNull(), isNull(), eq(77L), eq(false), eq("5"));
+    }
+
+    @Test
+    void 회원정보_수정은_기본_이미지로_되돌리면_사진을_비운다() {
+        givenNormalMember(5L);
+
+        service.updateMember(5L, new MemberUpdateRequest(null, null, true));
+
+        verify(memberMapper).updateProfile(eq(5L), isNull(), isNull(), isNull(), eq(true), eq("5"));
+        verify(fileStore, never()).storePublic(any(MultipartFile.class), anyString());
+    }
+
+    @Test
+    void 회원정보_수정은_사진과_되돌리기를_같이_보내면_400이다() {
+        givenNormalMember(5L);
+
+        Throwable thrown = catchThrowable(
+                () -> service.updateMember(5L, new MemberUpdateRequest(null, png(), true)));
+
+        assertCode(thrown, ErrorCode.BAD_REQUEST);
+        verify(fileStore, never()).storePublic(any(MultipartFile.class), anyString());
+    }
+
+    @Test
+    void 회원정보_수정은_보낸_값이_없으면_바꾸지_않는다() {
+        givenNormalMember(5L);
+
+        MemberResponse response = service.updateMember(5L, new MemberUpdateRequest(null, null, false));
+
+        assertThat(response.mbrNcnm()).isEqualTo("초코맘");
+        verify(memberMapper, never()).updateProfile(anyLong(), any(), any(), any(), anyBoolean(), any());
+    }
+
+    @Test
+    void 회원정보_수정은_정지_탈퇴_회원이면_거절한다() {
+        when(memberMapper.selectBySn(5L)).thenReturn(stored(5L, MemberStatus.WITHDRAWN.getCode(), "초코맘", "Y"));
+
+        Throwable thrown = catchThrowable(
+                () -> service.updateMember(5L, new MemberUpdateRequest(PHONE, null, null)));
+
+        assertCode(thrown, ErrorCode.MEMBER_INACTIVE);
+    }
+
+    @Test
+    void 회원정보_수정_중_번호_유일_키가_부딪히면_409이다() {
+        givenNormalMember(5L);
+        when(memberMapper.updateProfile(anyLong(), any(), any(), any(), anyBoolean(), any()))
+                .thenThrow(new DuplicateKeyException("Duplicate entry for key 'MBR.UK_MBR_3'"));
+
+        Throwable thrown = catchThrowable(
+                () -> service.updateMember(5L, new MemberUpdateRequest("01098765432", null, null)));
+
+        assertCode(thrown, ErrorCode.PHONE_ALREADY_USED);
     }
 
     @Test

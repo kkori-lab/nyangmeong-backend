@@ -75,6 +75,13 @@ public interface MemberMapper {
             @Param("mblTelnoHmac") String mblTelnoHmac, @Param("actorId") String actorId);
 
     /**
+     * 회원정보 수정 : null 인 값은 바꾸지 않고, photoReset 이면 프로필 사진을 비운다
+     */
+    int updateProfile(@Param("mbrSn") Long mbrSn, @Param("mblTelnoEnc") String mblTelnoEnc,
+            @Param("mblTelnoHmac") String mblTelnoHmac, @Param("atchFileSn") Long atchFileSn,
+            @Param("photoReset") boolean photoReset, @Param("actorId") String actorId);
+
+    /**
      * 최종 로그인 일시 갱신
      */
     int updateLastLogin(@Param("mbrSn") Long mbrSn, @Param("actorId") String actorId);
