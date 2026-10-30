@@ -44,8 +44,9 @@
 | PATCH | /pets/{petSn}/inspection-values/{inspNvlSn} | 검사 수치 1행 수정(항목 변경 불가) | HLT-007-02·03 | JAJ | InspectionValueUpdateRequest | InspectionValueResponse |
 | PATCH | /pets/{petSn}/observation-cycles/{obsrvCyclSn} | 관찰 회차 수정(multipart) | HLT-002-19 | JAJ | ObservationCycleUpdateRequest | ObservationCycleResponse |
 | PATCH | /pets/{petSn}/prescriptions/{prscSn} | 처방약 수정(투약 항목 목표 횟수·종료일 연동, 종료·OFF면 투약 항목 삭제) | HLT-005-03 | JAJ | PrescriptionUpdateRequest | PrescriptionResponse |
-| DELETE | /pets/{petSn}/care-completions/{careCmptnHstrySn} | 완료 기록 취소·투약 마지막 1회 취소. 다음 예정일 재계산 | HLT-003-12 | JAJ | - | - |
+| DELETE | /pets/{petSn}/care-completions/{careCmptnHstrySn} | 그날 완료 기록 취소(기록 내용 아이콘, 투약은 그날 체크 전부). 다음 예정일 재계산 | HLT-003-12 | JAJ | - | - |
 | DELETE | /pets/{petSn}/care-items/{careArtclSn} | 사용자 추가 케어 항목 삭제(기본 항목 불가) | HLT-003-12 | JAJ | - | - |
+| DELETE | /pets/{petSn}/care-items/{careArtclSn}/today-completion/last | 투약 항목 오늘 마지막 1회 취소(케어리스트 [마지막 1회 취소]). 투약 아니면 400, 오늘 기록 없으면 404 | HLT-003-12 | JAJ | - | - |
 | DELETE | /pets/{petSn}/care-schedules/{schdlSn} | 일정 삭제(연결 검진기록은 유지) | HLT-003-33 | JAJ | - | - |
 | DELETE | /pets/{petSn}/checkup-attachments/{ckupRcdAtchSn} | 첨부 삭제 | HLT-005-01 | JAJ | - | - |
 | DELETE | /pets/{petSn}/checkups/{ckupRcdSn} | 검진기록 삭제(자동 생성 케어 항목 삭제, 완료 기록·병원 일정 유지) | HLT-002-05 | JAJ | - | - |
@@ -62,7 +63,7 @@
 쓰는 API: POST /pets/{petSn}/care-completions
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| careArtclSn | Long | Y | 이 반려동물의 케어 항목. 투약 항목은 1회 체크마다 1건(n/N회). 완료일은 요청에 없음(issues 4) | CARE_CMPTN_HSTRY.CARE_ARTCL_SN, HLT-003-12 |
+| careArtclSn | Long | Y | 이 반려동물의 케어 항목. 항목·날짜당 1건이고 투약 항목은 체크마다 회차를 올림(n/N회). 완료일은 요청에 없음(issues 4) | CARE_CMPTN_HSTRY.CARE_ARTCL_SN, HLT-003-12 |
 
 ### CareCompletionResponse
 쓰는 API: POST /pets/{petSn}/care-completions
@@ -85,7 +86,7 @@
 | careArtclNm | String | Y | | CARE_ARTCL.CARE_ARTCL_NM, HLT-003-12 |
 | rprsIconId | String | Y | 기록 내용의 항목 아이콘(클릭 시 취소) | CARE_ARTCL.RPRS_ICON_ID, HLT-003-12 |
 | cmptnYmd | LocalDate | Y | 날짜별로 쌓아 표시 | CARE_CMPTN_HSTRY.CMPTN_YMD, HLT-003-12 |
-| cmptnCycl | Integer | N | | CARE_CMPTN_HSTRY.CMPTN_CYCL |
+| cmptnCycl | Integer | N | 투약 항목은 1일 복용 횟수를 채운 날만 나온다 | CARE_CMPTN_HSTRY.CMPTN_CYCL |
 
 ### CareItemCreateRequest
 쓰는 API: POST /pets/{petSn}/care-items

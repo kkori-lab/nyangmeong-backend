@@ -101,11 +101,19 @@ public class CareItemController {
         return ResponseEntity.ok(ApiResponse.success(completed.response()));
     }
 
-    @Operation(summary = "케어 완료 취소")
+    @Operation(summary = "그날 케어 완료 기록 취소(투약은 그날 체크 전부)")
     @DeleteMapping("/care-completions/{careCmptnHstrySn}")
     public ResponseEntity<ApiResponse<Void>> cancel(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long careCmptnHstrySn) {
         careItemService.cancel(me.id(), petSn, careCmptnHstrySn);
+        return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    @Operation(summary = "투약 오늘 마지막 1회 취소")
+    @DeleteMapping("/care-items/{careArtclSn}/today-completion/last")
+    public ResponseEntity<ApiResponse<Void>> cancelLastToday(@AuthenticationPrincipal LoginMember me,
+            @PathVariable Long petSn, @PathVariable Long careArtclSn) {
+        careItemService.cancelLastToday(me.id(), petSn, careArtclSn);
         return ResponseEntity.ok(ApiResponse.success());
     }
 }

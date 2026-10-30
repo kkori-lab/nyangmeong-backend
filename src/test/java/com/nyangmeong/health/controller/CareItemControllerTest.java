@@ -281,4 +281,24 @@ class CareItemControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("CARE_COMPLETION_NOT_FOUND"));
     }
+
+    @Test
+    @WithMockLoginMember
+    void 투약_마지막_1회_취소는_200이고_투약이_아니면_400_오늘_기록이_없으면_404() throws Exception {
+        mockMvc.perform(delete("/api/pets/10/care-items/100/today-completion/last").header(XHR, "XMLHttpRequest"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("success"));
+        verify(careItemService).cancelLastToday(1L, 10L, 100L);
+
+        doThrow(new CustomException(ErrorCode.INVALID_INPUT_VALUE)).when(careItemService)
+                .cancelLastToday(1L, 10L, 101L);
+        mockMvc.perform(delete("/api/pets/10/care-items/101/today-completion/last").header(XHR, "XMLHttpRequest"))
+                .andExpect(status().isBadRequest());
+
+        doThrow(new CustomException(ErrorCode.CARE_COMPLETION_NOT_FOUND)).when(careItemService)
+                .cancelLastToday(1L, 10L, 102L);
+        mockMvc.perform(delete("/api/pets/10/care-items/102/today-completion/last").header(XHR, "XMLHttpRequest"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("CARE_COMPLETION_NOT_FOUND"));
+    }
 }
