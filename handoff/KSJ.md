@@ -2,27 +2,25 @@
 
 ## 지금 하는 것
 
-SCR-CSC-001 공지사항 — 끝남 (승인 2026-10-30 14:49, 시작 2026-10-30 14:19, 검증 통과 2회차 루프 2회차, 사람 확인 2026-10-30)
-기준: 고객센터 기능명세서 v0.5(2026-10-29)·화면설계서 v0.4(2026-10-25). `docs/api/support.md` `GET /notices`·`GET /notices/{ntcMttrSn}` 행, `NoticeSummary`·`NoticeResponse`
-- 공통 파일: `support/domain/Notice.java`(NTC_MTTR VO), `support/mapper/NoticeMapper.java`, `mapper/support/NoticeMapper.xml`, `support/service/NoticeService.java`, `support/controller/NoticeController.java`, `support/dto/NoticeSummary.java`·`NoticeResponse.java`·`NoticeSearchCond.java`. 테스트 `NoticeServiceTest`·`NoticeControllerTest`. 로그인 필요(문의와 같다). 조회 조건 `USE_YN = 'Y'`(이 테이블엔 `DEL_YN` 없음). 없는 글·`USE_YN='N'`은 404 `NOTICE_NOT_FOUND`(이미 있음)
-- FN-CSC-001-01 목록 조회: `GET /api/notices` → `PageResponse<NoticeSummary>`(10건, `PageQuery` `sizeOr(10)`, 전체 건수는 `PageResponse` total). 완료 조건 명령: `./gradlew build -q`, `NoticeControllerTest` 목록 200·페이지 바인딩. 화면: Postman `GET /api/notices` → 10건·total
-  - "최대 10페이지"는 페이지 번호 10개 묶음(FN-CSC-001-04)으로 보고 서버에서 자르지 않는다
-- FN-CSC-001-02 상단 고정: `ORDER BY UPEND_FIX_YN DESC, REG_DT DESC, NTC_MTTR_SN DESC`(인덱스 `IDX_NTC_MTTR_1`). 응답 `upendFixYn`(boolean). 완료 조건 화면: 작성일이 가장 오래된 공지를 DB에서 `UPEND_FIX_YN='Y'`로 바꾸면 1페이지 맨 위
-- FN-CSC-001-03 제목 검색: 쿼리 `keyword`(`NoticeSearchCond`, 앞뒤 공백 제거, 빈 값은 조건 없음) → `NTC_MTTR_TTL LIKE CONCAT('%', #{keyword}, '%')`. 고정 공지도 검색에 걸려야 나온다. 완료 조건: 서비스 테스트에 공백 keyword → null, 화면: `?keyword=점검` → 제목에 "점검"만, 0건이면 빈 목록·total 0
-- FN-CSC-001-04 페이지네이션: `page`·`size`(PageQuery). 완료 조건 화면: `?page=2` → 11번째부터
-- FN-CSC-001-05 상세: `GET /api/notices/{ntcMttrSn}` → `NoticeResponse`(제목·본문·작성일). 조회수는 쓰지 않는다(사람 결정 2026-10-30)라 응답에서 `inqCnt`를 뺀다. 작성자는 화면에서 "관리자" 고정(issues 10, 필드 추가 없음). 구현 전에 `docs/api/support.md` 상세 행 설명의 "조회수 세션 기준 1회 증가"와 `NoticeResponse`의 `inqCnt` 행을 지우고 기능 ID에서 07을 뺀다. 완료 조건 명령: `NoticeServiceTest`에 없는 글 404. 화면: 상세 200, 없는 번호 404, 같은 공지를 여러 번 열어도 DB `INQ_CNT` 그대로
-- FN-CSC-001-06 최신 5개: 목록 API에 쿼리 `latestYn`(Boolean, 기본 false)을 더해 `true`면 고정 무시하고 `REG_DT DESC`만 → 프론트가 `?latestYn=true&size=5`로 부른다. 초안과 다름(이유: 초안은 목록 API를 그대로 쓰는데, 고정 우선 정렬이면 최신 5건이 아니라 고정 공지가 먼저 나온다). 구현 전에 `docs/api/support.md` `GET /notices` 행 설명에 `latestYn`을 적는다. 완료 조건 화면: 고정 공지가 있어도 `?latestYn=true&size=5`는 작성일 최신 5건
-- FN-CSC-001-07 조회수 증가, FN-CSC-001-08 관리자 작성: 제외(마일스톤 "제외" 절). 07은 사람 결정(공지는 조회수를 쓰지 않음)이라 DB 변경·조회 이력 테이블·`@Transactional` 쓰기가 없다. `INQ_CNT` 컬럼은 건드리지 않는다
-- 프론트 연결: SCR-CSC-001 공지 리스트(검색·고정 배경·전체 n건·0건 안내·페이지네이션)와 상세(최신 5개는 `latestYn=true&size=5`) (프론트 저장소에서 /start)
-이번에 하지 않는 것: 비로그인 공지 열람(명세에 없음, 열려면 `permit-all-paths` 결정 필요), 공지 본문 이미지(issues 10, 첨부 테이블 없음 — `NTC_MTTR_CN` 텍스트 그대로 내린다), 관리자 작성
+SCR-CSC-002 자주 묻는 질문(FAQ) — 끝남 (승인 2026-10-30 16:59, 시작 2026-10-30 16:34, 검증 통과 1회차, 사람 확인 2026-10-30)
+기준: 고객센터 기능명세서 v0.6(2026-10-30)·화면설계서 v0.4(2026-10-25). `docs/api/support.md` `GET /faqs` 행, `FaqSummary`
+결정: 제목의 「질문」은 FAQ 이름이라 질문이 아니다(추천안대로)
+- 공통 파일: `support/domain/Faq.java`(FAQ VO), `support/domain/FaqCategory.java`(CSCG01 enum: `CSCC0001` 이용방법·`CSCC0002` 계정·`CSCC0003` 신고/제재·`CSCC0004` 기타, `exists()`는 `InquiryType`과 같은 모양), `support/mapper/FaqMapper.java`, `mapper/support/FaqMapper.xml`(`selectList`·`selectCount`), `support/service/FaqService.java`(`@Transactional(readOnly = true)`), `support/controller/FaqController.java`, `support/dto/FaqSummary.java`·`FaqSearchCond.java`. 테스트 `FaqServiceTest`·`FaqControllerTest`·`FaqMapperSqlTest`. 로그인 필요(공지와 같다). 조회 조건 `USE_YN = 'Y'`(이 테이블엔 `DEL_YN` 없음). 쓰기·이벤트 없음
+- FN-CSC-002-01 목록 조회: `GET /api/faqs` → `PageResponse<FaqSummary>`(10건, `PageQuery` `sizeOr(10)`). 카테고리 배지 `faqClsfCdNm`은 `LEFT JOIN COM_CD C ON C.COM_CD = F.FAQ_CLSF_CD AND C.COM_CD_PRNT_SN IS NOT NULL`. 정렬 `SORT_SEQ ASC, FAQ_SN ASC`(명세에 정렬 기준이 없어 관리자가 정하는 정렬 순서 컬럼을 따른다). 완료 조건 명령: `./gradlew build -q`, `FaqControllerTest` 목록 200·`FaqSummary` 다섯 필드·페이지 바인딩. 화면: Postman `GET /api/faqs` → 10건·total·`faqClsfCdNm` 채워짐
+  - "최대 10페이지"는 공지와 같이 페이지 번호 10개 묶음(FN-CSC-002-05)으로 보고 서버에서 자르지 않는다
+  - FN-CSC-002-04 답변 아코디언은 목록 응답의 `ansCn`으로 끝난다(별도 API 없음, 마일스톤 기능 목록에 없는 이유)
+- FN-CSC-002-02 분류 필터: 쿼리 `faqClsfCd`(`FaqSearchCond`, 없거나 공백이면 전체) → `F.FAQ_CLSF_CD = #{faqClsfCd}`(인덱스 `IDX_FAQ_1`). CSCG01 하위 코드가 아니면 400 `INVALID_INPUT_VALUE`(`FaqCategory.exists()`). 완료 조건 명령: `FaqServiceTest`에 없는 코드 → 400, 공백 코드 → 조건 없음. 화면: `?faqClsfCd=CSCC0002` → 계정만, `?faqClsfCd=XXXX` → 400
+- FN-CSC-002-03 키워드 검색: 쿼리 `keyword`(앞뒤 공백 제거, 빈 값은 조건 없음) → `(F.QSTN_TTL LIKE CONCAT('%', #{keyword}, '%') OR F.ANS_CN LIKE CONCAT('%', #{keyword}, '%'))`. 분류와 AND. 완료 조건 명령: `FaqMapperSqlTest`에 분류·키워드를 함께 주면 `FAQ_CLSF_CD = ?`와 괄호로 묶인 OR이 AND로 붙는 케이스, `FaqServiceTest`에 공백 keyword → null. 화면: `?faqClsfCd=CSCC0002&keyword=비밀번호` → 계정 FAQ 중 질문·답변에 "비밀번호"가 든 것만, 답변에만 있는 단어도 걸림, 0건이면 빈 목록·total 0
+  결정: 추천안대로
+- FN-CSC-002-05 페이지네이션: `page`·`size`(PageQuery), `selectCount`는 목록과 같은 조건. 완료 조건 화면: `?page=2` → 11번째부터
+- `docs/api/support.md`: 경로·DTO는 초안 그대로. 구현 전에 `GET /faqs` 행 설명에 쿼리 이름(`faqClsfCd`·`keyword`·`page`·`size`)을 적는다
+- 프론트 연결: SCR-CSC-002 FAQ 리스트(카테고리 칩 → `faqClsfCd`, 검색, 배지, 아코디언 Q/A, 0건 「찾는 질문이 없어요」·[전체 질문 보기], 페이지네이션) (프론트 저장소에서 /start)
+  결정: 추천안대로. 화면 변경(사람 2026-10-30): 목록 항목 안의 카테고리 칩은 없애고 카테고리 탭으로 바꿨다. 필터는 그대로 `faqClsfCd`를 쓰고 응답 DTO는 초안 그대로 둔다(`faqClsfCdNm`은 프론트가 안 써도 된다)
+이번에 하지 않는 것: 관리자 FAQ 작성(명세에 없음), 비로그인 열람(공지와 같은 이유)
 새 의존성: 없음
 
-### 추가 요청
-| 번호 | 바꿀 파일 | 완료 조건 | 요청 |
-| --- | --- | --- | --- |
-| 추가-1 | `mapper/support/NoticeMapper.xml`(`selectList`), `NoticeMapperSqlTest.java`, `docs/api/support.md` | 명령: `./gradlew build -q` 통과, `NoticeMapperSqlTest`에 keyword가 있으면 제목 OR 본문 LIKE 조건이 붙는 케이스. 화면: `GET /api/notices?keyword=<본문에만 있는 단어>` → 그 공지가 나옴, 제목에만 있는 단어도 그대로 나옴 | 요청 2026-10-30 15:20 "공지 검색 범위를 제목·내용으로 바꿔 줘" |
-
 ## 다음에 할 것
+- 연결 남음: SCR-CSC-002 FAQ 화면 (프론트 연결 카테고리 탭 → `faqClsfCd`, 검색 `keyword`, 아코디언 Q/A는 목록 `ansCn`, 0건 「찾는 질문이 없어요」·[전체 질문 보기], 페이지네이션, 항목 안 카테고리 칩은 뺐으니 `faqClsfCdNm`은 안 써도 됨, 프론트 저장소에서 /start)
 - 연결 남음: SCR-CSC-001 공지사항 화면 (프론트 연결 공지 리스트(검색·고정 배경·전체 n건·0건 안내·페이지네이션)와 상세, 상세 하단 최신 5개는 `?latestYn=true&size=5`, 조회수 표시는 뺀다, 프론트 저장소에서 /start)
 - 사람이 할 일: 공지 정렬 확인으로 `UPEND_FIX_YN='Y'`로 바꾼 공지가 있으면 `UPDATE NTC_MTTR SET UPEND_FIX_YN='N' WHERE NTC_MTTR_SN=<번호>;`로 되돌린다. 공지 작성은 DB가 아닌 관리자 화면이 생기기 전까지 직접 넣는다
 - 이번에 안 한 것: FN-CSC-001-07 조회수(사람 결정으로 제외, 명세·설계서의 「조회」 표시와 다르니 기획자와 문서 정리), FN-CSC-001-08 관리자 작성, 비로그인 공지 열람, 공지 본문 이미지(issues 10)

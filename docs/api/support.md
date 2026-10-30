@@ -6,7 +6,7 @@
 
 | 메서드 | 경로 | 설명 | 기능 ID | 담당 | 요청 DTO | 응답 DTO |
 | --- | --- | --- | --- | --- | --- | --- |
-| GET | /faqs | FAQ 목록(카테고리·키워드, 답변 포함, 10건) | CSC-002-01~03·05 | KSJ | - | Page<FaqSummary> |
+| GET | /faqs | FAQ 목록(쿼리 `faqClsfCd`·`keyword`·`page`·`size`, 카테고리·키워드는 AND, 답변 포함, 10건) | CSC-002-01~03·05 | KSJ | - | Page<FaqSummary> |
 | GET | /inquiries | 내 1:1 문의 목록(처리 상태 필터) | CSC-003-01~04·16·17 | KSJ | - | Page<InquirySummary> |
 | GET | /inquiries/{otoInqrySn} | 내 1:1 문의 상세(답변 포함) | CSC-003-12·13·16 | KSJ | - | InquiryResponse |
 | GET | /inquiries/{otoInqrySn}/images/{atchFileSn} | 내 1:1 문의 첨부 이미지(본인만, 이미지 바이너리, 다른 문의·삭제된 첨부는 404) | CSC-003-12·15 | KSJ | - | byte[] |
