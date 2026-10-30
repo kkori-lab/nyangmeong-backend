@@ -22,6 +22,11 @@ public interface RepeatPreventionMapper {
     List<RepeatPreventionSummary> selectList(@Param("cond") RepeatPreventionSearchCond cond);
 
     /**
+     * 검진기록들의 반복 예방 목록 조회
+     */
+    List<RepeatPreventionSummary> selectListByCheckups(@Param("ckupRcdSns") List<Long> ckupRcdSns);
+
+    /**
      * 반복 예방 조회
      */
     RepeatPrevention selectPrevention(Long reptPrvntMngSn);

@@ -27,6 +27,7 @@ import com.nyangmeong.health.dto.CheckupAttachmentResponse;
 import com.nyangmeong.health.dto.CheckupAttachmentSearchCond;
 import com.nyangmeong.health.dto.CheckupAttachmentSummary;
 import com.nyangmeong.health.dto.CheckupAttachmentUpdateRequest;
+import com.nyangmeong.health.dto.CheckupSummary;
 import com.nyangmeong.health.dto.InspectionAnalysisResponse;
 import com.nyangmeong.health.dto.InspectionAnalysisResponse.InspectionAnalysisItem;
 import com.nyangmeong.health.dto.InspectionValueSummary;
@@ -66,6 +67,15 @@ public class CheckupAttachmentService {
     @Transactional(readOnly = true)
     public PageResponse<CheckupAttachmentSummary> search(Long mbrSn, Long petSn, CheckupAttachmentSearchCond cond,
             PageQuery pq) {
+        if (cond.getCkupRcdSn() == null) {
+            List<Long> ckupRcdSns = checkupService.searchAllCompleted(mbrSn, petSn).stream()
+                    .map(CheckupSummary::getCkupRcdSn).toList();
+            if (ckupRcdSns.isEmpty()) {
+                return PageResponse.of(new PageInfo<>(List.of()));
+            }
+            PageHelper.startPage(pq.pageOrDefault(), pq.sizeOr(PAGE_SIZE));
+            return PageResponse.of(new PageInfo<>(checkupAttachmentMapper.selectListByCheckups(ckupRcdSns, cond)));
+        }
         checkupService.getCheckup(mbrSn, petSn, cond.getCkupRcdSn());
         PageHelper.startPage(pq.pageOrDefault(), pq.sizeOr(PAGE_SIZE));
         List<CheckupAttachmentSummary> rows = checkupAttachmentMapper.selectList(cond);

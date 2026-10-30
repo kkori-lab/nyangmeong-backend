@@ -1,7 +1,11 @@
 package com.nyangmeong.health.service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +16,7 @@ import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.health.domain.CareCycle;
 import com.nyangmeong.health.domain.HealthCodeGroup;
 import com.nyangmeong.health.domain.RepeatPrevention;
+import com.nyangmeong.health.dto.CheckupSummary;
 import com.nyangmeong.health.dto.RepeatPreventionCreateRequest;
 import com.nyangmeong.health.dto.RepeatPreventionResponse;
 import com.nyangmeong.health.dto.RepeatPreventionSearchCond;
@@ -43,8 +48,28 @@ public class RepeatPreventionService {
      */
     @Transactional(readOnly = true)
     public List<RepeatPreventionSummary> search(Long mbrSn, Long petSn, RepeatPreventionSearchCond cond) {
+        if (cond.getCkupRcdSn() == null) {
+            return searchAll(mbrSn, petSn);
+        }
         checkupService.getCheckup(mbrSn, petSn, cond.getCkupRcdSn());
         return repeatPreventionMapper.selectList(cond);
+    }
+
+    /**
+     * 반려동물 전체 반복 예방 조회 (시작일 최신순, 출처 검진기록 병원명 포함)
+     */
+    private List<RepeatPreventionSummary> searchAll(Long mbrSn, Long petSn) {
+        Map<Long, String> hospitals = checkupService.searchAllCompleted(mbrSn, petSn).stream()
+                .collect(Collectors.toMap(CheckupSummary::getCkupRcdSn, CheckupSummary::getHsptlNm));
+        if (hospitals.isEmpty()) {
+            return List.of();
+        }
+        List<RepeatPreventionSummary> rows = new ArrayList<>(
+                repeatPreventionMapper.selectListByCheckups(List.copyOf(hospitals.keySet())));
+        rows.forEach(row -> row.setHsptlNm(hospitals.get(row.getCkupRcdSn())));
+        rows.sort(Comparator.comparing(RepeatPreventionSummary::getBgngYmd, Comparator.reverseOrder())
+                .thenComparing(RepeatPreventionSummary::getReptPrvntMngSn, Comparator.reverseOrder()));
+        return rows;
     }
 
     /**

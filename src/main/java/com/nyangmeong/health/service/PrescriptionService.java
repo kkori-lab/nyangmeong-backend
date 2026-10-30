@@ -12,6 +12,7 @@ import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.health.domain.Prescription;
 import com.nyangmeong.health.domain.PrescriptionStatus;
+import com.nyangmeong.health.dto.CheckupSummary;
 import com.nyangmeong.health.dto.PrescriptionCreateRequest;
 import com.nyangmeong.health.dto.PrescriptionResponse;
 import com.nyangmeong.health.dto.PrescriptionSearchCond;
@@ -43,6 +44,14 @@ public class PrescriptionService {
      */
     @Transactional(readOnly = true)
     public List<PrescriptionSummary> search(Long mbrSn, Long petSn, PrescriptionSearchCond cond) {
+        if (cond.getCkupRcdSn() == null) {
+            List<Long> ckupRcdSns = checkupService.searchAllCompleted(mbrSn, petSn).stream()
+                    .map(CheckupSummary::getCkupRcdSn).toList();
+            if (ckupRcdSns.isEmpty()) {
+                return List.of();
+            }
+            return prescriptionMapper.selectListByCheckups(ckupRcdSns, cond, PrescriptionStatus.TAKING.getCode());
+        }
         checkupService.getCheckup(mbrSn, petSn, cond.getCkupRcdSn());
         return prescriptionMapper.selectList(cond, PrescriptionStatus.TAKING.getCode());
     }

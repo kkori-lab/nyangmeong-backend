@@ -24,6 +24,12 @@ public interface PrescriptionMapper {
             @Param("takingCd") String takingCd);
 
     /**
+     * 검진기록들의 처방약 목록 조회
+     */
+    List<PrescriptionSummary> selectListByCheckups(@Param("ckupRcdSns") List<Long> ckupRcdSns,
+            @Param("cond") PrescriptionSearchCond cond, @Param("takingCd") String takingCd);
+
+    /**
      * 처방약 잠금 조회
      */
     Prescription selectPrescriptionForUpdate(Long prscSn);
