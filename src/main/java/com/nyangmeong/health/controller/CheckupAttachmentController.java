@@ -28,7 +28,6 @@ import com.nyangmeong.health.dto.CheckupAttachmentResponse;
 import com.nyangmeong.health.dto.CheckupAttachmentSearchCond;
 import com.nyangmeong.health.dto.CheckupAttachmentSummary;
 import com.nyangmeong.health.dto.CheckupAttachmentUpdateRequest;
-import com.nyangmeong.health.dto.InspectionAnalysisResponse;
 import com.nyangmeong.health.service.CheckupAttachmentService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,7 +36,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * [검진기록 첨부 컨트롤러]
- * - SCR-HLT-005 첨부 자료 목록·등록·파일·교체·삭제, 검사결과지 PDF 분석 (docs/api/health.md)
+ * - SCR-HLT-005 첨부 자료 목록·등록·파일·교체·삭제 (docs/api/health.md)
  */
 @RestController
 @RequiredArgsConstructor
@@ -90,12 +89,5 @@ public class CheckupAttachmentController {
             @PathVariable Long petSn, @PathVariable Long ckupRcdAtchSn) {
         checkupAttachmentService.delete(me.id(), petSn, ckupRcdAtchSn);
         return ResponseEntity.ok(ApiResponse.success());
-    }
-
-    @Operation(summary = "검사결과지 PDF 분석")
-    @PostMapping("/{ckupRcdAtchSn}/analyses")
-    public ResponseEntity<ApiResponse<InspectionAnalysisResponse>> analyze(@AuthenticationPrincipal LoginMember me,
-            @PathVariable Long petSn, @PathVariable Long ckupRcdAtchSn) {
-        return ResponseEntity.ok(ApiResponse.success(checkupAttachmentService.analyze(me.id(), petSn, ckupRcdAtchSn)));
     }
 }

@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.nyangmeong.global.auth.PetAuthorizer;
@@ -53,6 +54,7 @@ public class CareItemService {
     private static final String DEFAULT_ICON = "task_alt";
     private static final String MEDICATION_ICON = "medication";
     private static final String PREVENTION_ICON = "vaccines";
+    private static final String SYSTEM_ID = "SYSTEM";
 
     /** 기본 항목 완료 시 반영할 케어미션 */
     private static final Map<BasicCareItem, CareMission> MISSIONS = new EnumMap<>(BasicCareItem.class);
@@ -88,15 +90,19 @@ public class CareItemService {
     @Transactional
     public List<CareItemSummary> search(Long mbrSn, Long petSn, CareItemSearchCond cond) {
         petAuthorizer.checkCaregiver(mbrSn, petSn);
-        createBasicItems(mbrSn, petSn);
+        if (!createBasicItems(petSn, String.valueOf(mbrSn))) {
+            throw new CustomException(ErrorCode.PET_NOT_FOUND);
+        }
         return careItemMapper.selectList(petSn, cond, today(), CareZone.REGULAR.getCode());
     }
 
     /**
      * 반려동물별 케어 항목명 목록 조회
      * - AI 대화 같은 이름 항목 확인용 (FN-AIM-012-08) : 반려동물 권한은 호출하는 쪽에서 검사
+     * - 기본 항목이 없는 반려동물은 먼저 만듦 : 토탈 케어리스트를 연 적 없어도 기본 항목명 포함, 삭제된 반려동물은 빈 목록
+     * - 새 트랜잭션 : 호출하는 쪽이 읽기 전용 트랜잭션이어도 기본 항목을 쓸 수 있게
      */
-    @Transactional(readOnly = true)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Map<Long, List<String>> searchNamesByPets(List<Long> petSns) {
         Map<Long, List<String>> names = new LinkedHashMap<>();
         if (petSns == null || petSns.isEmpty()) {
@@ -106,6 +112,8 @@ public class CareItemService {
         if (names.isEmpty()) {
             return names;
         }
+        /** 여러 반려동물 행 잠금은 번호순 : 동시 호출끼리 교착 방지 */
+        names.keySet().stream().sorted().forEach(petSn -> createBasicItems(petSn, SYSTEM_ID));
         for (CareItem item : careItemMapper.selectNamesByPets(List.copyOf(names.keySet()))) {
             names.get(item.getPetSn()).add(item.getCareArtclNm());
         }
@@ -232,7 +240,9 @@ public class CareItemService {
             throw invalid();
         }
 
-        createBasicItems(mbrSn, petSn);
+        if (!createBasicItems(petSn, String.valueOf(mbrSn))) {
+            throw new CustomException(ErrorCode.PET_NOT_FOUND);
+        }
         if (!careArtclSns.isEmpty() && careItemMapper.countItemsIn(petSn, careArtclSns) != careArtclSns.size()) {
             throw invalid();
         }
@@ -374,21 +384,21 @@ public class CareItemService {
 
     /**
      * 기본 항목 생성
+     * - 반환 : 반려동물이 없거나 삭제됐으면 false
      */
-    private void createBasicItems(Long mbrSn, Long petSn) {
+    private boolean createBasicItems(Long petSn, String actorId) {
         if (careItemMapper.countBasicItems(petSn) > 0) {
-            return;
+            return true;
         }
         /** 같은 반려동물의 동시 첫 조회를 순서대로 처리 */
         if (careItemMapper.selectPetForUpdate(petSn) == null) {
-            throw new CustomException(ErrorCode.PET_NOT_FOUND);
+            return false;
         }
         if (careItemMapper.countBasicItemsForUpdate(petSn) > 0) {
-            return;
+            return true;
         }
 
         LocalDate today = today();
-        String actorId = String.valueOf(mbrSn);
         for (BasicCareItem basic : BasicCareItem.values()) {
             CareItem item = new CareItem();
             item.setPetSn(petSn);
@@ -406,6 +416,7 @@ public class CareItemService {
             }
             careItemMapper.insertItem(item);
         }
+        return true;
     }
 
     /**

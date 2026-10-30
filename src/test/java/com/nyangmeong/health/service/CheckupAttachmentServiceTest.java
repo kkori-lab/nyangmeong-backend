@@ -25,7 +25,6 @@ import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.file.FileExtension;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.file.StoredFile;
-import com.nyangmeong.health.domain.AnalysisResult;
 import com.nyangmeong.health.domain.AttachmentType;
 import com.nyangmeong.health.domain.CheckupAttachment;
 import com.nyangmeong.health.domain.HealthCodeGroup;
@@ -33,15 +32,12 @@ import com.nyangmeong.health.domain.InspectionArticle;
 import com.nyangmeong.health.dto.CheckupAttachmentCreateRequest;
 import com.nyangmeong.health.dto.CheckupAttachmentSummary;
 import com.nyangmeong.health.dto.CheckupAttachmentUpdateRequest;
-import com.nyangmeong.health.dto.InspectionAnalysisResponse;
-import com.nyangmeong.health.dto.InspectionValueSummary;
 import com.nyangmeong.health.mapper.CareScheduleMapper;
 import com.nyangmeong.health.mapper.CheckupAttachmentMapper;
-import com.nyangmeong.health.mapper.InspectionValueMapper;
 
 /**
- * [검사 - 검진기록 첨부·PDF 분석]
- * - 영상 사진 필수 입력, 검사결과지 PDF만 분석 (FN-HLT-005-01·04)
+ * [검사 - 검진기록 첨부]
+ * - 영상 사진 필수 입력 (FN-HLT-005-01)
  */
 class CheckupAttachmentServiceTest {
 
@@ -54,14 +50,12 @@ class CheckupAttachmentServiceTest {
     private static final String ABDOMEN = "HLTC0074";
 
     private final CheckupAttachmentMapper mapper = mock(CheckupAttachmentMapper.class);
-    private final InspectionValueMapper inspectionValueMapper = mock(InspectionValueMapper.class);
     private final CareScheduleMapper careScheduleMapper = mock(CareScheduleMapper.class);
     private final CheckupService checkupService = mock(CheckupService.class);
     private final PetAuthorizer petAuthorizer = mock(PetAuthorizer.class);
     private final FileStore fileStore = mock(FileStore.class);
-    private final InspectionAnalyzer analyzer = new InspectionAnalyzer();
-    private final CheckupAttachmentService service = new CheckupAttachmentService(mapper, inspectionValueMapper,
-            careScheduleMapper, checkupService, petAuthorizer, fileStore, analyzer);
+    private final CheckupAttachmentService service = new CheckupAttachmentService(mapper, careScheduleMapper,
+            checkupService, petAuthorizer, fileStore);
 
     private final MockMultipartFile file = new MockMultipartFile("file", "a.png", "image/png", new byte[] { 1 });
 
@@ -166,53 +160,5 @@ class CheckupAttachmentServiceTest {
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode").isEqualTo(ErrorCode.CHECKUP_ATTACHMENT_NOT_FOUND);
         verify(mapper, never()).deleteAttachment(any(), anyString());
-    }
-
-    @Test
-    void 검사결과지_PDF를_분석하면_이미_있는_항목을_표시한다() {
-        stored(AttachmentType.INSPECTION_RESULT);
-        when(fileStore.load(FILE)).thenReturn(new StoredFile(new byte[] { 1 }, "application/pdf", "a.pdf"));
-        InspectionValueSummary registered = new InspectionValueSummary();
-        registered.setInspArtclCd(InspectionArticle.WBC.getCode());
-        when(inspectionValueMapper.selectArticles(CKUP)).thenReturn(List.of(registered));
-
-        InspectionAnalysisResponse response = service.analyze(MBR, PET, ATCH);
-
-        assertThat(response.anlysRslt()).isEqualTo(AnalysisResult.SUCCESS.name());
-        assertThat(response.ckupRcdSn()).isEqualTo(CKUP);
-        assertThat(response.items()).extracting("inspArtclCd", "registered").containsExactly(
-                tuple(InspectionArticle.WBC.getCode(), true),
-                tuple(InspectionArticle.CREA.getCode(), false));
-    }
-
-    @Test
-    void 접종_증명서는_분석할_수_없다() {
-        stored(AttachmentType.VACCINATION_CERTIFICATE);
-        when(mapper.selectSummary(ATCH)).thenReturn(summary(AttachmentType.VACCINATION_CERTIFICATE, FileExtension.PDF));
-
-        assertThatThrownBy(() -> service.analyze(MBR, PET, ATCH))
-                .isInstanceOf(CustomException.class)
-                .extracting("errorCode").isEqualTo(ErrorCode.CHECKUP_ATTACHMENT_NOT_ANALYZABLE);
-    }
-
-    @Test
-    void 검사결과지라도_이미지면_분석할_수_없다() {
-        stored(AttachmentType.INSPECTION_RESULT);
-        when(mapper.selectSummary(ATCH)).thenReturn(summary(AttachmentType.INSPECTION_RESULT, FileExtension.PNG));
-
-        assertThatThrownBy(() -> service.analyze(MBR, PET, ATCH))
-                .isInstanceOf(CustomException.class)
-                .extracting("errorCode").isEqualTo(ErrorCode.CHECKUP_ATTACHMENT_NOT_ANALYZABLE);
-    }
-
-    @Test
-    void 분석_중_외부_오류는_일시_오류로_돌려준다() {
-        stored(AttachmentType.INSPECTION_RESULT);
-        when(fileStore.load(FILE)).thenThrow(new IllegalStateException("디스크 오류"));
-
-        InspectionAnalysisResponse response = service.analyze(MBR, PET, ATCH);
-
-        assertThat(response.anlysRslt()).isEqualTo(AnalysisResult.TEMPORARY_ERROR.name());
-        assertThat(response.items()).isEmpty();
     }
 }

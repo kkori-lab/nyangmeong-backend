@@ -17,6 +17,8 @@ import static org.mockito.Mockito.when;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -27,6 +29,7 @@ import org.mockito.ArgumentCaptor;
 import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.health.domain.BasicCareItem;
 import com.nyangmeong.health.domain.CareCompletion;
 import com.nyangmeong.health.domain.CareCycle;
 import com.nyangmeong.health.domain.CareItem;
@@ -558,5 +561,66 @@ class CareItemServiceTest {
         assertThat(service.searchNamesByPets(List.of())).isEmpty();
         assertThat(service.searchNamesByPets(null)).isEmpty();
         verify(mapper, never()).selectNamesByPets(any());
+    }
+
+    /** 기본 항목 생성·이름 조회를 메모리 목록으로 흉내 */
+    private List<CareItem> storeBasicItems(Long petSn) {
+        List<CareItem> stored = new ArrayList<>();
+        when(mapper.countBasicItems(petSn)).thenAnswer(call -> (long) stored.size());
+        when(mapper.countBasicItemsForUpdate(petSn)).thenAnswer(call -> (long) stored.size());
+        when(mapper.selectPetForUpdate(petSn)).thenReturn(petSn);
+        when(mapper.insertItem(any())).thenAnswer(call -> {
+            stored.add(call.getArgument(0));
+            return 1;
+        });
+        when(mapper.selectNamesByPets(List.of(petSn))).thenAnswer(call -> List.copyOf(stored));
+        return stored;
+    }
+
+    @Test
+    void 케어리스트를_연_적_없는_반려동물도_이름_조회에_기본_11개가_들어간다() {
+        storeBasicItems(PET);
+
+        Map<Long, List<String>> names = service.searchNamesByPets(List.of(PET));
+
+        assertThat(names.get(PET)).hasSize(11).containsExactlyElementsOf(
+                Arrays.stream(BasicCareItem.values()).map(BasicCareItem::getCareArtclNm).toList());
+    }
+
+    @Test
+    void 이름_조회를_두_번_해도_기본_항목은_11개_그대로다() {
+        List<CareItem> stored = storeBasicItems(PET);
+
+        service.searchNamesByPets(List.of(PET));
+        Map<Long, List<String>> names = service.searchNamesByPets(List.of(PET));
+
+        assertThat(stored).hasSize(11);
+        assertThat(names.get(PET)).hasSize(11);
+        verify(mapper, times(11)).insertItem(any());
+    }
+
+    @Test
+    void 잠근_뒤_다른_요청이_먼저_만들었으면_다시_만들지_않는다() {
+        when(mapper.countBasicItems(PET)).thenReturn(0L);
+        when(mapper.selectPetForUpdate(PET)).thenReturn(PET);
+        when(mapper.countBasicItemsForUpdate(PET)).thenReturn(11L);
+
+        service.searchNamesByPets(List.of(PET));
+
+        verify(mapper, never()).insertItem(any());
+    }
+
+    @Test
+    void 삭제된_반려동물은_예외_없이_빈_목록이고_기본_항목을_만들지_않는다() {
+        when(mapper.countBasicItems(OTHER_PET)).thenReturn(0L);
+        when(mapper.selectPetForUpdate(OTHER_PET)).thenReturn(null);
+        when(mapper.countBasicItems(PET)).thenReturn(11L);
+        when(mapper.selectNamesByPets(List.of(PET, OTHER_PET))).thenReturn(List.of(named(PET, "양치")));
+
+        Map<Long, List<String>> names = service.searchNamesByPets(List.of(PET, OTHER_PET));
+
+        assertThat(names.get(PET)).containsExactly("양치");
+        assertThat(names.get(OTHER_PET)).isEmpty();
+        verify(mapper, never()).insertItem(any());
     }
 }

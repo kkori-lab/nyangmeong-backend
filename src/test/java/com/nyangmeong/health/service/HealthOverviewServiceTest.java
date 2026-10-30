@@ -64,8 +64,7 @@ class HealthOverviewServiceTest {
 
     private final CheckupAttachmentMapper attachmentMapper = mock(CheckupAttachmentMapper.class);
     private final CheckupAttachmentService attachmentService = new CheckupAttachmentService(attachmentMapper,
-            inspectionMapper, mock(CareScheduleMapper.class), checkupService, petAuthorizer, mock(FileStore.class),
-            new InspectionAnalyzer());
+            mock(CareScheduleMapper.class), checkupService, petAuthorizer, mock(FileStore.class));
 
     private final RepeatPreventionMapper repeatMapper = mock(RepeatPreventionMapper.class);
     private final RepeatPreventionService repeatService = new RepeatPreventionService(repeatMapper,

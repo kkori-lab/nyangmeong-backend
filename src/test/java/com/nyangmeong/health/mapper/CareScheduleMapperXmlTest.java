@@ -73,4 +73,23 @@ class CareScheduleMapperXmlTest {
     void 단건_조회는_삭제된_일정을_빼서_삭제_뒤_다시_찾지_못한다() throws Exception {
         assertThat(sql("selectSchedule")).contains("DEL_YN = 'N'");
     }
+
+    @Test
+    void 병원_일정_알림_대상은_삭제된_일정과_삭제된_반려동물을_뺀다() throws Exception {
+        String sql = sql("selectHospitalSchedules");
+
+        assertThat(sql).contains("JOIN PET P ON P.PET_SN = S.PET_SN AND P.DEL_YN = 'N'")
+                .contains("S.DEL_YN = 'N'")
+                .contains("S.SCHDL_KND_CD = #{hospitalCd}")
+                .doesNotContain("S.PET_SN = #{petSn}");
+    }
+
+    @Test
+    void 병원_일정_알림_대상은_일정일_하루만_고른다() throws Exception {
+        String sql = sql("selectHospitalSchedules");
+
+        assertThat(sql).contains("S.SCHDL_DT >= #{schdlYmd}")
+                .contains("S.SCHDL_DT < DATE_ADD(#{schdlYmd}, INTERVAL 1 DAY)")
+                .contains("ORDER BY S.SCHDL_DT , S.SCHDL_SN");
+    }
 }

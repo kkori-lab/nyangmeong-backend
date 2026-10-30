@@ -1,5 +1,6 @@
 package com.nyangmeong.health.mapper;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
@@ -8,6 +9,7 @@ import org.apache.ibatis.annotations.Param;
 import com.nyangmeong.health.domain.Schedule;
 import com.nyangmeong.health.dto.CareScheduleSearchCond;
 import com.nyangmeong.health.dto.CareScheduleSummary;
+import com.nyangmeong.health.dto.HospitalScheduleSummary;
 
 /**
  * [일정 매퍼]
@@ -21,6 +23,12 @@ public interface CareScheduleMapper {
      */
     List<CareScheduleSummary> selectList(@Param("petSn") Long petSn, @Param("cond") CareScheduleSearchCond cond,
             @Param("completedCd") String completedCd);
+
+    /**
+     * 일정일의 병원 일정 목록 조회 (반려동물 전체, 알림 배치)
+     */
+    List<HospitalScheduleSummary> selectHospitalSchedules(@Param("schdlYmd") LocalDate schdlYmd,
+            @Param("hospitalCd") String hospitalCd);
 
     /**
      * 일정 단건 조회
