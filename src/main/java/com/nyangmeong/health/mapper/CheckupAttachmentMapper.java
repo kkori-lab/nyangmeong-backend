@@ -22,6 +22,12 @@ public interface CheckupAttachmentMapper {
     List<CheckupAttachmentSummary> selectList(@Param("cond") CheckupAttachmentSearchCond cond);
 
     /**
+     * 검진기록들의 첨부 목록 조회
+     */
+    List<CheckupAttachmentSummary> selectListByCheckups(@Param("ckupRcdSns") List<Long> ckupRcdSns,
+            @Param("cond") CheckupAttachmentSearchCond cond);
+
+    /**
      * 검진기록 첨부 단건 조회 (목록 행 형태)
      */
     CheckupAttachmentSummary selectSummary(Long ckupRcdAtchSn);

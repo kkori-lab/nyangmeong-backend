@@ -69,6 +69,32 @@
                 , A.CKUP_RCD_ATCH_SN DESC
     </select>
 
+    <select id="selectListByCheckups" resultMap="checkupAttachmentSummaryResultMap">
+        /* 검진기록들의 첨부 목록 조회(최신순) */
+        SELECT
+        <include refid="checkupAttachmentSummaryColumns" />
+          FROM CKUP_RCD_ATCH A
+          JOIN ATCH_FILE F
+            ON F.ATCH_FILE_SN = A.ATCH_FILE_SN
+          LEFT JOIN COM_CD T
+            ON T.COM_CD = A.ATCH_TYPE_CD
+           AND T.COM_CD_PRNT_SN IS NOT NULL
+          LEFT JOIN COM_CD K
+            ON K.COM_CD = A.IMG_KND_CD
+           AND K.COM_CD_PRNT_SN IS NOT NULL
+          LEFT JOIN COM_CD R
+            ON R.COM_CD = A.SHT_REGN_CD
+           AND R.COM_CD_PRNT_SN IS NOT NULL
+         WHERE A.CKUP_RCD_SN IN
+               <foreach collection="ckupRcdSns" item="sn" open="(" separator="," close=")">#{sn}</foreach>
+           AND A.DEL_YN = 'N'
+        <if test="cond.atchTypeCd != null and cond.atchTypeCd != ''">
+           AND A.ATCH_TYPE_CD = #{cond.atchTypeCd}
+        </if>
+         ORDER BY A.REG_DT DESC
+                , A.CKUP_RCD_ATCH_SN DESC
+    </select>
+
     <select id="selectSummary" resultMap="checkupAttachmentSummaryResultMap">
         /* 검진기록 첨부 단건 조회 */
         SELECT

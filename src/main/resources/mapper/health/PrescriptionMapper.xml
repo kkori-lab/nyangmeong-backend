@@ -71,6 +71,32 @@
                 , P.PRSC_SN DESC
     </select>
 
+    <select id="selectListByCheckups" resultMap="prescriptionSummaryResultMap">
+        /* 검진기록들의 처방약 목록 조회(복용중 우선·최신순) */
+        SELECT P.PRSC_SN
+             , P.CKUP_RCD_SN
+             , P.MDCN_NM
+             , P.MDCN_BGNG_YMD
+             , P.MDCN_END_YMD
+             , P.DAY_MDCN_NMTM
+             , P.PRSC_STTS_CD
+             , S.COM_CD_NM AS PRSC_STTS_CD_NM
+             , CASE WHEN P.CARE_RFLT_YN = 'Y' THEN TRUE ELSE FALSE END AS CARE_RFLT_YN
+          FROM PRSC P
+          LEFT JOIN COM_CD S
+            ON S.COM_CD = P.PRSC_STTS_CD
+           AND S.COM_CD_PRNT_SN IS NOT NULL
+         WHERE P.CKUP_RCD_SN IN
+               <foreach collection="ckupRcdSns" item="sn" open="(" separator="," close=")">#{sn}</foreach>
+           AND P.DEL_YN = 'N'
+        <if test="cond.prscSttsCd != null and cond.prscSttsCd != ''">
+           AND P.PRSC_STTS_CD = #{cond.prscSttsCd}
+        </if>
+         ORDER BY CASE WHEN P.PRSC_STTS_CD = #{takingCd} THEN 0 ELSE 1 END
+                , P.MDCN_BGNG_YMD DESC
+                , P.PRSC_SN DESC
+    </select>
+
     <select id="selectPrescriptionForUpdate" resultMap="prescriptionResultMap">
         /* 처방약 잠금 조회 */
         SELECT

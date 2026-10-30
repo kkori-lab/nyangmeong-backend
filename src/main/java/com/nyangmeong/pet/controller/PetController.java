@@ -30,7 +30,7 @@ import lombok.RequiredArgsConstructor;
 /**
  * [반려동물 컨트롤러]
  * - 내 반려동물 목록 (SCR-MYP-001 카드, SCR-MYP-002 슬라이드)
- * - 등록·수정·상세 (SCR-MYP-003), 대표 지정 (FN-MYP-010-05)
+ * - 등록·수정·상세 (SCR-MYP-003), 대표 지정 (FN-MYP-010-05), 삭제 (SCR-MYP-002)
  * - 양육자 목록·연동 해제 (SCR-MYP-004·006)
  */
 @RestController
@@ -66,6 +66,14 @@ public class PetController {
     public ResponseEntity<ApiResponse<PetResponse>> updatePet(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @Valid @RequestBody PetUpdateRequest req) {
         return ResponseEntity.ok(ApiResponse.success(petService.updatePet(me.id(), petSn, req)));
+    }
+
+    @Operation(summary = "반려동물 삭제")
+    @DeleteMapping("/{petSn}")
+    public ResponseEntity<ApiResponse<Void>> deletePet(@AuthenticationPrincipal LoginMember me,
+            @PathVariable Long petSn) {
+        petService.deletePet(me.id(), petSn);
+        return ResponseEntity.ok(ApiResponse.success());
     }
 
     @Operation(summary = "대표 반려동물 지정")

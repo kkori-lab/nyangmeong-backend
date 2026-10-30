@@ -1,12 +1,17 @@
 package com.nyangmeong.health.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +22,7 @@ import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.health.domain.InspectionArticle;
 import com.nyangmeong.health.domain.InspectionValue;
 import com.nyangmeong.health.dto.CheckupResponse;
+import com.nyangmeong.health.dto.CheckupSummary;
 import com.nyangmeong.health.dto.InspectionValueCreateRequest;
 import com.nyangmeong.health.dto.InspectionValueCreateRequest.InspectionValueItemRequest;
 import com.nyangmeong.health.dto.InspectionValueResponse;
@@ -45,11 +51,36 @@ public class InspectionValueService {
      */
     @Transactional(readOnly = true)
     public List<InspectionValueSummary> search(Long mbrSn, Long petSn, InspectionValueSearchCond cond) {
+        if (cond.getCkupRcdSn() == null) {
+            return searchAll(mbrSn, petSn, cond);
+        }
         CheckupResponse checkup = checkupService.getCheckup(mbrSn, petSn, cond.getCkupRcdSn());
         List<InspectionValueSummary> rows = inspectionValueMapper.selectList(cond);
         if (checkup.getCkupYmd() != null) {
             rows.forEach(row -> row.setSchdlDt(checkup.getCkupYmd().atStartOfDay()));
         }
+        return rows;
+    }
+
+    /**
+     * 반려동물 전체 검사 수치 조회 (검진일 오름차순, 같은 검진기록 안에서는 정렬순서)
+     */
+    private List<InspectionValueSummary> searchAll(Long mbrSn, Long petSn, InspectionValueSearchCond cond) {
+        Map<Long, CheckupSummary> checkups = checkupService.searchAllCompleted(mbrSn, petSn).stream()
+                .collect(Collectors.toMap(CheckupSummary::getCkupRcdSn, Function.identity()));
+        if (checkups.isEmpty()) {
+            return List.of();
+        }
+        List<InspectionValueSummary> rows = new ArrayList<>(
+                inspectionValueMapper.selectListByCheckups(List.copyOf(checkups.keySet()), cond));
+        rows.forEach(row -> {
+            LocalDate ckupYmd = checkups.get(row.getCkupRcdSn()).getCkupYmd();
+            if (ckupYmd != null) {
+                row.setSchdlDt(ckupYmd.atStartOfDay());
+            }
+        });
+        rows.sort(Comparator.comparing(InspectionValueSummary::getSchdlDt,
+                Comparator.nullsFirst(Comparator.naturalOrder())).thenComparing(InspectionValueSummary::getCkupRcdSn));
         return rows;
     }
 
