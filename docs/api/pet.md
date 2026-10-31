@@ -252,7 +252,7 @@
 
 ### PetUpdateRequest
 쓰는 API: PATCH /pets/{petSn}
-보낸 필드만 바뀐다. 문자열을 비우려면 `""`(A절). 숫자 필드를 비우는 방법은 issues 4번.
+보낸 필드만 바뀐다. 문자열을 비우려면 `""`(A절). 목표체중은 `goalBdwgReset`으로 비운다. 품종은 `vrtySn`·`vrtyDrctInptNm` 중 하나만 보내면 다른 쪽이 비워진다(issues 4번).
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | petNm | String | N | 최대 20자 | PET.PET_NM, MYP-003-01 |
@@ -272,6 +272,7 @@
 | chrcCn | String | N | 최대 1,000자 | PET.CHRC_CN, MYP-003-01 |
 | algyCn | String | N | 최대 1,000자. 쉼표 구분, 앞뒤 공백 제거·빈 값 버림 | PET.ALGY_CN, MYP-003-07 |
 | dssCn | String | N | 최대 1,000자. 쉼표 구분, 앞뒤 공백 제거·빈 값 버림 | PET.DSS_CN, MYP-003-07 |
+| goalBdwgReset | Boolean | N | `true`면 목표체중을 비운다. `goalBdwg`와 함께 보내면 400 BAD_REQUEST | PET.GOAL_BDWG, MYP-003-04 |
 
 ### PixelCharacterCreateRequest
 쓰는 API: POST /pets/{petSn}/pixel-characters
