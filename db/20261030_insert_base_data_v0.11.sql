@@ -1,7 +1,7 @@
 -- =====================================================================
 -- 냥멍케어 기준 데이터 v0.11 (2026-10-30)  |  공통코드 + 케어미션 마스터
 -- 대상 DDL : 20261030_create_tables_v0.11.sql  (테이블 COM_CD, CARE_MSN, AI_ROUT_MPNG, KWRD_DICT)
--- 범위     : [1] 공통코드 그룹 76개 전체 (302개 코드)  [2] 케어미션 마스터 21건  [3] AI 라우팅 매핑 45건  [4] 키워드 사전 16건
+-- 범위     : [1] 공통코드 그룹 76개 전체 (303개 코드)  [2] 케어미션 마스터 21건  [3] AI 라우팅 매핑 45건  [4] 키워드 사전 16건
 -- 원천     : 기준 데이터 v0.10(db/archive/v0.10/) 위에 아래 "v0.10 → v0.11 변경"을 더한 것
 --            새 코드는 기존 DB와 COM_CD_SN이 같도록 공용 DB에 실행한 순서대로 파일 끝에 둔다
 -- 채번 규칙: 그룹 = 도메인3자 + G + 2자리(ERD 그대로) / 코드 = 도메인3자 + C + 4자리
@@ -129,6 +129,9 @@
 --     ('AIMC0037','검진유형','병원 일정','검사','검진유형 = 검사(HLTG01)','HLTC0004',150,'못 정하면 되물음(FN-AIM-012-05)'),
 --     ('AIMC0037','검진유형','병원 일정','그 외','검진유형 = 기타 진료(HLTG01)','HLTC0005',160,'못 정하면 되물음(FN-AIM-012-05)');
 --   COMMIT;
+-- v0.11 (2) 검사항목 SDMA 공통코드 (2026-11-01, JAJ, 근거: SCR-HLT-005 검사 수치 — InspectionArticle.SDMA가 HLTC0078을 쓰는데 COM_CD에 없어 INSP_NVL 외래키 위반 500)
+--   SET NAMES utf8mb4;
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG12') p),'HLTC0078','SDMA',NULL,115);
 -- =====================================================================
 SET NAMES utf8mb4;
 START TRANSACTION;
@@ -614,6 +617,9 @@ INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='AIMG10') p),'AIMC0037','일정 등록 판정','AI매니저 부록 B (FN-AIM-001-05 ①, FN-AIM-012-01~02)',10);
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='AIMG10') p),'AIMC0038','가계부 분류',NULL,20);
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='AIMG10') p),'AIMC0039','뉴스 분류','RSS 기사 제목 키워드 (결정 20)',30);
+
+-- ■ HLT 건강 — v0.11 추가: 검사항목 SDMA (v0.11 (2)). 직접입력(120)이 마지막에 남도록 정렬순서 115
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG12') p),'HLTC0078','SDMA',NULL,115);
 
 -- =====================================================================
 -- [2] 케어미션 마스터 (CARE_MSN) — 20261027_02_update_care_msn_and_ckup_pnt 의 최종 상태
