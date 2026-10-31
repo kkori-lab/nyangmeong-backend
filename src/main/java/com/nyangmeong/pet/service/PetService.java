@@ -133,6 +133,10 @@ public class PetService {
     @Transactional
     public PetResponse updatePet(Long mbrSn, Long petSn, PetUpdateRequest req) {
         petAuthorizer.checkCaregiver(mbrSn, petSn);
+        boolean goalBdwgReset = Boolean.TRUE.equals(req.goalBdwgReset());
+        if (goalBdwgReset && req.goalBdwg() != null) {
+            throw new CustomException(ErrorCode.BAD_REQUEST);
+        }
         Pet pet = loadPet(petSn);
 
         if (req.petNm() != null) {
@@ -171,6 +175,9 @@ public class PetService {
         }
         if (req.goalBdwg() != null) {
             pet.setGoalBdwg(req.goalBdwg());
+        }
+        if (goalBdwgReset) {
+            pet.setGoalBdwg(null);
         }
         if (req.minBdwg() != null) {
             pet.setMinBdwg(req.minBdwg());
