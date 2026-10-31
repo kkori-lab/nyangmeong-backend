@@ -1,7 +1,7 @@
 # SJM 핸드오프
 
 ## 지금 하는 것
-SCR-MYP-002 추가-1 반려동물 삭제 시 가계부 외 soft delete — 끝남: 검증 `통과`(1회차), 사람 확인 통과(Postman 8건, 공용 DB 마이그레이션 적용·PET 1004 삭제 뒤 EXPND 유지 확인). SCR-MYP-040은 #73으로 병합됨
+SCR-MYP-005 추가-2 초대 발송 409에 충돌 반려동물 모두 담기 — 끝남: 검증 `통과`, 사람 확인 통과(Postman 29건). PR #84 병합(추가-1은 #74로 병합)
 
 ### 추가 요청
 | 번호 | 바꿀 파일 | 완료 조건 | 요청 |
@@ -10,6 +10,7 @@ SCR-MYP-002 추가-1 반려동물 삭제 시 가계부 외 soft delete — 끝�
 | 추가-2 | `pet/dto/CaregiverInvitationConflictResponse`(→ linkedPets·pendingPets 목록), 새 `CaregiverInvitationLinkedPet`·`CaregiverInvitationPendingPet`, `CaregiverInvitationService.createInvitation`, `CaregiverInvitationServiceTest`·`CaregiverInvitationControllerTest`, `docs/api/pet.md` | 명령: `./gradlew build -q`(여러 마리 충돌을 모두 모음, 섞이면 CAREGIVER_ALREADY_LINKED, 충돌 시 초대 미생성, 빈 목록은 []). 화면: 409 `data`가 `{linkedPets:[{petSn,petNm}], pendingPets:[{petSn,petNm,invtnExpryDt}]}` | 요청 2026-10-31 10:42 "POST /caregiver-invitations 409가 첫 충돌 한 마리만 줌. 선택한 동물을 전부 검사해 이미 가족·대기 초대를 목록으로 모아 주기, code는 기존 두 개, 충돌 있으면 초대 안 만듦, 다른 동작은 건드리지 않기" |
 
 ## 다음에 할 것
+- 연결 남음(SCR-MYP-005 추가-2): 프론트 5-1 초대 모달의 409 처리를 `data.linkedPets`("이미 ○○의 가족이에요")·`data.pendingPets`("이미 초대를 보냈어요 (MM-DD에 만료돼요)") 목록 기준으로 바꾸기(프론트 저장소에서 /start). 예전 단일 `data.petSn·petNm·invtnExpryDt`는 없어졌다
 - 연결 남음(SCR-MYP-040): FN-MYP-040-02·03·08·09·13 프론트 SCR-MYP-040 6-2·6-3 프로필 요약·계정 정보, FN-MYP-040-02·05·08·11 프론트 6-2·6-3 사진 변경·기본 이미지로·휴대폰 번호 [수정]·[저장](프론트 저장소에서 /start). API: `GET /members/me`(`MemberResponse`에 `joinDt`·`lastLgnDt` 추가), `PATCH /members/me`(multipart `mblTelno`·`profilePhoto`·`profilePhotoReset`, 다른 회원 번호 409 PHONE_ALREADY_USED, 사진과 되돌리기 함께 400)
 - YAY와 정하기(SCR-MYP-040): 본인 확인(6-1)을 통과했는지 `PATCH /members/me`에서 서버가 검사하지 않는다. `POST /members/me/password-verification`을 만들 때 통과 표시를 어떻게 남길지 함께 정한다
 - 연결 남음(SCR-MYP-002): FN-MYP-002-07 프론트 SCR-MYP-002 ⋮ 메뉴 [반려동물 삭제]·2-3 삭제 확인 팝업·2-4 등록 카드 복귀(프론트 저장소에서 /start). API: `DELETE /pets/{petSn}`(주양육자만, 공동양육자 403 PET_PRIMARY_ONLY, data 없음). FN-MYP-002-08 LJS 알림함 COM-004에 공동양육 연동 해제 알림(CO_PARENTING, 이동 경로 `/mypage/pets`) 표시
