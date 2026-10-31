@@ -259,6 +259,30 @@ class PetServiceTest {
     }
 
     @Test
+    void 수정에서_목표체중_비우기를_보내면_null로_저장한다() {
+        service.updatePet(MBR, PET, goalUpdate(null, true));
+
+        ArgumentCaptor<Pet> pet = ArgumentCaptor.forClass(Pet.class);
+        verify(mapper).updatePet(pet.capture(), eq("1"));
+        assertThat(pet.getValue().getGoalBdwg()).isNull();
+    }
+
+    @Test
+    void 수정에서_목표체중과_비우기를_함께_보내면_400() {
+        assertCode(() -> service.updatePet(MBR, PET, goalUpdate(kg("4.5"), true)), ErrorCode.BAD_REQUEST);
+        verify(mapper, never()).updatePet(any(), anyString());
+    }
+
+    @Test
+    void 수정에서_목표체중을_보내지_않으면_그대로_둔다() {
+        service.updatePet(MBR, PET, goalUpdate(null, false));
+
+        ArgumentCaptor<Pet> pet = ArgumentCaptor.forClass(Pet.class);
+        verify(mapper).updatePet(pet.capture(), eq("1"));
+        assertThat(pet.getValue().getGoalBdwg()).isEqualByComparingTo("4");
+    }
+
+    @Test
     void 상세는_공동양육자에게_주양육자와_본인_양육관계만_준다() {
         when(mapper.selectBrupRel(MBR, PET)).thenReturn(rel(BrupRole.CO_PARENT.getCode(), "N"));
         when(mapper.selectCaregivers(PET, PRIMARY, ACCEPTED)).thenReturn(List.of(caregiver(9L, PRIMARY),
@@ -531,7 +555,12 @@ class PetServiceTest {
     private PetUpdateRequest update(BigDecimal minBdwg, BigDecimal petBdwg, Boolean nutrYn, String algyCn,
             String dssCn) {
         return new PetUpdateRequest(null, null, null, null, null, null, null, nutrYn, petBdwg, null, minBdwg, null,
-                null, null, null, algyCn, dssCn);
+                null, null, null, algyCn, dssCn, null);
+    }
+
+    private PetUpdateRequest goalUpdate(BigDecimal goalBdwg, Boolean goalBdwgReset) {
+        return new PetUpdateRequest(null, null, null, null, null, null, null, null, null, goalBdwg, null, null,
+                null, null, null, null, null, goalBdwgReset);
     }
 
     private Pet storedPet() {
@@ -547,6 +576,7 @@ class PetServiceTest {
         pet.setMaxBdwg(kg("5"));
         pet.setColrCd(WHITE);
         pet.setNutrYn("Y");
+        pet.setGoalBdwg(kg("4"));
         return pet;
     }
 
