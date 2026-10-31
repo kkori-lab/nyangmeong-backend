@@ -41,6 +41,8 @@ import com.nyangmeong.pet.domain.Pet;
 import com.nyangmeong.pet.dto.CaregiverInvitationAcceptRequest;
 import com.nyangmeong.pet.dto.CaregiverInvitationCreateRequest;
 import com.nyangmeong.pet.dto.CaregiverInvitationCreateResult;
+import com.nyangmeong.pet.dto.CaregiverInvitationLinkedPet;
+import com.nyangmeong.pet.dto.CaregiverInvitationPendingPet;
 import com.nyangmeong.pet.dto.CaregiverInvitationPetSummary;
 import com.nyangmeong.pet.dto.CaregiverInvitationResponse;
 import com.nyangmeong.pet.dto.CaregiverInvitationSummary;
@@ -202,8 +204,8 @@ class CaregiverInvitationServiceTest {
                 new CaregiverInvitationCreateRequest(TARGET_EMAIL, List.of(PET_A, PET_B)));
 
         assertThat(result.error()).isEqualTo(ErrorCode.CAREGIVER_ALREADY_LINKED);
-        assertThat(result.conflict().petSn()).isEqualTo(PET_B);
-        assertThat(result.conflict().petNm()).isEqualTo("나비");
+        assertThat(result.conflict().linkedPets()).containsExactly(new CaregiverInvitationLinkedPet(PET_B, "나비"));
+        assertThat(result.conflict().pendingPets()).isEmpty();
         verify(invitationMapper, never()).insertInvitation(any());
         verify(eventPublisher, never()).publish(any(NotificationEvent.class));
     }
@@ -218,9 +220,49 @@ class CaregiverInvitationServiceTest {
                 new CaregiverInvitationCreateRequest(TARGET_EMAIL, List.of(PET_A)));
 
         assertThat(result.error()).isEqualTo(ErrorCode.CAREGIVER_INVITATION_DUPLICATED);
-        assertThat(result.conflict().invtnExpryDt()).isEqualTo(expiry);
-        assertThat(result.conflict().petNm()).isEqualTo("뭉치");
+        assertThat(result.conflict().linkedPets()).isEmpty();
+        assertThat(result.conflict().pendingPets())
+                .containsExactly(new CaregiverInvitationPendingPet(PET_A, "뭉치", expiry));
         verify(invitationMapper, never()).insertInvitation(any());
+    }
+
+    @Test
+    void 대기_중인_초대가_여러_마리면_모두_모아_돌려준다() {
+        LocalDateTime expiryA = LocalDateTime.of(2026, 11, 3, 10, 0);
+        LocalDateTime expiryB = LocalDateTime.of(2026, 11, 4, 9, 0);
+        when(invitationMapper.selectPendingExpryDt(eq("h:" + TARGET_EMAIL), eq(PET_A), eq(PENDING), any()))
+                .thenReturn(expiryA);
+        when(invitationMapper.selectPendingExpryDt(eq("h:" + TARGET_EMAIL), eq(PET_B), eq(PENDING), any()))
+                .thenReturn(expiryB);
+
+        CaregiverInvitationCreateResult result = service.createInvitation(SENDER,
+                new CaregiverInvitationCreateRequest(TARGET_EMAIL, List.of(PET_A, PET_B)));
+
+        assertThat(result.error()).isEqualTo(ErrorCode.CAREGIVER_INVITATION_DUPLICATED);
+        assertThat(result.conflict().pendingPets()).containsExactly(
+                new CaregiverInvitationPendingPet(PET_A, "뭉치", expiryA),
+                new CaregiverInvitationPendingPet(PET_B, "나비", expiryB));
+        verify(invitationMapper, never()).insertInvitation(any());
+    }
+
+    @Test
+    void 이미_가족과_대기_초대가_섞이면_둘_다_모으고_이미_가족_코드를_준다() {
+        LocalDateTime expiry = LocalDateTime.of(2026, 11, 3, 10, 0);
+        when(memberService.findForLogin("h:" + TARGET_EMAIL)).thenReturn(memberVo(RECEIVER));
+        when(petMapper.selectBrupRel(RECEIVER, PET_B)).thenReturn(rel(PET_B, RECEIVER, CO_PARENT));
+        when(invitationMapper.selectPendingExpryDt(eq("h:" + TARGET_EMAIL), eq(PET_A), eq(PENDING), any()))
+                .thenReturn(expiry);
+
+        CaregiverInvitationCreateResult result = service.createInvitation(SENDER,
+                new CaregiverInvitationCreateRequest(TARGET_EMAIL, List.of(PET_A, PET_B)));
+
+        assertThat(result.error()).isEqualTo(ErrorCode.CAREGIVER_ALREADY_LINKED);
+        assertThat(result.conflict().linkedPets()).containsExactly(new CaregiverInvitationLinkedPet(PET_B, "나비"));
+        assertThat(result.conflict().pendingPets())
+                .containsExactly(new CaregiverInvitationPendingPet(PET_A, "뭉치", expiry));
+        verify(invitationMapper, never()).insertInvitation(any());
+        verify(invitationMapper, never()).insertTargetPet(any());
+        verify(eventPublisher, never()).publish(any(NotificationEvent.class));
     }
 
     @Test
