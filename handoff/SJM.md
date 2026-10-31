@@ -1,7 +1,7 @@
 # SJM 핸드오프
 
 ## 지금 하는 것
-SCR-MYP-003 추가-3 `PATCH /pets/{petSn}` 목표체중 비우기(`goalBdwgReset`) — `./gradlew build -q` 통과(PetServiceTest 3건 추가), 사람 확인 통과(Postman Runner 16건, mbrSn 6·petSn 20, 되돌리기 포함), 프론트 화면 확인 통과. PR #86(병합 전). 앞선 SCR-MYP-005 추가-1·2는 끝남(#74·#84 병합)
+SCR-MYP-003 추가-3 `PATCH /pets/{petSn}` 목표체중 비우기(`goalBdwgReset`) — `./gradlew build -q` 통과(PetServiceTest 3건 추가), 사람 확인 통과(Postman Runner 16건, mbrSn 6·petSn 20, 되돌리기 포함), 프론트 화면 확인 통과. PR #86 병합. 앞선 SCR-MYP-005 추가-1·2는 끝남(#74·#84 병합)
 
 ### 추가 요청
 | 번호 | 바꿀 파일 | 완료 조건 | 요청 |
