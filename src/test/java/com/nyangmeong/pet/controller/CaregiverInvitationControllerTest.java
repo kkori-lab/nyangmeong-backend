@@ -43,6 +43,8 @@ import com.nyangmeong.global.security.jwt.TokenCookies;
 import com.nyangmeong.pet.dto.CaregiverInvitationAcceptRequest;
 import com.nyangmeong.pet.dto.CaregiverInvitationConflictResponse;
 import com.nyangmeong.pet.dto.CaregiverInvitationCreateResult;
+import com.nyangmeong.pet.dto.CaregiverInvitationLinkedPet;
+import com.nyangmeong.pet.dto.CaregiverInvitationPendingPet;
 import com.nyangmeong.pet.dto.CaregiverInvitationPetSummary;
 import com.nyangmeong.pet.dto.CaregiverInvitationResponse;
 import com.nyangmeong.pet.dto.CaregiverInvitationSummary;
@@ -94,16 +96,22 @@ class CaregiverInvitationControllerTest {
 
     @Test
     @WithMockLoginMember
-    void 이미_가족이면_409와_반려동물명을_돌려준다() throws Exception {
+    void 이미_가족과_대기_초대가_섞이면_409와_두_목록을_돌려준다() throws Exception {
         when(caregiverInvitationService.createInvitation(eq(1L), any())).thenReturn(
                 CaregiverInvitationCreateResult.fail(ErrorCode.CAREGIVER_ALREADY_LINKED,
-                        new CaregiverInvitationConflictResponse(101L, "나비", null)));
+                        new CaregiverInvitationConflictResponse(List.of(new CaregiverInvitationLinkedPet(101L, "나비")),
+                                List.of(new CaregiverInvitationPendingPet(100L, "뭉치",
+                                        LocalDateTime.of(2026, 11, 3, 9, 0))))));
 
         mockMvc.perform(json(post("/api/caregiver-invitations"),
                 "{\"invtnTrgtEml\":\"sooyoung@example.com\",\"petSns\":[100,101]}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CAREGIVER_ALREADY_LINKED"))
-                .andExpect(jsonPath("$.data.petNm").value("나비"));
+                .andExpect(jsonPath("$.data.linkedPets[0].petSn").value(101))
+                .andExpect(jsonPath("$.data.linkedPets[0].petNm").value("나비"))
+                .andExpect(jsonPath("$.data.linkedPets[0].invtnExpryDt").doesNotExist())
+                .andExpect(jsonPath("$.data.pendingPets[0].petNm").value("뭉치"))
+                .andExpect(jsonPath("$.data.pendingPets[0].invtnExpryDt").value("2026-11-03T09:00:00"));
     }
 
     @Test
@@ -111,13 +119,17 @@ class CaregiverInvitationControllerTest {
     void 대기_중인_초대가_있으면_409와_만료일시를_돌려준다() throws Exception {
         when(caregiverInvitationService.createInvitation(eq(1L), any())).thenReturn(
                 CaregiverInvitationCreateResult.fail(ErrorCode.CAREGIVER_INVITATION_DUPLICATED,
-                        new CaregiverInvitationConflictResponse(100L, "뭉치", LocalDateTime.of(2026, 11, 3, 9, 0))));
+                        new CaregiverInvitationConflictResponse(List.of(), List.of(
+                                new CaregiverInvitationPendingPet(100L, "뭉치", LocalDateTime.of(2026, 11, 3, 9, 0))))));
 
         mockMvc.perform(json(post("/api/caregiver-invitations"),
                 "{\"invtnTrgtEml\":\"sooyoung@example.com\",\"petSns\":[100]}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CAREGIVER_INVITATION_DUPLICATED"))
-                .andExpect(jsonPath("$.data.invtnExpryDt").value("2026-11-03T09:00:00"));
+                .andExpect(jsonPath("$.data.linkedPets").isArray())
+                .andExpect(jsonPath("$.data.linkedPets").isEmpty())
+                .andExpect(jsonPath("$.data.pendingPets[0].petSn").value(100))
+                .andExpect(jsonPath("$.data.pendingPets[0].invtnExpryDt").value("2026-11-03T09:00:00"));
     }
 
     @Test

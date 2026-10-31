@@ -20,7 +20,7 @@
 | GET | /pixel-characters/{pixelCharSn} | 꾸미기 상세. 결과 이미지·보유/착용 아이템·오류 문의 접수 여부 | MYP-010-10·13·14·23 | LJS | - | PixelCharacterResponse |
 | GET | /pixel-characters/{pixelCharSn}/shop-items | 상점 아이템 목록(판매 중, 이 캐릭터 기준 보유중 표시, 보유 포인트). `?itemRegnCd=` | MYP-011-02·03 | LJS | - | ShopItemListResponse |
 | GET | /point-ledgers | 선택한 월의 포인트 적립·사용 내역(최신순). 쿼리 `yearMonth` | MYP-020-02 | SJM | - | List<PointLedgerSummary> |
-| POST | /caregiver-invitations | 이메일로 공동양육 초대 발송. 대상 반려동물 여러 마리를 한 초대로 묶음. 가입 회원은 인앱 알림, 미가입은 메일. 이미 가족(409 `CAREGIVER_ALREADY_LINKED`)·대기 초대 있음(409 `CAREGIVER_INVITATION_DUPLICATED`)은 오류 data에 CaregiverInvitationConflictResponse | MYP-005-01·02 | SJM | CaregiverInvitationCreateRequest | CaregiverInvitationResponse |
+| POST | /caregiver-invitations | 이메일로 공동양육 초대 발송. 대상 반려동물 여러 마리를 한 초대로 묶음. 가입 회원은 인앱 알림, 미가입은 메일. 고른 반려동물을 모두 검사해 충돌을 모아 409 오류 data에 CaregiverInvitationConflictResponse. 이미 가족이 하나라도 있으면 `CAREGIVER_ALREADY_LINKED`, 대기 초대만 있으면 `CAREGIVER_INVITATION_DUPLICATED`. 충돌이 있으면 초대를 만들지 않음 | MYP-005-01·02 | SJM | CaregiverInvitationCreateRequest | CaregiverInvitationResponse |
 | POST | /caregiver-invitations/{jntBrupInvtnSn}/accept | 초대 수락. 고른 반려동물만 연동하고 나머지는 반려동물별 거절 | MYP-005-05 | SJM | CaregiverInvitationAcceptRequest | - |
 | POST | /caregiver-invitations/{jntBrupInvtnSn}/reject | 초대 거절. 초대의 반려동물 전체 | MYP-005-07·08 | SJM | - | - |
 | POST | /pets | 반려동물 등록(계정당 10마리, 첫 등록은 대표 지정) | MYP-002-01, MYP-003-01·04·05·07 | SJM | PetCreateRequest | PetResponse |
@@ -54,9 +54,27 @@
 쓰는 API: POST /caregiver-invitations의 오류 응답 data(409 `CAREGIVER_ALREADY_LINKED`·`CAREGIVER_INVITATION_DUPLICATED`)
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| petSn | Long | Y | 걸린 반려동물 | PET.PET_SN |
-| petNm | String | Y | "이미 ○○의 가족이에요" | PET.PET_NM, MYP-005-01 |
-| invtnExpryDt | LocalDateTime | N | 대기 중인 초대의 만료일시, "이미 초대를 보냈어요 (MM-DD에 만료돼요)". `CAREGIVER_ALREADY_LINKED`에서는 없음 | JNT_BRUP_INVTN.INVTN_EXPRY_DT, MYP-005-01 |
+| linkedPets | List<CaregiverInvitationLinkedPet> | Y | 초대받는 사람이 이미 가족으로 연동된 동물, "이미 ○○의 가족이에요". 없으면 빈 목록 | BRUP_REL, MYP-005-01 |
+| pendingPets | List<CaregiverInvitationPendingPet> | Y | 같은 사람에게 대기 중인 초대가 있는 동물, "이미 초대를 보냈어요 (MM-DD에 만료돼요)". 없으면 빈 목록 | JNT_BRUP_INVTN, INVTN_TRGT_PET, MYP-005-01 |
+
+#### CaregiverInvitationLinkedPet (CaregiverInvitationConflictResponse.linkedPets)
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| petSn | Long | Y | | PET.PET_SN |
+| petNm | String | Y | | PET.PET_NM |
+
+#### CaregiverInvitationPendingPet (CaregiverInvitationConflictResponse.pendingPets)
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| petSn | Long | Y | | PET.PET_SN |
+| petNm | String | Y | | PET.PET_NM |
+| invtnExpryDt | LocalDateTime | Y | 그 대기 초대의 만료일시 | JNT_BRUP_INVTN.INVTN_EXPRY_DT |
+
+응답 예시(둘 다 섞임)
+```json
+{"status":"error","httpCode":409,"message":"이미 가족으로 연동된 반려동물이에요.","path":"/api/caregiver-invitations","code":"CAREGIVER_ALREADY_LINKED",
+ "data":{"linkedPets":[{"petSn":12,"petNm":"뭉치"}],"pendingPets":[{"petSn":14,"petNm":"콩이","invtnExpryDt":"2026-11-06T14:20:00"}]}}
+```
 
 ### CaregiverInvitationCreateRequest
 쓰는 API: POST /caregiver-invitations
