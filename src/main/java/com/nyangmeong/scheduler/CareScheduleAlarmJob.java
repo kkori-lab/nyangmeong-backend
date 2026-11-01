@@ -4,10 +4,11 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.nyangmeong.global.batch.BatchJob;
+import com.nyangmeong.global.batch.BatchType;
 import com.nyangmeong.global.notification.CareScheduleAlarmEvent;
 import com.nyangmeong.global.notification.EventPublisher;
 import com.nyangmeong.health.dto.HospitalScheduleSummary;
@@ -22,7 +23,7 @@ import lombok.RequiredArgsConstructor;
  */
 @Component
 @RequiredArgsConstructor
-public class CareScheduleAlarmJob {
+public class CareScheduleAlarmJob implements BatchJob {
 
     static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
 
@@ -33,28 +34,38 @@ public class CareScheduleAlarmJob {
     private final CaregiverFake caregiverFake;
     private final EventPublisher eventPublisher;
 
-    /**
-     * 09:00 스캔 실행
-     */
-    @Scheduled(cron = "0 0 9 * * *", zone = "Asia/Seoul")
+    @Override
+    public BatchType type() {
+        return BatchType.CARE_SCHEDULE_ALARM;
+    }
+
+    @Override
+    public String cron() {
+        return "0 0 9 * * *";
+    }
+
+    @Override
     @Transactional
-    public void run() {
-        scan(LocalDate.now(ZONE));
+    public Integer execute() {
+        return scan(LocalDate.now(ZONE));
     }
 
     /**
      * 기준일 발송 대상 스캔
      */
     @Transactional
-    public void scan(LocalDate baseYmd) {
+    public int scan(LocalDate baseYmd) {
+        int published = 0;
         for (int bfhdDayCnt : BFHD_DAY_CNTS) {
             for (HospitalScheduleSummary schedule : careScheduleService.searchHospitalSchedules(baseYmd.plusDays(bfhdDayCnt))) {
                 for (Long mbrSn : caregiverFake.search(schedule.getPetSn())) {
                     eventPublisher.publish(new CareScheduleAlarmEvent(mbrSn, schedule.getSchdlSn(),
                             schedule.getSchdlDt(), schedule.isHrInptYn(), schedule.getPetNm(),
                             schedule.getCkupTypeNm(), schedule.getHsptlNm(), bfhdDayCnt));
+                    published++;
                 }
             }
         }
+        return published;
     }
 }

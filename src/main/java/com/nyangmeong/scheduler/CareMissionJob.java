@@ -4,9 +4,10 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.nyangmeong.global.batch.BatchJob;
+import com.nyangmeong.global.batch.BatchType;
 import com.nyangmeong.health.service.ObservationService;
 import com.nyangmeong.pet.service.CareMissionService;
 
@@ -21,19 +22,27 @@ import lombok.RequiredArgsConstructor;
 @Component
 @ConditionalOnProperty(name = "app.care-mission.batch-enabled", havingValue = "true")
 @RequiredArgsConstructor
-public class CareMissionJob {
+public class CareMissionJob implements BatchJob {
 
     static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
 
     private final CareMissionService careMissionService;
     private final ObservationService observationService;
 
-    /**
-     * 매시 정각 실행
-     */
-    @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul")
-    public void run() {
+    @Override
+    public BatchType type() {
+        return BatchType.CARE_MISSION;
+    }
+
+    @Override
+    public String cron() {
+        return "0 0 * * * *";
+    }
+
+    @Override
+    public Integer execute() {
         run(LocalDate.now(ZONE));
+        return null;
     }
 
     /**
