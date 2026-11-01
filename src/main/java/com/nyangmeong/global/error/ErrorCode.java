@@ -34,6 +34,8 @@ public enum ErrorCode {
     ALREADY_PROCESSED(HttpStatus.CONFLICT, "이미 처리된 요청입니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."),
     EXTERNAL_API_ERROR(HttpStatus.BAD_GATEWAY, "외부 서비스 호출에 실패했습니다. 잠시 후 다시 시도해 주세요."),
+    BATCH_ALREADY_RUNNING(HttpStatus.CONFLICT, "이미 실행 중인 배치입니다."),
+    BATCH_NOT_AVAILABLE(HttpStatus.CONFLICT, "이 서버에서 실행할 수 없는 배치입니다."),
 
     /** member */
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "일치하는 회원정보를 찾을 수 없습니다."),

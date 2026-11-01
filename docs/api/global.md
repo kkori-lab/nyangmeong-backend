@@ -14,6 +14,9 @@
 | GET | /admin/audit-logs | 감사 로그 목록. `?mbrSn=&taskTypeCd=&trgtTblNm=&bgngYmd=&endYmd=&page=&size=`, 조건은 모두 선택, 기본 20건, 최신순. `trgtTblNm`은 완전 일치, 기간은 끝 날짜 하루를 포함한다. `bgngYmd`가 `endYmd`보다 뒤면 400 `INVALID_INPUT_VALUE`. 작업 유형 목록은 `GET /common-codes?prntComCd=SYSG01`. 관리자만 | ADM-114-01 | LJS | - | PageResponse<AdminTaskLogSummary> |
 | GET | /admin/audit-logs/admins | 감사 로그에 나온 관리자 목록(관리자 필터 드롭다운). 관리자만 | ADM-114-01 | LJS | - | List<AdminTaskLogAdminSummary> |
 | GET | /admin/audit-logs/{mngrTaskLogSn} | 감사 로그 상세(바뀌기 전·후 값, 접속 IP). 없는 번호는 404 `NOT_FOUND`. 관리자만. 수정·삭제 API는 없다 | ADM-114-02·04 | LJS | - | AdminTaskLogDetailResponse |
+| GET | /admin/batches | 배치 목록과 배치별 마지막 실행. 코드에 있는 배치 4종(공통코드 SYSG02). 실행 이력이 없으면 마지막 실행 필드는 null. 관리자만 | ADM-111-01 | LJS | - | List<BatchSummary> |
+| GET | /admin/batches/{btchSeCd}/executions | 실행 이력. `?page=&size=`, 기본 20건, 최신순. 없는 코드는 404 `NOT_FOUND`. 실패 건수는 없다(배치가 건별 실패를 세지 않는다). 관리자만 | ADM-111-02 | LJS | - | PageResponse<BatchExecutionSummary> |
+| POST | /admin/batches/{btchSeCd}/run | 수동 실행. 이력을 남기고 바로 200을 돌려준 뒤 비동기로 실행한다. 결과는 실행 이력으로 본다. 감사 로그(PROCESS)를 남긴다. 실행 중이면 409 `BATCH_ALREADY_RUNNING`, 이 서버에서 꺼진 배치면 409 `BATCH_NOT_AVAILABLE`, 없는 코드는 404 `NOT_FOUND`. 관리자만 | ADM-111-03 | LJS | - | BatchRunResponse |
 
 ## DTO
 
@@ -111,3 +114,36 @@
 | chgBfrCn | JSON | N | 바뀌기 전 값. 없으면 null | MNGR_TASK_LOG.CHG_BFR_CN |
 | chgAftrCn | JSON | N | 바뀐 후 값. 없으면 null | MNGR_TASK_LOG.CHG_AFTR_CN |
 | cntnIpAddr | String | N | 접속 IP | MNGR_TASK_LOG.CNTN_IP_ADDR |
+
+### BatchSummary
+쓰는 API: GET /admin/batches
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| btchSeCd | String | Y | 배치 구분. 공통코드 SYSG02 | BTCH_EXCN_HSTRY.BTCH_SE_CD |
+| btchNm | String | Y | 배치 이름 | COM_CD.COM_CD_NM |
+| lastBgngDt | LocalDateTime | N | 마지막 실행 시작 | BTCH_EXCN_HSTRY.EXCN_BGNG_DT |
+| lastEndDt | LocalDateTime | N | 마지막 실행 종료 | BTCH_EXCN_HSTRY.EXCN_END_DT |
+| lastRsltCd | String | N | 마지막 실행 결과. 공통코드 SYSG04 | BTCH_EXCN_HSTRY.EXCN_RSLT_CD |
+| prcsCnt | Integer | N | 처리 건수. 세지 않는 배치는 null | BTCH_EXCN_HSTRY.PRCS_CNT |
+| failRsn | String | N | 실패 사유 | BTCH_EXCN_HSTRY.FAIL_RSN |
+| runningYn | boolean | Y | 이 서버에서 실행 중이면 true(수동 실행 버튼 비활성) | 계산 |
+| runnableYn | boolean | Y | 이 서버에서 켜져 있으면 true | 계산 |
+
+### BatchExecutionSummary
+쓰는 API: GET /admin/batches/{btchSeCd}/executions
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| btchExcnHstrySn | Long | Y | | BTCH_EXCN_HSTRY.BTCH_EXCN_HSTRY_SN |
+| excnBgngDt | LocalDateTime | Y | 시작 | BTCH_EXCN_HSTRY.EXCN_BGNG_DT |
+| excnEndDt | LocalDateTime | N | 종료 | BTCH_EXCN_HSTRY.EXCN_END_DT |
+| prcsCnt | Integer | N | 처리 건수 | BTCH_EXCN_HSTRY.PRCS_CNT |
+| failRsn | String | N | 실패 사유 | BTCH_EXCN_HSTRY.FAIL_RSN |
+| excnSeCd | String | Y | 자동·수동. 공통코드 SYSG03 | BTCH_EXCN_HSTRY.EXCN_SE_CD |
+| excnRsltCd | String | Y | 결과. 공통코드 SYSG04 | BTCH_EXCN_HSTRY.EXCN_RSLT_CD |
+| mbrNcnm | String | N | 수동 실행한 관리자 닉네임, 자동은 null | MBR.MBR_NCNM |
+
+### BatchRunResponse
+쓰는 API: POST /admin/batches/{btchSeCd}/run
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| btchExcnHstrySn | Long | Y | 만들어진 실행 이력 번호 | BTCH_EXCN_HSTRY.BTCH_EXCN_HSTRY_SN |
