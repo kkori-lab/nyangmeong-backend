@@ -1,15 +1,19 @@
 # SJM 핸드오프
 
 ## 지금 하는 것
-SCR-MYP-002 추가-1 반려동물 삭제 시 가계부 외 soft delete — 끝남: 검증 `통과`(1회차), 사람 확인 통과(Postman 8건, 공용 DB 마이그레이션 적용·PET 1004 삭제 뒤 EXPND 유지 확인). SCR-MYP-040은 #73으로 병합됨
+SCR-MYP-003 추가-3 `PATCH /pets/{petSn}` 목표체중 비우기(`goalBdwgReset`) — `./gradlew build -q` 통과(PetServiceTest 3건 추가), 사람 확인 통과(Postman Runner 16건, mbrSn 6·petSn 20, 되돌리기 포함), 프론트 화면 확인 통과. PR #86 병합. 앞선 SCR-MYP-005 추가-1·2는 끝남(#74·#84 병합)
 
 ### 추가 요청
 | 번호 | 바꿀 파일 | 완료 조건 | 요청 |
 | --- | --- | --- | --- |
 | 추가-1 | `db/migration/20261030_01_add_del_yn_for_pet_delete.sql`(새 파일), `pet/domain/PetDeletedEvent`(새 파일), `PetService.deletePet`, `CareMissionMapper`·`PixelCharacterMapper`·`CaregiverInvitationMapper`(Java·XML), `docs/convention/service.md`, `docs/api/issues.md` 마이페이지 3번, 관련 테스트 | 명령: `./gradlew build -q`(PetServiceTest에 삭제 시 일별 미션·캐릭터 생성 작업·캐릭터 사진·초대 대상 DEL_YN 처리와 `PetDeletedEvent` 발행 확인). 화면: 마이그레이션 실행 뒤 주양육자 토큰 `DELETE /api/pets/{petSn}` → 200, DB에서 그 반려동물의 DAY_MSN·CHAR_CRT_JOB·CHAR_PHOTO·INVTN_TRGT_PET이 `DEL_YN='Y'`, EXPND는 그대로 | 요청 2026-10-30 05:54 "반려동물 삭제 시 가계부만 남기고 나머지는 한 트랜잭션에서 soft delete. DEL_YN 없는 테이블(CKUP_RCD·DAY_MSN·CHAR_CRT_JOB·CHAR_PHOTO·INVTN_TRGT_PET)에 컬럼 추가는 migration으로, pet 쪽 이벤트 발행까지. health·ai 리스너는 JAJ·LJS" |
+| 추가-2 | `pet/dto/CaregiverInvitationConflictResponse`(→ linkedPets·pendingPets 목록), 새 `CaregiverInvitationLinkedPet`·`CaregiverInvitationPendingPet`, `CaregiverInvitationService.createInvitation`, `CaregiverInvitationServiceTest`·`CaregiverInvitationControllerTest`, `docs/api/pet.md` | 명령: `./gradlew build -q`(여러 마리 충돌을 모두 모음, 섞이면 CAREGIVER_ALREADY_LINKED, 충돌 시 초대 미생성, 빈 목록은 []). 화면: 409 `data`가 `{linkedPets:[{petSn,petNm}], pendingPets:[{petSn,petNm,invtnExpryDt}]}` | 요청 2026-10-31 10:42 "POST /caregiver-invitations 409가 첫 충돌 한 마리만 줌. 선택한 동물을 전부 검사해 이미 가족·대기 초대를 목록으로 모아 주기, code는 기존 두 개, 충돌 있으면 초대 안 만듦, 다른 동작은 건드리지 않기" |
+| 추가-3 | `pet/dto/PetUpdateRequest`(`goalBdwgReset` 추가), `PetService.updatePet`, `PetServiceTest`, `docs/api/pet.md`, `docs/api/issues.md` 마이페이지 4번 | 명령: `./gradlew build -q`(reset=true면 GOAL_BDWG null 저장, reset과 goalBdwg 함께면 400 BAD_REQUEST·저장 안 함, 둘 다 없으면 그대로). 화면: `PATCH /api/pets/{petSn}` `{"goalBdwgReset":true}` → 200, 응답·DB GOAL_BDWG null | 요청 2026-10-31 "PATCH /pets/{petSn}에서 목표체중을 비울 수 있게. goalBdwgReset(Boolean), true면 null 저장, goalBdwg와 같이 보내면 400(profilePhotoReset과 같은 방식), 둘 다 없으면 변경 안 함, 다른 동작은 건드리지 않기" |
 
 ## 다음에 할 것
-- LJS와 정하기(SCR-MYP-002): 반려동물 삭제 때 AI 대화방(AI_CNVRS_ROOM, DEL_YN 없음)도 지울지와 방식. 지우기로 하면 ai 쪽에서 `PetDeletedEvent`를 같은 트랜잭션에서 받는다
+- 사람 확인(SCR-MYP-003 추가-3): 통과 2026-10-31. Postman Runner 16건 통과·실패 0(mbrSn 6, petSn 20). ① goalBdwg 4.5 200 ② goalBdwg+reset 400 BAD_REQUEST ③ 4.5 그대로 ④ reset=false 4.5 그대로 ⑤ reset=true null, 원래 값으로 되돌림
+- 프론트 연결(SCR-MYP-003 추가-3): 완료(프론트 PR에 포함). `PetFormModal`이 목표체중 지우기를 `goalBdwgReset: true`로 보낸다. 로컬 백엔드로 화면 확인함(지우고 저장 → 다시 열면 비어 있음). 품종은 `vrtySn`·`vrtyDrctInptNm` 중 하나만 보내면 다른 쪽이 비워진다
+- 연결 남음(SCR-MYP-005 추가-2): 프론트 5-1 초대 모달의 409 처리를 `data.linkedPets`("이미 ○○의 가족이에요")·`data.pendingPets`("이미 초대를 보냈어요 (MM-DD에 만료돼요)") 목록 기준으로 바꾸기(프론트 저장소에서 /start). 예전 단일 `data.petSn·petNm·invtnExpryDt`는 없어졌다
 - 연결 남음(SCR-MYP-040): FN-MYP-040-02·03·08·09·13 프론트 SCR-MYP-040 6-2·6-3 프로필 요약·계정 정보, FN-MYP-040-02·05·08·11 프론트 6-2·6-3 사진 변경·기본 이미지로·휴대폰 번호 [수정]·[저장](프론트 저장소에서 /start). API: `GET /members/me`(`MemberResponse`에 `joinDt`·`lastLgnDt` 추가), `PATCH /members/me`(multipart `mblTelno`·`profilePhoto`·`profilePhotoReset`, 다른 회원 번호 409 PHONE_ALREADY_USED, 사진과 되돌리기 함께 400)
 - YAY와 정하기(SCR-MYP-040): 본인 확인(6-1)을 통과했는지 `PATCH /members/me`에서 서버가 검사하지 않는다. `POST /members/me/password-verification`을 만들 때 통과 표시를 어떻게 남길지 함께 정한다
 - 연결 남음(SCR-MYP-002): FN-MYP-002-07 프론트 SCR-MYP-002 ⋮ 메뉴 [반려동물 삭제]·2-3 삭제 확인 팝업·2-4 등록 카드 복귀(프론트 저장소에서 /start). API: `DELETE /pets/{petSn}`(주양육자만, 공동양육자 403 PET_PRIMARY_ONLY, data 없음). FN-MYP-002-08 LJS 알림함 COM-004에 공동양육 연동 해제 알림(CO_PARENTING, 이동 경로 `/mypage/pets`) 표시

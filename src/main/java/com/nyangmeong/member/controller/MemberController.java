@@ -101,6 +101,9 @@ public class MemberController {
         return ResponseEntity.ok(ApiResponse.success(memberService.getMember(me.id())));
     }
 
+    // TODO(MYP-040-01): 본인 확인 서버 검사 미구현.
+    // YAY 비밀번호 확인 API(POST /members/me/password-verification)와 방식 협의 중.
+    // 제안안: 확인 성공 시 세션에 확인 시각 저장 → 10분 이내만 수정 허용, 아니면 403.
     @Operation(summary = "회원정보 수정(휴대전화번호·프로필 사진)")
     @PatchMapping(value = "/me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<MemberResponse>> updateMe(@AuthenticationPrincipal LoginMember me,

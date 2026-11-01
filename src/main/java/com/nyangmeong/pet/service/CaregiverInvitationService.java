@@ -3,6 +3,7 @@ package com.nyangmeong.pet.service;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -35,6 +36,8 @@ import com.nyangmeong.pet.dto.CaregiverInvitationAcceptRequest;
 import com.nyangmeong.pet.dto.CaregiverInvitationConflictResponse;
 import com.nyangmeong.pet.dto.CaregiverInvitationCreateRequest;
 import com.nyangmeong.pet.dto.CaregiverInvitationCreateResult;
+import com.nyangmeong.pet.dto.CaregiverInvitationLinkedPet;
+import com.nyangmeong.pet.dto.CaregiverInvitationPendingPet;
 import com.nyangmeong.pet.dto.CaregiverInvitationPetSummary;
 import com.nyangmeong.pet.dto.CaregiverInvitationResponse;
 import com.nyangmeong.pet.dto.CaregiverInvitationSummary;
@@ -96,17 +99,27 @@ public class CaregiverInvitationService {
 
         Member receiver = memberService.findForLogin(targetHmac);
         LocalDateTime now = LocalDateTime.now();
+        /** 고른 동물을 모두 검사해 충돌을 모은다. 하나라도 있으면 초대를 만들지 않는다 */
+        List<CaregiverInvitationLinkedPet> linkedPets = new ArrayList<>();
+        List<CaregiverInvitationPendingPet> pendingPets = new ArrayList<>();
         for (Pet pet : pets) {
             if (receiver != null && petMapper.selectBrupRel(receiver.getMbrSn(), pet.getPetSn()) != null) {
-                return CaregiverInvitationCreateResult.fail(ErrorCode.CAREGIVER_ALREADY_LINKED,
-                        new CaregiverInvitationConflictResponse(pet.getPetSn(), pet.getPetNm(), null));
+                linkedPets.add(new CaregiverInvitationLinkedPet(pet.getPetSn(), pet.getPetNm()));
+                continue;
             }
             LocalDateTime pendingExpryDt = invitationMapper.selectPendingExpryDt(targetHmac, pet.getPetSn(),
                     InvitationStatus.PENDING.getCode(), now);
             if (pendingExpryDt != null) {
-                return CaregiverInvitationCreateResult.fail(ErrorCode.CAREGIVER_INVITATION_DUPLICATED,
-                        new CaregiverInvitationConflictResponse(pet.getPetSn(), pet.getPetNm(), pendingExpryDt));
+                pendingPets.add(new CaregiverInvitationPendingPet(pet.getPetSn(), pet.getPetNm(), pendingExpryDt));
             }
+        }
+        if (!linkedPets.isEmpty() || !pendingPets.isEmpty()) {
+            ErrorCode error = linkedPets.isEmpty() ? ErrorCode.CAREGIVER_INVITATION_DUPLICATED
+                    : ErrorCode.CAREGIVER_ALREADY_LINKED;
+            return CaregiverInvitationCreateResult.fail(error,
+                    new CaregiverInvitationConflictResponse(linkedPets, pendingPets));
+        }
+        for (Pet pet : pets) {
             checkCaregiverLimit(pet.getPetSn());
         }
 
