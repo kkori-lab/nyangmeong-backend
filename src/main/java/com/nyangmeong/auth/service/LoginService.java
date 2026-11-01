@@ -16,9 +16,12 @@ import com.nyangmeong.auth.dto.LoginResult;
 import com.nyangmeong.auth.mapper.LoginAttemptMapper;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.log.AdminTaskLogService;
+import com.nyangmeong.global.log.AdminTaskType;
 import com.nyangmeong.global.security.captcha.CaptchaGenerator;
 import com.nyangmeong.global.security.captcha.CaptchaGenerator.Captcha;
 import com.nyangmeong.global.security.crypto.FieldCryptoService;
+import com.nyangmeong.global.security.domain.MemberAuthority;
 import com.nyangmeong.global.security.domain.MemberStatus;
 import com.nyangmeong.global.setting.SystemSettingService;
 import com.nyangmeong.member.domain.Member;
@@ -45,6 +48,7 @@ public class LoginService {
     private final FieldCryptoService fieldCryptoService;
     private final PasswordEncoder passwordEncoder;
     private final CaptchaGenerator captchaGenerator;
+    private final AdminTaskLogService adminTaskLogService;
 
     /**
      * 아이디 기준 실패 횟수·보안코드 요구 상태 조회
@@ -105,6 +109,10 @@ public class LoginService {
         boolean ncnmReguide = "N".equals(member.getNcnmStngCmptnYn()) && member.getLastLgnDt() == null;
         memberService.recordLogin(member.getMbrSn());
         loginAttemptMapper.delete(idHmac);
+        if (MemberAuthority.ADMIN.is(member.getMbrAuthrtCd())) {
+            adminTaskLogService.record(member.getMbrSn(), AdminTaskType.LOGIN, "MBR", member.getMbrSn(), "관리자 로그인",
+                    null, null);
+        }
         return LoginResult.success(member.getMbrSn(), new LoginResponse(ncnmReguide, member.getMbrNcnm()));
     }
 

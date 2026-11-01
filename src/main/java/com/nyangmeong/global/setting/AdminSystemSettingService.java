@@ -54,8 +54,6 @@ public class AdminSystemSettingService {
                 current::setInvtnVldDayCnt);
         change(before, after, "lgnFailLmtNmtm", current.getLgnFailLmtNmtm(), req.lgnFailLmtNmtm(),
                 current::setLgnFailLmtNmtm);
-        change(before, after, "whdwlMbrKpngDayCnt", current.getWhdwlMbrKpngDayCnt(), req.whdwlMbrKpngDayCnt(),
-                current::setWhdwlMbrKpngDayCnt);
         change(before, after, "dshbdCareMaxExpsrCnt", current.getDshbdCareMaxExpsrCnt(),
                 req.dshbdCareMaxExpsrCnt(), current::setDshbdCareMaxExpsrCnt);
         change(before, after, "pstImgMaxCnt", current.getPstImgMaxCnt(), req.pstImgMaxCnt(),

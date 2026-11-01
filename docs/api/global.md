@@ -11,6 +11,9 @@
 | GET | /files/public/{atchFileSn} | 공개 이미지 파일(게시글 사진·생성된 캐릭터 이미지). 로그인 없이 열린다. 공개가 아니거나 없는 번호는 404 `FILE_NOT_FOUND`. 응답의 `atchFileSn`을 그대로 `<img src="/api/files/public/{atchFileSn}">`에 쓴다 | 연결 작업(파일 저장 외부 디렉토리) | LJS | - | 이미지 파일 |
 | GET | /admin/settings | 운영 설정 조회. 회원·반려동물, 커뮤니티, 알림, AI, 파일 다섯 묶음과 수정일시·수정자. 관리자만(일반 회원 403, 비로그인 401) | ADM-110-01 | LJS | - | AdminSettingResponse |
 | PATCH | /admin/settings | 운영 설정 수정. 보낸 필드만 바꾸고 바뀐 항목의 전·후 값을 감사 로그(`MNGR_TASK_LOG`)에 남긴다. 바뀐 게 없으면 저장·로그 없이 현재 값을 돌려준다. 범위 밖은 400 `INVALID_INPUT_VALUE` | ADM-110-02·03·04 | LJS | AdminSettingUpdateRequest | AdminSettingResponse |
+| GET | /admin/audit-logs | 감사 로그 목록. `?mbrSn=&taskTypeCd=&trgtTblNm=&bgngYmd=&endYmd=&page=&size=`, 조건은 모두 선택, 기본 20건, 최신순. `trgtTblNm`은 완전 일치, 기간은 끝 날짜 하루를 포함한다. `bgngYmd`가 `endYmd`보다 뒤면 400 `INVALID_INPUT_VALUE`. 작업 유형 목록은 `GET /common-codes?prntComCd=SYSG01`. 관리자만 | ADM-114-01 | LJS | - | PageResponse<AdminTaskLogSummary> |
+| GET | /admin/audit-logs/admins | 감사 로그에 나온 관리자 목록(관리자 필터 드롭다운). 관리자만 | ADM-114-01 | LJS | - | List<AdminTaskLogAdminSummary> |
+| GET | /admin/audit-logs/{mngrTaskLogSn} | 감사 로그 상세(바뀌기 전·후 값, 접속 IP). 없는 번호는 404 `NOT_FOUND`. 관리자만. 수정·삭제 API는 없다 | ADM-114-02·04 | LJS | - | AdminTaskLogDetailResponse |
 
 ## DTO
 
@@ -67,7 +70,6 @@
 | jntBrupMaxNope | Long | N | 1~100 | SYS_STNG.JNT_BRUP_MAX_NOPE |
 | invtnVldDayCnt | Long | N | 1~3650 | SYS_STNG.INVTN_VLD_DAY_CNT |
 | lgnFailLmtNmtm | Long | N | 1~100 | SYS_STNG.LGN_FAIL_LMT_NMTM |
-| whdwlMbrKpngDayCnt | Long | N | 1~3650 | SYS_STNG.WHDWL_MBR_KPNG_DAY_CNT |
 | dshbdCareMaxExpsrCnt | Long | N | 1~20 | SYS_STNG.DSHBD_CARE_MAX_EXPSR_CNT |
 | pstImgMaxCnt | Long | N | 1~100 | SYS_STNG.PST_IMG_MAX_CNT |
 | blindDclrAcmlCnt | Long | N | 1~100 | SYS_STNG.BLIND_DCLR_ACML_CNT |
@@ -81,3 +83,31 @@
 | aiCnvrsTurnCnt | Long | N | 1~50 | SYS_STNG.AI_CNVRS_TURN_CNT |
 | aiTknUplmtCnt | Long | N | 500~100000 | SYS_STNG.AI_TKN_UPLMT_CNT |
 | fileMaxSz | Long | N | 1048576~52428800 (1~50MB) | SYS_STNG.FILE_MAX_SZ |
+
+### AdminTaskLogSummary
+쓰는 API: GET /admin/audit-logs
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| mngrTaskLogSn | Long | Y | | MNGR_TASK_LOG.MNGR_TASK_LOG_SN |
+| regDt | LocalDateTime | Y | 작업 일시 | MNGR_TASK_LOG.REG_DT |
+| mbrSn | Long | Y | 관리자 회원 번호 | MNGR_TASK_LOG.MBR_SN |
+| mbrNcnm | String | Y | 관리자 닉네임 | MBR.MBR_NCNM |
+| taskTypeCd | String | Y | 작업 유형. 공통코드 SYSG01 | MNGR_TASK_LOG.TASK_TYPE_CD |
+| trgtTblNm | String | Y | 대상 테이블명. 화면 표시 이름은 프론트가 바꾼다 | MNGR_TASK_LOG.TRGT_TBL_NM |
+| trgtSn | Long | N | 대상 번호 | MNGR_TASK_LOG.TRGT_SN |
+| taskSmryCn | String | Y | 작업 요약 | MNGR_TASK_LOG.TASK_SMRY_CN |
+
+### AdminTaskLogAdminSummary
+쓰는 API: GET /admin/audit-logs/admins
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| mbrSn | Long | Y | 관리자 회원 번호 | MNGR_TASK_LOG.MBR_SN |
+| mbrNcnm | String | Y | 관리자 닉네임 | MBR.MBR_NCNM |
+
+### AdminTaskLogDetailResponse
+쓰는 API: GET /admin/audit-logs/{mngrTaskLogSn}. `AdminTaskLogSummary`의 필드에 아래를 더한다
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| chgBfrCn | JSON | N | 바뀌기 전 값. 없으면 null | MNGR_TASK_LOG.CHG_BFR_CN |
+| chgAftrCn | JSON | N | 바뀐 후 값. 없으면 null | MNGR_TASK_LOG.CHG_AFTR_CN |
+| cntnIpAddr | String | N | 접속 IP | MNGR_TASK_LOG.CNTN_IP_ADDR |
