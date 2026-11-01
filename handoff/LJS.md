@@ -2,9 +2,14 @@
 
 ## 지금 하는 것
 
-SCR-ADM-110 운영 설정 — 끝 (2026-10-30). `GET`·`PATCH /api/admin/settings`, 감사 로그 기록 수단 `global/log/AdminTaskLogService`. 수정 로직은 기획 수정 뒤 `AdminSystemSettingService`에 뒀다(`SystemSettingService`는 조회 전용)
+SCR-ADM-114 감사 로그 — 끝 (2026-11-01). `GET /api/admin/audit-logs`·`/admins`·`/{mngrTaskLogSn}`, 관리자 로그인 기록(`LoginService`). 추가 요청으로 운영 설정 PATCH에서 `whdwlMbrKpngDayCnt` 제거(조회는 유지, 보내도 무시되고 200)
+
 ## 다음에 할 것
 
+- PR 전 확인(사람): `LoginService`에 관리자 로그인 기록을 넣은 것을 YAY와 협의. 저장소에 협의 기록 없음
+- SCR-ADM-114 연결 남음: FN-ADM-114-01·02 (프론트 연결 관리자 감사 로그 화면 SCR-ADM-114와 상세 모달, 프론트 저장소에서 /start. 프론트 마일스톤에 절 있음)
+- 프론트 운영 설정 화면(SCR-ADM-110): 탈퇴 회원 보관일수를 읽기 전용으로. 필드를 보내도 200으로 무시돼 수정된 것처럼 보인다(프론트 저장소에서 /start)
+- 공용 DB 정리(사람): 검증의 `dev-tokens`로 생긴 회원 2·6 리프레시 토큰 행을 지울지 정한다. 검증 중 `dev-tokens` 일부가 공용 DB 커넥션 끊김으로 응답 없음(2026-10-30 20:55대, 원인 미확정)
 - DB 규칙 PR #80 병합 완료(2026-10-30): 마이그레이션 폐지, v0.10 보관(`db/archive/v0.10/`), v0.11 + v0.11 (1) 관리자 테이블 5개(MNGR_TASK_LOG·BTCH_EXCN_HSTRY·EXTL_API_CALL_LOG·AI_ROUT_MPNG·KWRD_DICT), 공통코드 SYSG01~06·AIMG09·10, 부록 A 라우팅 45건·부록 B 등록 판정 16건. 공용 DB는 v0.11 기준 파일로 새로 만들고 시드를 다시 넣었다(확인: 회원 200·반려동물 1,000·게시글 1,000, 테이블 91). 남은 것(사람): PR #80에 공용 DB 적용 완료 댓글, 팀 공지(이 세션에서 초안 작성), 각자 로컬 DB에 v0.11 (1). ERDCloud(복사본 "Copy of 냥멍케어_ERD_v0.4")에 5개 테이블 반영함 — 원본 ERD가 따로 있으면 거기에도, 회원일련번호 컬럼이 목록 맨 아래라 화면에서 옮기기. 물리명 표준사전 등록. 가계부·뉴스 분류 키워드(AIMC0038·0039)는 데이터 없음. 구현 계획 4절의 `MBR`·`DCLR`·`NTC_MTTR` 컬럼과 CMUG08은 그 화면 마일스톤에서
 - 관리자 다음 마일스톤 전 확인(사람): 구현 계획 6절 확인 항목(정지 회원 요청마다 차단 여부, 인기 포토 제외·RSS 피드·알림 기본값 저장 위치, 기준정보 28번). REQ-ADM-014~022 요구사항정의서 반영은 별도 에이전트가 맡는다(2026-10-30 사람). 다른 담당 도메인 화면은 계획 2절 "협의" 표대로 먼저 이야기한다. 감사 로그가 필요한 관리자 기능은 `AdminTaskLogService.record`를 `@Transactional` 안에서 부른다
 - SCR-ADM-110 연결 남음: FN-ADM-110-01~04 (프론트 연결 관리자 운영 설정 화면 SCR-ADM-110, 프론트 저장소에서 /start. 프론트 마일스톤에 절 있음)
