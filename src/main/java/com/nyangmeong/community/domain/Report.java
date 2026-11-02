@@ -17,6 +17,7 @@ public class Report {
     private Long pstSn;
     private String dclrRsnCd;
     private String dclrPrcsSttsCd;
+    private String dclrActnCd;
     private String dclrDtlCn;
     private LocalDateTime prcsDt;
     private LocalDateTime regDt;

@@ -146,8 +146,8 @@ public class NotificationService {
             case LOST_EXPIRY -> "Y".equals(setting.getLostExpryNotiRcptnYn());
             case EXPENSE -> "Y".equals(setting.getExpndLimNotiRcptnYn());
             case CHARACTER -> "Y".equals(setting.getCharCrtNotiRcptnYn());
-            /** 공동양육·1:1 문의 답변·공지는 설정 없음 */
-            case CO_PARENTING, INQUIRY_ANSWER, NOTICE -> true;
+            /** 공동양육·1:1 문의 답변·공지·신고 처리 결과는 설정 없음 */
+            case CO_PARENTING, INQUIRY_ANSWER, NOTICE, REPORT_RESULT -> true;
         };
     }
 }

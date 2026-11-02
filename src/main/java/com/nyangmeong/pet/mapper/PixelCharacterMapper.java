@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import com.nyangmeong.pet.domain.CharacterCreationJob;
+import com.nyangmeong.pet.domain.CharacterItemSheet;
 import com.nyangmeong.pet.domain.CharacterJobStatusHistory;
 import com.nyangmeong.pet.domain.CharacterPhoto;
 import com.nyangmeong.pet.domain.PixelCharacter;
@@ -47,6 +48,13 @@ public interface PixelCharacterMapper {
             @Param("actorId") String actorId);
 
     /**
+     * 맨몸 시트·배치값 저장
+     */
+    int updateBodySheet(@Param("pixelCharSn") Long pixelCharSn, @Param("bodySheetFileSn") Long bodySheetFileSn,
+            @Param("sheetScale") Double sheetScale, @Param("sheetOriginX") Double sheetOriginX,
+            @Param("sheetOriginY") Double sheetOriginY, @Param("actorId") String actorId);
+
+    /**
      * 반려동물의 픽셀 캐릭터 삭제
      */
     int updateDeleteByPetSn(@Param("petSn") Long petSn, @Param("actorId") String actorId);
@@ -65,6 +73,11 @@ public interface PixelCharacterMapper {
      * 반려동물 캐릭터의 사진 삭제 (없으면 0)
      */
     int updatePhotoDeleteByPetSn(Long petSn);
+
+    /**
+     * 반려동물 캐릭터의 착용 시트 삭제 (없으면 0)
+     */
+    int updateItemSheetDeleteByPetSn(Long petSn);
 
     /**
      * 생성 작업 조회
@@ -97,6 +110,11 @@ public interface PixelCharacterMapper {
      */
     int updateJobFinished(@Param("charCrtJobSn") Long charCrtJobSn, @Param("bfrSttsCds") List<String> bfrSttsCds,
             @Param("aftrSttsCd") String aftrSttsCd, @Param("failRsn") String failRsn);
+
+    /**
+     * 시작 뒤 제한 시간을 넘긴 생성 작업 조회
+     */
+    List<Long> selectTimedOutJobs(@Param("crtJobSttsCd") String crtJobSttsCd, @Param("minutes") int minutes);
 
     /**
      * 생성 작업에 오류 문의 연결
@@ -142,6 +160,33 @@ public interface PixelCharacterMapper {
      * 보유 아이템 착용
      */
     int updateEquip(@Param("pixelCharSn") Long pixelCharSn, @Param("hldItemSns") List<Long> hldItemSns);
+
+    /**
+     * 착용 시트 저장 (다시 받으면 교체)
+     */
+    int upsertItemSheet(@Param("pixelCharSn") Long pixelCharSn, @Param("itemSn") Long itemSn,
+            @Param("atchFileSn") Long atchFileSn);
+
+    /**
+     * 굽기 실패 표시 (이미 구운 시트는 유지)
+     */
+    int upsertItemSheetFailure(@Param("pixelCharSn") Long pixelCharSn, @Param("itemSn") Long itemSn);
+
+    /**
+     * 캐릭터의 착용 시트 전부 삭제
+     */
+    int updateItemSheetDelete(Long pixelCharSn);
+
+    /**
+     * 아이템별 착용 시트 조회
+     */
+    List<CharacterItemSheet> selectItemSheets(@Param("pixelCharSn") Long pixelCharSn,
+            @Param("itemSns") List<Long> itemSns);
+
+    /**
+     * 캐릭터의 착용 시트 파일 여부
+     */
+    int countItemSheetFile(@Param("pixelCharSn") Long pixelCharSn, @Param("atchFileSn") Long atchFileSn);
 
     /**
      * 캐릭터 생성용 반려동물 정보 조회

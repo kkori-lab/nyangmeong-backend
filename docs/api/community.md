@@ -55,6 +55,12 @@
 | POST | /admin/posts/{pstSn}/restore | 블라인드 복구(상태 이력, 감사 로그). 신고 누적 자동 블라인드 포함. 블라인드 글이 아니면 409 ALREADY_PROCESSED, 없는 글 404 POST_NOT_FOUND | ADM-020-05 | LJS | AdminPostStatusChangeRequest | - |
 | GET | /admin/comments | 관리자 댓글 목록. 최신순 20건씩, 삭제된 댓글도 원문 표시. `q`는 작성자 닉네임 부분 일치 | ADM-020-06 | LJS | AdminCommentSearchCond | PageResponse<AdminCommentSummary> |
 | POST | /admin/comments/{cmntSn}/deletion | 관리자 댓글 삭제. 사유는 감사 로그에 남긴다(`CMNT`에 사유 컬럼 없음). DELETE 본문 금지라 POST. 이미 삭제면 409 ALREADY_PROCESSED, 없는 댓글 404 COMMENT_NOT_FOUND | ADM-020-06 | LJS | AdminCommentDeleteRequest | - |
+| GET | /admin/reports | 관리자 신고 목록. 최신순 20건씩, 같은 대상 신고 수 포함. 코드가 틀리거나 기간이 뒤집히면 400 INVALID_INPUT_VALUE | ADM-030-01·02 | LJS | AdminReportSearchCond | PageResponse<AdminReportSummary> |
+| GET | /admin/reports/auto-blind | 자동 블라인드 글·자동 삭제 댓글. 대상별 1행, 대상의 최신 dclrSn으로 복구를 부른다 | ADM-030-07 | LJS | - | PageResponse<AdminReportAutoBlindSummary> |
+| GET | /admin/reports/{dclrSn} | 관리자 신고 상세(대상 내용, 같은 대상 신고, 처리 이력). 없으면 404 REPORT_NOT_FOUND | ADM-030-03 | LJS | - | AdminReportDetailResponse |
+| POST | /admin/reports/{dclrSn}/complete | 신고 처리 완료. 같은 대상의 접수 신고를 함께 처리하고 신고자마다 인앱 알림. 유지는 대상 변경 없음, 블라인드는 글 블라인드·댓글 삭제(이미 숨겨졌으면 신고만 처리), 작성자 정지는 회원 제재 규칙. 처리된 신고 409 ALREADY_PROCESSED, 정지할 수 없는 작성자 409 MEMBER_NOT_SUSPENDABLE | ADM-030-04·06 | LJS | AdminReportCompleteRequest | - |
+| POST | /admin/reports/{dclrSn}/reject | 신고 반려. 그 신고 1건만, 사유는 이력에 남기고 신고자에게 인앱 알림. 처리된 신고 409 ALREADY_PROCESSED | ADM-030-05·06 | LJS | AdminReportRejectRequest | - |
+| POST | /admin/reports/{dclrSn}/restore | 자동 블라인드 복구. 글은 정상, 댓글은 삭제 해제, 접수 신고는 반려·신고자 인앱 알림. 자동 대상이 아니면 409 ALREADY_PROCESSED | ADM-030-06·07 | LJS | AdminPostStatusChangeRequest | - |
 
 ## 실시간 (채팅, 2026-10-22 제안)
 
@@ -84,6 +90,105 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | status | String | N | 게시글 상태 코드(CMUG02) | PST.PST_STTS_CD, ADM-020-02 |
 | bgngYmd | LocalDate | N | 작성 시작일 | PST.REG_DT, ADM-020-02 |
 | endYmd | LocalDate | N | 작성 종료일 | PST.REG_DT, ADM-020-02 |
+
+### AdminReportSearchCond
+쓰는 API: GET /admin/reports
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| status | String | N | 신고처리상태공통코드(CMUG05) | DCLR.DCLR_PRCS_STTS_CD, ADM-030-02 |
+| dclrRsnCd | String | N | 신고사유공통코드(CMUG04) | DCLR.DCLR_RSN_CD, ADM-030-02 |
+| targetType | String | N | POST, COMMENT | ADM-030-02 |
+| autoBlindYn | Boolean | N | 자동 블라인드·자동 삭제 여부 | ADM-030-02 |
+| bgngYmd | LocalDate | N | 접수 시작일 | DCLR.REG_DT, ADM-030-02 |
+| endYmd | LocalDate | N | 접수 종료일 | DCLR.REG_DT, ADM-030-02 |
+
+### AdminReportSummary
+쓰는 API: GET /admin/reports; GET /admin/reports/{dclrSn} (sameTargetReports)
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| dclrSn | Long | Y | | DCLR.DCLR_SN, ADM-030-01 |
+| pstSn | Long | N | 대상이 게시글일 때 | DCLR.PST_SN, ADM-030-01 |
+| cmntSn | Long | N | 대상이 댓글일 때 | DCLR.CMNT_SN, ADM-030-01 |
+| trgtCn | String | Y | 게시글 제목 또는 댓글 내용 | PST.PST_TTL, CMNT.CMNT_CN, ADM-030-01 |
+| dclrRsnCd | String | Y | | DCLR.DCLR_RSN_CD, ADM-030-01 |
+| mbrSn | Long | Y | 신고자 | DCLR.MBR_SN, ADM-030-01 |
+| mbrNcnm | String | Y | 신고자 닉네임 | MBR.MBR_NCNM, ADM-030-01 |
+| dclrCnt | int | Y | 같은 대상 신고 수 | DCLR, ADM-030-01 |
+| dclrPrcsSttsCd | String | Y | | DCLR.DCLR_PRCS_STTS_CD, ADM-030-01 |
+| dclrActnCd | String | N | 신고조치공통코드(CMUG08) | DCLR.DCLR_ACTN_CD, ADM-030-04 |
+| regDt | LocalDateTime | Y | 접수일 | DCLR.REG_DT, ADM-030-01 |
+
+### AdminReportAutoBlindSummary
+쓰는 API: GET /admin/reports/auto-blind
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| dclrSn | Long | Y | 대상의 최신 신고, 복구 호출에 쓴다 | DCLR.DCLR_SN, ADM-030-07 |
+| pstSn | Long | N | | DCLR.PST_SN, ADM-030-07 |
+| cmntSn | Long | N | | DCLR.CMNT_SN, ADM-030-07 |
+| trgtCn | String | Y | 게시글 제목 또는 댓글 내용 | PST.PST_TTL, CMNT.CMNT_CN, ADM-030-07 |
+| trgtMbrSn | Long | Y | 작성자 | PST.MBR_SN, CMNT.MBR_SN, ADM-030-07 |
+| trgtMbrNcnm | String | Y | 작성자 닉네임 | MBR.MBR_NCNM, ADM-030-07 |
+| dclrCnt | int | Y | 같은 대상 신고 수 | DCLR, ADM-030-07 |
+| rcptDclrCnt | int | Y | 그중 접수 상태 수 | DCLR, ADM-030-07 |
+| lastRegDt | LocalDateTime | Y | 마지막 신고 일시 | DCLR.REG_DT, ADM-030-07 |
+
+### AdminReportDetailResponse
+쓰는 API: GET /admin/reports/{dclrSn}
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| dclrSn | Long | Y | | DCLR.DCLR_SN, ADM-030-03 |
+| dclrRsnCd | String | Y | | DCLR.DCLR_RSN_CD, ADM-030-03 |
+| dclrDtlCn | String | N | | DCLR.DCLR_DTL_CN, ADM-030-03 |
+| dclrPrcsSttsCd | String | Y | | DCLR.DCLR_PRCS_STTS_CD, ADM-030-03 |
+| dclrActnCd | String | N | | DCLR.DCLR_ACTN_CD, ADM-030-04 |
+| mbrSn | Long | Y | 신고자 | DCLR.MBR_SN, ADM-030-03 |
+| mbrNcnm | String | Y | 신고자 닉네임 | MBR.MBR_NCNM, ADM-030-03 |
+| prcsDt | LocalDateTime | N | | DCLR.PRCS_DT, ADM-030-03 |
+| regDt | LocalDateTime | Y | | DCLR.REG_DT, ADM-030-03 |
+| pstSn | Long | N | | DCLR.PST_SN, ADM-030-03 |
+| cmntSn | Long | N | | DCLR.CMNT_SN, ADM-030-03 |
+| pstTtl | String | N | 대상이 게시글일 때 | PST.PST_TTL, ADM-030-03 |
+| pstCn | String | N | 대상이 게시글일 때 | PST.PST_CN, ADM-030-03 |
+| pstSttsCd | String | N | 대상이 게시글일 때 | PST.PST_STTS_CD, ADM-030-03 |
+| cmntCn | String | N | 대상이 댓글일 때 | CMNT.CMNT_CN, ADM-030-03 |
+| delYn | Boolean | N | 대상이 댓글일 때 | CMNT.DEL_YN, ADM-030-03 |
+| trgtMbrSn | Long | Y | 작성자 | PST.MBR_SN, CMNT.MBR_SN, ADM-030-03 |
+| trgtMbrNcnm | String | Y | 작성자 닉네임 | MBR.MBR_NCNM, ADM-030-03 |
+| sameTargetReports | List<AdminReportSummary> | Y | 최신순 | DCLR, ADM-030-03 |
+| statusHistories | List<AdminReportStatusHistorySummary> | Y | 최신순 | DCLR_STTS_HSTRY, ADM-030-03 |
+
+#### AdminReportStatusHistorySummary (AdminReportDetailResponse.statusHistories)
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| dclrSttsHstrySn | Long | Y | | DCLR_STTS_HSTRY.DCLR_STTS_HSTRY_SN, ADM-030-03 |
+| bfrSttsCd | String | N | | DCLR_STTS_HSTRY.BFR_STTS_CD, ADM-030-03 |
+| aftrSttsCd | String | Y | | DCLR_STTS_HSTRY.AFTR_STTS_CD, ADM-030-03 |
+| chgRsn | String | N | | DCLR_STTS_HSTRY.CHG_RSN, ADM-030-03 |
+| prcsMbrSn | Long | N | 없으면 시스템 처리 | DCLR_STTS_HSTRY.MBR_SN, ADM-030-03 |
+| prcsMbrNcnm | String | N | | MBR.MBR_NCNM, ADM-030-03 |
+| regDt | LocalDateTime | Y | | DCLR_STTS_HSTRY.REG_DT, ADM-030-03 |
+
+### AdminReportCompleteRequest
+쓰는 API: POST /admin/reports/{dclrSn}/complete
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| dclrActnCd | String | Y | 신고조치공통코드(CMUG08) | DCLR.DCLR_ACTN_CD, ADM-030-04 |
+| prcsMemo | String | N | 1000자 이내, 이력의 변경사유 | DCLR_STTS_HSTRY.CHG_RSN, ADM-030-04 |
+| suspnDayCnt | Integer | N | 7·30, 없으면 영구 정지. 작성자 정지일 때만 | ADM-012, ADM-030-04 |
+| suspnRsn | String | N | 작성자 정지면 필수 | ADM-012, ADM-030-04 |
+
+### AdminReportRejectRequest
+쓰는 API: POST /admin/reports/{dclrSn}/reject
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| rjctRsn | String | Y | 1000자 이내, 이력의 변경사유 | DCLR_STTS_HSTRY.CHG_RSN, ADM-030-05 |
 
 ### AdminPostSummary
 쓰는 API: GET /admin/posts

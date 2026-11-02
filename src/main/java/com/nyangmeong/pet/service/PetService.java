@@ -254,6 +254,7 @@ public class PetService {
         }
         pixelCharacterMapper.updateHeldItemDeleteByPetSn(petSn);
         pixelCharacterMapper.updatePhotoDeleteByPetSn(petSn);
+        pixelCharacterMapper.updateItemSheetDeleteByPetSn(petSn);
         pixelCharacterMapper.updateDeleteByPetSn(petSn, actorId);
         pixelCharacterMapper.updateJobDeleteByPetSn(petSn);
         careMissionMapper.updateDayMissionDeleteByPetSn(petSn);

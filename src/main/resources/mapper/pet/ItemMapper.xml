@@ -10,6 +10,11 @@
         <result column="HLD_YN"       property="hldYn" />
     </resultMap>
 
+    <resultMap id="bakeItemSummaryResultMap" type="com.nyangmeong.pet.dto.BakeItemSummary">
+        <id     column="ITEM_SN"         property="itemSn" />
+        <result column="ENGINE_ITEM_KEY" property="engineItemKey" />
+    </resultMap>
+
     <sql id="shopItemColumns">
         I.ITEM_SN
              , I.ITEM_NM
@@ -50,6 +55,25 @@
             <foreach collection="itemSns" item="itemSn" open="(" separator="," close=")">
                 #{itemSn}
             </foreach>
+    </select>
+
+    <select id="selectBakeItems" resultMap="bakeItemSummaryResultMap">
+        /* 굽기 대상 아이템 조회 */
+        SELECT ITEM_SN
+             , ENGINE_ITEM_KEY
+          FROM ITEM
+         WHERE NTSL_YN = 'Y'
+           AND ENGINE_ITEM_KEY IS NOT NULL
+         ORDER BY ITEM_SN
+    </select>
+
+    <select id="countBakeItem" parameterType="long" resultType="int">
+        /* 굽기 대상 아이템 여부 */
+        SELECT COUNT(*)
+          FROM ITEM
+         WHERE ITEM_SN = #{itemSn}
+           AND NTSL_YN = 'Y'
+           AND ENGINE_ITEM_KEY IS NOT NULL
     </select>
 
     <insert id="insertHeldItems">

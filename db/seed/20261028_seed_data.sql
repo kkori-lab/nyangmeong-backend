@@ -1,5 +1,5 @@
 -- =====================================================================
--- 냥멍케어 시드 데이터  |  v0.11 기준 SQL(20261030_create_tables_v0.11.sql → 20261030_insert_base_data_v0.11.sql) 위에 실행 (v0.10 위에서 만든 것, v0.11은 기본값 있는 컬럼만 늘어 그대로 들어간다)
+-- 냥멍케어 시드 데이터  |  v0.12 기준 SQL(20261102_create_tables_v0.12.sql → 20261102_insert_base_data_v0.12.sql) 위에 실행 (v0.10 위에서 만든 것, v0.11은 기본값 있는 컬럼만 늘어 그대로 들어간다)
 -- 생성기(src/seed) seedData -Ptarget=local, scale 1 결과를 2026-10-28에 mysqldump로 뜬 것 (151,592행)
 -- 넣지 않는 테이블: COM_CD(기준 데이터), NOTI_TMPLT, RFRSH_TKN·LGN_ATMPT_LMT·EML_CERT·NOTI_SNDNG_LOG(실행 중 쌓이는 기록)
 -- 이미지 파일은 없다. ATCH_FILE 행만 있어 시드 이미지는 404다
@@ -363,6 +363,22 @@ LOCK TABLES `ITEM` WRITE;
 INSERT INTO `ITEM` (`ITEM_SN`, `ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) VALUES (1,1,'MYPC0001','빨간 리본',700,10,'Y','2026-04-11 19:17:03','2026-04-11 19:17:03','SEED','SEED'),(2,2,'MYPC0001','밀짚모자',550,20,'Y','2026-04-11 19:17:03','2026-04-11 19:17:03','SEED','SEED'),(3,3,'MYPC0001','작은 왕관',450,30,'Y','2026-04-11 19:17:03','2026-04-11 19:17:03','SEED','SEED'),(4,4,'MYPC0001','털모자',300,40,'Y','2026-04-11 19:17:03','2026-04-11 19:17:03','SEED','SEED'),(5,5,'MYPC0002','동그란 안경',350,50,'Y','2026-04-11 19:17:03','2026-04-11 19:17:03','SEED','SEED'),(6,6,'MYPC0002','선글라스',350,60,'Y','2026-04-11 19:17:03','2026-04-11 19:17:03','SEED','SEED'),(7,7,'MYPC0002','하트 안경',350,70,'Y','2026-04-11 19:17:03','2026-04-11 19:17:03','SEED','SEED'),(8,8,'MYPC0002','외알 안경',150,80,'Y','2026-04-11 19:17:03','2026-04-11 19:17:03','SEED','SEED'),(9,9,'MYPC0003','방울 목걸이',550,90,'Y','2026-04-11 19:17:03','2026-04-11 19:17:03','SEED','SEED'),(10,10,'MYPC0003','체크 스카프',750,100,'Y','2026-04-11 19:17:03','2026-04-11 19:17:03','SEED','SEED'),(11,11,'MYPC0003','나비넥타이',150,110,'N','2026-04-11 19:17:03','2026-04-11 19:17:03','SEED','SEED'),(12,12,'MYPC0003','진주 목걸이',700,120,'Y','2026-04-11 19:17:03','2026-04-11 19:17:03','SEED','SEED'),(13,13,'MYPC0004','노란 우비',350,130,'Y','2026-04-11 19:17:03','2026-04-11 19:17:03','SEED','SEED'),(14,14,'MYPC0004','줄무늬 티셔츠',800,140,'Y','2026-04-11 19:17:03','2026-04-11 19:17:03','SEED','SEED'),(15,15,'MYPC0004','꼬까 한복',650,150,'Y','2026-04-11 19:17:03','2026-04-11 19:17:03','SEED','SEED'),(16,16,'MYPC0004','곰돌이 후드티',500,160,'Y','2026-04-11 19:17:03','2026-04-11 19:17:03','SEED','SEED'),(17,17,'MYPC0005','작은 배낭',600,170,'Y','2026-04-11 19:17:03','2026-04-11 19:17:03','SEED','SEED'),(18,18,'MYPC0005','크로스백',600,180,'N','2026-04-11 19:17:03','2026-04-11 19:17:03','SEED','SEED'),(19,19,'MYPC0005','도시락 가방',750,190,'Y','2026-04-11 19:17:03','2026-04-11 19:17:03','SEED','SEED'),(20,20,'MYPC0005','꽃바구니',700,200,'Y','2026-04-11 19:17:03','2026-04-11 19:17:03','SEED','SEED'),(21,21,'MYPC0006','빨간 장화',450,210,'Y','2026-04-11 19:17:03','2026-04-11 19:17:03','SEED','SEED'),(22,22,'MYPC0006','운동화',250,220,'Y','2026-04-11 19:17:03','2026-04-11 19:17:03','SEED','SEED'),(23,23,'MYPC0006','털 부츠',550,230,'Y','2026-04-11 19:17:03','2026-04-11 19:17:03','SEED','SEED'),(24,24,'MYPC0006','샌들',550,240,'Y','2026-04-11 19:17:03','2026-04-11 19:17:03','SEED','SEED');
 /*!40000 ALTER TABLE `ITEM` ENABLE KEYS */;
 UNLOCK TABLES;
+
+-- 굽기 대상 엔진 키 (이름이 같은 아이템만)
+UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='straw-hat' WHERE `ITEM_NM`='밀짚모자';
+UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='round-glasses' WHERE `ITEM_NM`='동그란 안경';
+UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='sunglasses' WHERE `ITEM_NM`='선글라스';
+UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='heart-glasses' WHERE `ITEM_NM`='하트 안경';
+UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='monocle' WHERE `ITEM_NM`='외알 안경';
+UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='bell-necklace' WHERE `ITEM_NM`='방울 목걸이';
+UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='check-scarf' WHERE `ITEM_NM`='체크 스카프';
+UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='bow-tie' WHERE `ITEM_NM`='나비넥타이';
+UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='pearl-necklace' WHERE `ITEM_NM`='진주 목걸이';
+UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='yellow-raincoat' WHERE `ITEM_NM`='노란 우비';
+UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='small-backpack' WHERE `ITEM_NM`='작은 배낭';
+UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='crossbody-bag' WHERE `ITEM_NM`='크로스백';
+UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='lunch-bag' WHERE `ITEM_NM`='도시락 가방';
+UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='flower-basket' WHERE `ITEM_NM`='꽃바구니';
 
 --
 -- Dumping data for table `JNT_BRUP_INVTN`
