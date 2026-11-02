@@ -102,7 +102,7 @@ public class ObservationController {
                 .body(ApiResponse.created(observationService.createCycle(me.id(), petSn, req)));
     }
 
-    @Operation(summary = "관찰 회차 수정")
+    @Operation(summary = "관찰 회차 수정", description = "보낸 항목만 수정한다. 사진은 보내면 교체하고 비울 수 없다. 크기·변화·메모를 비우려면 clearFields에 obsrvSz·obsrvChgCd·memoCn을 보낸다. 그 밖의 이름이나 같은 필드에 값과 비우기를 함께 보내면 400")
     @PatchMapping(value = "/observation-cycles/{obsrvCyclSn}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<ObservationCycleResponse>> updateCycle(
             @AuthenticationPrincipal LoginMember me, @PathVariable Long petSn, @PathVariable Long obsrvCyclSn,

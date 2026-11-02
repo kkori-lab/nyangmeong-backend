@@ -255,12 +255,59 @@ class ObservationServiceTest {
         when(mapper.selectCycle(PET, CYCLE)).thenReturn(cycle);
 
         service.updateCycle(MBR, PET, CYCLE,
-                new ObservationCycleUpdateRequest(photo, null, new BigDecimal("3.5"), null, null));
+                new ObservationCycleUpdateRequest(photo, null, new BigDecimal("3.5"), null, null, null));
 
         assertThat(cycle.getAtchFileSn()).isEqualTo(77L);
         assertThat(cycle.getObsrvSz()).isEqualByComparingTo("3.5");
         assertThat(cycle.getMemoCn()).isEqualTo("기존");
         verify(mapper).updateCycle(cycle, String.valueOf(MBR));
+    }
+
+    @Test
+    void 회차_수정에서_clearFields의_크기_변화_메모는_비우고_나머지는_그대로다() {
+        LocalDateTime obsrvDt = LocalDateTime.of(2026, 10, 1, 0, 0);
+        ObservationCycle cycle = new ObservationCycle();
+        cycle.setObsrvCyclSn(CYCLE);
+        cycle.setObsrvArtclSn(ITEM);
+        cycle.setAtchFileSn(5L);
+        cycle.setObsrvDt(obsrvDt);
+        cycle.setObsrvSz(new BigDecimal("3.0"));
+        cycle.setObsrvChgCd("HLTG1702");
+        cycle.setMemoCn("기존");
+        when(mapper.selectCycle(PET, CYCLE)).thenReturn(cycle);
+
+        service.updateCycle(MBR, PET, CYCLE, new ObservationCycleUpdateRequest(null, null, null, null, null,
+                List.of("obsrvSz", "obsrvChgCd", "memoCn")));
+
+        assertThat(cycle.getObsrvSz()).isNull();
+        assertThat(cycle.getObsrvChgCd()).isNull();
+        assertThat(cycle.getMemoCn()).isNull();
+        assertThat(cycle.getAtchFileSn()).isEqualTo(5L);
+        assertThat(cycle.getObsrvDt()).isEqualTo(obsrvDt);
+        verify(mapper).updateCycle(cycle, String.valueOf(MBR));
+    }
+
+    @Test
+    void 회차_수정_요청은_허용_밖_이름과_값_비우기_겹침을_막는다() {
+        try (var factory = jakarta.validation.Validation.buildDefaultValidatorFactory()) {
+            var validator = factory.getValidator();
+
+            var unknown = validator.validate(
+                    new ObservationCycleUpdateRequest(null, null, null, null, null, List.of("file")));
+            var conflict = validator.validate(new ObservationCycleUpdateRequest(null, null, new BigDecimal("3"),
+                    null, null, List.of("obsrvSz")));
+            var blankMemo = validator.validate(
+                    new ObservationCycleUpdateRequest(null, null, null, null, "", List.of("memoCn")));
+            var ok = validator.validate(new ObservationCycleUpdateRequest(null, null, null, null, "메모",
+                    List.of("obsrvSz", "obsrvChgCd")));
+
+            assertThat(unknown).extracting(v -> v.getPropertyPath().toString())
+                    .anyMatch(p -> p.startsWith("clearFields[0]"));
+            assertThat(conflict).extracting(v -> v.getPropertyPath().toString())
+                    .containsExactly("clearFieldsDistinct");
+            assertThat(blankMemo).isEmpty();
+            assertThat(ok).isEmpty();
+        }
     }
 
     @Test
