@@ -108,6 +108,30 @@ class PetControllerTest {
 
     @Test
     @WithMockLoginMember
+    void 목록은_중성화_여부와_정상_체중_범위를_돌려준다() throws Exception {
+        PetSummary pet = new PetSummary();
+        pet.setPetSn(10L);
+        pet.setNutrYn(true);
+        pet.setMinBdwg(new BigDecimal("3.500"));
+        pet.setMaxBdwg(new BigDecimal("5.250"));
+        PetSummary other = new PetSummary();
+        other.setPetSn(11L);
+        other.setMinBdwg(new BigDecimal("2"));
+        other.setMaxBdwg(new BigDecimal("4"));
+        when(petService.searchMyPets(1L)).thenReturn(List.of(pet, other));
+
+        mockMvc.perform(get("/api/pets"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].nutrYn").value(true))
+                .andExpect(jsonPath("$.data[0].minBdwg").value(3.5))
+                .andExpect(jsonPath("$.data[0].maxBdwg").value(5.25))
+                .andExpect(jsonPath("$.data[1].nutrYn").value(false))
+                .andExpect(jsonPath("$.data[1].minBdwg").value(2))
+                .andExpect(jsonPath("$.data[1].maxBdwg").value(4));
+    }
+
+    @Test
+    @WithMockLoginMember
     void 상세는_모달_값을_주고_체중_잠금_필드는_없다() throws Exception {
         PetResponse res = new PetResponse(10L, "뭉치", "PETC0001", 15L, "푸들", null, "PETC0003",
                 LocalDate.of(2023, 5, 1), new BigDecimal("4.250"), "PETC0006", null, null, null, null, null,

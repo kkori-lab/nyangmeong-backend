@@ -12,6 +12,9 @@
         <result column="PET_GNDR_CD"       property="petGndrCd" />
         <result column="PET_BRDT"          property="petBrdt" />
         <result column="PET_BDWG"          property="petBdwg" />
+        <result column="NUTR_YN"           property="nutrYn" />
+        <result column="MIN_BDWG"          property="minBdwg" />
+        <result column="MAX_BDWG"          property="maxBdwg" />
         <result column="COLR_CD"           property="colrCd" />
         <result column="COLR_DRCT_INPT_NM" property="colrDrctInptNm" />
         <result column="CHIP_NO"           property="chipNo" />
@@ -35,6 +38,9 @@
              , P.PET_GNDR_CD
              , P.PET_BRDT
              , P.PET_BDWG
+             , CASE WHEN P.NUTR_YN = 'Y' THEN TRUE ELSE FALSE END AS NUTR_YN
+             , P.MIN_BDWG
+             , P.MAX_BDWG
              , P.COLR_CD
              , P.COLR_DRCT_INPT_NM
              , P.CHIP_NO
