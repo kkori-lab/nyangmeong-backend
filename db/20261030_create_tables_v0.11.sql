@@ -127,7 +127,7 @@
 --   ALTER TABLE `KWRD_DICT` ADD CONSTRAINT `FK_KWRD_DICT_MPNG_CD` FOREIGN KEY (`MPNG_CD`) REFERENCES `COM_CD` (`COM_CD`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 -- v0.11 (4) 회원 정지 종료 일시 (2026-11-02, LJS, 근거: 관리자_기능명세서 FN-ADM-012-01·04 — NULL이면 영구 정지). 공통코드는 20261030_insert_base_data_v0.11.sql의 v0.11 (4)
 --   ALTER TABLE `MBR` ADD COLUMN `SUSPN_END_DT` datetime NULL COMMENT '정지종료일시' AFTER `WHDWL_DT`;
--- v0.11 (7) 신고 조치 코드 (2026-11-02, LJS, 근거: 관리자_기능명세서 FN-ADM-030-04 / docs/admin/implementation-plan.md 결정 6). FK가 코드를 참조하므로 20261030_insert_base_data_v0.11.sql의 v0.11 (7)을 먼저 실행한다
+-- v0.11 (9) 신고 조치 코드 (2026-11-02, LJS, 근거: 관리자_기능명세서 FN-ADM-030-04 / docs/admin/implementation-plan.md 결정 6). FK가 코드를 참조하므로 20261030_insert_base_data_v0.11.sql의 v0.11 (9)를 먼저 실행한다
 --   ALTER TABLE `DCLR` ADD COLUMN `DCLR_ACTN_CD` char(8) NULL COMMENT '신고조치공통코드(CMUG08)' AFTER `DCLR_PRCS_STTS_CD`;
 --   ALTER TABLE `DCLR` ADD KEY `IDX_DCLR_6` (`DCLR_ACTN_CD`);
 --   ALTER TABLE `DCLR` ADD CONSTRAINT `FK_DCLR_ACTN_CD` FOREIGN KEY (`DCLR_ACTN_CD`) REFERENCES `COM_CD` (`COM_CD`) ON DELETE RESTRICT ON UPDATE RESTRICT;
