@@ -34,6 +34,9 @@
 | PATCH | /members/me/nickname | 닉네임 설정 확정(로그인 회원 또는 가입 직후 받은 `ncnm_setup` 쿠키, 둘 다 없으면 401), 설정 완료 여부 반영 | ACC-001-26 | YAY | MemberNicknameUpdateRequest | MemberResponse |
 | PATCH | /members/me/password | 로그인 상태에서 비밀번호 변경 *통합 때 추가* | MYP-040-06 | YAY | PasswordChangeRequest | - |
 | GET | /admin/members | 관리자 회원 목록. 최신 가입순 20건씩, 정상·정지·탈퇴 전부. `q`에 @가 있으면 이메일 완전 일치, 없으면 닉네임 부분 일치. 시작일이 종료일보다 늦으면 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-010-01·02·03·04 | LJS | AdminMemberSearchCond | PageResponse<AdminMemberSummary> |
+| GET | /admin/members/suspensions | 지금 정지 중인 회원 목록. 최근 정지순 20건씩. 일반 회원 403 ADMIN_ONLY | ADM-012 | LJS | AdminSuspensionSearchCond | PageResponse<AdminSuspensionSummary> |
+| POST | /admin/members/{mbrSn}/suspension | 회원 정지(상태 정지, 상태 이력, 모든 세션 폐기, 감사 로그). 종료 일시는 오늘+N일 00:00. 7·30·null 외 값 400 INVALID_INPUT_VALUE, 관리자·본인·탈퇴·이미 정지 409 MEMBER_NOT_SUSPENDABLE, 없는 회원 404 MEMBER_NOT_FOUND | ADM-012-01·02·05 | LJS | AdminMemberSuspendRequest | - |
+| DELETE | /admin/members/{mbrSn}/suspension | 회원 정지 해제(상태 정상, 종료 일시 비움, 상태 이력, 감사 로그). 사유를 본문으로 보낸다. 정지 중이 아니면 409 ALREADY_PROCESSED, 없는 회원 404 MEMBER_NOT_FOUND | ADM-012-03 | LJS | AdminMemberReleaseRequest | - |
 
 ## DTO
 
@@ -60,6 +63,37 @@
 | mbrAuthrtCd | String | Y | 회원 권한(USRG02) | MBR.MBR_AUTHRT_CD, ADM-010-01 |
 | regDt | LocalDateTime | Y | 가입일 | MBR.REG_DT, ADM-010-01 |
 | lastLgnDt | LocalDateTime | N | 최근 로그인. 첫 로그인 전이면 null | MBR.LAST_LGN_DT, ADM-010-01 |
+
+### AdminSuspensionSearchCond
+쓰는 API: GET /admin/members/suspensions
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| q | String | N | 닉네임 부분 일치 | MBR.MBR_NCNM, SCR-ADM-012 |
+| type | String | N | PERIOD(기간)·PERMANENT(영구). 비우면 전체. 그 외 값 400 | MBR.SUSPN_END_DT, SCR-ADM-012 |
+
+### AdminSuspensionSummary
+쓰는 API: GET /admin/members/suspensions
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| mbrSn | Long | Y | 회원 상세 이동 값 | MBR.MBR_SN, SCR-ADM-012 |
+| mbrNcnm | String | Y | | MBR.MBR_NCNM, SCR-ADM-012 |
+| suspnDt | LocalDateTime | N | 정지 일시. 최근 정지 이력 등록 일시. 이력이 없으면 null | MBR_STTS_HSTRY.REG_DT, SCR-ADM-012 |
+| suspnEndDt | LocalDateTime | N | null이면 영구 정지 | MBR.SUSPN_END_DT, ADM-012-01 |
+| suspnRsn | String | N | 최근 정지 이력 사유 | MBR_STTS_HSTRY.CHG_RSN, ADM-012-01 |
+| prcrNcnm | String | N | 처리 관리자 닉네임 | MBR_STTS_HSTRY.PRCS_MBR_SN, ADM-012-01 |
+
+### AdminMemberSuspendRequest
+쓰는 API: POST /admin/members/{mbrSn}/suspension
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| suspnDayCnt | Integer | N | 7 또는 30. null이면 영구 정지 | ADM-012-01 |
+| suspnRsn | String | Y | 1000자 이내 | MBR_STTS_HSTRY.CHG_RSN, ADM-012-01 |
+
+### AdminMemberReleaseRequest
+쓰는 API: DELETE /admin/members/{mbrSn}/suspension
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| rlsRsn | String | Y | 1000자 이내 | MBR_STTS_HSTRY.CHG_RSN, ADM-012-03 |
 
 ### CaptchaCreateRequest
 쓰는 API: POST /auth/captchas

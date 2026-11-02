@@ -14,6 +14,7 @@
         <result column="MBR_NCNM"           property="mbrNcnm" />
         <result column="LAST_LGN_DT"        property="lastLgnDt" />
         <result column="WHDWL_DT"           property="whdwlDt" />
+        <result column="SUSPN_END_DT"       property="suspnEndDt" />
         <result column="NCNM_STNG_CMPTN_YN" property="ncnmStngCmptnYn" />
         <result column="REG_DT"             property="regDt" />
     </resultMap>
@@ -47,6 +48,7 @@
              , PSWD_HASH
              , MBR_NCNM
              , LAST_LGN_DT
+             , SUSPN_END_DT
              , NCNM_STNG_CMPTN_YN
              , REG_DT
           FROM MBR
@@ -111,6 +113,22 @@
              , CHG_RSN
         ) VALUES (
                #{mbrSn}
+             , #{bfrSttsCd}
+             , #{aftrSttsCd}
+             , #{chgRsn}
+        )
+    </insert>
+
+    <insert id="insertProcessedStatusHistory">
+        INSERT INTO MBR_STTS_HSTRY (
+               MBR_SN
+             , PRCS_MBR_SN
+             , BFR_STTS_CD
+             , AFTR_STTS_CD
+             , CHG_RSN
+        ) VALUES (
+               #{mbrSn}
+             , #{prcsMbrSn}
              , #{bfrSttsCd}
              , #{aftrSttsCd}
              , #{chgRsn}
@@ -243,5 +261,77 @@
         </where>
          ORDER BY REG_DT DESC
                 , MBR_SN DESC
+    </select>
+
+    <update id="updateSuspend">
+        /* 회원 정지 : 정상 회원만 */
+        UPDATE MBR
+           SET MBR_STTS_CD = #{suspendedSttsCd}
+             , SUSPN_END_DT = #{suspnEndDt}
+             , MDFR_ID = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE MBR_SN = #{mbrSn}
+           AND MBR_STTS_CD = #{normalSttsCd}
+    </update>
+
+    <update id="updateRelease">
+        /* 회원 정지 해제 : 정지 회원만 */
+        UPDATE MBR
+           SET MBR_STTS_CD = #{normalSttsCd}
+             , SUSPN_END_DT = NULL
+             , MDFR_ID = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE MBR_SN = #{mbrSn}
+           AND MBR_STTS_CD = #{suspendedSttsCd}
+        <if test="expiredAt != null">
+           AND SUSPN_END_DT &lt;= #{expiredAt}
+        </if>
+    </update>
+
+    <select id="selectExpiredSuspendedMbrSns" resultType="long">
+        /* 정지 기간이 끝난 회원 번호 조회 : 영구 정지 제외 */
+        SELECT MBR_SN
+          FROM MBR
+         WHERE MBR_STTS_CD = #{suspendedSttsCd}
+           AND SUSPN_END_DT &lt;= #{expiredAt}
+    </select>
+
+    <resultMap id="adminSuspensionSummaryResultMap" type="com.nyangmeong.member.dto.AdminSuspensionSummary">
+        <id     column="MBR_SN"       property="mbrSn" />
+        <result column="MBR_NCNM"     property="mbrNcnm" />
+        <result column="SUSPN_DT"     property="suspnDt" />
+        <result column="SUSPN_END_DT" property="suspnEndDt" />
+        <result column="SUSPN_RSN"    property="suspnRsn" />
+        <result column="PRCR_NCNM"    property="prcrNcnm" />
+    </resultMap>
+
+    <select id="selectSuspensionList" resultMap="adminSuspensionSummaryResultMap">
+        /* 정지 회원 목록 조회 : 정지 일시·사유·처리 관리자는 최근 정지 이력 */
+        SELECT M.MBR_SN
+             , M.MBR_NCNM
+             , H.REG_DT AS SUSPN_DT
+             , M.SUSPN_END_DT
+             , H.CHG_RSN AS SUSPN_RSN
+             , P.MBR_NCNM AS PRCR_NCNM
+          FROM MBR M
+          LEFT JOIN MBR_STTS_HSTRY H
+            ON H.MBR_STTS_HSTRY_SN = (SELECT MAX(S.MBR_STTS_HSTRY_SN)
+                                        FROM MBR_STTS_HSTRY S
+                                       WHERE S.MBR_SN = M.MBR_SN
+                                         AND S.AFTR_STTS_CD = M.MBR_STTS_CD)
+          LEFT JOIN MBR P
+            ON P.MBR_SN = H.PRCS_MBR_SN
+         WHERE M.MBR_STTS_CD = #{suspendedSttsCd}
+        <if test="mbrNcnm != null">
+           AND M.MBR_NCNM LIKE CONCAT('%', #{mbrNcnm}, '%')
+        </if>
+        <if test="permanent != null and permanent">
+           AND M.SUSPN_END_DT IS NULL
+        </if>
+        <if test="permanent != null and !permanent">
+           AND M.SUSPN_END_DT IS NOT NULL
+        </if>
+         ORDER BY H.REG_DT DESC
+                , M.MBR_SN DESC
     </select>
 </mapper>
