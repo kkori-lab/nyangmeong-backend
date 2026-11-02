@@ -6,6 +6,8 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import com.nyangmeong.member.domain.Member;
+import com.nyangmeong.member.dto.AdminMemberSearchCond;
+import com.nyangmeong.member.dto.AdminMemberSummary;
 
 /**
  * [회원 Mapper]
@@ -91,4 +93,10 @@ public interface MemberMapper {
      */
     List<Long> selectExpiredWithdrawnMbrSns(@Param("mbrSttsCd") String mbrSttsCd,
             @Param("keepDayCnt") int keepDayCnt);
+
+    /**
+     * 관리자 회원 목록 조회
+     */
+    List<AdminMemberSummary> selectAdminList(@Param("cond") AdminMemberSearchCond cond,
+            @Param("acntEmlHmac") String acntEmlHmac, @Param("mbrNcnm") String mbrNcnm);
 }
