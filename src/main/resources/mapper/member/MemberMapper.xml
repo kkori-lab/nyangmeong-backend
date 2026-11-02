@@ -214,6 +214,41 @@
            AND WHDWL_DT &lt; DATE_SUB(NOW(), INTERVAL #{keepDayCnt} DAY)
     </select>
 
+    <select id="selectPurgeTargetMbrSns" resultType="long">
+        /* 파기 대상 회원 번호 조회 : 아직 파기하지 않은 회원만 */
+        SELECT MBR_SN
+          FROM MBR
+         WHERE MBR_STTS_CD = #{mbrSttsCd}
+           AND WHDWL_DT IS NOT NULL
+           AND WHDWL_DT &lt; DATE_SUB(NOW(), INTERVAL #{keepDayCnt} DAY)
+           AND ACNT_EML_HMAC NOT LIKE #{purgedHmacPattern}
+         ORDER BY MBR_SN
+    </select>
+
+    <update id="updatePurge">
+        /* 회원 식별값 파기 : 조회 뒤 복구한 회원은 바뀌지 않는다 */
+        UPDATE MBR
+           SET ACNT_EML_ENC = #{acntEmlEnc}
+             , ACNT_EML_HMAC = #{acntEmlHmac}
+             , MBL_TELNO_ENC = NULL
+             , MBL_TELNO_HMAC = NULL
+             , PSWD_HASH = NULL
+             , ATCH_FILE_SN = NULL
+             , MBR_NCNM = #{mbrNcnm}
+             , MDFR_ID = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE MBR_SN = #{mbrSn}
+           AND MBR_STTS_CD = #{mbrSttsCd}
+           AND WHDWL_DT IS NOT NULL
+           AND WHDWL_DT &lt; DATE_SUB(NOW(), INTERVAL #{keepDayCnt} DAY)
+    </update>
+
+    <delete id="deleteSnsLinks">
+        /* 회원의 SNS 연동 전체 삭제 */
+        DELETE FROM SNS_ACNT_LINK
+         WHERE MBR_SN = #{mbrSn}
+    </delete>
+
     <resultMap id="adminMemberSummaryResultMap" type="com.nyangmeong.member.dto.AdminMemberSummary">
         <id     column="MBR_SN"        property="mbrSn" />
         <result column="MBR_NCNM"      property="mbrNcnm" />

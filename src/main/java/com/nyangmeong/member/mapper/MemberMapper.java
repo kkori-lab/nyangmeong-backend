@@ -105,6 +105,25 @@ public interface MemberMapper {
             @Param("keepDayCnt") int keepDayCnt);
 
     /**
+     * 파기 대상 회원 번호 목록 조회 : 보관일수가 지났고 아직 파기하지 않은 탈퇴 회원
+     */
+    List<Long> selectPurgeTargetMbrSns(@Param("mbrSttsCd") String mbrSttsCd, @Param("keepDayCnt") int keepDayCnt,
+            @Param("purgedHmacPattern") String purgedHmacPattern);
+
+    /**
+     * 회원 식별값 파기, 보관일수가 지난 탈퇴 회원만 바뀐다
+     */
+    int updatePurge(@Param("mbrSn") Long mbrSn, @Param("mbrSttsCd") String mbrSttsCd,
+            @Param("keepDayCnt") int keepDayCnt, @Param("acntEmlEnc") String acntEmlEnc,
+            @Param("acntEmlHmac") String acntEmlHmac, @Param("mbrNcnm") String mbrNcnm,
+            @Param("actorId") String actorId);
+
+    /**
+     * 회원의 SNS 연동 전체 삭제
+     */
+    int deleteSnsLinks(@Param("mbrSn") Long mbrSn);
+
+    /**
      * 관리자 회원 목록 조회
      */
     List<AdminMemberSummary> selectAdminList(@Param("cond") AdminMemberSearchCond cond,
