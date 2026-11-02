@@ -14,7 +14,8 @@ public enum BatchType {
     CARE_SCHEDULE_ALARM("SYSC0007", "케어 일정 사전 알림"),
     AI_CONVERSATION_PURGE("SYSC0008", "AI 대화 정리"),
     PRESCRIPTION_EXPIRY("SYSC0009", "처방 만료"),
-    MEMBER_SUSPENSION_EXPIRY("SYSC0026", "회원 정지 만료 해제");
+    MEMBER_SUSPENSION_EXPIRY("SYSC0026", "회원 정지 만료 해제"),
+    MEMBER_PURGE("SYSC0027", "탈퇴 회원 파기");
 
     private final String code;
     private final String label;
