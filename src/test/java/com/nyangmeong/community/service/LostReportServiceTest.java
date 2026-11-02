@@ -254,6 +254,25 @@ class LostReportServiceTest {
     }
 
     @Test
+    void 상세_응답에_글쓴이_번호가_온다() {
+        when(lostReportMapper.selectDetail(LOST, NORMAL)).thenReturn(missing());
+        when(fieldCryptoService.decrypt("enc")).thenReturn("010-1234-5678");
+
+        LostReportResponse res = service.getReport(OTHER, LOST);
+
+        assertThat(res.mbrSn()).isEqualTo(MBR);
+    }
+
+    @Test
+    void 찾았어요로_닫힌_응답은_글쓴이_번호가_없다() {
+        when(lostReportMapper.selectDetail(LOST, NORMAL)).thenReturn(detail(FOUND, LocalDateTime.now().plusDays(20)));
+
+        LostReportResponse res = service.getReport(OTHER, LOST);
+
+        assertThat(res.mbrSn()).isNull();
+    }
+
+    @Test
     void 조회수는_같은_회원_하루_한_번만_올린다() {
         when(lostReportMapper.selectDetail(LOST, NORMAL)).thenReturn(missing());
         when(postMapper.insertViewIgnore(PST, OTHER)).thenReturn(1);

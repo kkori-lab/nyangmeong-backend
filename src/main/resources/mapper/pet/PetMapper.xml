@@ -27,6 +27,42 @@
         <result column="BSC_CHAR_SBST_YN"  property="bscCharSbstYn" />
     </resultMap>
 
+    <resultMap id="adminPetSummaryResultMap" type="com.nyangmeong.pet.dto.AdminPetSummary">
+        <id     column="PET_SN"            property="petSn" />
+        <result column="PET_NM"            property="petNm" />
+        <result column="PET_SE_CD"         property="petSeCd" />
+        <result column="VRTY_NM"           property="vrtyNm" />
+        <result column="VRTY_DRCT_INPT_NM" property="vrtyDrctInptNm" />
+        <result column="BRUP_ROLE_CD"      property="brupRoleCd" />
+        <result column="CAREGIVER_COUNT"   property="caregiverCount" />
+        <result column="DEL_YN"            property="delYn" />
+    </resultMap>
+
+    <!-- 삭제 여부를 보여 주는 관리자 탭이라 PET.DEL_YN 조건 없음 (MapperXmlRuleTest 예외 목록) -->
+    <select id="selectAdminList" resultMap="adminPetSummaryResultMap">
+        /* 관리자 회원 반려동물 목록 조회 */
+        SELECT P.PET_SN
+             , P.PET_NM
+             , P.PET_SE_CD
+             , V.VRTY_NM
+             , P.VRTY_DRCT_INPT_NM
+             , R.BRUP_ROLE_CD
+             , (SELECT COUNT(*)
+                  FROM BRUP_REL CR
+                 WHERE CR.PET_SN = P.PET_SN
+                   AND CR.USE_YN = 'Y'
+                   AND CR.BRUP_ROLE_CD = #{coParentRoleCd}) AS CAREGIVER_COUNT
+             , CASE WHEN P.DEL_YN = 'Y' THEN TRUE ELSE FALSE END AS DEL_YN
+          FROM BRUP_REL R
+          JOIN PET P
+            ON P.PET_SN = R.PET_SN
+          LEFT JOIN VRTY V
+            ON V.VRTY_SN = P.VRTY_SN
+         WHERE R.MBR_SN = #{mbrSn}
+           AND R.USE_YN = 'Y'
+         ORDER BY R.BRUP_REL_SN
+    </select>
+
     <select id="selectList" resultMap="petSummaryResultMap">
         /* 반려동물 목록 조회 */
         SELECT P.PET_SN

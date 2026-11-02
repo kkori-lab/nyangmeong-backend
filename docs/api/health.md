@@ -41,7 +41,7 @@
 | PATCH | /pets/{petSn}/checkups/{ckupRcdSn} | 검진기록 수정(내용·메모 인라인, 검진일·반려동물 변경 시 일정 재연결·케어 항목 이동) | HLT-002-26~29, HLT-005-01 | JAJ | CheckupUpdateRequest | CheckupResponse |
 | PATCH | /pets/{petSn}/daily-health-records/{dailyHlthRcdSn} | 일상 기록 인라인 수정(시각·값) | HLT-002-13 | JAJ | DailyHealthRecordUpdateRequest | DailyHealthRecordResponse |
 | PATCH | /pets/{petSn}/etc-inspections/{etcInspSn} | 기타검사 수정 | HLT-005-02·11~14 | JAJ | EtcInspectionUpdateRequest | EtcInspectionResponse |
-| PATCH | /pets/{petSn}/inspection-values/{inspNvlSn} | 검사 수치 1행 수정(항목 변경 불가) | HLT-007-02·03 | JAJ | InspectionValueUpdateRequest | InspectionValueResponse |
+| PATCH | /pets/{petSn}/inspection-values/{inspNvlSn} | 검사 수치 1행 수정(항목 변경 불가). refRange를 보내면 덮어씀, {null,null}이면 참고범위 비움, 안 보내면 유지 | HLT-007-02·03 | JAJ | InspectionValueUpdateRequest | InspectionValueResponse |
 | PATCH | /pets/{petSn}/observation-cycles/{obsrvCyclSn} | 관찰 회차 수정(multipart) | HLT-002-19 | JAJ | ObservationCycleUpdateRequest | ObservationCycleResponse |
 | PATCH | /pets/{petSn}/prescriptions/{prscSn} | 처방약 수정(투약 항목 목표 횟수·종료일 연동, 종료·OFF면 투약 항목 삭제) | HLT-005-03 | JAJ | PrescriptionUpdateRequest | PrescriptionResponse |
 | DELETE | /pets/{petSn}/care-completions/{careCmptnHstrySn} | 그날 완료 기록 취소(기록 내용 아이콘, 투약은 그날 체크 전부). 다음 예정일 재계산 | HLT-003-12 | JAJ | - | - |
@@ -414,8 +414,8 @@
 | inspArtclDrctInptNm | String | N | 최대 40자. 12종에 없을 때 직접입력 | INSP_NVL.INSP_ARTCL_DRCT_INPT_NM, HLT-007-02 |
 | rsltNvl | BigDecimal | Y | 정수 11자리·소수 4자리 | INSP_NVL.RSLT_NVL, HLT-007-02 |
 | unitNm | String | Y | 최대 20자 | INSP_NVL.UNIT_NM, HLT-007-02 |
-| refLlmtNvl | BigDecimal | N | 상한과 함께 입력하거나 둘 다 비움 | INSP_NVL.REF_LLMT_NVL, HLT-007-02 |
-| refUplmtNvl | BigDecimal | N | 하한과 함께 입력하거나 둘 다 비움 | INSP_NVL.REF_UPLMT_NVL, HLT-007-02 |
+| refLlmtNvl | BigDecimal | N | 상한과 함께 입력하거나 둘 다 비움. 하한 ≤ 상한 | INSP_NVL.REF_LLMT_NVL, HLT-007-02 |
+| refUplmtNvl | BigDecimal | N | 하한과 함께 입력하거나 둘 다 비움. 하한 ≤ 상한 | INSP_NVL.REF_UPLMT_NVL, HLT-007-02 |
 | memoCn | String | N | 최대 200자 | INSP_NVL.MEMO_CN, HLT-007-02 |
 
 ### InspectionValueResponse
@@ -456,8 +456,7 @@
 | --- | --- | --- | --- | --- |
 | rsltNvl | BigDecimal | N | 정수 11자리·소수 4자리 | INSP_NVL.RSLT_NVL, HLT-007-02 |
 | unitNm | String | N | 최대 20자. 비울 수 없음(필수 항목) | INSP_NVL.UNIT_NM, HLT-007-02 |
-| refLlmtNvl | BigDecimal | N | 수정 결과 하한·상한 중 한쪽만 있으면 거부 | INSP_NVL.REF_LLMT_NVL, HLT-007-02 |
-| refUplmtNvl | BigDecimal | N | 수정 결과 하한·상한 중 한쪽만 있으면 거부 | INSP_NVL.REF_UPLMT_NVL, HLT-007-02 |
+| refRange | RefRange | N | 참고범위 묶음(객체: refLlmtNvl, refUplmtNvl, 각 정수 11자리·소수 4자리). 둘 다 값 또는 둘 다 null, 하한 ≤ 상한. 보내면 두 값으로 덮어씀({null,null}이면 비움), 안 보내면 유지 | INSP_NVL.REF_LLMT_NVL·REF_UPLMT_NVL, HLT-007-02 |
 | memoCn | String | N | 최대 200자 | INSP_NVL.MEMO_CN, HLT-007-02 |
 
 ### ObservationCycleCreateRequest

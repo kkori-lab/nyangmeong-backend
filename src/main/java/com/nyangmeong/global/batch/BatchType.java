@@ -15,7 +15,9 @@ public enum BatchType {
     AI_CONVERSATION_PURGE("SYSC0008", "AI 대화 정리"),
     PRESCRIPTION_EXPIRY("SYSC0009", "처방 만료"),
     MEMBER_SUSPENSION_EXPIRY("SYSC0026", "회원 정지 만료 해제"),
-    MEMBER_PURGE("SYSC0027", "탈퇴 회원 파기");
+    MEMBER_PURGE("SYSC0027", "탈퇴 회원 파기"),
+    NEWS_COLLECT("SYSC0028", "뉴스 수집"),
+    CHARACTER_JOB_TIMEOUT("SYSC0029", "캐릭터 생성 시간 초과");
 
     private final String code;
     private final String label;

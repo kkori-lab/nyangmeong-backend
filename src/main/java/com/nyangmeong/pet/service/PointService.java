@@ -10,11 +10,16 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.nyangmeong.global.auth.BrupRole;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.response.PageQuery;
+import com.nyangmeong.global.response.PageResponse;
 import com.nyangmeong.pet.domain.PointDealType;
 import com.nyangmeong.pet.domain.PointLedger;
+import com.nyangmeong.pet.dto.AdminPointLedgerSummary;
 import com.nyangmeong.pet.dto.PointLedgerSummary;
 import com.nyangmeong.pet.dto.PointResponse;
 import com.nyangmeong.pet.mapper.CareMissionMapper;
@@ -80,6 +85,18 @@ public class PointService {
         YearMonth month = yearMonth == null ? YearMonth.now(ZONE) : yearMonth;
         LocalDateTime fromDt = month.atDay(1).atStartOfDay();
         return pointMapper.selectLedgerList(mbrSn, fromDt, fromDt.plusMonths(1));
+    }
+
+    /**
+     * 관리자 회원 상세 포인트 원장 조회
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<AdminPointLedgerSummary> searchLedgersForAdmin(Long mbrSn, PageQuery pq) {
+        if (pointMapper.selectHldPnt(mbrSn) == null) {
+            throw new CustomException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+        PageHelper.startPage(pq.pageOrDefault(), pq.sizeOrDefault());
+        return PageResponse.of(new PageInfo<>(pointMapper.selectAdminLedgerList(mbrSn)));
     }
 
     /**

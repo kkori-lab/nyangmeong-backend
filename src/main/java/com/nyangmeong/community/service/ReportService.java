@@ -31,6 +31,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ReportService {
 
+    /** PST_STTS_HSTRY.CHG_RSN : 처리자 없는 이 사유가 자동 블라인드 표시 */
+    public static final String AUTO_BLIND_RSN = "신고 누적";
+    /** DCLR_STTS_HSTRY.CHG_RSN : CMNT 에 구분 컬럼이 없어 이 이력으로 자동 삭제 판별 */
+    public static final String AUTO_DELETE_RSN = "신고 누적 자동 삭제";
+
     private final ReportMapper reportMapper;
     private final PostMapper postMapper;
     private final CommentMapper commentMapper;
@@ -79,20 +84,29 @@ public class ReportService {
         history.setAftrSttsCd(ReportStatus.RECEIVED.getCode());
         reportMapper.insertStatusHistory(history);
 
-        applyAccumulation(isPost, req);
+        applyAccumulation(isPost, req, report.getDclrSn());
         return ReportResponse.from(report);
     }
 
     /**
      * 누적 신고 기준 도달 시 자동 처리
+     * - 반려 제외 : 복구한 대상이 새 신고 1건에 다시 숨겨지지 않게
      */
-    private void applyAccumulation(boolean isPost, ReportCreateRequest req) {
+    private void applyAccumulation(boolean isPost, ReportCreateRequest req, Long dclrSn) {
         long limit = systemSettingService.get().getBlindDclrAcmlCnt();
-        if (reportMapper.countReports(req.pstSn(), req.cmntSn()) < limit) {
+        if (reportMapper.countAccumulatedReports(req.pstSn(), req.cmntSn(),
+                ReportStatus.REJECTED.getCode()) < limit) {
             return;
         }
         if (!isPost) {
-            commentMapper.updateDeleted(req.cmntSn());
+            if (commentMapper.updateDeleted(req.cmntSn()) > 0) {
+                ReportStatusHistory history = new ReportStatusHistory();
+                history.setDclrSn(dclrSn);
+                history.setBfrSttsCd(ReportStatus.RECEIVED.getCode());
+                history.setAftrSttsCd(ReportStatus.RECEIVED.getCode());
+                history.setChgRsn(AUTO_DELETE_RSN);
+                reportMapper.insertStatusHistory(history);
+            }
             return;
         }
         if (postMapper.updateStatus(req.pstSn(), PostStatus.NORMAL.getCode(), PostStatus.BLIND.getCode(),
@@ -101,7 +115,7 @@ public class ReportService {
             history.setPstSn(req.pstSn());
             history.setBfrSttsCd(PostStatus.NORMAL.getCode());
             history.setAftrSttsCd(PostStatus.BLIND.getCode());
-            history.setChgRsn("신고 누적");
+            history.setChgRsn(AUTO_BLIND_RSN);
             postMapper.insertStatusHistory(history);
         }
     }

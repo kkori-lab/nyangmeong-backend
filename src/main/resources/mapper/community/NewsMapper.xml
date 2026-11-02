@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nyangmeong.community.mapper.NewsMapper">
+
+    <resultMap id="newsSummaryResultMap" type="com.nyangmeong.community.dto.NewsSummary">
+        <id     column="NEWS_SN"         property="newsSn" />
+        <result column="NEWS_CLSF_CD"    property="newsClsfCd" />
+        <result column="NEWS_SRC_CD"     property="newsSrcCd" />
+        <result column="NEWS_SRC_CD_NM"  property="newsSrcCdNm" />
+        <result column="SRC_PRESS_NM"    property="srcPressNm" />
+        <result column="NEWS_TTL"        property="newsTtl" />
+        <result column="NEWS_CN"         property="newsCn" />
+        <result column="PBLCN_DT"        property="pblcnDt" />
+        <result column="THMB_URL_PATH"   property="thmbUrlPath" />
+        <result column="ATCH_FILE_SN"    property="atchFileSn" />
+    </resultMap>
+
+    <resultMap id="newsResponseResultMap" type="com.nyangmeong.community.dto.NewsResponse">
+        <id     column="NEWS_SN"         property="newsSn" />
+        <result column="NEWS_CLSF_CD"    property="newsClsfCd" />
+        <result column="NEWS_SRC_CD"     property="newsSrcCd" />
+        <result column="NEWS_SRC_CD_NM"  property="newsSrcCdNm" />
+        <result column="SRC_PRESS_NM"    property="srcPressNm" />
+        <result column="NEWS_TTL"        property="newsTtl" />
+        <result column="NEWS_CN"         property="newsCn" />
+        <result column="ORGTXT_PATH"     property="orgtxtPath" />
+        <result column="PBLCN_DT"        property="pblcnDt" />
+        <result column="THMB_URL_PATH"   property="thmbUrlPath" />
+        <result column="ATCH_FILE_SN"    property="atchFileSn" />
+    </resultMap>
+
+    <resultMap id="newsKeywordResultMap" type="com.nyangmeong.community.domain.NewsKeyword">
+        <result column="MPNG_CD" property="mpngCd" />
+        <result column="KWRD_CN" property="kwrdCn" />
+    </resultMap>
+
+    <resultMap id="newsRecentResultMap" type="com.nyangmeong.community.domain.News">
+        <result column="NEWS_TTL" property="newsTtl" />
+        <result column="NEWS_CN"  property="newsCn" />
+    </resultMap>
+
+    <select id="selectList" resultMap="newsSummaryResultMap">
+        /* 뉴스 목록 조회 */
+        SELECT N.NEWS_SN
+             , N.NEWS_CLSF_CD
+             , N.NEWS_SRC_CD
+             , C.COM_CD_NM AS NEWS_SRC_CD_NM
+             , N.SRC_PRESS_NM
+             , N.NEWS_TTL
+             , LEFT(N.NEWS_CN, 200) AS NEWS_CN
+             , N.PBLCN_DT
+             , N.THMB_URL_PATH
+             , N.ATCH_FILE_SN
+          FROM NEWS N
+          LEFT JOIN COM_CD C
+            ON C.COM_CD = N.NEWS_SRC_CD
+           AND C.COM_CD_PRNT_SN IS NOT NULL
+         WHERE N.USE_YN = 'Y'
+        <if test="newsClsfCd != null">
+           AND N.NEWS_CLSF_CD = #{newsClsfCd}
+        </if>
+        <if test="keyword != null">
+           AND ( N.NEWS_TTL LIKE CONCAT('%', #{keyword}, '%')
+              OR N.NEWS_CN LIKE CONCAT('%', #{keyword}, '%') )
+        </if>
+         ORDER BY N.PBLCN_DT DESC, N.NEWS_SN DESC
+    </select>
+
+    <select id="selectNews" resultMap="newsResponseResultMap">
+        /* 뉴스 상세 조회 */
+        SELECT N.NEWS_SN
+             , N.NEWS_CLSF_CD
+             , N.NEWS_SRC_CD
+             , C.COM_CD_NM AS NEWS_SRC_CD_NM
+             , N.SRC_PRESS_NM
+             , N.NEWS_TTL
+             , N.NEWS_CN
+             , N.ORGTXT_PATH
+             , N.PBLCN_DT
+             , N.THMB_URL_PATH
+             , N.ATCH_FILE_SN
+          FROM NEWS N
+          LEFT JOIN COM_CD C
+            ON C.COM_CD = N.NEWS_SRC_CD
+           AND C.COM_CD_PRNT_SN IS NOT NULL
+         WHERE N.NEWS_SN = #{newsSn}
+           AND N.USE_YN = 'Y'
+    </select>
+
+    <select id="selectOrgtxtPaths" resultType="string">
+        /* 이미 저장된 원문 경로 조회 */
+        SELECT N.ORGTXT_PATH
+          FROM NEWS N
+         WHERE N.ORGTXT_PATH IN
+        <foreach collection="orgtxtPaths" item="orgtxtPath" open="(" separator="," close=")">
+            #{orgtxtPath}
+        </foreach>
+    </select>
+
+    <select id="selectKeywords" resultMap="newsKeywordResultMap">
+        /* 뉴스 분류 키워드 조회 */
+        SELECT K.MPNG_CD
+             , K.KWRD_CN
+          FROM KWRD_DICT K
+         WHERE K.DICT_USG_CD = 'AIMC0039'
+           AND K.USE_YN = 'Y'
+           AND K.DEL_YN = 'N'
+           AND K.MPNG_CD IS NOT NULL
+         ORDER BY K.SORT_SEQ ASC, K.KWRD_DICT_SN ASC
+    </select>
+
+    <select id="selectExcludeKeywords" resultType="string">
+        /* 뉴스 제외 키워드 조회 */
+        SELECT K.KWRD_CN
+          FROM KWRD_DICT K
+         WHERE K.DICT_USG_CD = 'AIMC0040'
+           AND K.USE_YN = 'Y'
+           AND K.DEL_YN = 'N'
+         ORDER BY K.SORT_SEQ ASC, K.KWRD_DICT_SN ASC
+    </select>
+
+    <select id="selectRecentNews" resultMap="newsRecentResultMap">
+        /* 중복 판정용 최근 기사 조회 */
+        SELECT N.NEWS_TTL
+             , N.NEWS_CN
+          FROM NEWS N
+         WHERE N.PBLCN_DT &gt;= #{since}
+    </select>
+
+    <insert id="insert" parameterType="com.nyangmeong.community.domain.News" useGeneratedKeys="true" keyProperty="newsSn">
+        /* 수집한 뉴스 등록 : 원문 경로가 같은 기사는 건너뜀 */
+        INSERT IGNORE INTO NEWS (NEWS_CLSF_CD, NEWS_SRC_CD, NEWS_TTL, NEWS_CN, SRC_PRESS_NM, ORGTXT_PATH, PBLCN_DT, THMB_URL_PATH)
+        VALUES (#{newsClsfCd}, #{newsSrcCd}, #{newsTtl}, #{newsCn}, #{srcPressNm}, #{orgtxtPath}, #{pblcnDt}, #{thmbUrlPath})
+    </insert>
+
+</mapper>

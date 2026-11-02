@@ -8,6 +8,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.nyangmeong.global.auth.BrupRole;
 import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.code.CommonCodeService;
@@ -17,6 +19,9 @@ import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.notification.EventPublisher;
 import com.nyangmeong.global.notification.NotificationEvent;
 import com.nyangmeong.global.notification.NotificationType;
+import com.nyangmeong.global.response.PageQuery;
+import com.nyangmeong.global.response.PageResponse;
+import com.nyangmeong.member.service.MemberService;
 import com.nyangmeong.pet.domain.BrupLinkSttsHstry;
 import com.nyangmeong.pet.domain.BrupRel;
 import com.nyangmeong.pet.domain.LinkChangeType;
@@ -24,6 +29,7 @@ import com.nyangmeong.pet.domain.Pet;
 import com.nyangmeong.pet.domain.PetCodeGroup;
 import com.nyangmeong.pet.domain.PetDeletedEvent;
 import com.nyangmeong.pet.domain.PetColor;
+import com.nyangmeong.pet.dto.AdminPetSummary;
 import com.nyangmeong.pet.dto.CaregiverSummary;
 import com.nyangmeong.pet.dto.PetCreateRequest;
 import com.nyangmeong.pet.dto.PetResponse;
@@ -62,6 +68,17 @@ public class PetService {
     private final CareMissionMapper careMissionMapper;
     private final CaregiverInvitationMapper invitationMapper;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final MemberService memberService;
+
+    /**
+     * 관리자 회원 상세 반려동물 목록 조회
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<AdminPetSummary> searchForAdmin(Long mbrSn, PageQuery pq) {
+        memberService.checkExists(mbrSn);
+        PageHelper.startPage(pq.pageOrDefault(), pq.sizeOrDefault());
+        return PageResponse.of(new PageInfo<>(petMapper.selectAdminList(mbrSn, BrupRole.CO_PARENT.getCode())));
+    }
 
     /**
      * 내 반려동물 목록 조회
@@ -237,6 +254,7 @@ public class PetService {
         }
         pixelCharacterMapper.updateHeldItemDeleteByPetSn(petSn);
         pixelCharacterMapper.updatePhotoDeleteByPetSn(petSn);
+        pixelCharacterMapper.updateItemSheetDeleteByPetSn(petSn);
         pixelCharacterMapper.updateDeleteByPetSn(petSn, actorId);
         pixelCharacterMapper.updateJobDeleteByPetSn(petSn);
         careMissionMapper.updateDayMissionDeleteByPetSn(petSn);

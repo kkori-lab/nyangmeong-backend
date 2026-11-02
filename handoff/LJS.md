@@ -2,16 +2,43 @@
 
 ## 지금 하는 것
 
-SCR-ADM-013 탈퇴 회원 · 탈퇴 파기 배치 — 끝 (2026-11-02). `member/MemberPurgeJob`(SYSC0027, 매일 03:30)이 보관 기간이 지난 탈퇴 회원의 식별값을 없애고 `SNS_ACNT_LINK`를 지운다. `MBR` 행과 탈퇴 상태는 유지
+SCR-MYP-011 아이템 상점 모달 · 캐릭터 작업·시트 내부 API (SCR-MYP-010 공통) — 끝 (2026-11-02). `/internal/ai/characters` 8개(작업 생성, 성공·실패 보고, 굽기 대상, 착용 시트 저장·실패, 시트 정보·파일)를 쿠키 인증으로 만들고, 시간 초과 배치(SYSC0029)를 넣었다. 공개 `POST /api/pets/{petSn}/pixel-characters`는 지웠다. DB는 v0.12로 올렸다(`PIXEL_CHAR` 시트 컬럼, `CHAR_ITEM_SHEET`, `ITEM.ENGINE_ITEM_KEY`)
 
 ## 다음에 할 것
 
-- SCR-ADM-013 연결 남음: FN-ADM-013-02 (프론트 연결 배치 현황 링크 `?batch=SYSC0027`, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
-- 공용 DB(사람, PR 병합 전): `db/20261030_insert_base_data_v0.11.sql`의 v0.11 (5)를 실행한다. 없으면 03:30 배치 이력이 `BTCH_SE_CD` 외래키에 걸린다. 공용 DB의 보관 기간 지난 탈퇴 회원은 첫 실행에서 되돌릴 수 없이 파기된다
+- 공용 DB(사람, PR 병합 직후): `db/20261102_create_tables_v0.12.sql` → `db/20261102_insert_base_data_v0.12.sql`의 v0.12 (1)을 실행한다(맨 앞 `SET NAMES utf8mb4;`). 실행 전에는 새 캐릭터 내부 API와 `PIXEL_CHAR` 조회가 `Unknown column`이다. 로컬 `nyangmeong_local`에는 사람이 실행했다
+- 팀에 알린다(PR): DB 기준 파일이 v0.12로 바뀌었다. v0.11 두 파일은 `db/archive/v0.11/`에 있고, 아직 병합 안 된 브랜치의 v0.11 변경 항목은 v0.12 파일의 변경 절로 옮겨야 한다. `handoff/KSJ.md`에 옛 v0.11 경로가 남아 있다(KSJ)
+- ERDCloud(사람): `PIXEL_CHAR.BODY_SHEET_FILE_SN`·`SHEET_SCALE`·`SHEET_ORIGIN_X`·`SHEET_ORIGIN_Y`, 새 테이블 `CHAR_ITEM_SHEET`, `ITEM.ENGINE_ITEM_KEY`를 추가한다
+- 병합 순서(ai-d1): 백엔드 PR 먼저, 그다음 AI 저장소 `LJS`(`b2f2e84`, 쿠키 전환) PR. Python이 먼저 들어가면 캐릭터 생성이 실패한다. 백엔드 PR 번호를 ai-d1 세션에 알린다
+- 정하기(SCR-ADM-042 전): 무료 재생성(FN-MYP-010-23). 사진이 Java로 오지 않아 `finishErrorCheck(regenerate=true)`는 원본 사진이 없어 `FILE_NOT_FOUND`이고 Python에 재생성 API도 없다. 계약을 정한 뒤 `CharacterCreationWorker`·`CharacterGenerator`·`FakeCharacterGenerator`를 정리한다
+- 굽기 켜기 전(AI 저장소와 함께): 백그라운드 호출이 쿠키를 쓰므로 `access_token`(30분)이 생성·굽기 중에 만료되면 성공 보고·시트 저장이 401이다. 성공 보고를 잃은 작업은 10분 뒤 시간 초과로 실패하고 다시 요청할 수 있다
+- 시드(SCR-ADM-070): `ENGINE_ITEM_KEY`는 이름이 같은 14개만 넣었다. AI `items.json` 26개와 시드 24개(신발 `MYPC0006` 4개 포함)를 맞춘다. 교체된 착용 시트의 이전 `ATCH_FILE`은 연결이 끊긴 채 남는다
+- 테스트 부족: 시간 초과 조회(`PRCS_BGNG_DT < NOW() - INTERVAL 10 MINUTE`) 경계를 실제 DB에서 돌려 보지 않았다(매퍼 목)
+- 로컬 DB 정리(`nyangmeong_local`, 사람): 검증·확인으로 생긴 반려동물 5의 `PIXEL_CHAR` 601·`CHAR_CRT_JOB` 780·`ATCH_FILE` 4178과 결과 사진, 반려동물 10의 캐릭터 데이터. 반려동물 삭제 API나 `DEL_YN='Y'`로 지운다
+- 로컬 Python 서버(사람): 8000은 `--reload`로 띄운다. 14:29에 띄운 옛 프로세스가 가짜 저장소로 돌아 미리보기가 `PIXEL_CHARACTER_NOT_FOUND`였다
+- SCR-ADM-030 연결 남음: FN-ADM-030-01 (프론트 연결 신고 처리 목록 SCR-ADM-030, 프론트 저장소에서 /start), FN-ADM-030-02 (프론트 연결 상태 탭·필터 영역, 프론트 저장소에서 /start), FN-ADM-030-03 (프론트 연결 상세 `/admin/reports/:dclrSn`, 프론트 저장소에서 /start), FN-ADM-030-04 (프론트 연결 조치 선택과 처리 완료, 프론트 저장소에서 /start), FN-ADM-030-05 (프론트 연결 반려 사유 입력, 프론트 저장소에서 /start), FN-ADM-030-07 (프론트 연결 자동 블라인드 탭과 복구, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
+- 공용 DB(PR): v0.11 (9, 처음 번호 7이 KSJ와 겹쳐 변경)는 사람이 PR 전에 공용 DB에 적용했다고 답했다. 병합 뒤 다시 실행하지 않는다. PR 본문에 "DB 변경 있음, v0.11 (9) 공용 DB 적용 완료"로 적는다. 로컬 `nyangmeong_local`에는 없다
+- 판단 필요(시드): 시드의 자동 블라인드 이력 18건은 사유가 `신고 누적으로 블라인드`라 `신고 누적`과 달라 자동 블라인드 탭에 나오지 않는다. 시드를 고칠지 탭 판별을 넓힐지 정한다. 이 코드 이전에 자동 삭제된 댓글도 나오지 않는다
+- ERDCloud(사람): `DCLR.DCLR_ACTN_CD` 신고조치공통코드(CMUG08)를 추가한다
+- KSJ에게 알린다(PR 전): SCR-ADM-030을 LJS가 구현했다(구현 계획 담당 KSJ, 저장소에 협의 기록 없음). `ReportService` 누적 계산에서 반려를 뺐고 자동 삭제 댓글에 `DCLR_STTS_HSTRY` 표시 행을 남긴다. 알림 `NotificationType.REPORT_RESULT`는 `COMMUNITY`와 코드 `AIMC0010`이 같다
+- 명세 정리(사람): 설정 화면 FN-COM-008-11 항상 받는 알림에 신고 처리 결과를 넣을지 정한다(2026-11-02 결정: 댓글 알림 설정과 무관하게 보낸다. 앱 알림 채널을 끄면 안 간다)
+- 테스트 부족: 복구 뒤 재삭제 판별(`autoTargetCondition`의 `MDFCN_DT` 비교)은 SQL 조건이라 자동 테스트가 없다
+- SCR-ADM-020 연결 남음: FN-ADM-020-01 (프론트 연결 관리자 게시글 목록 화면 SCR-ADM-020, 프론트 저장소에서 /start), FN-ADM-020-02 (프론트 연결 검색·필터 영역, 프론트 저장소에서 /start), FN-ADM-020-03 (프론트 연결 상세 화면 `/admin/posts/:pstSn`, 프론트 저장소에서 /start), FN-ADM-020-04 (프론트 연결 [블라인드] 사유 모달, 프론트 저장소에서 /start), FN-ADM-020-05 (프론트 연결 [복구] 사유 모달, 프론트 저장소에서 /start), FN-ADM-020-06 (프론트 연결 댓글 탭 `?tab=comments`, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
+- 실제 DB 확인 범위(SCR-ADM-020): 사람 확인 내용은 `확인`이라고만 기록됐다. 검증 에이전트는 공용 DB라 블라인드·복구·댓글 삭제 성공 경로를 실행하지 않았다
+- KSJ에게 알린다(PR 전): SCR-ADM-020을 LJS가 구현했다(구현 계획 담당은 KSJ, 저장소에 협의 기록 없음). `community`에 관리자 컨트롤러·서비스, `PostMapper`·`CommentMapper` 관리자 쿼리를 넣었다. `MapperXmlRuleTest` 예외 2줄 추가
+- 펫돌봄 구현 뒤(KSJ·LJS): 관리자 게시판 필터에 펫돌봄을 추가한다. 지금은 CMUG01에 코드가 없다. 화면설계서는 4개다
+- 시드 확인(KSJ): 공용 DB의 "[실종]" 글이 `CMUC0002`라 `bbsCd=CMUC0024` 필터가 0건이다. 코드 문제는 확인되지 않았다
+- SCR-ADM-011 연결 남음: FN-ADM-011-01 (백엔드 연결 `AdminMemberDetailResponse.mbrAuthrtCd`, 백엔드 저장소에서 /start). 프론트 마일스톤 결정이며 프론트 5개 탭 연결은 끝났다
+- 공용 DB 정리(사람): SCR-ADM-020·011·113·114 검증의 `dev-tokens`로 회원 1~6 세션이 생겼다. 지울지 정한다
+- 실행해 보지 못한 SQL(SCR-ADM-011): 재동의 시 최신 1행, 동의 기록 없는 약관(`TermsMapper.selectAdminAgreementList`), 해제된 연동 제외(`PetMapper.selectAdminList`). 자동 테스트는 매퍼 목이고 공용 DB에 해당 데이터가 없어 SQL 읽기로만 확인했다. 파기 회원 상세도 데이터가 없어 코드로만 확인했다
+- PR 전 확인(사람): YAY·SJM에게 SCR-ADM-011을 알린다. `member`: `MemberService.checkExists`, `maskPhone` 이동, `Member.hldPnt`, `TermsService`에 `MemberMapper` 주입. `pet`: `PetService`에 `MemberService` 주입, `AdminPetController`·`AdminPointController`. SCR-ADM-072 원장 조회는 `selectAdminLedgerList`를 재사용할 수 있다
+- SCR-ADM-113 연결 남음: FN-ADM-113-02 (프론트 연결 관리자 계정 화면 SCR-ADM-113 목록과 지정 모달, 프론트 저장소에서 /start), FN-ADM-113-03 (프론트 연결 해제 버튼과 확인 모달, 본인·마지막 비활성, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
+- PR 전 확인(사람): YAY에게 SCR-ADM-113을 알린다. `AdminMemberController` 클래스 경로를 `/api/admin`으로 내렸고(기존 URL 그대로) `MemberAuthorityService`를 넣었다. 마일스톤의 협의가 저장소에 기록되지 않았다
+- 판단 필요(SCR-ADM-113): 지정 기록이 없는 기존 관리자는 `apntDt`가 null이다. `MBR_AUTHRT_CD`에 인덱스가 없어 해제 트랜잭션 동안 `MBR`의 많은 행이 잠길 수 있다(부하 상황 확인 안 함)
+- 공용 DB(사람, PR 병합 전): `db/archive/v0.11/20261030_insert_base_data_v0.11.sql`의 v0.11 (5)를 실행한다. 없으면 03:30 배치 이력이 `BTCH_SE_CD` 외래키에 걸린다. 공용 DB의 보관 기간 지난 탈퇴 회원은 첫 실행에서 되돌릴 수 없이 파기된다
 - PR 전 확인(사람): YAY에게 `member`에 넣은 것을 알린다. `MemberPurgeJob`·`MemberPurgeService`, 탈퇴 회원 목록, `MemberSuspensionService`, 관리자 목록 조회. 파기 뒤 같은 이메일은 새 가입이 되고 복구는 `MEMBER_NOT_FOUND`다. 저장소에 협의 기록 없음
 - 탈퇴 파기 남은 범위: 채팅 원문(REQ-NFR-002, 채팅 구현 뒤 KSJ와 `scheduler`로 묶는다), 프로필 파일 실물(`FileStore`에 삭제 없음, 지금은 연결만 끊는다), 게시물·댓글·포인트·반려동물·건강기록(정책 미확정, `docs/api/issues.md` 8번)
 - KSJ에게 알린다: 게시글·댓글 작성자 '탈퇴한 회원' 표시가 없어 파기 회원은 `탈퇴회원#<번호>`로 보인다. 쿼리에서 탈퇴 상태로 표시를 바꾼다
-- 로컬 DB `nyangmeong_local`에 SYSC0026·SYSC0027과 `MBR.SUSPN_END_DT`가 없다. v0.11 변경 절을 실행한다(사람)
 - 회원 탈퇴 처리가 코드에 없다: `POST /members/me/withdraw` 초안은 있으나 `src/main`에 `WHDWL_DT`를 채우는 코드가 없다(YAY에게 확인)
 - 테스트 부족: `selectWithdrawnList`의 보관 기간 경계를 검사하는 매퍼 테스트가 없다. 검증은 같은 조건을 바꾼 읽기 전용 SELECT로 했다
 - SCR-ADM-012 연결 남음: FN-ADM-012-01·03·05 (프론트 연결 관리자 회원 제재 화면 `features/adminMember/api.js` `suspendMember`·`releaseMember`와 회원 정지 모달, 프론트 저장소에서 /start), 정지 회원 목록 (프론트 연결 `getAdminSuspensions`, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
@@ -22,7 +49,7 @@ SCR-ADM-013 탈퇴 회원 · 탈퇴 파기 배치 — 끝 (2026-11-02). `member/
 - 로컬 `application.properties` 정리(사람): `springdoc.*.enabled=false` 두 줄 때문에 Swagger가 404다. `spring.profiles.default`도 없어 로컬 프로필이 적용되지 않을 수 있다. 디스코드 최신 파일로 받는다
 - 판단 필요: 잘못 인코딩된 `q`(UTF-8 아님)는 400이 아니라 500이다(Tomcat 디코딩 실패, 이번 기획 밖). 검증의 `dev-tokens`(회원 1·2)가 공용 DB에 세션을 남겼는지 확인 못 함
 - SCR-ADM-112 연결 남음: FN-ADM-112-01·02·03 (프론트 연결 관리자 외부 API 사용량 화면 SCR-ADM-112, 프론트 저장소에서 /start. 프론트 마일스톤에 절 있음), FN-ADM-112-02 (Python이 `POST /internal/ai/external-api-calls`를 부른다, 호출마다 쿠키가 있어야 하고 쿠키 없는 백그라운드 호출은 기록되지 않는다, ai 세션)
-- 공용 DB(사람, PR 병합 직후): `db/20261030_insert_base_data_v0.11.sql`의 v0.11 (3)을 실행한다. 실행 전에는 `SYSC0024`·`SYSC0025` 통지가 외래키 위반이다. 사람 확인으로 공용 DB에 남은 `FAIL_RSN = 'verify 확인용'` 행과 토큰 120·30 행을 지울지 정한다(삭제 API 없음)
+- 공용 DB(사람, PR 병합 직후): `db/archive/v0.11/20261030_insert_base_data_v0.11.sql`의 v0.11 (3)을 실행한다. 실행 전에는 `SYSC0024`·`SYSC0025` 통지가 외래키 위반이다. 사람 확인으로 공용 DB에 남은 `FAIL_RSN = 'verify 확인용'` 행과 토큰 120·30 행을 지울지 정한다(삭제 API 없음)
 - 외부 API Java 호출 기록(2026-11-01 결정: 아직 안 함): `RegionResolver`·`MailSender`·`CharacterGenerator` 실제 구현을 붙일 때 `EXTL_API_CALL_LOG`에 기록한다. 호출 실패 기록이 업무 트랜잭션과 같이 롤백되지 않게 별도 트랜잭션으로 저장한다. `SYSC0019` 장소 공공데이터는 코드만 남고 화면 7종에는 없다
 - 로컬 DB `nyangmeong_ljs`에 `EXTL_API_CALL_LOG`가 없다. 로컬 프로필에서 이 화면을 보려면 v0.11 변경 절을 실행한다(사람)
 - SJM·JAJ에게 PR에서 알린다: `CareMissionJob`·`PrescriptionExpiryJob`이 `BatchJob` 구현으로 바뀌었다. cron과 하는 일은 같고, 실행마다 `BTCH_EXCN_HSTRY`에 1행이 쌓이며 관리자가 수동 실행할 수 있다
@@ -33,7 +60,6 @@ SCR-ADM-013 탈퇴 회원 · 탈퇴 파기 배치 — 끝 (2026-11-02). `member/
 - 공통코드 화면(SCR-ADM-100) 제외 후속(사람, 2026-11-01 결정: 코드 변경이 드물어 만들지 않고 SQL로 처리): 요구사항정의서 REQ-ADM-010, 관리자 기능명세서·화면설계서 SCR-ADM-100, IA 구조도(DMS)를 고치고 프론트 사이드바 메뉴를 뺀다. `docs/admin/implementation-plan.md`는 반영함. 다시 만들게 되면: 공통코드 enum 44개 중 값마다 로직이 갈리는 enum은 추가해도 쓸 수 없고, `InspectionArticle` 등 허용 목록 enum은 DB 검사로 바꿔야 추가한 코드를 쓸 수 있다
 - SCR-ADM-114 연결 남음: FN-ADM-114-01·02 (프론트 연결 관리자 감사 로그 화면 SCR-ADM-114와 상세 모달, 프론트 저장소에서 /start. 프론트 마일스톤에 절 있음)
 - 프론트 운영 설정 화면(SCR-ADM-110): 탈퇴 회원 보관일수를 읽기 전용으로. 필드를 보내도 200으로 무시돼 수정된 것처럼 보인다(프론트 저장소에서 /start)
-- 공용 DB 정리(사람): 검증의 `dev-tokens`로 생긴 회원 2·6 리프레시 토큰 행을 지울지 정한다. 검증 중 `dev-tokens` 일부가 공용 DB 커넥션 끊김으로 응답 없음(2026-10-30 20:55대, 원인 미확정)
 - 관리자 다음 마일스톤 전 확인(사람): 구현 계획 6절 확인 항목(인기 포토 제외·RSS 피드·알림 기본값 저장 위치, 기준정보 28번). REQ-ADM-014~022 요구사항정의서 반영은 별도 에이전트가 맡는다(2026-10-30 사람). 다른 담당 도메인 화면은 계획 2절 "협의" 표대로 먼저 이야기한다. 감사 로그가 필요한 관리자 기능은 `AdminTaskLogService.record`를 `@Transactional` 안에서 부른다
 - SCR-ADM-110 연결 남음: FN-ADM-110-01~04 (프론트 연결 관리자 운영 설정 화면 SCR-ADM-110, 프론트 저장소에서 /start. 프론트 마일스톤에 절 있음)
 - 관리자 문서 후속(사람): DMS 기능명세서 폴더에 "관리자" 하위 폴더를 만들어 명세서를 옮긴다(도구로는 폴더 생성 불가). 공통레이아웃 FN-COM-006-04 건강기록 2차 메뉴명과 랜딩 화면 ID(SCR-LAN-001 vs SCR-MAN-002) 정리. 프론트 저장소 `milestone.md` 담당 표에도 관리자 추가(frontend-83에 전달함)

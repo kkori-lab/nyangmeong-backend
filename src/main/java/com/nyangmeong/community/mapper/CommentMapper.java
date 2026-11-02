@@ -6,6 +6,8 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import com.nyangmeong.community.domain.Comment;
+import com.nyangmeong.community.dto.AdminCommentSearchCond;
+import com.nyangmeong.community.dto.AdminCommentSummary;
 import com.nyangmeong.community.dto.CommentSummary;
 
 /**
@@ -38,4 +40,20 @@ public interface CommentMapper {
      * 댓글 삭제 처리
      */
     int updateDeleted(Long cmntSn);
+
+    /**
+     * 자동 삭제 댓글 복구
+     */
+    int updateRestored(Long cmntSn);
+
+    /**
+     * 관리자 댓글 목록 조회 (삭제된 댓글 포함)
+     */
+    List<AdminCommentSummary> selectAdminList(@Param("cond") AdminCommentSearchCond cond,
+            @Param("keyword") String keyword);
+
+    /**
+     * 관리자 댓글 단건 조회 (삭제된 댓글 포함)
+     */
+    Comment selectAdminComment(Long cmntSn);
 }

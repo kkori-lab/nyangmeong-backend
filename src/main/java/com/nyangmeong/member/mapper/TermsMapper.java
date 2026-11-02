@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import com.nyangmeong.member.domain.Terms;
+import com.nyangmeong.member.dto.AdminMemberTermsAgreeSummary;
 import com.nyangmeong.member.dto.TermsSummary;
 
 /**
@@ -18,6 +19,11 @@ public interface TermsMapper {
      * 사용 중인 약관 목록 (정렬순서)
      */
     List<TermsSummary> selectUsableList();
+
+    /**
+     * 사용 중 약관 종류별 회원의 최신 동의 (정렬순서)
+     */
+    List<AdminMemberTermsAgreeSummary> selectAdminAgreementList(@Param("mbrSn") Long mbrSn);
 
     /**
      * 사용 중인 약관 전문, 없으면 null

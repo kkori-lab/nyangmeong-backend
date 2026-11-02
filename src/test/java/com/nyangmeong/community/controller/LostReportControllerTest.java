@@ -70,6 +70,7 @@ class LostReportControllerTest {
         LostReportDetail detail = new LostReportDetail();
         detail.setLostTpofSn(5L);
         detail.setPstSn(7L);
+        detail.setMbrSn(1L);
         detail.setPstTtl("보리 (말티즈)를 찾습니다");
         detail.setLostTpofSttsCd("CMUC0006");
         detail.setPetNm("보리");
@@ -129,6 +130,7 @@ class LostReportControllerTest {
         mockMvc.perform(get("/api/lost-reports/5"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.cnpl").value("010-1234-5678"))
+                .andExpect(jsonPath("$.data.mbrSn").value(1))
                 .andExpect(jsonPath("$.data.owner").value(true));
     }
 
