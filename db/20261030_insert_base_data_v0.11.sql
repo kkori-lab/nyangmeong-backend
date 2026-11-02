@@ -136,6 +136,9 @@
 --   SET NAMES utf8mb4;
 --   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG05') p),'SYSC0024','AI 분류','Python AI 서버, 토큰 수 기록 (FN-ADM-112-01·02)',70);
 --   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG05') p),'SYSC0025','PDF 분석','Python AI 서버 (FN-ADM-112-01)',80);
+-- v0.11 (4) 배치 구분 회원 정지 만료 해제 (2026-11-02, LJS, 근거: 관리자_기능명세서 FN-ADM-012-04 — 배치 이력 BTCH_SE_CD 외래키). 컬럼은 20261030_create_tables_v0.11.sql의 v0.11 (4)
+--   SET NAMES utf8mb4;
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0026','회원 정지 만료 해제','member/MemberSuspensionExpiryJob',50);
 -- =====================================================================
 SET NAMES utf8mb4;
 START TRANSACTION;
@@ -628,6 +631,9 @@ INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT
 -- ■ SYS 시스템 — v0.11 추가: 외부 API 구분 (v0.11 (3))
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG05') p),'SYSC0024','AI 분류','Python AI 서버, 토큰 수 기록 (FN-ADM-112-01·02)',70);
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG05') p),'SYSC0025','PDF 분석','Python AI 서버 (FN-ADM-112-01)',80);
+
+-- ■ SYS 시스템 — v0.11 추가: 배치 구분 회원 정지 만료 해제 (v0.11 (4))
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0026','회원 정지 만료 해제','member/MemberSuspensionExpiryJob',50);
 
 -- =====================================================================
 -- [2] 케어미션 마스터 (CARE_MSN) — 20261027_02_update_care_msn_and_ckup_pnt 의 최종 상태

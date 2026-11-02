@@ -1,7 +1,7 @@
 -- =====================================================================
 -- 냥멍케어 MySQL DDL v0.11  |  MySQL 8.0.16+ / InnoDB / utf8mb4_0900_ai_ci
 -- 대상: DBeaver (전체 선택 후 스크립트 실행 Alt+X, 또는 스키마 우클릭 → Tools → Execute script)
--- 원천: DDL v0.10(db/archive/v0.10/) 위에 아래 "v0.10 → v0.11 변경"을 더한 것 (91 테이블 / 959 컬럼 / 관계 FK 148)
+-- 원천: DDL v0.10(db/archive/v0.10/) 위에 아래 "v0.10 → v0.11 변경"을 더한 것 (91 테이블 / 960 컬럼 / 관계 FK 148)
 --       UK·INDEX·CHECK·생성열·공통코드 FK 는 v0.8 그대로 유지
 -- 구성: [1] DROP  [2] CREATE(PK·UK·INDEX·CHECK·생성열)  [3] 관계 FK 148  [4] 공통코드 FK
 -- 주의: 전체 DROP 후 재생성합니다. 기존 데이터가 있으면 먼저 백업하세요. 공용 DB에는 실행하지 않습니다.
@@ -125,6 +125,8 @@
 --   ALTER TABLE `AI_ROUT_MPNG` ADD CONSTRAINT `FK_AI_ROUT_MPNG_MVMN_MTHD_CD` FOREIGN KEY (`MVMN_MTHD_CD`) REFERENCES `COM_CD` (`COM_CD`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 --   ALTER TABLE `KWRD_DICT` ADD CONSTRAINT `FK_KWRD_DICT_DICT_USG_CD` FOREIGN KEY (`DICT_USG_CD`) REFERENCES `COM_CD` (`COM_CD`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 --   ALTER TABLE `KWRD_DICT` ADD CONSTRAINT `FK_KWRD_DICT_MPNG_CD` FOREIGN KEY (`MPNG_CD`) REFERENCES `COM_CD` (`COM_CD`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+-- v0.11 (4) 회원 정지 종료 일시 (2026-11-02, LJS, 근거: 관리자_기능명세서 FN-ADM-012-01·04 — NULL이면 영구 정지). 공통코드는 20261030_insert_base_data_v0.11.sql의 v0.11 (4)
+--   ALTER TABLE `MBR` ADD COLUMN `SUSPN_END_DT` datetime NULL COMMENT '정지종료일시' AFTER `WHDWL_DT`;
 -- =====================================================================
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -358,6 +360,7 @@ CREATE TABLE `MBR` (
   `MBR_NCNM` varchar(40) NOT NULL COMMENT '회원닉네임',
   `HLD_PNT` decimal(10,0) NOT NULL DEFAULT '0' COMMENT '보유포인트',
   `WHDWL_DT` datetime NULL COMMENT '탈퇴일시',
+  `SUSPN_END_DT` datetime NULL COMMENT '정지종료일시',
   `LAST_LGN_DT` datetime NULL COMMENT '최종로그인일시',
   `MM_EXPND_LIM_AMT` decimal(13,0) NULL COMMENT '월지출한도금액',
   `NCNM_STNG_CMPTN_YN` char(1) NOT NULL DEFAULT 'N' COMMENT '닉네임설정완료여부',

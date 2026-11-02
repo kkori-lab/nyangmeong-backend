@@ -185,10 +185,13 @@
 - 완료 조건 결과: 검증 `확인 못 함 있음`(내 것 없음, 2026-11-02, 8082 실제 호출로 SQL 확인), 사람 확인 2026-11-02
 - 연결 남음: FN-ADM-010-01 (프론트 연결 관리자 회원 목록 화면 `features/adminMember/api.js` `getAdminMembers`, 프론트 저장소에서 /start), FN-ADM-010-04 (프론트 연결 행 클릭 이동, 프론트 저장소에서 /start)
 
-## SCR-ADM-012 회원 제재 — 대기
+## SCR-ADM-012 회원 제재 — 끝
 - 기능: FN-ADM-012-01 회원 정지, FN-ADM-012-02 정지 효과, FN-ADM-012-03 정지 해제, FN-ADM-012-04 기간 만료 자동 해제, FN-ADM-012-05 정지 대상 제한, FN-ADM-012-06 강제 탈퇴 제외
 - 기다리는 것: `MBR` 정지종료일시 migration, 정지 회원 요청마다 차단 여부(구현 계획 6절, 사람), `member` 협의 (YAY)
 - 완료 조건: 정지한 회원은 로그인과 API 호출이 막히고 기간이 지나면 풀린다. 관리자는 정지할 수 없다
+- 결정: `member`의 `MemberSuspensionService`·`MemberSuspensionExpiryJob`에 둔다. 종료 일시는 오늘+N일 00:00, 만료 판정은 Java 시각. 정지할 때 세션을 폐기한다. 정지 일시·사유·처리자는 `MBR_STTS_HSTRY`에서 읽는다. 정지 안내 알림은 기능명세서에 없어 넣지 않았다(2026-11-02)
+- 완료 조건 결과: 검증 `확인 못 함 있음`(내 것 없음, 2026-11-02, 컬럼 없는 DB라 실제 호출 일부만), 사람 확인 2026-11-02(v0.11 (4) 실행 뒤)
+- 연결 남음: FN-ADM-012-01·03·05 (프론트 연결 관리자 회원 제재 화면 `features/adminMember/api.js` `suspendMember`·`releaseMember`와 회원 정지 모달, 프론트 저장소에서 /start), 정지 회원 목록 (프론트 연결 `getAdminSuspensions`, 프론트 저장소에서 /start)
 
 ## SCR-ADM-013 탈퇴 회원 — 대기
 - 기능: FN-ADM-013-01 탈퇴 회원 목록 조회, FN-ADM-013-02 파기 현황 연결
@@ -328,10 +331,11 @@
 - 완료 조건: 프론트 `features/adminMember/api.js` 가짜를 바꿀 수 있게 `GET /api/admin/members`가 최신 가입순 20건씩 나온다. 닉네임 부분 일치·이메일 완전 일치 검색과 상태·가입 경로·권한·가입일 기간 필터가 AND로 걸린다. 이메일은 앞 3자만 보이게 마스킹된다. 프론트가 가정한 필드 이름(`maskedAcntEml`)과 조회 조건 이름(`q`·`status`·`joinPath`·`role`·`bgngYmd`·`endYmd`)을 맞춘다
 - 결과: `GET /api/admin/members` 완료, 조회 조건 이름과 `maskedAcntEml`은 프론트 가정과 같다(2026-11-02). 실제 연결은 프론트 저장소 몫
 
-## SCR-ADM-012 회원 제재 · 정지·해제·정지 회원 목록 API — 대기
+## SCR-ADM-012 회원 제재 · 정지·해제·정지 회원 목록 API — 끝
 - 기능: 명세 기능 ID 추가 없음. FN-ADM-012-01·02·03·04·05
 - 기다리는 것: 프론트 SCR-ADM-012 회원 제재 화면(끝, 2026-11-02)
 - 완료 조건: 프론트 `features/adminMember/api.js` 가짜를 바꿀 수 있게 `POST`·`DELETE /api/admin/members/{mbrSn}/suspension`과 정지 회원 목록 API가 있다. 정지·해제가 회원 상태·상태 이력에 남고, 관리자·본인·탈퇴 회원 정지는 거절되며, 기간 만료 회원은 배치가 해제한다
+- 완료 조건 결과: 위 SCR-ADM-012 회원 제재 절과 함께 끝. 목록 경로는 `GET /api/admin/members/suspensions`. 해제는 본문 있는 `DELETE`라 프론트가 사유를 `data`로 보낸다(2026-11-02)
 
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)

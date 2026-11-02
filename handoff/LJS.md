@@ -2,10 +2,16 @@
 
 ## 지금 하는 것
 
-SCR-ADM-010 회원 목록 — 끝 (2026-11-02). `GET /api/admin/members`(`member/controller/AdminMemberController`), 닉네임 부분 일치·이메일 완전 일치 검색, 상태·가입 경로·권한·가입일 필터, 이메일 마스킹
+SCR-ADM-012 회원 제재 — 끝 (2026-11-02). 정지·해제·정지 회원 목록 API(`member/controller/AdminMemberController`, `MemberSuspensionService`), 정지할 때 세션 폐기, 기간 만료 해제 배치 `MemberSuspensionExpiryJob`(`SYSC0026`), `MBR.SUSPN_END_DT`
 
 ## 다음에 할 것
 
+- SCR-ADM-012 연결 남음: FN-ADM-012-01·03·05 (프론트 연결 관리자 회원 제재 화면 `features/adminMember/api.js` `suspendMember`·`releaseMember`와 회원 정지 모달, 프론트 저장소에서 /start), 정지 회원 목록 (프론트 연결 `getAdminSuspensions`, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
+- 위험, PR 병합 전(사람): v0.11 (4) 없는 DB에서는 `selectBySn`이 `Unknown column`이라 `GET /api/members/me` 등 기존 API도 500이다. 공용 DB에는 규칙의 "병합 직후"가 아니라 병합 전에 실행하고 팀에 각자 로컬 DB 실행을 알린다. 사람이 실행했다고 답했으나(2026-11-02) 어느 DB인지는 기록이 없다
+- PR 전 확인(사람): `member`에 `MemberSuspensionService`를 넣은 것을 YAY에게 알린다(마일스톤 `member` 협의). 저장소에 협의 기록 없음
+- ERDCloud(사람): `MBR.SUSPN_END_DT` 정지종료일시를 추가한다
+- 판단 필요: 구현 계획에는 정지 안내 알림이 있으나 기능명세서에 없어 넣지 않았다. `suspnDayCnt`가 빠진 정지 요청은 영구 정지로 처리된다(프론트 계약). 만료 배치는 하루 한 번이라 00:00에 서버가 내려가 있으면 수동 실행 전까지 정지가 이어진다
+- 공용 DB 정리(사람): 검증의 `dev-tokens`로 생긴 회원 1~5 리프레시 토큰 행은 만료되면 무효라 그대로 둬도 된다
 - SCR-ADM-010 연결 남음: FN-ADM-010-01 (프론트 연결 관리자 회원 목록 화면 `features/adminMember/api.js` `getAdminMembers`, 프론트 저장소에서 /start), FN-ADM-010-04 (프론트 연결 행 클릭 이동, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
 - PR 전 확인(사람): `MemberService`·`MemberMapper`에 관리자 목록 조회를 넣은 것을 YAY에게 알린다(마일스톤 `member` 관리자 조회 협의). 저장소에 협의 기록 없음
 - 로컬 `application.properties` 정리(사람): `springdoc.*.enabled=false` 두 줄 때문에 Swagger가 404다. `spring.profiles.default`도 없어 로컬 프로필이 적용되지 않을 수 있다. 디스코드 최신 파일로 받는다
@@ -23,7 +29,7 @@ SCR-ADM-010 회원 목록 — 끝 (2026-11-02). `GET /api/admin/members`(`member
 - SCR-ADM-114 연결 남음: FN-ADM-114-01·02 (프론트 연결 관리자 감사 로그 화면 SCR-ADM-114와 상세 모달, 프론트 저장소에서 /start. 프론트 마일스톤에 절 있음)
 - 프론트 운영 설정 화면(SCR-ADM-110): 탈퇴 회원 보관일수를 읽기 전용으로. 필드를 보내도 200으로 무시돼 수정된 것처럼 보인다(프론트 저장소에서 /start)
 - 공용 DB 정리(사람): 검증의 `dev-tokens`로 생긴 회원 2·6 리프레시 토큰 행을 지울지 정한다. 검증 중 `dev-tokens` 일부가 공용 DB 커넥션 끊김으로 응답 없음(2026-10-30 20:55대, 원인 미확정)
-- 관리자 다음 마일스톤 전 확인(사람): 구현 계획 6절 확인 항목(정지 회원 요청마다 차단 여부, 인기 포토 제외·RSS 피드·알림 기본값 저장 위치, 기준정보 28번). REQ-ADM-014~022 요구사항정의서 반영은 별도 에이전트가 맡는다(2026-10-30 사람). 다른 담당 도메인 화면은 계획 2절 "협의" 표대로 먼저 이야기한다. 감사 로그가 필요한 관리자 기능은 `AdminTaskLogService.record`를 `@Transactional` 안에서 부른다
+- 관리자 다음 마일스톤 전 확인(사람): 구현 계획 6절 확인 항목(인기 포토 제외·RSS 피드·알림 기본값 저장 위치, 기준정보 28번). REQ-ADM-014~022 요구사항정의서 반영은 별도 에이전트가 맡는다(2026-10-30 사람). 다른 담당 도메인 화면은 계획 2절 "협의" 표대로 먼저 이야기한다. 감사 로그가 필요한 관리자 기능은 `AdminTaskLogService.record`를 `@Transactional` 안에서 부른다
 - SCR-ADM-110 연결 남음: FN-ADM-110-01~04 (프론트 연결 관리자 운영 설정 화면 SCR-ADM-110, 프론트 저장소에서 /start. 프론트 마일스톤에 절 있음)
 - 관리자 문서 후속(사람): DMS 기능명세서 폴더에 "관리자" 하위 폴더를 만들어 명세서를 옮긴다(도구로는 폴더 생성 불가). 공통레이아웃 FN-COM-006-04 건강기록 2차 메뉴명과 랜딩 화면 ID(SCR-LAN-001 vs SCR-MAN-002) 정리. 프론트 저장소 `milestone.md` 담당 표에도 관리자 추가(frontend-83에 전달함)
 - SCR-AIM-011 연결 남음: FN-AIM-011-11 (Python이 `PATCH /internal/ai/conversations/{번호}`를 실제로 부르는 확인, ai 저장소 `docs/api/internal.md` 초안 행 확정, ai 세션). PR을 올리면 PR 번호를 ai-2e 세션에 알린다
