@@ -24,6 +24,7 @@ public class Member {
     private String mbrNcnm;
     private LocalDateTime lastLgnDt;
     private LocalDateTime whdwlDt;
+    private LocalDateTime suspnEndDt;
     private String ncnmStngCmptnYn;
     private LocalDateTime regDt;
 }

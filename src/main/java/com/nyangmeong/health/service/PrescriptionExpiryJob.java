@@ -1,7 +1,9 @@
 package com.nyangmeong.health.service;
 
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+
+import com.nyangmeong.global.batch.BatchJob;
+import com.nyangmeong.global.batch.BatchType;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,16 +16,24 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class PrescriptionExpiryJob {
+public class PrescriptionExpiryJob implements BatchJob {
 
     private final PrescriptionService prescriptionService;
 
-    /**
-     * 00:00 종료 처리 실행
-     */
-    @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
-    public void run() {
+    @Override
+    public BatchType type() {
+        return BatchType.PRESCRIPTION_EXPIRY;
+    }
+
+    @Override
+    public String cron() {
+        return "0 0 0 * * *";
+    }
+
+    @Override
+    public Integer execute() {
         int ended = prescriptionService.updateExpired();
         log.info("처방약 복용 종료 : {}건", ended);
+        return ended;
     }
 }

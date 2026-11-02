@@ -16,6 +16,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -29,6 +30,8 @@ import org.springframework.web.multipart.MultipartFile;
 import com.nyangmeong.global.error.BaseException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.file.FileStore;
+import com.nyangmeong.global.response.PageQuery;
+import com.nyangmeong.global.response.PageResponse;
 import com.nyangmeong.global.security.crypto.CryptoProperties;
 import com.nyangmeong.global.security.crypto.FieldCryptoService;
 import com.nyangmeong.global.security.domain.MemberAuthority;
@@ -37,6 +40,9 @@ import com.nyangmeong.global.setting.SystemSetting;
 import com.nyangmeong.global.setting.SystemSettingService;
 import com.nyangmeong.member.domain.JoinPath;
 import com.nyangmeong.member.domain.Member;
+import com.nyangmeong.member.dto.AdminMemberSearchCond;
+import com.nyangmeong.member.dto.AdminMemberSummary;
+import com.nyangmeong.member.dto.AdminWithdrawnMemberSummary;
 import com.nyangmeong.member.dto.MemberNicknameUpdateRequest;
 import com.nyangmeong.member.dto.MemberResponse;
 import com.nyangmeong.member.dto.MemberUpdateRequest;
@@ -603,5 +609,87 @@ class MemberServiceTest {
 
         assertThatThrownBy(() -> service.recover(withdrawn(3), PHONE))
                 .satisfies(e -> assertCode(e, ErrorCode.PHONE_ALREADY_USED));
+    }
+
+    private AdminMemberSummary adminRow(String email) {
+        AdminMemberSummary row = new AdminMemberSummary();
+        row.setMbrSn(1L);
+        row.setAcntEmlEnc(crypto.encrypt(email));
+        return row;
+    }
+
+    @Test
+    void 관리자_목록은_이메일을_앞_3자만_남긴다() {
+        when(memberMapper.selectAdminList(any(), any(), any()))
+                .thenReturn(List.of(adminRow("choco@gmail.com"), adminRow("ab@naver.com")));
+
+        PageResponse<AdminMemberSummary> page = service.searchForAdmin(new AdminMemberSearchCond(),
+                new PageQuery(null, null, null));
+
+        assertThat(page.content().get(0).getMaskedAcntEml()).isEqualTo("cho***@gmail.com");
+        assertThat(page.content().get(1).getMaskedAcntEml()).isEqualTo("ab***@naver.com");
+    }
+
+    @Test
+    void 관리자_검색어에_골뱅이가_있으면_이메일_HMAC으로_찾는다() {
+        when(memberMapper.selectAdminList(any(), any(), any())).thenReturn(List.of());
+        AdminMemberSearchCond cond = new AdminMemberSearchCond();
+        cond.setQ(" Choco@Gmail.com ");
+
+        service.searchForAdmin(cond, new PageQuery(null, null, null));
+
+        verify(memberMapper).selectAdminList(cond, crypto.hmac("choco@gmail.com"), null);
+    }
+
+    @Test
+    void 관리자_검색어에_골뱅이가_없으면_닉네임으로_찾는다() {
+        when(memberMapper.selectAdminList(any(), any(), any())).thenReturn(List.of());
+        AdminMemberSearchCond cond = new AdminMemberSearchCond();
+        cond.setQ("초코");
+
+        service.searchForAdmin(cond, new PageQuery(null, null, null));
+
+        verify(memberMapper).selectAdminList(cond, null, "초코");
+    }
+
+    @Test
+    void 관리자_검색어가_비면_검색_조건을_넣지_않는다() {
+        when(memberMapper.selectAdminList(any(), any(), any())).thenReturn(List.of());
+        AdminMemberSearchCond cond = new AdminMemberSearchCond();
+        cond.setQ("  ");
+
+        service.searchForAdmin(cond, new PageQuery(null, null, null));
+
+        verify(memberMapper).selectAdminList(cond, null, null);
+    }
+
+    @Test
+    void 관리자_목록은_시작일이_종료일보다_늦으면_거절한다() {
+        AdminMemberSearchCond cond = new AdminMemberSearchCond();
+        cond.setBgngYmd(LocalDate.of(2026, 10, 30));
+        cond.setEndYmd(LocalDate.of(2026, 10, 1));
+
+        assertThatThrownBy(() -> service.searchForAdmin(cond, new PageQuery(null, null, null)))
+                .satisfies(e -> assertCode(e, ErrorCode.INVALID_INPUT_VALUE));
+        verify(memberMapper, never()).selectAdminList(any(), any(), any());
+    }
+
+    @Test
+    void 탈퇴_회원_목록은_설정한_보관일수로_조회하고_마스킹과_파기_예정일을_채운다() {
+        SystemSetting setting = new SystemSetting();
+        setting.setWhdwlMbrKpngDayCnt(45L);
+        when(systemSettingService.get()).thenReturn(setting);
+        AdminWithdrawnMemberSummary row = new AdminWithdrawnMemberSummary();
+        row.setMbrSn(1L);
+        row.setAcntEmlEnc(crypto.encrypt("leaving@gmail.com"));
+        row.setWhdwlDt(LocalDateTime.of(2026, 10, 25, 21, 10));
+        when(memberMapper.selectWithdrawnList(any(), anyInt())).thenReturn(List.of(row));
+
+        PageResponse<AdminWithdrawnMemberSummary> page = service
+                .searchWithdrawnForAdmin(new PageQuery(null, null, null));
+
+        verify(memberMapper).selectWithdrawnList(MemberStatus.WITHDRAWN.getCode(), 45);
+        assertThat(page.content().get(0).getMaskedAcntEml()).isEqualTo("lea***@gmail.com");
+        assertThat(page.content().get(0).getPurgeYmd()).isEqualTo(LocalDate.of(2026, 12, 9));
     }
 }

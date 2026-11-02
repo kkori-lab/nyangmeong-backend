@@ -34,6 +34,8 @@ public enum ErrorCode {
     ALREADY_PROCESSED(HttpStatus.CONFLICT, "이미 처리된 요청입니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."),
     EXTERNAL_API_ERROR(HttpStatus.BAD_GATEWAY, "외부 서비스 호출에 실패했습니다. 잠시 후 다시 시도해 주세요."),
+    BATCH_ALREADY_RUNNING(HttpStatus.CONFLICT, "이미 실행 중인 배치입니다."),
+    BATCH_NOT_AVAILABLE(HttpStatus.CONFLICT, "이 서버에서 실행할 수 없는 배치입니다."),
 
     /** member */
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "일치하는 회원정보를 찾을 수 없습니다."),
@@ -46,6 +48,7 @@ public enum ErrorCode {
     MEMBER_INACTIVE(HttpStatus.FORBIDDEN, "이용할 수 없는 계정입니다. 고객센터에 문의해 주세요."),
     /** 비밀번호가 맞은 탈퇴 회원 : 프론트가 재가입·복구를 안내 (MEMBER_INACTIVE 는 랜딩 이동이라 따로 둠) */
     MEMBER_WITHDRAWN(HttpStatus.FORBIDDEN, "탈퇴한 계정입니다. 재가입 또는 계정 복구를 진행해 주세요."),
+    MEMBER_NOT_SUSPENDABLE(HttpStatus.CONFLICT, "정지할 수 없는 회원이에요."),
     SNS_ONLY_MEMBER(HttpStatus.BAD_REQUEST, "SNS로 가입한 계정입니다. SNS 로그인을 이용해 주세요."),
     PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다."),
     EMAIL_ALREADY_REGISTERED(HttpStatus.CONFLICT, "이미 가입된 이메일입니다. 기존에 가입한 방법으로 로그인해 주세요."),

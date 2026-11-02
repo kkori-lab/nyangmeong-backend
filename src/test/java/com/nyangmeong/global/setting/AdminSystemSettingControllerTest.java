@@ -1,6 +1,10 @@
 package com.nyangmeong.global.setting;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -8,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -15,10 +20,12 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.nyangmeong.global.log.AdminTaskLogService;
 import com.nyangmeong.global.log.SensitiveDataMasker;
 import com.nyangmeong.global.security.AuthMemberMapper;
 import com.nyangmeong.global.security.SecurityConfig;
 import com.nyangmeong.global.security.WithMockLoginMember;
+import com.nyangmeong.global.security.domain.LoginMember;
 import com.nyangmeong.global.error.GlobalExceptionHandler;
 import com.nyangmeong.global.security.handler.ErrorResponseWriter;
 import com.nyangmeong.global.security.handler.RestAccessDeniedHandler;
@@ -114,6 +121,29 @@ class AdminSystemSettingControllerTest {
                 .contentType(MediaType.APPLICATION_JSON).content("{\"aiCmtryBscCn\":\"   \"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.data[0].field").value("aiCmtryBscCn"));
+    }
+
+    @Test
+    @WithMockLoginMember(id = 9L, mbrAuthrtCd = ADMIN)
+    void 탈퇴_회원_보관일수를_보내도_값은_바뀌지_않는다() throws Exception {
+        when(adminSystemSettingService.update(any(), any())).thenReturn(new SystemSetting());
+
+        mockMvc.perform(patch("/api/admin/settings").header("X-Requested-With", "XMLHttpRequest")
+                .contentType(MediaType.APPLICATION_JSON).content("{\"whdwlMbrKpngDayCnt\":31}"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<AdminSettingUpdateRequest> received = ArgumentCaptor.forClass(AdminSettingUpdateRequest.class);
+        verify(adminSystemSettingService).update(any(), received.capture());
+
+        SystemSettingMapper systemSettingMapper = mock(SystemSettingMapper.class);
+        SystemSetting current = new SystemSetting();
+        Long keepDayCnt = current.getWhdwlMbrKpngDayCnt();
+        when(systemSettingMapper.selectCurrent()).thenReturn(current);
+        new AdminSystemSettingService(new SystemSettingService(systemSettingMapper), systemSettingMapper,
+                mock(AdminTaskLogService.class)).update(new LoginMember(9L, ADMIN), received.getValue());
+
+        assertThat(current.getWhdwlMbrKpngDayCnt()).isEqualTo(keepDayCnt);
+        verify(systemSettingMapper, never()).upsert(any(), any());
     }
 
     @Test

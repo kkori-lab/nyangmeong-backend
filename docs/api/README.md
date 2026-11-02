@@ -9,7 +9,7 @@
 | 도메인 | 파일 | API | DTO | 담당(API 수) |
 | --- | --- | --- | --- | --- |
 | 공통(global) | [`global.md`](global.md) | 5 | 4 | LJS 4, KSJ 1 |
-| 회원(member) | [`member.md`](member.md) | 27 | 28 | YAY 24, SJM 2, LJS 1 |
+| 회원(member) | [`member.md`](member.md) | 28 | 30 | YAY 24, SJM 2, LJS 2 |
 | 반려동물(pet) | [`pet.md`](pet.md) | 25 | 19 | SJM 16, LJS 8, KSJ 1 |
 | 건강기록(health) | [`health.md`](health.md) | 50 | 49 | JAJ 50 |
 | 장소(place) | [`place.md`](place.md) | 4 | 4 | YAY 4 |

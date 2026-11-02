@@ -15,7 +15,6 @@ public record AdminSettingUpdateRequest(
         @Min(1) @Max(100) Long jntBrupMaxNope,
         @Min(1) @Max(3650) Long invtnVldDayCnt,
         @Min(1) @Max(100) Long lgnFailLmtNmtm,
-        @Min(1) @Max(3650) Long whdwlMbrKpngDayCnt,
         @Min(1) @Max(20) Long dshbdCareMaxExpsrCnt,
         @Min(1) @Max(100) Long pstImgMaxCnt,
         @Min(1) @Max(100) Long blindDclrAcmlCnt,

@@ -22,4 +22,101 @@
               , #{chgAftrCn}
               , #{cntnIpAddr})
     </insert>
+
+    <resultMap id="summaryMap" type="com.nyangmeong.global.log.AdminTaskLogSummary">
+        <id     column="MNGR_TASK_LOG_SN" property="mngrTaskLogSn" />
+        <result column="REG_DT"           property="regDt" />
+        <result column="MBR_SN"           property="mbrSn" />
+        <result column="MBR_NCNM"         property="mbrNcnm" />
+        <result column="TASK_TYPE_CD"     property="taskTypeCd" />
+        <result column="TRGT_TBL_NM"      property="trgtTblNm" />
+        <result column="TRGT_SN"          property="trgtSn" />
+        <result column="TASK_SMRY_CN"     property="taskSmryCn" />
+    </resultMap>
+
+    <resultMap id="adminTaskLogMap" type="com.nyangmeong.global.log.AdminTaskLog">
+        <id     column="MNGR_TASK_LOG_SN" property="mngrTaskLogSn" />
+        <result column="MBR_SN"           property="mbrSn" />
+        <result column="TASK_TYPE_CD"     property="taskTypeCd" />
+        <result column="TRGT_TBL_NM"      property="trgtTblNm" />
+        <result column="TRGT_SN"          property="trgtSn" />
+        <result column="TASK_SMRY_CN"     property="taskSmryCn" />
+        <result column="CHG_BFR_CN"       property="chgBfrCn" />
+        <result column="CHG_AFTR_CN"      property="chgAftrCn" />
+        <result column="CNTN_IP_ADDR"     property="cntnIpAddr" />
+        <result column="REG_DT"           property="regDt" />
+    </resultMap>
+
+    <resultMap id="adminSummaryMap" type="com.nyangmeong.global.log.AdminTaskLogAdminSummary">
+        <id     column="MBR_SN"   property="mbrSn" />
+        <result column="MBR_NCNM" property="mbrNcnm" />
+    </resultMap>
+
+    <select id="selectList" parameterType="com.nyangmeong.global.log.AdminTaskLogSearchCond" resultMap="summaryMap">
+        /* 관리자 작업 로그 목록 조회 */
+        SELECT L.MNGR_TASK_LOG_SN
+             , L.REG_DT
+             , L.MBR_SN
+             , M.MBR_NCNM
+             , L.TASK_TYPE_CD
+             , L.TRGT_TBL_NM
+             , L.TRGT_SN
+             , L.TASK_SMRY_CN
+          FROM MNGR_TASK_LOG L
+         INNER JOIN MBR M
+            ON M.MBR_SN = L.MBR_SN
+        <where>
+            <if test="mbrSn != null">
+                AND L.MBR_SN = #{mbrSn}
+            </if>
+            <if test="taskTypeCd != null and taskTypeCd != ''">
+                AND L.TASK_TYPE_CD = #{taskTypeCd}
+            </if>
+            <if test="trgtTblNm != null and trgtTblNm != ''">
+                AND L.TRGT_TBL_NM = #{trgtTblNm}
+            </if>
+            <if test="bgngYmd != null">
+                AND L.REG_DT &gt;= #{bgngYmd}
+            </if>
+            <if test="endYmd != null">
+                AND L.REG_DT &lt; DATE_ADD(#{endYmd}, INTERVAL 1 DAY)
+            </if>
+        </where>
+         ORDER BY L.REG_DT DESC
+                , L.MNGR_TASK_LOG_SN DESC
+    </select>
+
+    <select id="selectById" resultMap="adminTaskLogMap">
+        /* 관리자 작업 로그 단건 조회 */
+        SELECT MNGR_TASK_LOG_SN
+             , MBR_SN
+             , TASK_TYPE_CD
+             , TRGT_TBL_NM
+             , TRGT_SN
+             , TASK_SMRY_CN
+             , CHG_BFR_CN
+             , CHG_AFTR_CN
+             , CNTN_IP_ADDR
+             , REG_DT
+          FROM MNGR_TASK_LOG
+         WHERE MNGR_TASK_LOG_SN = #{mngrTaskLogSn}
+    </select>
+
+    <select id="selectAdmins" resultMap="adminSummaryMap">
+        /* 로그에 나온 관리자 목록 조회 */
+        SELECT M.MBR_SN
+             , M.MBR_NCNM
+          FROM MBR M
+         WHERE EXISTS (SELECT 1
+                         FROM MNGR_TASK_LOG L
+                        WHERE L.MBR_SN = M.MBR_SN)
+         ORDER BY M.MBR_NCNM
+    </select>
+
+    <select id="selectNcnm" resultType="string">
+        /* 관리자 닉네임 조회 */
+        SELECT MBR_NCNM
+          FROM MBR
+         WHERE MBR_SN = #{mbrSn}
+    </select>
 </mapper>

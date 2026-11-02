@@ -9,6 +9,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
@@ -28,6 +29,9 @@ import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.security.captcha.CaptchaGenerator;
 import com.nyangmeong.global.security.crypto.CryptoProperties;
 import com.nyangmeong.global.security.crypto.FieldCryptoService;
+import com.nyangmeong.global.log.AdminTaskLogService;
+import com.nyangmeong.global.log.AdminTaskType;
+import com.nyangmeong.global.security.domain.MemberAuthority;
 import com.nyangmeong.global.security.domain.MemberStatus;
 import com.nyangmeong.global.setting.SystemSetting;
 import com.nyangmeong.global.setting.SystemSettingService;
@@ -49,8 +53,9 @@ class LoginServiceTest {
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(4);
     private final FieldCryptoService fieldCryptoService = cryptoService();
     private final CaptchaGenerator captchaGenerator = new CaptchaGenerator();
+    private final AdminTaskLogService adminTaskLogService = mock(AdminTaskLogService.class);
     private final LoginService service = new LoginService(loginAttemptMapper, memberService, systemSettingService,
-            fieldCryptoService, passwordEncoder, captchaGenerator);
+            fieldCryptoService, passwordEncoder, captchaGenerator, adminTaskLogService);
 
     private final String idHmac = fieldCryptoService.emailHmac(EMAIL);
 
@@ -276,6 +281,40 @@ class LoginServiceTest {
         when(memberService.findForLogin(idHmac)).thenReturn(member(MemberStatus.NORMAL.getCode(), "Y", null));
 
         assertThat(service.login(new LoginRequest(EMAIL, PASSWORD, null)).response().ncnmReguide()).isFalse();
+    }
+
+    @Test
+    void 관리자_로그인은_감사_로그에_남긴다() {
+        Member admin = member(MemberStatus.NORMAL.getCode(), "Y", LocalDateTime.of(2026, 10, 1, 9, 0));
+        admin.setMbrAuthrtCd(MemberAuthority.ADMIN.getCode());
+        when(memberService.findForLogin(idHmac)).thenReturn(admin);
+
+        service.login(new LoginRequest(EMAIL, PASSWORD, null));
+
+        verify(adminTaskLogService).record(7L, AdminTaskType.LOGIN, "MBR", 7L, "관리자 로그인", null, null);
+    }
+
+    @Test
+    void 일반_회원_로그인은_감사_로그에_남기지_않는다() {
+        Member user = member(MemberStatus.NORMAL.getCode(), "Y", LocalDateTime.of(2026, 10, 1, 9, 0));
+        user.setMbrAuthrtCd(MemberAuthority.USER.getCode());
+        when(memberService.findForLogin(idHmac)).thenReturn(user);
+
+        service.login(new LoginRequest(EMAIL, PASSWORD, null));
+
+        verifyNoInteractions(adminTaskLogService);
+    }
+
+    @Test
+    void 비밀번호가_틀린_관리자_로그인은_감사_로그에_남기지_않는다() {
+        Member admin = member(MemberStatus.NORMAL.getCode(), "Y", LocalDateTime.of(2026, 10, 1, 9, 0));
+        admin.setMbrAuthrtCd(MemberAuthority.ADMIN.getCode());
+        when(memberService.findForLogin(idHmac)).thenReturn(admin);
+        givenLimit(5);
+
+        service.login(new LoginRequest(EMAIL, "wrong-password", null));
+
+        verifyNoInteractions(adminTaskLogService);
     }
 
     @Test

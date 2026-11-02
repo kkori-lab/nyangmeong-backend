@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nyangmeong.global.external.ExternalApiCallLogMapper">
+
+    <insert id="insert" parameterType="com.nyangmeong.global.external.ExternalApiCallLog"
+            useGeneratedKeys="true" keyProperty="extlApiCallLogSn">
+        /* 외부 API 호출 로그 추가 */
+        INSERT INTO EXTL_API_CALL_LOG (EXTL_API_SE_CD
+                                     , CALL_RSLT_CD
+                                     , MBR_SN
+                                     , CALL_DT
+                                     , RSPNS_MS
+                                     , HTTP_STTS_VL
+                                     , INPT_TKN_CNT
+                                     , OTPT_TKN_CNT
+                                     , FAIL_RSN)
+        VALUES (#{extlApiSeCd}
+              , #{callRsltCd}
+              , #{mbrSn}
+              , COALESCE(#{callDt}, NOW())
+              , #{rspnsMs}
+              , #{httpSttsVl}
+              , #{inptTknCnt}
+              , #{otptTknCnt}
+              , #{failRsn})
+    </insert>
+
+    <resultMap id="usageMap" type="com.nyangmeong.global.external.ExternalApiUsageSummary">
+        <id     column="EXTL_API_SE_CD" property="extlApiSeCd" />
+        <result column="CALL_CNT"       property="callCnt" />
+        <result column="FAIL_CNT"       property="failCnt" />
+        <result column="AVG_RSPNS_MS"   property="avgRspnsMs" />
+    </resultMap>
+
+    <resultMap id="dailyUsageMap" type="com.nyangmeong.global.external.ExternalApiDailyUsage">
+        <result column="CALL_YMD"       property="callYmd" />
+        <result column="EXTL_API_SE_CD" property="extlApiSeCd" />
+        <result column="CALL_CNT"       property="callCnt" />
+        <result column="FAIL_CNT"       property="failCnt" />
+        <result column="AVG_RSPNS_MS"   property="avgRspnsMs" />
+    </resultMap>
+
+    <resultMap id="dailyTokenMap" type="com.nyangmeong.global.external.ExternalApiDailyToken">
+        <id     column="CALL_YMD"     property="callYmd" />
+        <result column="INPT_TKN_CNT" property="inptTknCnt" />
+        <result column="OTPT_TKN_CNT" property="otptTknCnt" />
+    </resultMap>
+
+    <resultMap id="failureMap" type="com.nyangmeong.global.external.ExternalApiFailureSummary">
+        <id     column="EXTL_API_CALL_LOG_SN" property="extlApiCallLogSn" />
+        <result column="CALL_DT"              property="callDt" />
+        <result column="EXTL_API_SE_CD"       property="extlApiSeCd" />
+        <result column="CALL_RSLT_CD"         property="callRsltCd" />
+        <result column="FAIL_RSN"             property="failRsn" />
+    </resultMap>
+
+    <sql id="searchWhere">
+           AND CALL_DT &gt;= #{cond.bgngYmd}
+           AND CALL_DT &lt; DATE_ADD(#{cond.endYmd}, INTERVAL 1 DAY)
+        <if test="cond.extlApiSeCd != null">
+           AND EXTL_API_SE_CD = #{cond.extlApiSeCd}
+        </if>
+    </sql>
+
+    <select id="selectUsage" resultMap="usageMap">
+        /* 종류별 사용량 조회 */
+        SELECT EXTL_API_SE_CD
+             , COUNT(*) AS CALL_CNT
+             , SUM(CASE WHEN CALL_RSLT_CD = #{successCd} THEN 0 ELSE 1 END) AS FAIL_CNT
+             , ROUND(AVG(RSPNS_MS)) AS AVG_RSPNS_MS
+          FROM EXTL_API_CALL_LOG
+         WHERE 1 = 1
+        <include refid="searchWhere" />
+         GROUP BY EXTL_API_SE_CD
+    </select>
+
+    <select id="selectDailyUsage" resultMap="dailyUsageMap">
+        /* 일별 사용량 조회 */
+        SELECT DATE(CALL_DT) AS CALL_YMD
+             , EXTL_API_SE_CD
+             , COUNT(*) AS CALL_CNT
+             , SUM(CASE WHEN CALL_RSLT_CD = #{successCd} THEN 0 ELSE 1 END) AS FAIL_CNT
+             , ROUND(AVG(RSPNS_MS)) AS AVG_RSPNS_MS
+          FROM EXTL_API_CALL_LOG
+         WHERE 1 = 1
+        <include refid="searchWhere" />
+         GROUP BY DATE(CALL_DT), EXTL_API_SE_CD
+         ORDER BY CALL_YMD DESC, EXTL_API_SE_CD
+    </select>
+
+    <select id="selectDailyTokens" resultMap="dailyTokenMap">
+        /* AI 일별 토큰 조회 */
+        SELECT DATE(CALL_DT) AS CALL_YMD
+             , COALESCE(SUM(INPT_TKN_CNT), 0) AS INPT_TKN_CNT
+             , COALESCE(SUM(OTPT_TKN_CNT), 0) AS OTPT_TKN_CNT
+          FROM EXTL_API_CALL_LOG
+         WHERE EXTL_API_SE_CD IN
+        <foreach collection="aiCodes" item="aiCode" open="(" separator="," close=")">
+               #{aiCode}
+        </foreach>
+        <include refid="searchWhere" />
+         GROUP BY DATE(CALL_DT)
+         ORDER BY CALL_YMD DESC
+    </select>
+
+    <select id="selectFailures" resultMap="failureMap">
+        /* 실패 목록 조회 */
+        SELECT EXTL_API_CALL_LOG_SN
+             , CALL_DT
+             , EXTL_API_SE_CD
+             , CALL_RSLT_CD
+             , FAIL_RSN
+          FROM EXTL_API_CALL_LOG
+         WHERE CALL_RSLT_CD &lt;&gt; #{successCd}
+        <include refid="searchWhere" />
+         ORDER BY CALL_DT DESC, EXTL_API_CALL_LOG_SN DESC
+    </select>
+</mapper>

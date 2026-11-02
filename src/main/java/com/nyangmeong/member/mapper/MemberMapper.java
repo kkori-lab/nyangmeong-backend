@@ -1,11 +1,16 @@
 package com.nyangmeong.member.mapper;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import com.nyangmeong.member.domain.Member;
+import com.nyangmeong.member.dto.AdminMemberSearchCond;
+import com.nyangmeong.member.dto.AdminMemberSummary;
+import com.nyangmeong.member.dto.AdminSuspensionSummary;
+import com.nyangmeong.member.dto.AdminWithdrawnMemberSummary;
 
 /**
  * [회원 Mapper]
@@ -50,6 +55,13 @@ public interface MemberMapper {
             @Param("aftrSttsCd") String aftrSttsCd, @Param("chgRsn") String chgRsn);
 
     /**
+     * 처리 관리자가 있는 회원 상태 이력 등록
+     */
+    int insertProcessedStatusHistory(@Param("mbrSn") Long mbrSn, @Param("prcsMbrSn") Long prcsMbrSn,
+            @Param("bfrSttsCd") String bfrSttsCd, @Param("aftrSttsCd") String aftrSttsCd,
+            @Param("chgRsn") String chgRsn);
+
+    /**
      * 닉네임 저장과 설정 완료 표시
      */
     int updateNickname(@Param("mbrSn") Long mbrSn, @Param("mbrNcnm") String mbrNcnm,
@@ -90,5 +102,43 @@ public interface MemberMapper {
      * 탈퇴 보관일수가 지난 회원 번호 목록 조회
      */
     List<Long> selectExpiredWithdrawnMbrSns(@Param("mbrSttsCd") String mbrSttsCd,
+            @Param("keepDayCnt") int keepDayCnt);
+
+    /**
+     * 관리자 회원 목록 조회
+     */
+    List<AdminMemberSummary> selectAdminList(@Param("cond") AdminMemberSearchCond cond,
+            @Param("acntEmlHmac") String acntEmlHmac, @Param("mbrNcnm") String mbrNcnm);
+
+    /**
+     * 정상 → 정지 변경, 정상 회원만 바뀐다 (영구 정지는 suspnEndDt 가 null)
+     */
+    int updateSuspend(@Param("mbrSn") Long mbrSn, @Param("suspendedSttsCd") String suspendedSttsCd,
+            @Param("normalSttsCd") String normalSttsCd, @Param("suspnEndDt") LocalDateTime suspnEndDt,
+            @Param("actorId") String actorId);
+
+    /**
+     * 정지 → 정상 변경, 정지 회원만 바뀐다 (expiredAt 이 있으면 그 시각까지 끝난 정지만)
+     */
+    int updateRelease(@Param("mbrSn") Long mbrSn, @Param("normalSttsCd") String normalSttsCd,
+            @Param("suspendedSttsCd") String suspendedSttsCd, @Param("expiredAt") LocalDateTime expiredAt,
+            @Param("actorId") String actorId);
+
+    /**
+     * 정지 기간이 끝난 회원 번호 목록 조회
+     */
+    List<Long> selectExpiredSuspendedMbrSns(@Param("suspendedSttsCd") String suspendedSttsCd,
+            @Param("expiredAt") LocalDateTime expiredAt);
+
+    /**
+     * 정지 회원 목록 조회 (permanent 가 null 이면 종류 전체)
+     */
+    List<AdminSuspensionSummary> selectSuspensionList(@Param("suspendedSttsCd") String suspendedSttsCd,
+            @Param("mbrNcnm") String mbrNcnm, @Param("permanent") Boolean permanent);
+
+    /**
+     * 보관 기간 안의 탈퇴 회원 목록 조회
+     */
+    List<AdminWithdrawnMemberSummary> selectWithdrawnList(@Param("withdrawnSttsCd") String withdrawnSttsCd,
             @Param("keepDayCnt") int keepDayCnt);
 }
