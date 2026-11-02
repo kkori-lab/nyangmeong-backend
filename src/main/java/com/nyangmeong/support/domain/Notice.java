@@ -16,6 +16,10 @@ public class Notice {
     private Integer inqCnt;
     private String upendFixYn;
     private String useYn;
+    private LocalDateTime notiSndngDt;
+    private Integer notiTrgtCnt;
     private LocalDateTime regDt;
     private LocalDateTime mdfcnDt;
+    private String rgtrId;
+    private String mdfrId;
 }

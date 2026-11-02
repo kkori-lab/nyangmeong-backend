@@ -192,4 +192,9 @@ public interface MemberMapper {
     int updateAuthority(@Param("mbrSn") Long mbrSn, @Param("afterAuthrtCd") String afterAuthrtCd,
             @Param("beforeAuthrtCd") String beforeAuthrtCd, @Param("mbrSttsCd") String mbrSttsCd,
             @Param("actorId") String actorId);
+
+    /**
+     * 상태별 회원 수 조회
+     */
+    int countByStatus(String mbrSttsCd);
 }

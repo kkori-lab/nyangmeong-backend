@@ -1,7 +1,7 @@
 -- =====================================================================
 -- 냥멍케어 MySQL DDL v0.12  |  MySQL 8.0.16+ / InnoDB / utf8mb4_0900_ai_ci
 -- 대상: DBeaver (전체 선택 후 스크립트 실행 Alt+X, 또는 스키마 우클릭 → Tools → Execute script)
--- 원천: DDL v0.11(db/archive/v0.11/) 위에 아래 "v0.11 → v0.12 변경"을 더한 것 (92 테이블 / 975 컬럼 / 관계 FK 151)
+-- 원천: DDL v0.11(db/archive/v0.11/) 위에 아래 "v0.11 → v0.12 변경"을 더한 것 (92 테이블 / 977 컬럼 / 관계 FK 151)
 --       UK·INDEX·CHECK·생성열·공통코드 FK 는 v0.8 그대로 유지
 -- 구성: [1] DROP  [2] CREATE(PK·UK·INDEX·CHECK·생성열)  [3] 관계 FK 151  [4] 공통코드 FK
 -- 주의: 전체 DROP 후 재생성합니다. 기존 데이터가 있으면 먼저 백업하세요. 공용 DB에는 실행하지 않습니다.
@@ -46,6 +46,9 @@
 --   UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='crossbody-bag' WHERE `ITEM_NM`='크로스백';
 --   UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='lunch-bag' WHERE `ITEM_NM`='도시락 가방';
 --   UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='flower-basket' WHERE `ITEM_NM`='꽃바구니';
+-- v0.12 (2) 공지 알림 발송 시각·대상 수 (2026-11-02, LJS, 근거: 관리자_기능명세서 FN-ADM-040-01·03, 결정 15). 발송 시각이 NULL이면 미발송
+--   SET NAMES utf8mb4;
+--   ALTER TABLE `NTC_MTTR` ADD COLUMN `NOTI_SNDNG_DT` datetime NULL COMMENT '알림발송일시' AFTER `USE_YN`, ADD COLUMN `NOTI_TRGT_CNT` decimal(10,0) NULL COMMENT '알림대상수' AFTER `NOTI_SNDNG_DT`;
 -- =====================================================================
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -1400,6 +1403,8 @@ CREATE TABLE `NTC_MTTR` (
   `INQ_CNT` decimal(10,0) NOT NULL DEFAULT '0' COMMENT '조회수',
   `UPEND_FIX_YN` char(1) NOT NULL DEFAULT 'N' COMMENT '상단고정여부',
   `USE_YN` char(1) NOT NULL DEFAULT 'Y' COMMENT '사용여부',
+  `NOTI_SNDNG_DT` datetime NULL COMMENT '알림발송일시',
+  `NOTI_TRGT_CNT` decimal(10,0) NULL COMMENT '알림대상수',
   `REG_DT` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
   `MDFCN_DT` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
   `RGTR_ID` varchar(20) NOT NULL DEFAULT 'SYSTEM' COMMENT '등록자ID',
