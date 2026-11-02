@@ -29,6 +29,7 @@ import com.nyangmeong.health.dto.InspectionValueCreateRequest;
 import com.nyangmeong.health.dto.InspectionValueCreateRequest.InspectionValueItemRequest;
 import com.nyangmeong.health.dto.InspectionValueResponse;
 import com.nyangmeong.health.dto.InspectionValueUpdateRequest;
+import com.nyangmeong.health.dto.InspectionValueUpdateRequest.RefRange;
 import com.nyangmeong.health.mapper.InspectionValueMapper;
 
 /**
@@ -212,7 +213,7 @@ class InspectionValueServiceTest {
         });
 
         InspectionValueResponse res = service.update(MBR, PET, crea.getInspNvlSn(),
-                new InspectionValueUpdateRequest(new BigDecimal("2.0"), null, null, null, "재검"));
+                new InspectionValueUpdateRequest(new BigDecimal("2.0"), null, null, "재검"));
 
         assertThat(res.inspArtclCd()).isEqualTo(CREA);
         assertThat(res.rsltNvl()).isEqualByComparingTo("2.0");
@@ -228,10 +229,10 @@ class InspectionValueServiceTest {
         active.put(key(wbc), wbc);
 
         assertThatThrownBy(() -> service.update(MBR, PET, wbc.getInspNvlSn(),
-                new InspectionValueUpdateRequest(null, null, new BigDecimal("1"), null, null)))
+                new InspectionValueUpdateRequest(null, null, range("1", null), null)))
                 .extracting("errorCode").isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
         assertThatThrownBy(() -> service.update(MBR, PET, wbc.getInspNvlSn(),
-                new InspectionValueUpdateRequest(null, "", null, null, null)))
+                new InspectionValueUpdateRequest(null, "", null, null)))
                 .extracting("errorCode").isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
         verify(mapper, never()).updateValue(any(), anyString());
     }
@@ -240,13 +241,102 @@ class InspectionValueServiceTest {
     void 다른_반려동물이나_삭제된_수치는_수정하지_못한다() {
         InspectionValue wbc = stored(WBC, "");
         active.put(key(wbc), wbc);
-        InspectionValueUpdateRequest req = new InspectionValueUpdateRequest(BigDecimal.ONE, null, null, null, null);
+        InspectionValueUpdateRequest req = new InspectionValueUpdateRequest(BigDecimal.ONE, null, null, null);
 
         assertThatThrownBy(() -> service.update(MBR, OTHER_PET, wbc.getInspNvlSn(), req))
                 .extracting("errorCode").isEqualTo(ErrorCode.INSPECTION_VALUE_NOT_FOUND);
         assertThatThrownBy(() -> service.update(MBR, PET, 9999L, req))
                 .extracting("errorCode").isEqualTo(ErrorCode.INSPECTION_VALUE_NOT_FOUND);
         verify(mapper, never()).updateValue(any(), anyString());
+    }
+
+    @Test
+    void 수정에서_참고범위를_안_보내면_그대로다() {
+        InspectionValue value = storedWithRange();
+
+        InspectionValueResponse res = service.update(MBR, PET, value.getInspNvlSn(),
+                new InspectionValueUpdateRequest(null, null, null, "x"));
+
+        assertThat(res.refLlmtNvl()).isEqualByComparingTo("10");
+        assertThat(res.refUplmtNvl()).isEqualByComparingTo("100");
+    }
+
+    @Test
+    void 수정에서_참고범위를_보내면_두_값으로_덮어쓴다() {
+        InspectionValue value = storedWithRange();
+
+        InspectionValueResponse res = service.update(MBR, PET, value.getInspNvlSn(),
+                new InspectionValueUpdateRequest(null, null, range("5", "50"), null));
+
+        assertThat(res.refLlmtNvl()).isEqualByComparingTo("5");
+        assertThat(res.refUplmtNvl()).isEqualByComparingTo("50");
+    }
+
+    @Test
+    void 수정에서_참고범위를_둘_다_null로_보내면_비운다() {
+        InspectionValue value = storedWithRange();
+
+        InspectionValueResponse res = service.update(MBR, PET, value.getInspNvlSn(),
+                new InspectionValueUpdateRequest(null, null, range(null, null), null));
+
+        assertThat(res.refLlmtNvl()).isNull();
+        assertThat(res.refUplmtNvl()).isNull();
+        verify(mapper).updateValue(any(), eq(String.valueOf(MBR)));
+    }
+
+    @Test
+    void 수정에서_참고범위_하한과_상한이_같으면_저장한다() {
+        InspectionValue value = storedWithRange();
+
+        InspectionValueResponse res = service.update(MBR, PET, value.getInspNvlSn(),
+                new InspectionValueUpdateRequest(null, null, range("10", "10"), null));
+
+        assertThat(res.refLlmtNvl()).isEqualByComparingTo("10");
+        assertThat(res.refUplmtNvl()).isEqualByComparingTo("10");
+    }
+
+    @Test
+    void 수정에서_참고범위가_한쪽만_있거나_하한이_상한보다_크면_거절하고_그대로다() {
+        InspectionValue value = storedWithRange();
+
+        for (RefRange range : List.of(range(null, "10"), range("3", null), range("50", "10"))) {
+            assertThatThrownBy(() -> service.update(MBR, PET, value.getInspNvlSn(),
+                    new InspectionValueUpdateRequest(null, null, range, null)))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode").isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        verify(mapper, never()).updateValue(any(), anyString());
+        assertThat(active.get(key(value)).getRefLlmtNvl()).isEqualByComparingTo("10");
+        assertThat(active.get(key(value)).getRefUplmtNvl()).isEqualByComparingTo("100");
+    }
+
+    @Test
+    void 등록에서_하한이_상한보다_크면_거절하고_같으면_저장한다() {
+        assertInvalid(item(WBC, null, "1", "u", "50", "10"));
+        verify(mapper, never()).insertValue(any());
+
+        List<InspectionValueResponse> saved = service.create(MBR, PET, request(item(WBC, null, "1", "u", "10", "10")));
+
+        assertThat(saved).hasSize(1);
+        assertThat(saved.get(0).refLlmtNvl()).isEqualByComparingTo("10");
+    }
+
+    /** 참고범위 10~100이 저장된 행 (updateValue는 메모리 저장소에 반영) */
+    private InspectionValue storedWithRange() {
+        InspectionValue value = stored(WBC, "");
+        value.setRefLlmtNvl(new BigDecimal("10"));
+        value.setRefUplmtNvl(new BigDecimal("100"));
+        active.put(key(value), value);
+        when(mapper.updateValue(any(), anyString())).thenAnswer(call -> {
+            InspectionValue updated = call.getArgument(0);
+            active.put(key(updated), copy(updated));
+            return 1;
+        });
+        return value;
+    }
+
+    private RefRange range(String llmt, String uplmt) {
+        return new RefRange(llmt == null ? null : new BigDecimal(llmt), uplmt == null ? null : new BigDecimal(uplmt));
     }
 
     private void assertInvalid(InspectionValueItemRequest item) {
