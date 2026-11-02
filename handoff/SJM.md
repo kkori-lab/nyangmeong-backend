@@ -1,14 +1,14 @@
 # SJM 핸드오프
 
 ## 지금 하는 것
-SCR-MYP-003 추가-3 `PATCH /pets/{petSn}` 목표체중 비우기(`goalBdwgReset`) — `./gradlew build -q` 통과(PetServiceTest 3건 추가), 사람 확인 통과(Postman Runner 16건, mbrSn 6·petSn 20, 되돌리기 포함), 프론트 화면 확인 통과. PR #86 병합. 앞선 SCR-MYP-005 추가-1·2는 끝남(#74·#84 병합)
+SCR-MYP-002 반려동물 프로필 목록 · 목록 응답에 중성화 여부·정상 체중 범위 추가 — 기획 (시작 2026-11-02 10:38)
 
-### 추가 요청
-| 번호 | 바꿀 파일 | 완료 조건 | 요청 |
-| --- | --- | --- | --- |
-| 추가-1 | `db/migration/20261030_01_add_del_yn_for_pet_delete.sql`(새 파일), `pet/domain/PetDeletedEvent`(새 파일), `PetService.deletePet`, `CareMissionMapper`·`PixelCharacterMapper`·`CaregiverInvitationMapper`(Java·XML), `docs/convention/service.md`, `docs/api/issues.md` 마이페이지 3번, 관련 테스트 | 명령: `./gradlew build -q`(PetServiceTest에 삭제 시 일별 미션·캐릭터 생성 작업·캐릭터 사진·초대 대상 DEL_YN 처리와 `PetDeletedEvent` 발행 확인). 화면: 마이그레이션 실행 뒤 주양육자 토큰 `DELETE /api/pets/{petSn}` → 200, DB에서 그 반려동물의 DAY_MSN·CHAR_CRT_JOB·CHAR_PHOTO·INVTN_TRGT_PET이 `DEL_YN='Y'`, EXPND는 그대로 | 요청 2026-10-30 05:54 "반려동물 삭제 시 가계부만 남기고 나머지는 한 트랜잭션에서 soft delete. DEL_YN 없는 테이블(CKUP_RCD·DAY_MSN·CHAR_CRT_JOB·CHAR_PHOTO·INVTN_TRGT_PET)에 컬럼 추가는 migration으로, pet 쪽 이벤트 발행까지. health·ai 리스너는 JAJ·LJS" |
-| 추가-2 | `pet/dto/CaregiverInvitationConflictResponse`(→ linkedPets·pendingPets 목록), 새 `CaregiverInvitationLinkedPet`·`CaregiverInvitationPendingPet`, `CaregiverInvitationService.createInvitation`, `CaregiverInvitationServiceTest`·`CaregiverInvitationControllerTest`, `docs/api/pet.md` | 명령: `./gradlew build -q`(여러 마리 충돌을 모두 모음, 섞이면 CAREGIVER_ALREADY_LINKED, 충돌 시 초대 미생성, 빈 목록은 []). 화면: 409 `data`가 `{linkedPets:[{petSn,petNm}], pendingPets:[{petSn,petNm,invtnExpryDt}]}` | 요청 2026-10-31 10:42 "POST /caregiver-invitations 409가 첫 충돌 한 마리만 줌. 선택한 동물을 전부 검사해 이미 가족·대기 초대를 목록으로 모아 주기, code는 기존 두 개, 충돌 있으면 초대 안 만듦, 다른 동작은 건드리지 않기" |
-| 추가-3 | `pet/dto/PetUpdateRequest`(`goalBdwgReset` 추가), `PetService.updatePet`, `PetServiceTest`, `docs/api/pet.md`, `docs/api/issues.md` 마이페이지 4번 | 명령: `./gradlew build -q`(reset=true면 GOAL_BDWG null 저장, reset과 goalBdwg 함께면 400 BAD_REQUEST·저장 안 함, 둘 다 없으면 그대로). 화면: `PATCH /api/pets/{petSn}` `{"goalBdwgReset":true}` → 200, 응답·DB GOAL_BDWG null | 요청 2026-10-31 "PATCH /pets/{petSn}에서 목표체중을 비울 수 있게. goalBdwgReset(Boolean), true면 null 저장, goalBdwg와 같이 보내면 400(profilePhotoReset과 같은 방식), 둘 다 없으면 변경 안 함, 다른 동작은 건드리지 않기" |
+근거: 마이페이지_기능명세서_v0.5_20261101 FN-MYP-002-02 "나이 · 품종 · 성별(중성화)", "체중(정상범위 함께 표시)". 마이페이지_화면설계서_v0.6_20261025 SCR-MYP-002 같은 문구. 명세에 새 기능 ID는 없다.
+
+- FN-MYP-002-02 반려동물 슬라이드(목록 응답 보강): `pet/dto/PetSummary`에 `nutrYn`(boolean, `PetResponse`와 같게)·`minBdwg`·`maxBdwg`(BigDecimal) 추가, `mapper/pet/PetMapper.xml` `petSummaryResultMap`·`selectList`에 `P.NUTR_YN`(`RPRS_PET_YN`처럼 'Y'→TRUE, 그 밖→FALSE)·`P.MIN_BDWG`·`P.MAX_BDWG` 추가, `docs/api/pet.md` PetSummary 표에 세 필드 추가(근거 PET.NUTR_YN·MIN_BDWG·MAX_BDWG, MYP-002-02, 세 컬럼 모두 NOT NULL이라 필수 Y), `PetServiceTest`·`PetControllerTest` 목록 테스트에 세 필드 확인 추가. API: `GET /pets`(SJM, 응답 `List<PetSummary>`, 기존 필드는 그대로). 완료 조건 — 명령: `./gradlew build -q`(PetControllerTest가 `GET /api/pets` 응답 JSON에 `nutrYn`·`minBdwg`·`maxBdwg`를 확인). 화면: Postman `GET /api/pets` → 200, 각 항목에 `nutrYn`(true/false)·`minBdwg`·`maxBdwg`가 있고 값이 같은 동물의 `GET /api/pets/{petSn}`과 같다. 공동양육 동물에도 나온다. 프론트 연결: SCR-MYP-002 슬라이드의 "(중성화 완료)"·"정상 a~bkg"를 상세 조회 대신 목록 값으로 채우기 (프론트 저장소에서 /start)
+- 다른 쪽 영향: `PetSummary`를 쓰는 `ai/AiRegisterContextService`·`expense/ExpenseQueryService`·`CaregiverInvitationService`는 필드 추가만이라 고치지 않는다(컴파일·기존 테스트로 확인)
+
+새 의존성: 없음
 
 ## 다음에 할 것
 - 사람 확인(SCR-MYP-003 추가-3): 통과 2026-10-31. Postman Runner 16건 통과·실패 0(mbrSn 6, petSn 20). ① goalBdwg 4.5 200 ② goalBdwg+reset 400 BAD_REQUEST ③ 4.5 그대로 ④ reset=false 4.5 그대로 ⑤ reset=true null, 원래 값으로 되돌림
