@@ -82,4 +82,15 @@ class NewsMapperSqlTest {
         assertThat(sql).contains("K.DEL_YN = 'N'");
         assertThat(sql).contains("ORDER BY K.SORT_SEQ ASC, K.KWRD_DICT_SN ASC");
     }
+
+    @Test
+    void 제외_키워드는_뉴스_제외_용도의_삭제되지_않은_행만_읽는다() {
+        String sql = configuration.getMappedStatement("com.nyangmeong.community.mapper.NewsMapper.selectExcludeKeywords")
+                .getBoundSql(new HashMap<>()).getSql().replaceAll("\\s+", " ");
+
+        assertThat(sql).contains("K.DICT_USG_CD = 'AIMC0040'");
+        assertThat(sql).contains("K.USE_YN = 'Y'");
+        assertThat(sql).contains("K.DEL_YN = 'N'");
+        assertThat(sql).contains("ORDER BY K.SORT_SEQ ASC, K.KWRD_DICT_SN ASC");
+    }
 }

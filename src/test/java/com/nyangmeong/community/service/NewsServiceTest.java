@@ -292,6 +292,37 @@ class NewsServiceTest {
     }
 
     @Test
+    void 제외_키워드가_제목에_있으면_미리보기_없이_건너뛴다() {
+        when(newsMapper.selectExcludeKeywords()).thenReturn(List.of("게임,H5,웹툰", " 웹소설 "));
+        when(feedClient.fetchFeed(any(), any())).thenReturn(List.of(
+                item("넵튠 총잡이 고양이 H5 게임 출시", "https://news.google.com/rss/articles/a"),
+                item("웹소설 속 강아지 이야기", "https://news.google.com/rss/articles/b")));
+
+        assertThat(service.collect(TODAY)).isZero();
+
+        verify(feedClient, never()).fetchPreview(anyString());
+        verify(newsMapper, never()).insert(any(News.class));
+    }
+
+    @Test
+    void 제외_키워드는_영문_대소문자를_무시한다() {
+        assertThat(NewsService.findExcludeKeyword("고양이 h5 게임", List.of("H5"))).isEqualTo("H5");
+        assertThat(NewsService.findExcludeKeyword("고양이 H5 소식", List.of("h5"))).isEqualTo("h5");
+    }
+
+    @Test
+    void 제외_키워드가_없으면_그대로_저장한다() {
+        when(newsMapper.selectExcludeKeywords()).thenReturn(List.of("게임,H5,웹툰,웹소설"));
+        when(feedClient.fetchFeed(any(), any())).thenReturn(List.of(
+                item("노령견 식단 관리 요령 안내", "https://news.google.com/rss/articles/a"),
+                item("고양이 예방접종 일정 안내", "https://news.google.com/rss/articles/b")));
+        when(feedClient.fetchPreview(anyString())).thenReturn(NewsPreview.empty());
+
+        assertThat(service.collect(TODAY)).isEqualTo(2);
+        assertThat(NewsService.findExcludeKeyword("노령견 식단", List.of())).isNull();
+    }
+
+    @Test
     void 다른_제목과_요약이_같으면_요약을_제목으로_바꾼다() {
         when(feedClient.fetchFeed(any(), any())).thenReturn(List.of(
                 item("전북 유기동물 입양 캠페인 시작", "https://news.google.com/rss/articles/a"),
