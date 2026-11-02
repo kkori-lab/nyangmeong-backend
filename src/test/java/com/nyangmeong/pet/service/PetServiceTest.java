@@ -519,6 +519,7 @@ class PetServiceTest {
         service.deletePet(MBR, PET);
 
         verify(pixelMapper).updatePhotoDeleteByPetSn(PET);
+        verify(pixelMapper).updateItemSheetDeleteByPetSn(PET);
         verify(pixelMapper).updateJobDeleteByPetSn(PET);
         verify(missionMapper).updateDayMissionDeleteByPetSn(PET);
         verify(invitationMapper).updateTargetPetDeleteByPetSn(PET);

@@ -5,7 +5,11 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.nyangmeong.global.auth.OwnerAuthorizer;
+import com.nyangmeong.global.error.CustomException;
+import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.external.CharacterGenerationRequest;
+import com.nyangmeong.global.external.CharacterSpec;
 import com.nyangmeong.global.file.FileExtension;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.notification.EventPublisher;
@@ -17,6 +21,8 @@ import com.nyangmeong.pet.domain.CharacterJobStatusHistory;
 import com.nyangmeong.pet.domain.CharacterPhoto;
 import com.nyangmeong.pet.domain.PhotoRole;
 import com.nyangmeong.pet.domain.PixelCharacter;
+import com.nyangmeong.pet.dto.CharacterSuccessRequest;
+import com.nyangmeong.pet.dto.CharacterSuccessResponse;
 import com.nyangmeong.pet.dto.PetProfileSummary;
 import com.nyangmeong.pet.mapper.PixelCharacterMapper;
 
@@ -24,7 +30,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * [캐릭터 생성 작업 상태 처리]
- * - CharacterCreationWorker 전용 : 시작·완료·실패 각각 별도 트랜잭션
+ * - 시작·완료·실패 각각 별도 트랜잭션 : 생성은 Python 보고(reportSuccess·reportFailure), 재생성은 CharacterCreationWorker
  * - 완료 시 결과 저장 + 오류 확인 중 해제 + 캐릭터 알림 (FN-MYP-010-09·23)
  */
 @Service
@@ -34,10 +40,13 @@ public class CharacterCreationService {
     static final String SYSTEM = "SYSTEM";
     static final String MVMN_PATH = "/mypage/characters";
     private static final int FAIL_RSN_MAX = 1000;
+    /** Python 제한 180초 × 2회 + 여유 */
+    private static final int TIMEOUT_MINUTES = 10;
 
     private final PixelCharacterMapper pixelCharacterMapper;
     private final FileStore fileStore;
     private final EventPublisher eventPublisher;
+    private final OwnerAuthorizer ownerAuthorizer;
 
     /**
      * 생성 시작
@@ -78,6 +87,63 @@ public class CharacterCreationService {
             throw new IllegalStateException("삭제된 반려동물 charCrtJobSn=" + charCrtJobSn);
         }
 
+        saveResult(charCrtJobSn, character, pet, image);
+    }
+
+    /**
+     * 생성 성공 보고
+     * - 이미 완료 -> 같은 번호, 시간 초과 등으로 실패한 뒤의 보고는 거절
+     */
+    @Transactional
+    public CharacterSuccessResponse reportSuccess(Long mbrSn, Long charCrtJobSn, CharacterSuccessRequest req) {
+        CharacterCreationJob job = getOwnedJob(mbrSn, charCrtJobSn);
+        PixelCharacter character = pixelCharacterMapper.selectByPetSn(job.getPetSn());
+        PetProfileSummary pet = pixelCharacterMapper.selectPetProfile(job.getPetSn());
+        if (character == null || pet == null) {
+            throw new CustomException(ErrorCode.PIXEL_CHARACTER_NOT_FOUND);
+        }
+        if (CharacterJobStatus.COMPLETED.is(job.getCrtJobSttsCd())) {
+            return new CharacterSuccessResponse(character.getPixelCharSn());
+        }
+        if (!CharacterJobStatus.CREATING.is(job.getCrtJobSttsCd())) {
+            throw new CustomException(ErrorCode.ALREADY_PROCESSED);
+        }
+        byte[] image = CharacterSheetService.readBytes(req.image());
+        if (!CharacterSpec.matches(image)) {
+            throw new CustomException(ErrorCode.FILE_TYPE_NOT_ALLOWED);
+        }
+        byte[] sheet = CharacterSheetService.readSheet(req.sheet());
+
+        saveResult(charCrtJobSn, character, pet, image);
+        Long sheetFileSn = fileStore.store(sheet, FileExtension.PNG, "sheet-" + character.getPixelCharSn() + ".png",
+                SYSTEM);
+        pixelCharacterMapper.updateBodySheet(character.getPixelCharSn(), sheetFileSn, req.scale(), req.originX(),
+                req.originY(), SYSTEM);
+        pixelCharacterMapper.updateItemSheetDelete(character.getPixelCharSn());
+        return new CharacterSuccessResponse(character.getPixelCharSn());
+    }
+
+    /**
+     * 생성 실패 보고
+     */
+    @Transactional
+    public void reportFailure(Long mbrSn, Long charCrtJobSn, String failRsn) {
+        getOwnedJob(mbrSn, charCrtJobSn);
+        fail(charCrtJobSn, failRsn);
+    }
+
+    /**
+     * 시간 초과 작업 조회
+     */
+    @Transactional(readOnly = true)
+    public List<Long> searchTimedOutJobs() {
+        return pixelCharacterMapper.selectTimedOutJobs(CharacterJobStatus.CREATING.getCode(), TIMEOUT_MINUTES);
+    }
+
+    /**
+     * 결과 저장·완료 처리·알림
+     */
+    private void saveResult(Long charCrtJobSn, PixelCharacter character, PetProfileSummary pet, byte[] image) {
         Long atchFileSn = fileStore.storePublic(image, FileExtension.PNG,
                 "character-" + character.getPixelCharSn() + ".png", SYSTEM);
         pixelCharacterMapper.updatePhotoHidden(character.getPixelCharSn());
@@ -118,6 +184,18 @@ public class CharacterCreationService {
                     : CharacterJobStatus.CREATING;
             insertHistory(charCrtJobSn, before, CharacterJobStatus.FAILED, failRsn);
         }
+    }
+
+    /**
+     * 본인 작업 조회
+     */
+    private CharacterCreationJob getOwnedJob(Long mbrSn, Long charCrtJobSn) {
+        CharacterCreationJob job = pixelCharacterMapper.selectJob(charCrtJobSn);
+        if (job == null) {
+            throw new CustomException(ErrorCode.PIXEL_CHARACTER_NOT_FOUND);
+        }
+        ownerAuthorizer.checkOwner(mbrSn, job.getMbrSn());
+        return job;
     }
 
     /**

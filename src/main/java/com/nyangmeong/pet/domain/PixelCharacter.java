@@ -14,6 +14,10 @@ public class PixelCharacter {
     private Long mbrSn;
     private Long petSn;
     private String bscCharSbstYn;
+    private Long bodySheetFileSn;
+    private Double sheetScale;
+    private Double sheetOriginX;
+    private Double sheetOriginY;
     private String delYn;
     private LocalDateTime regDt;
     private LocalDateTime mdfcnDt;

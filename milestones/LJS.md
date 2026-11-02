@@ -372,6 +372,13 @@
 - 기다리는 것: 프론트 SCR-ADM-011 회원 상세 연결(끝, 2026-11-02)
 - 완료 조건: `GET /api/admin/members/{mbrSn}` 응답 `AdminMemberDetailResponse`에 `mbrAuthrtCd`가 온다. `docs/api/member.md` DTO 표도 같이 고친다. 프론트는 이 값이 관리자면 [정지]를 숨긴다
 
+## SCR-MYP-011 아이템 상점 모달 · 캐릭터 작업·시트 내부 API (SCR-MYP-010 공통) — 끝
+- 기능: 명세 기능 ID 추가 없음. FN-MYP-010-08·09·12·13·17, FN-MYP-011-01·06
+- 기다리는 것: 없음. Python 호출 쪽은 AI 저장소 LJS에서 구현을 마치고 이 작업을 기다린다
+- 완료 조건: AI 저장소 `docs/api/internal.md` "Python → Java" `/internal/ai/characters` 8개가 계약대로 동작한다. Python과 함께 띄워 생성 → 맨몸 시트 저장 → 미리보기가 된다
+- 결과: 끝(2026-11-02). 8개 모두 쿠키 인증(사람 결정), DB v0.12 (1), 시간 초과 배치 SYSC0029, 공개 생성 POST 삭제. 추가-1로 DB 기준 파일을 v0.12로 올렸다
+- 다음으로 넘김: FN-MYP-010-23 무료 재생성(계약 미정, SCR-ADM-042 전, LJS)
+
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
 - FN-COM-002-11: 채팅 안 읽은 수 API는 KSJ(채팅, 마일스톤 담당 표 COM-009)

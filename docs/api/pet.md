@@ -26,13 +26,86 @@
 | POST | /caregiver-invitations/{jntBrupInvtnSn}/accept | 초대 수락. 고른 반려동물만 연동하고 나머지는 반려동물별 거절 | MYP-005-05 | SJM | CaregiverInvitationAcceptRequest | - |
 | POST | /caregiver-invitations/{jntBrupInvtnSn}/reject | 초대 거절. 초대의 반려동물 전체 | MYP-005-07·08 | SJM | - | - |
 | POST | /pets | 반려동물 등록(계정당 10마리, 첫 등록은 대표 지정) | MYP-002-01, MYP-003-01·04·05·07 | SJM | PetCreateRequest | PetResponse |
-| POST | /pets/{petSn}/pixel-characters | 캐릭터 생성 요청(사진 첨부, 백그라운드 생성, 반려동물당 1개) | MYP-010-04·08·09·17 | LJS | PixelCharacterCreateRequest | PixelCharacterResponse |
 | POST | /pets/{petSn}/representative | 대표 반려동물 지정(주양육 반려동물만) | MYP-010-05 | SJM | - | - |
 | POST | /pixel-characters/{pixelCharSn}/held-items | 아이템 일괄 구매(포인트 차감, 보관함 추가, 주양육자만). 201. 오류: `POINT_NOT_ENOUGH`(400), `PET_PRIMARY_ONLY`(403), `ITEM_NOT_FOUND`(404), `ITEM_ALREADY_HELD`(409) | MYP-011-05·06 | LJS | ItemPurchaseRequest | PixelCharacterResponse |
 | PUT | /pixel-characters/{pixelCharSn}/equipped-items | 착용 상태 확정 저장(부위당 1개, 요청에 없는 보유 아이템은 착용 해제) | MYP-010-13·16 | LJS | EquippedItemSaveRequest | PixelCharacterResponse |
 | PATCH | /pets/{petSn} | 반려동물 수정(양육자 전원, 체중 잠금은 화면에서) | MYP-002-04, MYP-003-01·04~07 | SJM | PetUpdateRequest | PetResponse |
 | DELETE | /pets/{petSn} | 반려동물 삭제(주양육자만). 캐릭터·보유 아이템 삭제, 공동양육 연동 해제, 대표 승계 | MYP-002-07·08 | SJM | - | - |
 | DELETE | /pets/{petSn}/caregivers/{brupRelSn} | 공동양육 연동 해제. 주양육자의 강제 해제와 공동양육자의 자진 해제 | MYP-004-01, MYP-006-02 | SJM | - | - |
+
+## 내부 API
+
+Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/api`가 없고 nginx 밖에서만 부른다. 캐릭터 생성의 공개 입구는 Python `POST /ai/characters`다. 계약 정본은 ai 저장소 `docs/api/internal.md` "Python → Java"다.
+
+| 메서드 | 경로 | 설명 | 기능 ID | 담당 | 요청 DTO | 응답 DTO |
+| --- | --- | --- | --- | --- | --- | --- |
+| POST | /internal/ai/characters/jobs | 생성 작업을 만든다. 주양육자만, 201. 이미 있음 `PIXEL_CHARACTER_ALREADY_EXISTS`, 생성 중 `PIXEL_CHARACTER_CREATING`(409). 실패로 끝나 결과가 없으면 다시 요청할 수 있다 | MYP-010-08·09 | LJS | CharacterJobCreateRequest | CharacterJobResponse |
+| POST | /internal/ai/characters/jobs/{charCrtJobSn}/success | 생성 성공 보고. 작업을 만든 회원만. 이미 완료면 같은 번호, 실패로 끝났으면 409 `ALREADY_PROCESSED`, 규격 밖 400 `FILE_TYPE_NOT_ALLOWED` | MYP-010-09·17 | LJS | CharacterSuccessRequest | CharacterSuccessResponse |
+| POST | /internal/ai/characters/jobs/{charCrtJobSn}/failure | 생성 실패 보고. 작업을 만든 회원만. 끝난 작업이면 바꾸지 않고 200. 시작 뒤 10분이 넘은 작업은 `CharacterJobTimeoutJob`이 `CHARACTER_TIMEOUT`으로 실패 처리한다 | MYP-010-12 | LJS | CharacterFailureRequest | - |
+| GET | /internal/ai/characters/bake-items | 굽기 대상(판매 중이고 `ENGINE_ITEM_KEY` 있음) | MYP-011-01 | LJS | - | List<BakeItemSummary> |
+| PUT | /internal/ai/characters/{pixelCharSn}/item-sheets/{itemSn} | 착용 시트 저장(주양육자만, 다시 받으면 교체). 굽기 대상이 아니면 404 `ITEM_NOT_FOUND`, 1024 PNG가 아니면 400 | MYP-011-01 | LJS | ItemSheetSaveRequest | - |
+| POST | /internal/ai/characters/{pixelCharSn}/item-sheets/{itemSn}/failure | 굽기 실패 표시(주양육자만). 구운 시트가 있으면 유지 | MYP-011-01 | LJS | - | - |
+| GET | /internal/ai/characters/{pixelCharSn}/sheets?itemSns= | 합성용 시트 정보(주양육자만, 안 산 아이템도 조회). 맨몸 시트가 없으면 404 `PIXEL_CHARACTER_NOT_FOUND` | MYP-010-13, MYP-011-01·06 | LJS | - | CharacterSheetsResponse |
+| GET | /internal/ai/characters/{pixelCharSn}/sheet-files/{atchFileSn} | 시트 파일 내려받기(주양육자만, `image/png`, ApiResponse 아님). 그 캐릭터의 시트가 아니면 404 `FILE_NOT_FOUND` | MYP-010-13, MYP-011-01 | LJS | - | 이미지 파일 |
+
+### CharacterJobCreateRequest
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| petSn | Long | Y | | PET.PET_SN |
+
+### CharacterJobResponse
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| charCrtJobSn | Long | Y | | CHAR_CRT_JOB.CHAR_CRT_JOB_SN |
+| petSeCd | String | Y | | PET.PET_SE_CD |
+| vrtyNm | String | N | | VRTY.VRTY_NM 또는 직접 입력 |
+| colrNm | String | N | | 공통코드 또는 직접 입력 |
+| chrcCn | String | N | | PET.CHRC_CN |
+
+### CharacterSuccessRequest
+`multipart/form-data`
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| image | MultipartFile | Y | 512×512 | CHAR_PHOTO (결과) |
+| sheet | MultipartFile | Y | 맨몸 2×2 시트, 1024 PNG | PIXEL_CHAR.BODY_SHEET_FILE_SN |
+| scale | Double | Y | | PIXEL_CHAR.SHEET_SCALE |
+| originX | Double | Y | | PIXEL_CHAR.SHEET_ORIGIN_X |
+| originY | Double | Y | | PIXEL_CHAR.SHEET_ORIGIN_Y |
+
+### CharacterSuccessResponse
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| pixelCharSn | Long | Y | | PIXEL_CHAR.PIXEL_CHAR_SN |
+
+### CharacterFailureRequest
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| failRsn | String | Y | `CHARACTER_API_ERROR`·`CHARACTER_SPEC_MISMATCH` | CHAR_CRT_JOB.FAIL_RSN |
+
+### BakeItemSummary
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| itemSn | Long | Y | | ITEM.ITEM_SN |
+| engineItemKey | String | Y | | ITEM.ENGINE_ITEM_KEY |
+
+### ItemSheetSaveRequest
+`multipart/form-data`
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| sheet | MultipartFile | Y | 1024 PNG | CHAR_ITEM_SHEET.ATCH_FILE_SN |
+
+### CharacterSheetsResponse
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| petSeCd | String | Y | | PET.PET_SE_CD |
+| sheetFileSn | Long | Y | 맨몸 시트 | PIXEL_CHAR.BODY_SHEET_FILE_SN |
+| scale | Double | Y | | PIXEL_CHAR.SHEET_SCALE |
+| originX | Double | Y | | PIXEL_CHAR.SHEET_ORIGIN_X |
+| originY | Double | Y | | PIXEL_CHAR.SHEET_ORIGIN_Y |
+| items | List<CharacterSheetItem> | Y | 요청한 아이템 순서. 없으면 빈 목록 | CHAR_ITEM_SHEET |
+| items[].itemSn | Long | Y | | CHAR_ITEM_SHEET.ITEM_SN |
+| items[].atchFileSn | Long | N | 안 구웠거나 실패면 null | CHAR_ITEM_SHEET.ATCH_FILE_SN |
+| items[].bakeFailed | boolean | Y | | CHAR_ITEM_SHEET.BAKE_FAIL_YN |
 
 ## DTO
 
@@ -306,16 +379,9 @@
 | dssCn | String | N | 최대 1,000자. 쉼표 구분, 앞뒤 공백 제거·빈 값 버림 | PET.DSS_CN, MYP-003-07 |
 | goalBdwgReset | Boolean | N | `true`면 목표체중을 비운다. `goalBdwg`와 함께 보내면 400 BAD_REQUEST | PET.GOAL_BDWG, MYP-003-04 |
 
-### PixelCharacterCreateRequest
-쓰는 API: POST /pets/{petSn}/pixel-characters
-`multipart/form-data`
-| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
-| --- | --- | --- | --- | --- |
-| photo | MultipartFile | Y | 사진 첨부 필수. 형식·용량 규칙은 명세에 없음(`issues.md` API의 마이페이지 18번) | MYP-010-08, CHAR_PHOTO.ATCH_FILE_SN |
-
 ### PixelCharacterResponse
-쓰는 API: GET /pixel-characters/{pixelCharSn}; POST /pets/{petSn}/pixel-characters; PUT /pixel-characters/{pixelCharSn}/equipped-items; POST /pixel-characters/{pixelCharSn}/held-items
-결과 이미지는 `GET /pets/{petSn}/character-image`로 받는다. POST 응답과 GET 응답의 필드를 합쳤다(issues 11번).
+쓰는 API: GET /pixel-characters/{pixelCharSn}; PUT /pixel-characters/{pixelCharSn}/equipped-items; POST /pixel-characters/{pixelCharSn}/held-items
+결과 이미지는 `GET /pets/{petSn}/character-image`로 받는다. 여러 응답의 필드를 합쳤다(issues 11번).
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | pixelCharSn | Long | Y | | PIXEL_CHAR.PIXEL_CHAR_SN |
