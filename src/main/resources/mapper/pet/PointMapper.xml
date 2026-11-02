@@ -64,6 +64,33 @@
         <result column="REG_DT"               property="regDt" />
     </resultMap>
 
+    <resultMap id="adminPointLedgerSummaryResultMap" type="com.nyangmeong.pet.dto.AdminPointLedgerSummary">
+        <id     column="PNT_GNLGR_SN"        property="pntGnlgrSn" />
+        <result column="PNT_DLNG_TYPE_CD"    property="pntDlngTypeCd" />
+        <result column="PNT_DLNG_TYPE_CD_NM" property="pntDlngTypeCdNm" />
+        <result column="DLNG_PNT"            property="dlngPnt" />
+        <result column="DLNG_AFTR_BLNC_PNT"  property="dlngAftrBlncPnt" />
+        <result column="MEMO_CN"             property="memoCn" />
+        <result column="REG_DT"              property="regDt" />
+    </resultMap>
+
+    <select id="selectAdminLedgerList" resultMap="adminPointLedgerSummaryResultMap">
+        /* 회원 포인트 원장 전체 조회(최신순) */
+        SELECT G.PNT_GNLGR_SN
+             , G.PNT_DLNG_TYPE_CD
+             , C.COM_CD_NM AS PNT_DLNG_TYPE_CD_NM
+             , G.DLNG_PNT
+             , G.DLNG_AFTR_BLNC_PNT
+             , G.MEMO_CN
+             , G.REG_DT
+          FROM PNT_GNLGR G
+          JOIN COM_CD C
+            ON C.COM_CD = G.PNT_DLNG_TYPE_CD
+         WHERE G.MBR_SN = #{mbrSn}
+         ORDER BY G.REG_DT DESC
+                , G.PNT_GNLGR_SN DESC
+    </select>
+
     <select id="selectLedgerList" resultMap="pointLedgerSummaryResultMap">
         /* 기간 포인트 내역 조회(최신순) */
         SELECT G.PNT_GNLGR_SN

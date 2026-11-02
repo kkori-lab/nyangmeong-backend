@@ -46,6 +46,7 @@ import com.nyangmeong.member.dto.AdminWithdrawnMemberSummary;
 import com.nyangmeong.member.service.MemberAuthorityService;
 import com.nyangmeong.member.service.MemberService;
 import com.nyangmeong.member.service.MemberSuspensionService;
+import com.nyangmeong.member.service.TermsService;
 
 /**
  * [검사 - 관리자 회원 API]
@@ -69,6 +70,9 @@ class AdminMemberControllerTest {
 
     @MockitoBean
     MemberAuthorityService memberAuthorityService;
+
+    @MockitoBean
+    TermsService termsService;
 
     @MockitoBean
     AuthMemberMapper authMemberMapper;

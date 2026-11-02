@@ -24,7 +24,11 @@ import org.mockito.ArgumentCaptor;
 
 import com.nyangmeong.global.auth.BrupRole;
 import com.nyangmeong.global.error.CustomException;
+import com.nyangmeong.global.error.BaseException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.response.PageQuery;
+import com.nyangmeong.global.response.PageResponse;
+import com.nyangmeong.pet.dto.AdminPointLedgerSummary;
 import com.nyangmeong.pet.domain.PointDealType;
 import com.nyangmeong.pet.domain.PointLedger;
 import com.nyangmeong.pet.dto.PointLedgerSummary;
@@ -53,6 +57,28 @@ class PointServiceTest {
         when(pointMapper.updateHldPnt(anyLong(), anyInt(), anyString())).thenReturn(1);
         when(pointMapper.selectPrimaryMbrSn(PET, BrupRole.PRIMARY.getCode())).thenReturn(MBR);
         when(careMissionMapper.selectPetNm(PET)).thenReturn("뭉치");
+    }
+
+    @Test
+    void 관리자_원장은_없는_회원이면_404() {
+        when(pointMapper.selectHldPnt(2L)).thenReturn(null);
+
+        assertThatThrownBy(() -> service.searchLedgersForAdmin(2L, new PageQuery(null, null, null)))
+                .isInstanceOfSatisfying(BaseException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.MEMBER_NOT_FOUND));
+    }
+
+    @Test
+    void 관리자_원장은_그_회원의_최신순과_잔액을_돌려준다() {
+        AdminPointLedgerSummary row = new AdminPointLedgerSummary();
+        row.setDlngAftrBlncPnt(1_000);
+        when(pointMapper.selectAdminLedgerList(MBR)).thenReturn(List.of(row));
+
+        PageResponse<AdminPointLedgerSummary> page = service.searchLedgersForAdmin(MBR,
+                new PageQuery(null, null, null));
+
+        assertThat(page.content().get(0).getDlngAftrBlncPnt()).isEqualTo(1_000);
+        verify(pointMapper).selectAdminLedgerList(MBR);
     }
 
     @Test

@@ -9,6 +9,7 @@ import org.apache.ibatis.annotations.Param;
 import com.nyangmeong.member.domain.Member;
 import com.nyangmeong.member.dto.AdminAccountSummary;
 import com.nyangmeong.member.dto.AdminMemberSearchCond;
+import com.nyangmeong.member.dto.AdminMemberStatusHistorySummary;
 import com.nyangmeong.member.dto.AdminMemberSummary;
 import com.nyangmeong.member.dto.AdminSuspensionSummary;
 import com.nyangmeong.member.dto.AdminWithdrawnMemberSummary;
@@ -28,6 +29,16 @@ public interface MemberMapper {
      * 회원번호로 회원 조회
      */
     Member selectBySn(Long mbrSn);
+
+    /**
+     * 회원 존재 여부
+     */
+    boolean existsBySn(@Param("mbrSn") Long mbrSn);
+
+    /**
+     * 회원 상태 이력 목록 조회 (최신순)
+     */
+    List<AdminMemberStatusHistorySummary> selectStatusHistoryList(@Param("mbrSn") Long mbrSn);
 
     /**
      * 휴대전화번호 HMAC를 쓰는 회원번호 (탈퇴 보관 회원 포함), 없으면 null
