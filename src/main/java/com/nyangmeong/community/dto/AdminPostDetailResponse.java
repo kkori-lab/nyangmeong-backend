@@ -7,7 +7,7 @@ import com.nyangmeong.community.domain.Post;
 
 /**
  * [관리자 게시글 상세 응답]
- * - 댓글 목록은 GET /api/admin/comments?pstSn= 로 받는다
+ * - 댓글 목록 : GET /api/admin/comments?pstSn=
  */
 public record AdminPostDetailResponse(Long pstSn, String bbsCd, String pstSttsCd, String pstTtl, String pstCn,
         Long mbrSn, String mbrNcnm, LocalDateTime regDt, int dclrCnt, int cmntCnt, List<PostImageSummary> images,

@@ -50,7 +50,7 @@ class MapperXmlRuleTest {
             "com.nyangmeong.health.mapper.CareItemMapper.selectCompletionByDateForUpdate",
             /** 관리자 회원 상세 : 삭제 여부 표시 (FN-ADM-011-02) */
             "com.nyangmeong.pet.mapper.PetMapper.selectAdminList",
-            /** 관리자 : 삭제된 댓글도 원문을 보고 이미 삭제된 댓글을 가린다 (FN-ADM-020-06) */
+            /** 관리자 : 삭제된 댓글 원문 표시, 이미 삭제된 댓글 구분 (FN-ADM-020-06) */
             "com.nyangmeong.community.mapper.CommentMapper.selectAdminList",
             "com.nyangmeong.community.mapper.CommentMapper.selectAdminComment");
 

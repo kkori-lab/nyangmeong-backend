@@ -4,6 +4,10 @@
 
 SCR-ADM-020 게시글·댓글 — 끝 (2026-11-02). `/api/admin/posts` 목록·상세·블라인드·복구와 `/api/admin/comments` 조회·삭제를 만들었다. 삭제 사유는 감사 로그에 남고 게시판 필터는 펫돌봄 없이 3개다
 
+### 추가 요청
+
+| 추가-2 | `CommentMapper.xml`, `AdminPostDetailResponse`, `AdminCommentSummary`, `AdminCommentService`, `MapperXmlRuleTest` | 명령: `./gradlew build -q` 통과. PR #102에서 추가한 주석만 `/* */`·명사형으로 고친다 | 요청 2026-11-02 "<!-- --> 주석은 /* */로, 동사형은 명사형으로 수정해서 같은 PR에 푸시" |
+
 ## 다음에 할 것
 
 - SCR-ADM-020 연결 남음: FN-ADM-020-01 (프론트 연결 관리자 게시글 목록 화면 SCR-ADM-020, 프론트 저장소에서 /start), FN-ADM-020-02 (프론트 연결 검색·필터 영역, 프론트 저장소에서 /start), FN-ADM-020-03 (프론트 연결 상세 화면 `/admin/posts/:pstSn`, 프론트 저장소에서 /start), FN-ADM-020-04 (프론트 연결 [블라인드] 사유 모달, 프론트 저장소에서 /start), FN-ADM-020-05 (프론트 연결 [복구] 사유 모달, 프론트 저장소에서 /start), FN-ADM-020-06 (프론트 연결 댓글 탭 `?tab=comments`, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음

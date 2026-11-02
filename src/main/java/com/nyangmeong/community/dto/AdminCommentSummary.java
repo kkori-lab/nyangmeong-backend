@@ -6,7 +6,7 @@ import lombok.Data;
 
 /**
  * [관리자 댓글 목록 항목]
- * - 삭제된 댓글도 내용·작성자를 보여 준다
+ * - 삭제된 댓글도 내용·작성자 표시
  */
 @Data
 public class AdminCommentSummary {

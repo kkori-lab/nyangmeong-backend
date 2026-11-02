@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 /**
  * [관리자 댓글 서비스]
  * - SCR-ADM-020 (FN-ADM-020-06) 조회·삭제
- * - CMNT 에 사유 컬럼이 없어 삭제 사유는 감사 로그에 남긴다
+ * - 삭제 사유 : 감사 로그 기록 (CMNT 에 사유 컬럼 없음)
  */
 @Service
 @RequiredArgsConstructor
