@@ -99,7 +99,7 @@ public class MemberService {
     /**
      * 이메일 마스킹 (cho***@gmail.com)
      */
-    private String maskEmail(String email) {
+    static String maskEmail(String email) {
         int at = email.indexOf('@');
         if (at < 0) {
             return "***";

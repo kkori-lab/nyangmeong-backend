@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import com.nyangmeong.member.domain.Member;
+import com.nyangmeong.member.dto.AdminAccountSummary;
 import com.nyangmeong.member.dto.AdminMemberSearchCond;
 import com.nyangmeong.member.dto.AdminMemberSummary;
 import com.nyangmeong.member.dto.AdminSuspensionSummary;
@@ -160,4 +161,24 @@ public interface MemberMapper {
      */
     List<AdminWithdrawnMemberSummary> selectWithdrawnList(@Param("withdrawnSttsCd") String withdrawnSttsCd,
             @Param("keepDayCnt") int keepDayCnt);
+
+    /**
+     * 탈퇴를 뺀 관리자 목록 조회 (지정일시는 작업 로그의 최근 지정 기록)
+     */
+    List<AdminAccountSummary> selectAdminAccountList(@Param("adminAuthrtCd") String adminAuthrtCd,
+            @Param("withdrawnSttsCd") String withdrawnSttsCd, @Param("trgtTblNm") String trgtTblNm,
+            @Param("taskSmryCn") String taskSmryCn);
+
+    /**
+     * 정상 관리자 번호 목록 잠금 조회
+     */
+    List<Long> selectNormalAdminSnsForUpdate(@Param("adminAuthrtCd") String adminAuthrtCd,
+            @Param("normalSttsCd") String normalSttsCd);
+
+    /**
+     * 회원 권한 변경 (mbrSttsCd 가 있으면 그 상태의 회원만)
+     */
+    int updateAuthority(@Param("mbrSn") Long mbrSn, @Param("afterAuthrtCd") String afterAuthrtCd,
+            @Param("beforeAuthrtCd") String beforeAuthrtCd, @Param("mbrSttsCd") String mbrSttsCd,
+            @Param("actorId") String actorId);
 }
