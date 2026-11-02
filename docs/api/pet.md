@@ -239,6 +239,9 @@
 | petGndrCd | String | Y | | PET.PET_GNDR_CD |
 | petBrdt | LocalDate | Y | | PET.PET_BRDT |
 | petBdwg | BigDecimal | Y | | PET.PET_BDWG |
+| nutrYn | boolean | Y | 중성화 여부. 슬라이드의 "성별(중성화)" | PET.NUTR_YN, MYP-002-02 |
+| minBdwg | BigDecimal | Y | 정상 체중 최소. 슬라이드의 "정상 a~bkg" | PET.MIN_BDWG, MYP-002-02 |
+| maxBdwg | BigDecimal | Y | 정상 체중 최대 | PET.MAX_BDWG, MYP-002-02 |
 | colrCd | String | Y | | PET.COLR_CD |
 | colrDrctInptNm | String | N | | PET.COLR_DRCT_INPT_NM |
 | chipNo | String | N | | PET.CHIP_NO |

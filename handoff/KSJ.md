@@ -17,7 +17,7 @@ SCR-CMU-003 펫뉴스 — 끝남 (승인 2026-11-02 10:12, 시작 2026-11-02 10:
   - `ORGTXT_PATH`는 RSS의 Google News 링크(브라우저에서 원문으로 이동)를 그대로 저장한다. 원문 주소 풀기가 성공하든 실패하든 같은 값이라 중복 판정이 흔들리지 않는다
   - 분류: `KWRD_DICT`의 `DICT_USG_CD = 'AIMC0039'`(뉴스 분류) `USE_YN = 'Y' AND DEL_YN = 'N'` 행을 `SORT_SEQ` 순으로 읽어 `KWRD_CN`(쉼표 구분)이 제목에 들면 `MPNG_CD`, 하나도 안 걸리면 `CMUC0019` 생활. 사전 행은 관리자 SCR-ADM-050(LJS)이 고친다
   - `community/service/NewsCollectJob.java`(`BatchJob`, `BatchType.NEWS_COLLECT` = `SYSC0028` 뉴스 수집, cron `0 0 6,18 * * *`, `app.news.batch-enabled=true`일 때만 등록). 관리자 수동 실행은 기존 `POST /api/admin/batches/SYSC0028/run`
-  - `db/` 기준 파일: `insert_base_data` v0.11 (4) — `SYSC0028` 뉴스 수집(SYSG02), `KWRD_DICT` 뉴스 분류 초기 행(건강: 건강·질병·병원·백신·예방접종·진드기·수의사…, 정책: 정부·법·제도·의무화·과태료·지자체·조례…, 여행: 여행·동반·숙소·캠핑·휴가…). 변경 절에 기존 DB용 INSERT 주석
+  - `db/` 기준 파일: `insert_base_data` v0.11 (6) — `SYSC0028` 뉴스 수집(SYSG02), `KWRD_DICT` 뉴스 분류 초기 행(건강: 건강·질병·병원·백신·예방접종·진드기·수의사…, 정책: 정부·법·제도·의무화·과태료·지자체·조례…, 여행: 여행·동반·숙소·캠핑·휴가…). 변경 절에 기존 DB용 INSERT 주석
   - `application.properties.example` 커뮤니티 구획: `app.news.rss-url=https://news.google.com/rss/search`, `app.news.query=반려동물 OR 반려견 OR 반려묘 OR 강아지 OR 고양이`, `app.news.request-interval-ms=1000`, `# app.news.batch-enabled=true`
   - 완료 조건 명령: `GoogleNewsFeedClientTest`(RSS 예제 XML 파싱: 제목·언론사·링크·KST 발행일, og 메타 추출, 원문 주소 풀기 실패 시 빈 값), `NewsServiceTest`(키워드 분류·미분류는 생활, 이미 있는 링크는 원문 주소를 풀지 않음, og 실패 시 요약 = 제목·썸네일 null, 제목 언론사 꼬리 제거). 화면: 로컬에서 `app.news.batch-enabled=true` 또는 관리자 수동 실행 → `NEWS`에 기사가 쌓이고 두 번 돌려도 늘지 않음, 샘플 5건 중 요약·썸네일이 채워진 건수 확인(0건이면 원문 주소 풀기가 막힌 것, 대체값으로 저장되는지 확인)
 - 프론트 연결: SCR-CMU-003 펫뉴스 리스트(카테고리 칩 → `newsClsfCd`, 검색 `keyword`, 언론사·「관리자 등록」 배지, 요약 줄, 썸네일 없으면 기본 이미지, 페이지네이션)·상세(출처·작성일, 원문보기는 외부 기사만, 하단 최신 5건 `?size=5`) (프론트 저장소에서 /start)
@@ -34,7 +34,7 @@ SCR-CMU-003 펫뉴스 — 끝남 (승인 2026-11-02 10:12, 시작 2026-11-02 10:
 
 ## 다음에 할 것
 - 연결 남음: SCR-CMU-003 펫뉴스 화면 (프론트 연결 리스트(카테고리 칩 `newsClsfCd`, 검색 `keyword`, 언론사 `srcPressNm`·「관리자 등록」 `newsSrcCdNm` 배지, 요약 줄 `newsCn`, 썸네일 없으면 기본 이미지, 페이지네이션)와 상세(원문보기는 외부 기사만, 하단 최신 5건은 `?size=5`), 프론트 저장소에서 /start)
-- 사람이 할 일: 병합 직후 PR에 "DB 변경 있음, v0.11 (4)"와 완료 댓글(공용 DB에 `SYSC0028` 뉴스 수집·뉴스 분류 키워드 3행 실행 완료, 2026-11-02). 공용 DB `NEWS`에 확인용으로 수집한 기사 약 107건이 프론트 개발용으로 남아 있다
+- 사람이 할 일: 병합 직후 PR에 "DB 변경 있음, v0.11 (6)"와 완료 댓글(공용 DB에 `SYSC0028` 뉴스 수집·뉴스 분류 키워드 3행 실행 완료, 2026-11-02). 공용 DB `NEWS`에 확인용으로 수집한 기사 약 107건이 프론트 개발용으로 남아 있다
 - 사람이 할 일: `origin/LJS`의 `BatchType`(`SYSC0027` 탈퇴 회원 파기)·`AdminBatchServiceTest`·`db/…sql`과 병합 때 겹친다. 병합 뒤 배치 코드는 `SYSC0026`·`SYSC0027`·`SYSC0028` 순이다. 새 코드는 쓰기 전에 공용 DB `SELECT MAX(COM_CD) FROM COM_CD WHERE COM_CD LIKE 'SYSC%'`로 확인한다
 - 이번에 안 한 것: FN-CMU-003-05 공유하기(화면만), 관리자 뉴스 등록·숨김·키워드 편집(SCR-ADM-050, LJS), 영상 기사 제외(`og:type=video*`), 주제 무관 기사(게임·웹소설) 정리, 외부 API 호출 기록(`EXTL_API_CALL_LOG`), AI 요약, 썸네일 공통 이미지(`noimg.png`) 거르기
 - 연결 남음: SCR-CSC-002 FAQ 화면 (프론트 연결 카테고리 탭 → `faqClsfCd`, 검색 `keyword`, 아코디언 Q/A는 목록 `ansCn`, 0건 「찾는 질문이 없어요」·[전체 질문 보기], 페이지네이션, 항목 안 카테고리 칩은 뺐으니 `faqClsfCdNm`은 안 써도 됨, 프론트 저장소에서 /start)

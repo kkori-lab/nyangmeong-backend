@@ -42,6 +42,7 @@ import com.nyangmeong.member.domain.JoinPath;
 import com.nyangmeong.member.domain.Member;
 import com.nyangmeong.member.dto.AdminMemberSearchCond;
 import com.nyangmeong.member.dto.AdminMemberSummary;
+import com.nyangmeong.member.dto.AdminWithdrawnMemberSummary;
 import com.nyangmeong.member.dto.MemberNicknameUpdateRequest;
 import com.nyangmeong.member.dto.MemberResponse;
 import com.nyangmeong.member.dto.MemberUpdateRequest;
@@ -671,5 +672,24 @@ class MemberServiceTest {
         assertThatThrownBy(() -> service.searchForAdmin(cond, new PageQuery(null, null, null)))
                 .satisfies(e -> assertCode(e, ErrorCode.INVALID_INPUT_VALUE));
         verify(memberMapper, never()).selectAdminList(any(), any(), any());
+    }
+
+    @Test
+    void 탈퇴_회원_목록은_설정한_보관일수로_조회하고_마스킹과_파기_예정일을_채운다() {
+        SystemSetting setting = new SystemSetting();
+        setting.setWhdwlMbrKpngDayCnt(45L);
+        when(systemSettingService.get()).thenReturn(setting);
+        AdminWithdrawnMemberSummary row = new AdminWithdrawnMemberSummary();
+        row.setMbrSn(1L);
+        row.setAcntEmlEnc(crypto.encrypt("leaving@gmail.com"));
+        row.setWhdwlDt(LocalDateTime.of(2026, 10, 25, 21, 10));
+        when(memberMapper.selectWithdrawnList(any(), anyInt())).thenReturn(List.of(row));
+
+        PageResponse<AdminWithdrawnMemberSummary> page = service
+                .searchWithdrawnForAdmin(new PageQuery(null, null, null));
+
+        verify(memberMapper).selectWithdrawnList(MemberStatus.WITHDRAWN.getCode(), 45);
+        assertThat(page.content().get(0).getMaskedAcntEml()).isEqualTo("lea***@gmail.com");
+        assertThat(page.content().get(0).getPurgeYmd()).isEqualTo(LocalDate.of(2026, 12, 9));
     }
 }

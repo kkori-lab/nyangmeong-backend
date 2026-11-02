@@ -2,12 +2,25 @@
 
 ## 지금 하는 것
 
-SCR-ADM-010 회원 목록 — 끝 (2026-11-02). `GET /api/admin/members`(`member/controller/AdminMemberController`), 닉네임 부분 일치·이메일 완전 일치 검색, 상태·가입 경로·권한·가입일 필터, 이메일 마스킹
+SCR-ADM-113 관리자 계정 — 끝 (2026-11-02). `GET·POST·DELETE /api/admin/admins`로 관리자 목록·지정·해제. 본인과 마지막 정상 관리자는 해제할 수 없고 지정·해제는 감사 로그에 남는다
 
 ## 다음에 할 것
 
+- SCR-ADM-113 연결 남음: FN-ADM-113-02 (프론트 연결 관리자 계정 화면 SCR-ADM-113 목록과 지정 모달, 프론트 저장소에서 /start), FN-ADM-113-03 (프론트 연결 해제 버튼과 확인 모달, 본인·마지막 비활성, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
+- PR 전 확인(사람): YAY에게 SCR-ADM-113을 알린다. `AdminMemberController` 클래스 경로를 `/api/admin`으로 내렸고(기존 URL 그대로) `MemberAuthorityService`를 넣었다. 마일스톤의 협의가 저장소에 기록되지 않았다
+- 판단 필요(SCR-ADM-113): 지정 기록이 없는 기존 관리자는 `apntDt`가 null이다. `MBR_AUTHRT_CD`에 인덱스가 없어 해제 트랜잭션 동안 `MBR`의 많은 행이 잠길 수 있다(부하 상황 확인 안 함)
+- 공용 DB 정리(사람): SCR-ADM-113 1회차 검증의 `dev-tokens`로 회원 1·2 세션이 생겼다. 지울지 정한다
+- 공용 DB(사람, PR 병합 전): `db/20261030_insert_base_data_v0.11.sql`의 v0.11 (5)를 실행한다. 없으면 03:30 배치 이력이 `BTCH_SE_CD` 외래키에 걸린다. 공용 DB의 보관 기간 지난 탈퇴 회원은 첫 실행에서 되돌릴 수 없이 파기된다
+- PR 전 확인(사람): YAY에게 `member`에 넣은 것을 알린다. `MemberPurgeJob`·`MemberPurgeService`, 탈퇴 회원 목록, `MemberSuspensionService`, 관리자 목록 조회. 파기 뒤 같은 이메일은 새 가입이 되고 복구는 `MEMBER_NOT_FOUND`다. 저장소에 협의 기록 없음
+- 탈퇴 파기 남은 범위: 채팅 원문(REQ-NFR-002, 채팅 구현 뒤 KSJ와 `scheduler`로 묶는다), 프로필 파일 실물(`FileStore`에 삭제 없음, 지금은 연결만 끊는다), 게시물·댓글·포인트·반려동물·건강기록(정책 미확정, `docs/api/issues.md` 8번)
+- KSJ에게 알린다: 게시글·댓글 작성자 '탈퇴한 회원' 표시가 없어 파기 회원은 `탈퇴회원#<번호>`로 보인다. 쿼리에서 탈퇴 상태로 표시를 바꾼다
+- 회원 탈퇴 처리가 코드에 없다: `POST /members/me/withdraw` 초안은 있으나 `src/main`에 `WHDWL_DT`를 채우는 코드가 없다(YAY에게 확인)
+- 테스트 부족: `selectWithdrawnList`의 보관 기간 경계를 검사하는 매퍼 테스트가 없다. 검증은 같은 조건을 바꾼 읽기 전용 SELECT로 했다
+- SCR-ADM-012 연결 남음: FN-ADM-012-01·03·05 (프론트 연결 관리자 회원 제재 화면 `features/adminMember/api.js` `suspendMember`·`releaseMember`와 회원 정지 모달, 프론트 저장소에서 /start), 정지 회원 목록 (프론트 연결 `getAdminSuspensions`, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
+- 위험, PR 병합 전(사람): v0.11 (4) 없는 DB에서는 `selectBySn`이 `Unknown column`이라 `GET /api/members/me` 등 기존 API도 500이다. 공용 DB에는 규칙의 "병합 직후"가 아니라 병합 전에 실행하고 팀에 각자 로컬 DB 실행을 알린다. 사람이 실행했다고 답했으나(2026-11-02) 어느 DB인지는 기록이 없다
+- ERDCloud(사람): `MBR.SUSPN_END_DT` 정지종료일시를 추가한다
+- 판단 필요: 구현 계획에는 정지 안내 알림이 있으나 기능명세서에 없어 넣지 않았다. `suspnDayCnt`가 빠진 정지 요청은 영구 정지로 처리된다(프론트 계약). 만료 배치는 하루 한 번이라 00:00에 서버가 내려가 있으면 수동 실행 전까지 정지가 이어진다
 - SCR-ADM-010 연결 남음: FN-ADM-010-01 (프론트 연결 관리자 회원 목록 화면 `features/adminMember/api.js` `getAdminMembers`, 프론트 저장소에서 /start), FN-ADM-010-04 (프론트 연결 행 클릭 이동, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
-- PR 전 확인(사람): `MemberService`·`MemberMapper`에 관리자 목록 조회를 넣은 것을 YAY에게 알린다(마일스톤 `member` 관리자 조회 협의). 저장소에 협의 기록 없음
 - 로컬 `application.properties` 정리(사람): `springdoc.*.enabled=false` 두 줄 때문에 Swagger가 404다. `spring.profiles.default`도 없어 로컬 프로필이 적용되지 않을 수 있다. 디스코드 최신 파일로 받는다
 - 판단 필요: 잘못 인코딩된 `q`(UTF-8 아님)는 400이 아니라 500이다(Tomcat 디코딩 실패, 이번 기획 밖). 검증의 `dev-tokens`(회원 1·2)가 공용 DB에 세션을 남겼는지 확인 못 함
 - SCR-ADM-112 연결 남음: FN-ADM-112-01·02·03 (프론트 연결 관리자 외부 API 사용량 화면 SCR-ADM-112, 프론트 저장소에서 /start. 프론트 마일스톤에 절 있음), FN-ADM-112-02 (Python이 `POST /internal/ai/external-api-calls`를 부른다, 호출마다 쿠키가 있어야 하고 쿠키 없는 백그라운드 호출은 기록되지 않는다, ai 세션)
@@ -23,7 +36,7 @@ SCR-ADM-010 회원 목록 — 끝 (2026-11-02). `GET /api/admin/members`(`member
 - SCR-ADM-114 연결 남음: FN-ADM-114-01·02 (프론트 연결 관리자 감사 로그 화면 SCR-ADM-114와 상세 모달, 프론트 저장소에서 /start. 프론트 마일스톤에 절 있음)
 - 프론트 운영 설정 화면(SCR-ADM-110): 탈퇴 회원 보관일수를 읽기 전용으로. 필드를 보내도 200으로 무시돼 수정된 것처럼 보인다(프론트 저장소에서 /start)
 - 공용 DB 정리(사람): 검증의 `dev-tokens`로 생긴 회원 2·6 리프레시 토큰 행을 지울지 정한다. 검증 중 `dev-tokens` 일부가 공용 DB 커넥션 끊김으로 응답 없음(2026-10-30 20:55대, 원인 미확정)
-- 관리자 다음 마일스톤 전 확인(사람): 구현 계획 6절 확인 항목(정지 회원 요청마다 차단 여부, 인기 포토 제외·RSS 피드·알림 기본값 저장 위치, 기준정보 28번). REQ-ADM-014~022 요구사항정의서 반영은 별도 에이전트가 맡는다(2026-10-30 사람). 다른 담당 도메인 화면은 계획 2절 "협의" 표대로 먼저 이야기한다. 감사 로그가 필요한 관리자 기능은 `AdminTaskLogService.record`를 `@Transactional` 안에서 부른다
+- 관리자 다음 마일스톤 전 확인(사람): 구현 계획 6절 확인 항목(인기 포토 제외·RSS 피드·알림 기본값 저장 위치, 기준정보 28번). REQ-ADM-014~022 요구사항정의서 반영은 별도 에이전트가 맡는다(2026-10-30 사람). 다른 담당 도메인 화면은 계획 2절 "협의" 표대로 먼저 이야기한다. 감사 로그가 필요한 관리자 기능은 `AdminTaskLogService.record`를 `@Transactional` 안에서 부른다
 - SCR-ADM-110 연결 남음: FN-ADM-110-01~04 (프론트 연결 관리자 운영 설정 화면 SCR-ADM-110, 프론트 저장소에서 /start. 프론트 마일스톤에 절 있음)
 - 관리자 문서 후속(사람): DMS 기능명세서 폴더에 "관리자" 하위 폴더를 만들어 명세서를 옮긴다(도구로는 폴더 생성 불가). 공통레이아웃 FN-COM-006-04 건강기록 2차 메뉴명과 랜딩 화면 ID(SCR-LAN-001 vs SCR-MAN-002) 정리. 프론트 저장소 `milestone.md` 담당 표에도 관리자 추가(frontend-83에 전달함)
 - SCR-AIM-011 연결 남음: FN-AIM-011-11 (Python이 `PATCH /internal/ai/conversations/{번호}`를 실제로 부르는 확인, ai 저장소 `docs/api/internal.md` 초안 행 확정, ai 세션). PR을 올리면 PR 번호를 ai-2e 세션에 알린다
@@ -42,8 +55,6 @@ SCR-ADM-010 회원 목록 — 끝 (2026-11-02). `GET /api/admin/members`(`member
 - 키 제거가 develop에 반영되면 Python 세션(nyangmeong-ai-8a)에 알린다. 그쪽은 이 알림 뒤에 `X-Internal-Key` 헤더·`INTERNAL_API_KEY` 검사·`BACKEND_INTERNAL_KEY` 정리와 실제 연결 확인(`BACKEND_BASE_URL=http://localhost:8080`)을 한다. 그 전에 Python이 헤더를 먼저 빼도 키 제거된 Spring은 무시한다 / Spring→Python HTTP 클라이언트(OCR·캐릭터 실제 구현)는 키 없이 호출한다. Python의 `INTERNAL_API_KEY` 검사가 지워진 뒤에 붙인다
 - 요청자에게 알린다: AI매니저 FN-AIM-009-10·21과 건강기록 FN-HLT-002-41 명세서에 아직 "내용 = 병원명". 사용처로 고치고 SCR-HLT-002에 사용처 칸(선택, 80자, 병원명 기본값)을 넣는다
 - 로컬 테스트 DB `nyangmeong_seedtest`가 필요 없으면 `DROP DATABASE nyangmeong_seedtest`(사람)
-- 프론트엔드: `getMe` → `/auth/me` 변경(frontend 세션, 커밋 전)과 아래 프론트 변경을 커밋한다
-- 하네스 공통화(2026-10-22)의 `scripts/` 5개 수정을 공용 하네스 PR로 올린다(커밋에서 뺐다)
 - 프론트 저장소: 같은 이름 스크립트에 같은 macOS 수정(`$( )` 안 `case (패턴)`, `sed -E`, `sed -i` 대신 임시 파일·`mv`, `{…;}`, 한글 앞 `cut -c` 대신 `sed`)을 적용하고, 커밋 전인 `verify-loop.sh` `scripts` 보호·verify·end 스킬 수정과 함께 프론트 PR
 - 하네스 아직 못 돌려 본 것: `pr-prep.sh --allow-dirty`(다음 PR 때), 검증 3회 실패 넘기기(다음 화면 작업)
 - ERDCloud `EXPND.IDMPT_DMND_ID`를 `EXPND_YMD` 뒤로, `EXPND.EXPND_PLCUS_NM`을 `DTL_MTTR` 앞으로 옮긴다(화면에서 끌기, 사람)
@@ -68,7 +79,6 @@ SCR-ADM-010 회원 목록 — 끝 (2026-11-02). `GET /api/admin/members`(`member
 - 팀에 알린다: 배치 패키지 `job` → `scheduler`(기능 분배 정본은 아직 `job`과 AIM-006 담당 YAY), 케어 일정 사전 알림 `CareScheduleAlarmEvent`, 메일 `global/mail/MailSender`(로그만), 스케줄러 `global/batch/SchedulingConfig`. 알림은 `EventPublisher.publish(new NotificationEvent(...))`(@Transactional 안), 반려동물 권한 `global/auth/PetAuthorizer`, 파일 `global/file/FileStore`, 공통코드 `GET /api/common-codes?prntComCd=`.
 - 팀에 알린다: 개인 로컬 DB는 `application-local.properties`(git 제외)에 `spring.datasource.*` 세 줄. `nyangmeong_` 접두어 스키마에 `db/` 기준 SQL 두 개와 `db/migration/`을 차례로 실행해 만든다
 - YAY에게 알린다: 로그인·재발급·로그아웃은 `auth/controller/AuthController`에 `LoginSessionManager`의 `issue`·`rotate`·`revoke`로. 새 공개 경로는 `app.security.permit-all-paths`에. 로그인이 생기면 `DevTokenController` 삭제. 스타터 분석(캡챠 LGN_ATMPT_LMT, 회원 조회 ACNT_EML_HMAC, 소셜 SNS_ACNT_LINK)과 nct-backend OAuth2 핸들러·`CustomOAuth2UserService`(위치는 `docs/OPEN_ISSUES.md`)도 넘긴다
-- `global/validation`은 처음 필요한 YAY(닉네임·휴대전화·비밀번호 검증)가 요청하면 만든다
 - 디스코드 공유 `application.properties`: `app.front-base-url=http://localhost:5173` 추가, 팀 공용 `app.crypto.*`·`app.jwt.secret-base64` 키를 정해 넣고 `mybatis.configuration.map-underscore-to-camel-case`는 넣지 않는다
 - 팀 안건: application.properties를 일반 설정(커밋) + git 제외 `application-secret.properties`로 나눌지 `docs/OPEN_ISSUES.md`에 올린다
 - 로컬 DB 정리(`nyangmeong_local`): RECPT 1~3·그 RECPT_STTS_HSTRY·ATCH_FILE, RGTR_ID `LJS`인 PET 4~6·BRUP_REL, PIXEL_CHAR 2와 작업·사진·이력, ITEM 1~3·6·7과 HLD_ITEM, ATCH_FILE 1~5, `uploads/` 아래 파일, RFRSH_TKN 회원 1 테스트 행(`REG_DT >= '2026-10-22'`). 확인용 회원 1·SYS_STNG는 둔다
