@@ -2,37 +2,26 @@
 
 ## 지금 하는 것
 
-SCR-CMU-003 펫뉴스 — 끝남 (승인 2026-11-02 10:12, 시작 2026-11-02 10:05, 검증 통과 2회차, 사람 확인 2026-11-02)
-기준: 커뮤니티 기능명세서 v0.8·화면설계서 v0.8(2026-11-01). `docs/api/community.md` `GET /news`·`GET /news/{newsSn}` 행, `NewsSummary`·`NewsResponse`
-결정(사람 2026-11-02): 수집원은 Google News RSS 검색, 검색어 `반려동물 OR 반려견 OR 반려묘 OR 강아지 OR 고양이`. 원문 주소를 풀어 `og:description`(요약)·`og:image`(썸네일)를 읽고, 실패하면 요약은 제목·썸네일은 NULL. 본문 전체는 저장하지 않는다
-- 공통 파일: `community/domain/News.java`(NEWS VO), `NewsCategory.java`(CMUG06 enum: `CMUC0018` 건강·`CMUC0019` 생활·`CMUC0020` 정책·`CMUC0021` 여행, `exists()`), `NewsSource.java`(CMUG07: `CMUC0022` 외부 언론사·`CMUC0023` 관리자 등록), `community/mapper/NewsMapper.java`, `mapper/community/NewsMapper.xml`, `community/service/NewsService.java`, `community/controller/NewsController.java`, `community/dto/NewsSummary.java`·`NewsResponse.java`·`NewsSearchCond.java`. `ErrorCode` 커뮤니티 구획에 `NEWS_NOT_FOUND`(404). 로그인 필요(다른 커뮤니티 API와 같다). 조회 조건 `USE_YN = 'Y'`(NEWS에 `DEL_YN` 없음). 댓글·좋아요 없음
-- FN-CMU-003-01 목록 조회: `GET /api/news` → `PageResponse<NewsSummary>`(10건, `PageQuery` `sizeOr(10)`). 정렬 `PBLCN_DT DESC, NEWS_SN DESC`. 출처 배지 `newsSrcCdNm`은 `LEFT JOIN COM_CD ... AND COM_CD_PRNT_SN IS NOT NULL`. 외부·관리자 등록을 함께 돌려준다. 완료 조건 명령: `./gradlew build -q`, `NewsControllerTest` 목록 200·필드·페이지 바인딩. 화면: Postman `GET /api/news` → 최신순 10건·total
-  - `NewsSummary`에 `srcPressNm`(언론사 배지, 설계서 목록에 언론사명), `newsCn`(설계서 목록에 요약 줄, `LEFT(NEWS_CN, 200)`)을 더한다. 구현 전에 `docs/api/community.md` `NewsSummary` 절과 `GET /news` 행 설명(쿼리 `newsClsfCd`·`keyword`·`page`·`size`)을 고친다
-- FN-CMU-003-02 카테고리 필터: 쿼리 `newsClsfCd`(없거나 공백이면 전체) → `N.NEWS_CLSF_CD = #{newsClsfCd}`(인덱스 `IDX_NEWS_1`). CMUG06 하위 코드가 아니면 400 `INVALID_INPUT_VALUE`. 완료 조건 명령: `NewsServiceTest` 없는 코드 → 400, 공백 → 조건 없음. 화면: `?newsClsfCd=CMUC0018` → 건강만, `?newsClsfCd=XXXX` → 400
-- FN-CMU-003-03 키워드 검색: 쿼리 `keyword`(앞뒤 공백 제거, 빈 값은 조건 없음) → `(N.NEWS_TTL LIKE ... OR N.NEWS_CN LIKE ...)`, 카테고리와 AND. 완료 조건 명령: `NewsMapperSqlTest` 카테고리·키워드를 함께 주면 AND와 괄호 OR. 화면: `?keyword=입양` → 제목·요약에 "입양"이 든 것만
-- FN-CMU-003-04 상세 조회: `GET /api/news/{newsSn}` → `NewsResponse`(초안 그대로). 없거나 `USE_YN = 'N'`이면 404 `NEWS_NOT_FOUND`. 외부 기사의 `newsCn`은 요약뿐, `orgtxtPath`가 원문보기 링크. 관리자 등록 뉴스는 `orgtxtPath` null(원문보기 미노출은 프론트가 `newsSrcCd`로 판단). 하단 최신 5건은 별도 API 없이 `GET /api/news?size=5`. 완료 조건 명령: `NewsServiceTest` 없는 번호 → 404. 화면: 상세 200·`newsSrcCdNm`, 없는 번호 404
-- FN-CMU-003-06 뉴스 수집: 
-  - `global/external/NewsFeedClient.java`(인터페이스)·`GoogleNewsFeedClient.java`·`NewsFeedItem.java`·`NewsFeedProperties.java`(`app.news.*`). RSS 호출과 파싱은 Spring `RestClient` + JDK XML(DOM). 기사마다 ① RSS 링크에서 원문 주소 풀기(기사 페이지의 `data-n-a-sg`·`data-n-a-ts` → `batchexecute` POST, 비공식) ② 원문 페이지 앞부분(최대 512KB)에서 `og:description`·`og:image` 읽기. 단계마다 5초 제한, 실패는 WARN 로그 후 대체값, 기사 사이 간격 `app.news.request-interval-ms`(기본 1000)
-  - `community/service/NewsService.collect(LocalDate)`: 어제~오늘 검색(`after:`·`before:`) → `ORGTXT_PATH`가 이미 있는 기사는 건너뜀(원문 주소 풀기 전) → 제목 끝 ` - 언론사` 제거, `SRC_PRESS_NM` = `<source>`, `PBLCN_DT` = `pubDate`(KST), `NEWS_SRC_CD` = `CMUC0022`, 길이 넘치면 자름 → 분류 → `INSERT IGNORE`(UK_NEWS_1). 반환은 저장 건수. 네트워크 호출 중 트랜잭션을 잡지 않는다
-  - `ORGTXT_PATH`는 RSS의 Google News 링크(브라우저에서 원문으로 이동)를 그대로 저장한다. 원문 주소 풀기가 성공하든 실패하든 같은 값이라 중복 판정이 흔들리지 않는다
-  - 분류: `KWRD_DICT`의 `DICT_USG_CD = 'AIMC0039'`(뉴스 분류) `USE_YN = 'Y' AND DEL_YN = 'N'` 행을 `SORT_SEQ` 순으로 읽어 `KWRD_CN`(쉼표 구분)이 제목에 들면 `MPNG_CD`, 하나도 안 걸리면 `CMUC0019` 생활. 사전 행은 관리자 SCR-ADM-050(LJS)이 고친다
-  - `community/service/NewsCollectJob.java`(`BatchJob`, `BatchType.NEWS_COLLECT` = `SYSC0028` 뉴스 수집, cron `0 0 6,18 * * *`, `app.news.batch-enabled=true`일 때만 등록). 관리자 수동 실행은 기존 `POST /api/admin/batches/SYSC0028/run`
-  - `db/` 기준 파일: `insert_base_data` v0.11 (6) — `SYSC0028` 뉴스 수집(SYSG02), `KWRD_DICT` 뉴스 분류 초기 행(건강: 건강·질병·병원·백신·예방접종·진드기·수의사…, 정책: 정부·법·제도·의무화·과태료·지자체·조례…, 여행: 여행·동반·숙소·캠핑·휴가…). 변경 절에 기존 DB용 INSERT 주석
-  - `application.properties.example` 커뮤니티 구획: `app.news.rss-url=https://news.google.com/rss/search`, `app.news.query=반려동물 OR 반려견 OR 반려묘 OR 강아지 OR 고양이`, `app.news.request-interval-ms=1000`, `# app.news.batch-enabled=true`
-  - 완료 조건 명령: `GoogleNewsFeedClientTest`(RSS 예제 XML 파싱: 제목·언론사·링크·KST 발행일, og 메타 추출, 원문 주소 풀기 실패 시 빈 값), `NewsServiceTest`(키워드 분류·미분류는 생활, 이미 있는 링크는 원문 주소를 풀지 않음, og 실패 시 요약 = 제목·썸네일 null, 제목 언론사 꼬리 제거). 화면: 로컬에서 `app.news.batch-enabled=true` 또는 관리자 수동 실행 → `NEWS`에 기사가 쌓이고 두 번 돌려도 늘지 않음, 샘플 5건 중 요약·썸네일이 채워진 건수 확인(0건이면 원문 주소 풀기가 막힌 것, 대체값으로 저장되는지 확인)
-- 프론트 연결: SCR-CMU-003 펫뉴스 리스트(카테고리 칩 → `newsClsfCd`, 검색 `keyword`, 언론사·「관리자 등록」 배지, 요약 줄, 썸네일 없으면 기본 이미지, 페이지네이션)·상세(출처·작성일, 원문보기는 외부 기사만, 하단 최신 5건 `?size=5`) (프론트 저장소에서 /start)
-이번에 하지 않는 것: FN-CMU-003-05 공유하기(화면만), 관리자 뉴스 등록·숨김·카테고리 변경·키워드 편집(SCR-ADM-050, LJS), 외부 API 호출 기록(`EXTL_API_CALL_LOG`), AI 요약, 기사 본문 저장
-새 의존성: 없음 (HTTP 호출은 JDK `java.net.http`, XML 파싱은 JDK, JSON은 Jackson)
-
-### 추가 요청
-| 번호 | 바꿀 파일 | 완료 조건 | 근거 |
-| --- | --- | --- | --- |
-| 추가-1 | `src/test/java/com/nyangmeong/global/batch/AdminBatchServiceTest.java` | 명령: `./gradlew build -q` 종료 코드 0. 배치 목록 기대값에 `SYSC0028`(뉴스 수집)이 들어간다 | 요청 2026-11-02 "승인": `BatchType.NEWS_COLLECT` 추가로 배치 코드 목록이 다섯 개가 되어 기대값이 네 개로 못 박힌 기존 테스트가 실패 |
-| 추가-2 | `BatchType.java`, `db/20261030_insert_base_data_v0.11.sql`, `application.properties.example`, `AdminBatchServiceTest.java` | 명령: `./gradlew build -q` 종료 코드 0. 뉴스 수집 배치 코드가 `SYSC0028`이고 `SYSC0026`·`SYSC0027`은 쓰지 않는다 | 요청 2026-11-02 사람 확인 중 공용 DB에서 `SYSC0026`은 「회원 정지 만료 해제」(LJS, PR #94), `SYSC0027`은 「탈퇴 회원 파기」(LJS)로 이미 쓰임: 코드 충돌이라 번호를 `SYSC0028`로 |
-| 추가-3 | `src/main/java/com/nyangmeong/community/service/NewsCollectJob.java`, `src/main/resources/application.properties.example` | 명령: `./gradlew build -q` 종료 코드 0. 뉴스 수집 cron이 `0 0 6,18 * * *`(하루 2번, 06시·18시)이다 | 요청 2026-11-02 "추천한대로 06시와 18시로 바꿀게": 하루 2번 수집 |
-| 추가-4 | `src/main/resources/application-prod.properties` | 명령: `./gradlew build -q` 종료 코드 0. 운영(prod)에서 `app.news.batch-enabled=true`로 뉴스 수집 배치가 켜진다(케어미션과 같은 방식, 주석 한 줄 포함) | 요청 2026-11-02 "운영 설정은 추천대로 운영에서 켜도록 한다" |
+SCR-CMU-003 펫뉴스 · 중복 기사 거르기 — 끝남 (승인 2026-11-02 13:42, 시작 2026-11-02 13:38, 검증 통과 1회차, 사람 확인 2026-11-02)
+기준: 명세 기능 ID 추가 없음(사람 요청 2026-11-02, `milestones/KSJ.md` 완료 조건). 걸치는 기능 FN-CMU-003-06 뉴스 수집·FN-CMU-003-01 목록. 문서는 이전 기획 기준(커뮤니티 기능명세서·화면설계서 v0.8)과 같아 다시 받지 않았다. API·DTO·DB 구조·`ErrorCode` 변경 없음
+- 정규화 규칙(①②③ 공통): 대괄호 머리말(`[단독]`·`[포토]`·`【…】`) 통째 제거 → 글자·숫자(`\p{L}\p{N}`) 말고는 모두 제거(공백·괄호 문자·따옴표·말줄임표 등) → 영문 소문자. 예: 「[포토] 여름철 산책, 시간 추천 '관련 소식'」 → `여름철산책시간추천관련소식`
+- 비교 대상: 이번 수집에서 이미 받아들인 기사 + DB의 최근 기사(`PBLCN_DT >= 기준일 - 7일`, `USE_YN` 상관없이: 관리자가 숨긴 기사의 쌍둥이도 거른다). `NewsMapper.selectRecentNews(LocalDateTime since)` → `NEWS_TTL`·`NEWS_CN`만(`News` VO 재사용)
+- ① 같은 제목: 정규화한 제목이 비교 대상과 같으면 언론사가 달라도 건너뛴다. 원문 미리보기(`fetchPreview`)를 부르기 전에 판정해 네트워크 호출을 아낀다. 완료 조건 명령: `NewsServiceTest` 「같은_제목이면_언론사가_달라도_미리보기_없이_건너뛴다」(피드 안 중복·DB 최근 기사와 중복 둘 다). 화면: 로컬 수동 실행 `POST /api/admin/batches/SYSC0028/run` 로그에 건너뛴 기사와 걸린 기존 제목이 INFO로 나온다
+- ② 비슷한 제목: 정규화한 제목의 글자 2-gram 다이스 계수가 0.6 이상이면 건너뛴다. 두 제목이 모두 정규화 8자 이상일 때만 본다(짧은 제목 오판 방지). 문턱값은 상수 `SIMILARITY_THRESHOLD`. ①과 같이 미리보기 전에 판정. 완료 조건 명령: `NewsDuplicateCheckerTest`(힐스코리아 「…4종 선보여…후기 공개」/「…4종 인기」 꼴 → 중복, 주제가 다른 강아지 기사 두 건 → 중복 아님, 7자 이하 제목 → 유사도 안 봄). 화면: 공용 DB 기존 기사로 문턱값 점검(아래 「확인용 SQL」 결과 중 사람이 같은 기사라고 본 쌍이 0.6 이상인지)
+- ③ 요약 대체: 미리보기 요약을 받은 뒤 (가) 비교 대상 중 제목이 다른 기사가 같은 요약(앞뒤 공백 제거 후 같음)을 이미 가졌거나 (나) 제목의 낱말(공백으로 나눠 정규화한 2자 이상) 중 요약에 든 것이 하나도 없으면, 기사는 저장하고 요약만 제목으로 바꾼다(기존 og 실패 대체와 같음). 썸네일은 그대로. 완료 조건 명령: `NewsServiceTest` 「다른_제목과_요약이_같으면_요약을_제목으로_바꾼다」「제목과_겹치는_낱말이_없는_요약은_제목으로_바꾼다」(한겨레 「경제/금융 핵심 정리…」, YTN 「VOD, 클립영상…」 꼴), 겹치는 낱말이 있으면 요약 유지
+- 바꿀 파일: `community/service/NewsDuplicateChecker.java`(새 파일, 빈 아닌 일반 클래스: 정규화·유사도·요약 판정, 수집 한 번마다 최근 기사로 만들고 받아들인 기사를 더해 간다), `NewsService.collect()`(①② 판정 → 미리보기 → ③ → 저장 성공 시 checker에 추가, 끝 로그 `피드 N건 중 새로 저장 M건, 중복 건너뜀 K건`), `community/mapper/NewsMapper.java`·`mapper/community/NewsMapper.xml`(`selectRecentNews`), 테스트 `NewsServiceTest`·`NewsDuplicateCheckerTest`(새 파일). 완료 조건 명령: `./gradlew build -q` 종료 코드 0, 기존 `NewsServiceTest`가 그대로 통과(기존 테스트는 `selectRecentNews` 빈 목록)
+- 이미 쌓인 데이터(사람이 공용 DB에서 실행, DB 구조 변경 없음): 핸드오프 「사람이 할 일」에 SQL 두 개를 남긴다. 기준 파일(`db/`)에는 넣지 않는다(일회성 데이터 정리)
+  - 같은 제목 숨기기: MySQL 8 `REGEXP_REPLACE`로 위 정규화를 흉내 내 정규화 제목별 `MIN(NEWS_SN)`만 남기고 `UPDATE NEWS SET USE_YN = 'N'` (`NEWS_SRC_CD = 'CMUC0022'`만)
+  - 겹치는 요약 고치기: 제목이 다른 기사 2건 이상이 같은 `NEWS_CN`을 가지면 `NEWS_CN = NEWS_TTL`
+  - 비슷한 제목(②)과 낱말 안 겹치는 요약(③나)은 SQL로 못 하므로 확인용 SQL(정규화 제목·요약 나열)만 남기고 대상은 사람이 고른다
+  - 완료 조건 화면: 실행 전 `SELECT` 건수와 실행 뒤 `GET /api/news` 목록에 「여름철 산책 시간 추천 관련 소식」이 1건만 보인다
+이번에 하지 않는 것: 주제 무관 기사 거르기(다음 마일스톤), 영상 기사 제외, 썸네일 공통 이미지 거르기, 관리자 숨김 화면(SCR-ADM-050, LJS), 비슷한 제목 기존 데이터 자동 정리
+새 의존성: 없음
 
 ## 다음에 할 것
+- 다음 작업: SCR-CMU-003 펫뉴스 · 주제 무관 기사 거르기(제외 키워드 방식, `/start`). 이번 작업의 `NewsDuplicateChecker`·`collect()` 흐름 위에 붙는다
+- 이번 작업에서 사람이 받아들인 것: `NewsServiceTest` 「긴 제목과 요약은 컬럼 길이로 자른다」의 요약 입력 변경(③ 규칙 때문, 확인하는 내용은 그대로)
+- 사람이 할 일(공용 DB, 일회성이라 `db/`에 넣지 않음): 시드와 확인용으로 쌓인 기존 뉴스를 지우고 새 중복 판정으로 다시 수집한다(사람 결정 2026-11-02). 대상은 외부 언론사(`CMUC0022`) 143건만이다. 관리자 등록(`CMUC0023`) 시드 14건은 프론트의 「관리자 등록」 배지·원문보기 미노출 확인용으로 남긴다(사람 결정 2026-11-02). 지운 뒤 로컬에서 `app.news.batch-enabled=true` 또는 `POST /api/admin/batches/SYSC0028/run`을 한 번 돌려 로그의 `중복 건너뜀 K건`과 `GET /api/news`를 확인하고, 팀에 공용 DB를 비웠다고 알린다
 - 연결 남음: SCR-CMU-003 펫뉴스 화면 (프론트 연결 리스트(카테고리 칩 `newsClsfCd`, 검색 `keyword`, 언론사 `srcPressNm`·「관리자 등록」 `newsSrcCdNm` 배지, 요약 줄 `newsCn`, 썸네일 없으면 기본 이미지, 페이지네이션)와 상세(원문보기는 외부 기사만, 하단 최신 5건은 `?size=5`), 프론트 저장소에서 /start)
 - 사람이 할 일: 병합 직후 PR에 "DB 변경 있음, v0.11 (6)"와 완료 댓글(공용 DB에 `SYSC0028` 뉴스 수집·뉴스 분류 키워드 3행 실행 완료, 2026-11-02). 공용 DB `NEWS`에 확인용으로 수집한 기사 약 107건이 프론트 개발용으로 남아 있다
 - 사람이 할 일: `origin/LJS`의 `BatchType`(`SYSC0027` 탈퇴 회원 파기)·`AdminBatchServiceTest`·`db/…sql`과 병합 때 겹친다. 병합 뒤 배치 코드는 `SYSC0026`·`SYSC0027`·`SYSC0028` 순이다. 새 코드는 쓰기 전에 공용 DB `SELECT MAX(COM_CD) FROM COM_CD WHERE COM_CD LIKE 'SYSC%'`로 확인한다

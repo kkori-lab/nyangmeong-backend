@@ -1,5 +1,6 @@
 package com.nyangmeong.community.mapper;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
@@ -35,6 +36,11 @@ public interface NewsMapper {
      * 뉴스 분류 키워드 조회
      */
     List<NewsKeyword> selectKeywords();
+
+    /**
+     * 중복 판정용 최근 기사 조회 (숨긴 기사 포함, 제목·요약만)
+     */
+    List<News> selectRecentNews(@Param("since") LocalDateTime since);
 
     /**
      * 수집한 뉴스 등록 : 건너뛴 기사는 0
