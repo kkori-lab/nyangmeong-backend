@@ -24,6 +24,7 @@ import com.nyangmeong.member.domain.JoinPath;
 import com.nyangmeong.member.domain.Member;
 import com.nyangmeong.member.dto.AdminMemberSearchCond;
 import com.nyangmeong.member.dto.AdminMemberSummary;
+import com.nyangmeong.member.dto.AdminWithdrawnMemberSummary;
 import com.nyangmeong.member.dto.MemberNicknameAvailabilityResponse;
 import com.nyangmeong.member.dto.MemberNicknameUpdateRequest;
 import com.nyangmeong.member.dto.MemberPhoneAvailabilityResponse;
@@ -74,6 +75,24 @@ public class MemberService {
         PageHelper.startPage(pq.pageOrDefault(), pq.sizeOrDefault());
         List<AdminMemberSummary> rows = memberMapper.selectAdminList(cond, acntEmlHmac, mbrNcnm);
         rows.forEach(row -> row.setMaskedAcntEml(maskEmail(fieldCryptoService.decrypt(row.getAcntEmlEnc()))));
+        return PageResponse.of(new PageInfo<>(rows));
+    }
+
+    /**
+     * 관리자 탈퇴 회원 목록 조회
+     * - 페이지 정보를 잃지 않도록 목록을 새로 만들지 않고 행에 마스킹 값과 파기 예정일만 채움
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<AdminWithdrawnMemberSummary> searchWithdrawnForAdmin(PageQuery pq) {
+        int keepDayCnt = systemSettingService.get().getWhdwlMbrKpngDayCnt().intValue();
+
+        PageHelper.startPage(pq.pageOrDefault(), pq.sizeOrDefault());
+        List<AdminWithdrawnMemberSummary> rows = memberMapper.selectWithdrawnList(MemberStatus.WITHDRAWN.getCode(),
+                keepDayCnt);
+        rows.forEach(row -> {
+            row.setMaskedAcntEml(maskEmail(fieldCryptoService.decrypt(row.getAcntEmlEnc())));
+            row.setPurgeYmd(row.getWhdwlDt().plusDays(keepDayCnt).toLocalDate());
+        });
         return PageResponse.of(new PageInfo<>(rows));
     }
 

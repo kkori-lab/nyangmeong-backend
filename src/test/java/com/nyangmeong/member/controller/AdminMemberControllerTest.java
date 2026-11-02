@@ -41,6 +41,7 @@ import com.nyangmeong.global.security.jwt.TokenCookies;
 import com.nyangmeong.member.domain.SuspensionType;
 import com.nyangmeong.member.dto.AdminMemberSummary;
 import com.nyangmeong.member.dto.AdminSuspensionSummary;
+import com.nyangmeong.member.dto.AdminWithdrawnMemberSummary;
 import com.nyangmeong.member.service.MemberService;
 import com.nyangmeong.member.service.MemberSuspensionService;
 
@@ -134,6 +135,39 @@ class AdminMemberControllerTest {
 
         verify(memberSuspensionService).searchSuspensions(
                 argThat(cond -> "나비".equals(cond.getQ()) && cond.getType() == SuspensionType.PERMANENT), any());
+    }
+
+    @Test
+    @WithMockLoginMember(id = 9L, mbrAuthrtCd = ADMIN)
+    void 관리자는_탈퇴_회원_목록을_조회하고_암호문은_응답하지_않는다() throws Exception {
+        AdminWithdrawnMemberSummary row = new AdminWithdrawnMemberSummary();
+        row.setMbrSn(1L);
+        row.setAcntEmlEnc("암호문");
+        row.setMaskedAcntEml("lea***@gmail.com");
+        row.setPurgeYmd(LocalDate.of(2026, 11, 24));
+        when(memberService.searchWithdrawnForAdmin(any()))
+                .thenReturn(new PageResponse<>(List.of(row), 1, 20, 1L, 1, false));
+
+        mockMvc.perform(get("/api/admin/members/withdrawn"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content[0].maskedAcntEml").value("lea***@gmail.com"))
+                .andExpect(jsonPath("$.data.content[0].purgeYmd").value("2026-11-24"))
+                .andExpect(jsonPath("$.data.content[0].acntEmlEnc").doesNotExist());
+    }
+
+    @Test
+    @WithMockLoginMember(id = 1L)
+    void 일반_회원은_탈퇴_회원_목록을_조회할_수_없다() throws Exception {
+        mockMvc.perform(get("/api/admin/members/withdrawn"))
+                .andExpect(status().isForbidden());
+
+        verify(memberService, never()).searchWithdrawnForAdmin(any());
+    }
+
+    @Test
+    void 비로그인은_탈퇴_회원_목록에_401() throws Exception {
+        mockMvc.perform(get("/api/admin/members/withdrawn"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

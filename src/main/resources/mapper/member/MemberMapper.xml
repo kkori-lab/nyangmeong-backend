@@ -334,4 +334,25 @@
          ORDER BY H.REG_DT DESC
                 , M.MBR_SN DESC
     </select>
+
+    <resultMap id="adminWithdrawnMemberSummaryResultMap" type="com.nyangmeong.member.dto.AdminWithdrawnMemberSummary">
+        <id     column="MBR_SN"       property="mbrSn" />
+        <result column="MBR_NCNM"     property="mbrNcnm" />
+        <result column="ACNT_EML_ENC" property="acntEmlEnc" />
+        <result column="WHDWL_DT"     property="whdwlDt" />
+    </resultMap>
+
+    <select id="selectWithdrawnList" resultMap="adminWithdrawnMemberSummaryResultMap">
+        /* 관리자 탈퇴 회원 목록 조회 : 보관 기간 안의 회원만, 복구 가능 기준과 같다 */
+        SELECT MBR_SN
+             , MBR_NCNM
+             , ACNT_EML_ENC
+             , WHDWL_DT
+          FROM MBR
+         WHERE MBR_STTS_CD = #{withdrawnSttsCd}
+           AND WHDWL_DT IS NOT NULL
+           AND WHDWL_DT &gt; DATE_SUB(NOW(), INTERVAL #{keepDayCnt} DAY)
+         ORDER BY WHDWL_DT DESC
+                , MBR_SN DESC
+    </select>
 </mapper>
