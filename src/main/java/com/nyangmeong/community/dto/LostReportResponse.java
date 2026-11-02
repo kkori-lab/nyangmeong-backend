@@ -11,6 +11,7 @@ import com.nyangmeong.community.domain.LostReportDetail;
  * - 상세·등록·수정 공통
  * - 찾았어요 상태면 작성자가 아닌 회원에게 제목·상태·전환 시각만 주고 나머지는 null (FN-CMU-002-09)
  * - expryCrtrDt 는 작성자에게만 준다
+ * - mbrSn : 작성자 회원 번호(댓글 「작성자」 배지), 찾았어요 비공개 응답은 null
  */
 public record LostReportResponse(
         Long lostTpofSn,
@@ -18,6 +19,7 @@ public record LostReportResponse(
         String pstTtl,
         String lostTpofSttsCd,
         LocalDateTime dscvSwtcDt,
+        Long mbrSn,
         String mbrNcnm,
         LocalDateTime regDt,
         String pstCn,
@@ -48,7 +50,8 @@ public record LostReportResponse(
             boolean liked, boolean owner) {
         String vrtyNm = detail.getVrtySn() != null ? detail.getVrtyNm() : detail.getVrtyDrctInptNm();
         return new LostReportResponse(detail.getLostTpofSn(), detail.getPstSn(), detail.getPstTtl(),
-                detail.getLostTpofSttsCd(), detail.getDscvSwtcDt(), detail.getMbrNcnm(), detail.getPstRegDt(),
+                detail.getLostTpofSttsCd(), detail.getDscvSwtcDt(), detail.getMbrSn(), detail.getMbrNcnm(),
+                detail.getPstRegDt(),
                 detail.getPstCn(), detail.getPetSeCd(), detail.getPetNm(), detail.getVrtySn(), vrtyNm,
                 detail.getColrNm(), detail.getChrcCn(), detail.getLastWtnsDt(), detail.getRgnSn(),
                 detail.getRgnNm(), detail.getWtnsPlcNm(), detail.getWtnsPlcLat(), detail.getWtnsPlcLot(), cnpl,
@@ -62,6 +65,6 @@ public record LostReportResponse(
     public static LostReportResponse closed(LostReportDetail detail) {
         return new LostReportResponse(detail.getLostTpofSn(), detail.getPstSn(), detail.getPstTtl(),
                 detail.getLostTpofSttsCd(), detail.getDscvSwtcDt(), null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null, null, null, null, null, false, false);
+                null, null, null, null, null, null, null, null, null, null, null, null, null, false, false);
     }
 }

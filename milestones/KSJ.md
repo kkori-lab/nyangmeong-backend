@@ -86,7 +86,7 @@
 - 완료 조건: `GET /api/lost-reports?mineYn=true`가 내 실종 글만 돌려주고, 만료 글도 `CMUC0008`로 맨 뒤에 나온다. `mineYn`이 없으면 지금과 같다
 - 연결 남음: SCR-CMU-002 (프론트 연결 리스트의 「내 글만 보기」 토글, 만료 배지, 목록 `owner`로 「내 글」 배지, 프론트 저장소에서 /start)
 
-## SCR-CMU-002 실종센터 · 상세 글쓴이 번호 — 대기
+## SCR-CMU-002 실종센터 · 상세 글쓴이 번호 — 끝
 - 기능: 명세 기능 ID 추가 없음. 걸치는 기능 FN-CMU-002-07 댓글·대댓글 등록(글쓴이 댓글 「작성자」 배지)
 - 기다리는 것: 프론트 SCR-CMU-002 실종센터 · API 연결(끝, 2026-10-30)
 - 완료 조건: `GET /api/lost-reports/{lostTpofSn}` 응답에 글쓴이 `mbrSn`이 온다(찾았어요로 닫힌 응답은 null). 프론트는 `CommentSection`에 `authorSn={post.mbrSn}`을 이미 넘기고 있어 값만 오면 배지가 붙는다
