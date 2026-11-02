@@ -44,6 +44,12 @@ public interface NotificationMapper {
     void insert(InappNotification notification);
 
     /**
+     * 상태가 같고 앱 알림 채널을 켠 회원 전체에 인앱 알림 일괄 등록
+     */
+    int insertForNormalMembers(@Param("mbrSttsCd") String mbrSttsCd, @Param("notiTypeCd") String notiTypeCd,
+            @Param("notiTtl") String notiTtl, @Param("notiCn") String notiCn, @Param("mvmnPath") String mvmnPath);
+
+    /**
      * 미읽음 알림 개수
      */
     long countUnread(Long mbrSn);

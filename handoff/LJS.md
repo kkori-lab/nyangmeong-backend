@@ -2,28 +2,34 @@
 
 ## 지금 하는 것
 
-SCR-MYP-011 아이템 상점 모달 · 캐릭터 작업·시트 내부 API (SCR-MYP-010 공통) — 끝 (2026-11-02). `/internal/ai/characters` 8개(작업 생성, 성공·실패 보고, 굽기 대상, 착용 시트 저장·실패, 시트 정보·파일)를 쿠키 인증으로 만들고, 시간 초과 배치(SYSC0029)를 넣었다. 공개 `POST /api/pets/{petSn}/pixel-characters`는 지웠다. DB는 v0.12로 올렸다(`PIXEL_CHAR` 시트 컬럼, `CHAR_ITEM_SHEET`, `ITEM.ENGINE_ITEM_KEY`)
+SCR-ADM-040 공지사항 — 끝 (2026-11-02). `/api/admin/notices` 6개(목록·상세·알림 대상 수·등록·수정·비노출·본문 이미지)를 `support`에 만들었다. 등록 때 알림 발송을 체크하면 이벤트 1건으로 정상 회원 중 앱 알림을 켠 회원 전체에 `INSERT … SELECT` 한 번으로 저장한다(추가-1, 191명 0.06초). DB v0.12 (2) `NTC_MTTR.NOTI_SNDNG_DT`·`NOTI_TRGT_CNT`
 
 ## 다음에 할 것
 
+- SCR-ADM-040 연결 남음: FN-ADM-040-01 (프론트 연결 관리자 공지 목록 `/admin/notices`, 프론트 저장소에서 /start), FN-ADM-040-02 (프론트 연결 공지 등록 `/admin/notices/new`와 본문 이미지 넣기, 프론트 저장소에서 /start), FN-ADM-040-03 (프론트 연결 알림 발송 체크와 "회원 N명에게 알림을 보내요" 모달, 프론트 저장소에서 /start), FN-ADM-040-04 (프론트 연결 공지 수정 `/admin/notices/:ntcMttrSn/edit`, 발송 칸 숨김, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
+- 공용 DB(PR): v0.12 (2) `NTC_MTTR` 두 컬럼은 공용 DB에 이미 있다(검증 2026-11-02). 병합 뒤 다시 실행하지 않는다(중복 컬럼 오류). PR 본문에 "DB 변경 있음, v0.12 (2) 공용 DB 적용 완료". 팀원 로컬 DB는 각자 실행
+- 정하기(공용 DB 정리, 사람): 구현·확인 중 생긴 공지 31·32번과 `/notices/32` 알림 191건(최적화 전 방식으로 실제 회원에게 감)을 지울지 정한다. 지우면 `INAPP_NOTI`의 `MVMN_PATH='/notices/<번호>'`와 `NTC_MTTR` 행
+- ERDCloud(사람): `NTC_MTTR.NOTI_SNDNG_DT`(datetime NULL, 알림발송일시)·`NOTI_TRGT_CNT`(decimal(10,0) NULL, 알림대상수)를 추가한다
+- KSJ에게 알린다(PR 전): SCR-ADM-040을 LJS가 구현했다(`support`에 `AdminNoticeController`·`AdminNoticeService`·DTO 7개, `NoticeMapper` 관리자 쿼리, `Notice` VO 필드). 본문 이미지는 `![](/api/files/public/{atchFileSn})` 줄로 넣고 HTML은 저장하지 않는다(`docs/api/issues.md` 고객센터 10). 사용자 공지 상세가 이 줄을 이미지로 그려야 한다. 삭제는 `USE_YN='N'`
+- YAY에게 알린다(PR 전): `MemberService.countNormalMembers()`·`MemberMapper.countByStatus` 추가(공지 알림 대상 수)
+- 팀에 알린다(알림): 여러 회원에게 같은 알림을 보낼 때는 회원마다 `NotificationEvent`를 발행하지 않는다(커밋 뒤 회원마다 트랜잭션, 191명 46초). 공지는 `NoticeNotificationEvent` + `NotificationMapper.insertForNormalMembers` 한 번이다
 - 공용 DB(사람, PR 병합 직후): `db/20261102_create_tables_v0.12.sql` → `db/20261102_insert_base_data_v0.12.sql`의 v0.12 (1)을 실행한다(맨 앞 `SET NAMES utf8mb4;`). 실행 전에는 새 캐릭터 내부 API와 `PIXEL_CHAR` 조회가 `Unknown column`이다. 로컬 `nyangmeong_local`에는 사람이 실행했다
 - 팀에 알린다(PR): DB 기준 파일이 v0.12로 바뀌었다. v0.11 두 파일은 `db/archive/v0.11/`에 있고, 아직 병합 안 된 브랜치의 v0.11 변경 항목은 v0.12 파일의 변경 절로 옮겨야 한다. `handoff/KSJ.md`에 옛 v0.11 경로가 남아 있다(KSJ)
 - ERDCloud(사람): `PIXEL_CHAR.BODY_SHEET_FILE_SN`·`SHEET_SCALE`·`SHEET_ORIGIN_X`·`SHEET_ORIGIN_Y`, 새 테이블 `CHAR_ITEM_SHEET`, `ITEM.ENGINE_ITEM_KEY`를 추가한다
 - 병합 순서(ai-d1): 백엔드 PR 먼저, 그다음 AI 저장소 `LJS`(`b2f2e84`, 쿠키 전환) PR. Python이 먼저 들어가면 캐릭터 생성이 실패한다. 백엔드 PR 번호를 ai-d1 세션에 알린다
+- 정하기: 옛 흐름으로 만든 캐릭터(시드 포함)는 맨몸 시트가 없어 미리보기가 404 `PIXEL_CHARACTER_NOT_FOUND`이고, 결과 사진이 있어 다시 생성도 `PIXEL_CHARACTER_ALREADY_EXISTS`로 막힌다(ai-d1 확인, 2026-11-02). 시트를 채울지(재생성), 시드를 새 흐름으로 다시 만들지 정한다
 - 정하기(SCR-ADM-042 전): 무료 재생성(FN-MYP-010-23). 사진이 Java로 오지 않아 `finishErrorCheck(regenerate=true)`는 원본 사진이 없어 `FILE_NOT_FOUND`이고 Python에 재생성 API도 없다. 계약을 정한 뒤 `CharacterCreationWorker`·`CharacterGenerator`·`FakeCharacterGenerator`를 정리한다
 - 굽기 켜기 전(AI 저장소와 함께): 백그라운드 호출이 쿠키를 쓰므로 `access_token`(30분)이 생성·굽기 중에 만료되면 성공 보고·시트 저장이 401이다. 성공 보고를 잃은 작업은 10분 뒤 시간 초과로 실패하고 다시 요청할 수 있다
 - 시드(SCR-ADM-070): `ENGINE_ITEM_KEY`는 이름이 같은 14개만 넣었다. AI `items.json` 26개와 시드 24개(신발 `MYPC0006` 4개 포함)를 맞춘다. 교체된 착용 시트의 이전 `ATCH_FILE`은 연결이 끊긴 채 남는다
 - 테스트 부족: 시간 초과 조회(`PRCS_BGNG_DT < NOW() - INTERVAL 10 MINUTE`) 경계를 실제 DB에서 돌려 보지 않았다(매퍼 목)
 - 로컬 DB 정리(`nyangmeong_local`, 사람): 검증·확인으로 생긴 반려동물 5의 `PIXEL_CHAR` 601·`CHAR_CRT_JOB` 780·`ATCH_FILE` 4178과 결과 사진, 반려동물 10의 캐릭터 데이터. 반려동물 삭제 API나 `DEL_YN='Y'`로 지운다
 - 로컬 Python 서버(사람): 8000은 `--reload`로 띄운다. 14:29에 띄운 옛 프로세스가 가짜 저장소로 돌아 미리보기가 `PIXEL_CHARACTER_NOT_FOUND`였다
-- SCR-ADM-030 연결 남음: FN-ADM-030-01 (프론트 연결 신고 처리 목록 SCR-ADM-030, 프론트 저장소에서 /start), FN-ADM-030-02 (프론트 연결 상태 탭·필터 영역, 프론트 저장소에서 /start), FN-ADM-030-03 (프론트 연결 상세 `/admin/reports/:dclrSn`, 프론트 저장소에서 /start), FN-ADM-030-04 (프론트 연결 조치 선택과 처리 완료, 프론트 저장소에서 /start), FN-ADM-030-05 (프론트 연결 반려 사유 입력, 프론트 저장소에서 /start), FN-ADM-030-07 (프론트 연결 자동 블라인드 탭과 복구, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
 - 공용 DB(PR): v0.11 (9, 처음 번호 7이 KSJ와 겹쳐 변경)는 사람이 PR 전에 공용 DB에 적용했다고 답했다. 병합 뒤 다시 실행하지 않는다. PR 본문에 "DB 변경 있음, v0.11 (9) 공용 DB 적용 완료"로 적는다. 로컬 `nyangmeong_local`에는 없다
 - 판단 필요(시드): 시드의 자동 블라인드 이력 18건은 사유가 `신고 누적으로 블라인드`라 `신고 누적`과 달라 자동 블라인드 탭에 나오지 않는다. 시드를 고칠지 탭 판별을 넓힐지 정한다. 이 코드 이전에 자동 삭제된 댓글도 나오지 않는다
 - ERDCloud(사람): `DCLR.DCLR_ACTN_CD` 신고조치공통코드(CMUG08)를 추가한다
 - KSJ에게 알린다(PR 전): SCR-ADM-030을 LJS가 구현했다(구현 계획 담당 KSJ, 저장소에 협의 기록 없음). `ReportService` 누적 계산에서 반려를 뺐고 자동 삭제 댓글에 `DCLR_STTS_HSTRY` 표시 행을 남긴다. 알림 `NotificationType.REPORT_RESULT`는 `COMMUNITY`와 코드 `AIMC0010`이 같다
 - 명세 정리(사람): 설정 화면 FN-COM-008-11 항상 받는 알림에 신고 처리 결과를 넣을지 정한다(2026-11-02 결정: 댓글 알림 설정과 무관하게 보낸다. 앱 알림 채널을 끄면 안 간다)
 - 테스트 부족: 복구 뒤 재삭제 판별(`autoTargetCondition`의 `MDFCN_DT` 비교)은 SQL 조건이라 자동 테스트가 없다
-- SCR-ADM-020 연결 남음: FN-ADM-020-01 (프론트 연결 관리자 게시글 목록 화면 SCR-ADM-020, 프론트 저장소에서 /start), FN-ADM-020-02 (프론트 연결 검색·필터 영역, 프론트 저장소에서 /start), FN-ADM-020-03 (프론트 연결 상세 화면 `/admin/posts/:pstSn`, 프론트 저장소에서 /start), FN-ADM-020-04 (프론트 연결 [블라인드] 사유 모달, 프론트 저장소에서 /start), FN-ADM-020-05 (프론트 연결 [복구] 사유 모달, 프론트 저장소에서 /start), FN-ADM-020-06 (프론트 연결 댓글 탭 `?tab=comments`, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
 - 실제 DB 확인 범위(SCR-ADM-020): 사람 확인 내용은 `확인`이라고만 기록됐다. 검증 에이전트는 공용 DB라 블라인드·복구·댓글 삭제 성공 경로를 실행하지 않았다
 - KSJ에게 알린다(PR 전): SCR-ADM-020을 LJS가 구현했다(구현 계획 담당은 KSJ, 저장소에 협의 기록 없음). `community`에 관리자 컨트롤러·서비스, `PostMapper`·`CommentMapper` 관리자 쿼리를 넣었다. `MapperXmlRuleTest` 예외 2줄 추가
 - 펫돌봄 구현 뒤(KSJ·LJS): 관리자 게시판 필터에 펫돌봄을 추가한다. 지금은 CMUG01에 코드가 없다. 화면설계서는 4개다
@@ -41,11 +47,9 @@ SCR-MYP-011 아이템 상점 모달 · 캐릭터 작업·시트 내부 API (SCR-
 - KSJ에게 알린다: 게시글·댓글 작성자 '탈퇴한 회원' 표시가 없어 파기 회원은 `탈퇴회원#<번호>`로 보인다. 쿼리에서 탈퇴 상태로 표시를 바꾼다
 - 회원 탈퇴 처리가 코드에 없다: `POST /members/me/withdraw` 초안은 있으나 `src/main`에 `WHDWL_DT`를 채우는 코드가 없다(YAY에게 확인)
 - 테스트 부족: `selectWithdrawnList`의 보관 기간 경계를 검사하는 매퍼 테스트가 없다. 검증은 같은 조건을 바꾼 읽기 전용 SELECT로 했다
-- SCR-ADM-012 연결 남음: FN-ADM-012-01·03·05 (프론트 연결 관리자 회원 제재 화면 `features/adminMember/api.js` `suspendMember`·`releaseMember`와 회원 정지 모달, 프론트 저장소에서 /start), 정지 회원 목록 (프론트 연결 `getAdminSuspensions`, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
 - 위험, PR 병합 전(사람): v0.11 (4) 없는 DB에서는 `selectBySn`이 `Unknown column`이라 `GET /api/members/me` 등 기존 API도 500이다. 공용 DB에는 규칙의 "병합 직후"가 아니라 병합 전에 실행하고 팀에 각자 로컬 DB 실행을 알린다. 사람이 실행했다고 답했으나(2026-11-02) 어느 DB인지는 기록이 없다
 - ERDCloud(사람): `MBR.SUSPN_END_DT` 정지종료일시를 추가한다
 - 판단 필요: 구현 계획에는 정지 안내 알림이 있으나 기능명세서에 없어 넣지 않았다. `suspnDayCnt`가 빠진 정지 요청은 영구 정지로 처리된다(프론트 계약). 만료 배치는 하루 한 번이라 00:00에 서버가 내려가 있으면 수동 실행 전까지 정지가 이어진다
-- SCR-ADM-010 연결 남음: FN-ADM-010-01 (프론트 연결 관리자 회원 목록 화면 `features/adminMember/api.js` `getAdminMembers`, 프론트 저장소에서 /start), FN-ADM-010-04 (프론트 연결 행 클릭 이동, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
 - 로컬 `application.properties` 정리(사람): `springdoc.*.enabled=false` 두 줄 때문에 Swagger가 404다. `spring.profiles.default`도 없어 로컬 프로필이 적용되지 않을 수 있다. 디스코드 최신 파일로 받는다
 - 판단 필요: 잘못 인코딩된 `q`(UTF-8 아님)는 400이 아니라 500이다(Tomcat 디코딩 실패, 이번 기획 밖). 검증의 `dev-tokens`(회원 1·2)가 공용 DB에 세션을 남겼는지 확인 못 함
 - SCR-ADM-112 연결 남음: FN-ADM-112-01·02·03 (프론트 연결 관리자 외부 API 사용량 화면 SCR-ADM-112, 프론트 저장소에서 /start. 프론트 마일스톤에 절 있음), FN-ADM-112-02 (Python이 `POST /internal/ai/external-api-calls`를 부른다, 호출마다 쿠키가 있어야 하고 쿠키 없는 백그라운드 호출은 기록되지 않는다, ai 세션)
@@ -65,7 +69,6 @@ SCR-MYP-011 아이템 상점 모달 · 캐릭터 작업·시트 내부 API (SCR-
 - 관리자 문서 후속(사람): DMS 기능명세서 폴더에 "관리자" 하위 폴더를 만들어 명세서를 옮긴다(도구로는 폴더 생성 불가). 공통레이아웃 FN-COM-006-04 건강기록 2차 메뉴명과 랜딩 화면 ID(SCR-LAN-001 vs SCR-MAN-002) 정리. 프론트 저장소 `milestone.md` 담당 표에도 관리자 추가(frontend-83에 전달함)
 - SCR-AIM-011 연결 남음: FN-AIM-011-11 (Python이 `PATCH /internal/ai/conversations/{번호}`를 실제로 부르는 확인, ai 저장소 `docs/api/internal.md` 초안 행 확정, ai 세션). PR을 올리면 PR 번호를 ai-2e 세션에 알린다
 - 기다림(ai 세션 연결) — 영수증 Python 중심 연결(백엔드 PR #64·#67, ai 세션 진행 중): Python `FakeReceiptRepository`를 `POST /internal/ai/receipts`(multipart `file`·`petSn`·`ocrDmndSrcCd` — Python의 `ocrRqstSrcCd` 값을 이 이름으로, 쿠키 + `X-Requested-With`, 201 `{recptSn}`)·`POST /internal/ai/receipts/{recptSn}/result`(JSON `{ocrRslt: RECOGNIZED|UNRECOGNIZED|TIMEOUT|API_ERROR|CANCELED, ocr?}`, 200 `{recptSn, ocrPrcsSttsCd}`, 분석중 아니면 409)로 바꾸고 ai `docs/api/internal.md` 미정 2행을 확정으로. 실패 때 `finally`로 `API_ERROR`·`TIMEOUT` 보고 요청 포함
-- SCR-AIM-013 연결 남음: FN-AIM-013-04 (프론트 연결 AI 대화창 [＋] 업로드는 Python `POST /ai/receipts` `ocrRqstSrcCd=AIMC0031`, 프론트 저장소에서 /start), FN-AIM-013-06 (프론트 연결 본창 "인식 결과 확인" 모달 `getChatReceiptResult`를 `GET /api/receipts/{recptSn}?petSn=`(`{recptSn, petSn, ocrPrcsSttsCd, failRsn, ocr}`)로, 프론트 저장소에서 /start, 모달 열기 파라미터는 JAJ와 협의). 프론트 저장소 마일스톤에 연결 절 넣기(옆 폴더가 없어 사람)
 - 팀에 알린다(SCR-AIM-013): 공통코드 `AIMC0031` AI 대화창은 migration 없이 기준 데이터 SQL에만 넣었다. 각자 로컬 DB에 그 한 줄을 직접 넣는다(공용 DB에는 이미 있음). 검증·확인 중 공용 DB에 만든 RECPT 504번 이후 행과 그 이력·ATCH_FILE 정리(사람, 2026-10-29 Python 중심 작업 확인분 포함). DMS 공통코드 정의서 AIMG07에 `AIMC0031` 추가(ai 세션은 아직 안 고쳤다)
 - 케어미션 배치(SJM에게 알린다): `CareMissionService.issue`가 반려동물 약 950마리 × 미션 8개를 트랜잭션 하나에서 한 건씩 INSERT해 약 10분이 걸린다. 그 사이 서버를 재시작하면 롤백돼 다음 정각에 처음부터 다시 출제한다(2026-10-29 14시·15시 로그). 제안: 반려동물 단위 커밋 + 여러 줄 INSERT. 디스코드 공유 `application.properties`의 `app.care-mission.batch-enabled=true`는 로컬에서 끈다(사람, prod는 그대로)
 - SCR-AIM-012 연결 남음: FN-AIM-012-04·08 (Python `FakeRegisterContextRepository`를 `GET /internal/ai/register-context`로, ai 세션). PR을 올리면 ai 세션에 PR 번호를 알린다(ai `docs/api/internal.md` 미정 행을 확정으로). 케어 항목 이름은 이제 실제 데이터다. 알려진 한계: 기본 케어 항목은 케어리스트를 처음 열 때 생겨 한 번도 안 연 반려동물은 기본 항목명이 빠진다(바꾸려면 JAJ와 정한다). JAJ에게 출처 코드 `HLTC0067` 받는 방법 확인(메시지 전달은 사람)

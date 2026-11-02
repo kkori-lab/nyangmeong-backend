@@ -26,6 +26,14 @@ public class EventPublisher {
     }
 
     /**
+     * 공지 전체 알림 이벤트 발행
+     */
+    public void publish(NoticeNotificationEvent event) {
+        checkTransaction();
+        applicationEventPublisher.publishEvent(event);
+    }
+
+    /**
      * 메일 이벤트 발행
      */
     public void publish(MailEvent event) {

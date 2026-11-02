@@ -15,8 +15,79 @@
 | POST | /inquiries | 1:1 문의 작성(multipart, 캐릭터 오류 문의 연동 포함, 접수 상태) | CSC-003-06·08~11, MYP-010-12·24 (기능 분배 3.1절 21·24번) | KSJ | InquiryCreateRequest | InquiryResponse |
 | DELETE | /inquiries/{otoInqrySn} | 1:1 문의 삭제(본인, 접수 상태만, 캐릭터 오류 문의 제외, DEL_YN) | 명세 없음(프론트 요청) | KSJ | - | - |
 | PATCH | /inquiries/{otoInqrySn} | 1:1 문의 수정(multipart, 접수 상태에서만) | CSC-003-15 | KSJ | InquiryUpdateRequest | InquiryResponse |
+| GET | /admin/notices | 관리자 공지 목록. 비노출 포함, 고정 먼저 그다음 등록일 최신순, 20건씩. `keyword`는 제목 부분 일치. 일반 회원 403 ADMIN_ONLY | ADM-040-01·05 | LJS | AdminNoticeSearchCond | PageResponse<AdminNoticeSummary> |
+| GET | /admin/notices/{ntcMttrSn} | 관리자 공지 상세(수정 화면, 사용 여부 무관). 없으면 404 NOTICE_NOT_FOUND | ADM-040-04 | LJS | - | AdminNoticeResponse |
+| GET | /admin/notices/notification-target-count | 공지 알림 대상 수(정상 회원 수). 발송 확인 모달 "회원 N명에게 알림을 보내요" | ADM-040-03 | LJS | - | AdminNoticeTargetCountResponse |
+| POST | /admin/notices | 공지 등록(201, 감사 로그). `notiSndngYn=true`면 정상 회원마다 공지 인앱 알림을 한 번 보내고 발송 시각·대상 수를 남긴다(앱 알림 채널을 끈 회원은 받지 않지만 대상 수에는 든다). `useYn=false`와 함께 보내면 400 INVALID_INPUT_VALUE | ADM-040-02·03·05 | LJS | AdminNoticeCreateRequest | AdminNoticeResponse |
+| PATCH | /admin/notices/{ntcMttrSn} | 공지 수정·비노출(감사 로그). 알림은 다시 보내지 않는다. 삭제 API는 없고 `useYn=false`로 비노출한다. 없으면 404 NOTICE_NOT_FOUND | ADM-040-04·05 | LJS | AdminNoticeUpdateRequest | AdminNoticeResponse |
+| POST | /admin/notices/images | 공지 본문 이미지 올리기(multipart `image`, 이미지만 10MB, 공개 파일). 본문에는 `![](/api/files/public/{atchFileSn})` 한 줄로 넣는다(issues.md 고객센터 10, 2026-11-02 결정) | ADM-040-02 | LJS | - | AdminNoticeImageResponse |
 
 ## DTO
+
+### AdminNoticeCreateRequest
+쓰는 API: POST /admin/notices
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| ntcMttrTtl | String | Y | 공백 불가, 200자 이하 | NTC_MTTR.NTC_MTTR_TTL, ADM-040-02 |
+| ntcMttrCn | String | Y | 공백 불가, 4,000자 이하. 이미지는 `![](/api/files/public/{atchFileSn})` 줄 | NTC_MTTR.NTC_MTTR_CN, ADM-040-02 |
+| upendFixYn | Boolean | Y | 상단 고정(개수 제한 없음) | NTC_MTTR.UPEND_FIX_YN, ADM-040-05 |
+| useYn | Boolean | Y | false면 비노출 | NTC_MTTR.USE_YN, ADM-040-02 |
+| notiSndngYn | Boolean | Y | 알림 발송. 등록 때만 받는다 | ADM-040-03 |
+
+### AdminNoticeImageResponse
+쓰는 API: POST /admin/notices/images
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| atchFileSn | Long | Y | 공개 이미지 `GET /api/files/public/{atchFileSn}` | ATCH_FILE.ATCH_FILE_SN, ADM-040-02 |
+
+### AdminNoticeResponse
+쓰는 API: GET /admin/notices/{ntcMttrSn}, POST /admin/notices, PATCH /admin/notices/{ntcMttrSn}
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| ntcMttrSn | Long | Y | | NTC_MTTR.NTC_MTTR_SN |
+| ntcMttrTtl | String | Y | | NTC_MTTR.NTC_MTTR_TTL |
+| ntcMttrCn | String | Y | | NTC_MTTR.NTC_MTTR_CN |
+| upendFixYn | boolean | Y | | NTC_MTTR.UPEND_FIX_YN |
+| useYn | boolean | Y | | NTC_MTTR.USE_YN |
+| inqCnt | Integer | Y | 조회수 | NTC_MTTR.INQ_CNT |
+| notiSndngDt | LocalDateTime | N | 알림 발송 시각, null이면 미발송 | NTC_MTTR.NOTI_SNDNG_DT, ADM-040-03 |
+| notiTrgtCnt | Integer | N | 알림 대상 수 | NTC_MTTR.NOTI_TRGT_CNT, ADM-040-03 |
+| regDt | LocalDateTime | Y | | 공통 감사 컬럼 REG_DT |
+| mdfcnDt | LocalDateTime | Y | | 공통 감사 컬럼 MDFCN_DT |
+
+### AdminNoticeSearchCond
+쓰는 API: GET /admin/notices
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| keyword | String | N | 제목 부분 일치, 없거나 공백이면 전체 | ADM-040-01 |
+
+### AdminNoticeSummary
+쓰는 API: GET /admin/notices
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| ntcMttrSn | Long | Y | | NTC_MTTR.NTC_MTTR_SN |
+| ntcMttrTtl | String | Y | | NTC_MTTR.NTC_MTTR_TTL, ADM-040-01 |
+| upendFixYn | boolean | Y | | NTC_MTTR.UPEND_FIX_YN, ADM-040-01 |
+| useYn | boolean | Y | | NTC_MTTR.USE_YN, ADM-040-01 |
+| inqCnt | Integer | Y | | NTC_MTTR.INQ_CNT, ADM-040-01 |
+| notiSndngDt | LocalDateTime | N | null이면 미발송 | NTC_MTTR.NOTI_SNDNG_DT, ADM-040-01 |
+| notiTrgtCnt | Integer | N | | NTC_MTTR.NOTI_TRGT_CNT, ADM-040-01 |
+| regDt | LocalDateTime | Y | 등록일 | 공통 감사 컬럼 REG_DT, ADM-040-01 |
+
+### AdminNoticeTargetCountResponse
+쓰는 API: GET /admin/notices/notification-target-count
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| trgtCnt | int | Y | 정상 회원(`MBR_STTS_CD='USRC0001'`) 수 | MBR.MBR_STTS_CD, ADM-040-03 |
+
+### AdminNoticeUpdateRequest
+쓰는 API: PATCH /admin/notices/{ntcMttrSn}
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| ntcMttrTtl | String | N | 보내면 공백 불가, 200자 이하 | NTC_MTTR.NTC_MTTR_TTL, ADM-040-04 |
+| ntcMttrCn | String | N | 보내면 공백 불가, 4,000자 이하 | NTC_MTTR.NTC_MTTR_CN, ADM-040-04 |
+| upendFixYn | Boolean | N | | NTC_MTTR.UPEND_FIX_YN, ADM-040-05 |
+| useYn | Boolean | N | false면 비노출(삭제 대신) | NTC_MTTR.USE_YN, ADM-040-04 |
 
 ### FaqSummary
 쓰는 API: GET /faqs

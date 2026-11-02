@@ -471,4 +471,11 @@
            AND MBR_STTS_CD = #{mbrSttsCd}
         </if>
     </update>
+
+    <select id="countByStatus" resultType="int">
+        /* 상태별 회원 수 조회 */
+        SELECT COUNT(*)
+          FROM MBR
+         WHERE MBR_STTS_CD = #{mbrSttsCd}
+    </select>
 </mapper>

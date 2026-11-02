@@ -451,4 +451,12 @@ public class MemberService {
     public List<Long> searchExpiredWithdrawn(int keepDayCnt) {
         return memberMapper.selectExpiredWithdrawnMbrSns(MemberStatus.WITHDRAWN.getCode(), keepDayCnt);
     }
+
+    /**
+     * 정상 회원 수 조회 (공지 알림 대상 수)
+     */
+    @Transactional(readOnly = true)
+    public int countNormalMembers() {
+        return memberMapper.countByStatus(MemberStatus.NORMAL.getCode());
+    }
 }
