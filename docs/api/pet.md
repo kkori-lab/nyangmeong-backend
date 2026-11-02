@@ -6,6 +6,8 @@
 
 | 메서드 | 경로 | 설명 | 기능 ID | 담당 | 요청 DTO | 응답 DTO |
 | --- | --- | --- | --- | --- | --- | --- |
+| GET | /admin/members/{mbrSn}/pets | 관리자 회원 상세 반려동물. 연동 중인 관계만, 삭제한 동물 포함, 20건씩. 건강 정보 없음. 일반 회원 403 ADMIN_ONLY, 없는 회원 404 MEMBER_NOT_FOUND | ADM-011-02 | LJS | - | PageResponse\<AdminPetSummary\> |
+| GET | /admin/members/{mbrSn}/point-ledgers | 관리자 회원 상세 포인트 원장. 최신순 20건씩. 일반 회원 403 ADMIN_ONLY, 없는 회원 404 MEMBER_NOT_FOUND | ADM-011-04 | LJS | - | PageResponse\<AdminPointLedgerSummary\> |
 | GET | /breeds | 반려동물 구분별 품종 마스터 목록(`?petSeCd=`) | CMU-002-13, CMU-004-06·13, MYP-003-02 (기능 분배 3.1절 10번) | KSJ | - | List<BreedSummary> |
 | GET | /caregiver-invitations | 내가 보낸 공동양육 초대 목록(계정 전체) | MYP-005-03 | SJM | - | List<CaregiverInvitationSummary> |
 | GET | /caregiver-invitations/{jntBrupInvtnSn} | 받은 초대 상세. 로그인 회원 누구나. 대기중이고 로그인 이메일이 초대 이메일과 같을 때만 초대한 사람·대상 반려동물 카드, 아니면 상태와 가린 이메일만(만료·처리 여부를 이메일보다 먼저 판단) | MYP-005-05·09·10 | SJM | - | CaregiverInvitationResponse |
@@ -33,6 +35,33 @@
 | DELETE | /pets/{petSn}/caregivers/{brupRelSn} | 공동양육 연동 해제. 주양육자의 강제 해제와 공동양육자의 자진 해제 | MYP-004-01, MYP-006-02 | SJM | - | - |
 
 ## DTO
+
+### AdminPetSummary
+쓰는 API: GET /admin/members/{mbrSn}/pets
+
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| petSn | Long | Y | | PET.PET_SN, ADM-011-02 |
+| petNm | String | Y | | PET.PET_NM, ADM-011-02 |
+| petSeCd | String | Y | 종 코드 | PET.PET_SE_CD, ADM-011-02 |
+| vrtyNm | String | N | 품종명 | VRTY.VRTY_NM, ADM-011-02 |
+| vrtyDrctInptNm | String | N | 품종 직접 입력 | PET.VRTY_DRCT_INPT_NM, ADM-011-02 |
+| brupRoleCd | String | Y | 이 회원의 양육 역할 | BRUP_REL.BRUP_ROLE_CD, ADM-011-02 |
+| caregiverCount | Integer | Y | 연동 중 공동양육자 수. 주양육자 제외 | BRUP_REL, ADM-011-02 |
+| delYn | boolean | Y | 삭제 여부 | PET.DEL_YN, ADM-011-02 |
+
+### AdminPointLedgerSummary
+쓰는 API: GET /admin/members/{mbrSn}/point-ledgers
+
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| pntGnlgrSn | Long | Y | | PNT_GNLGR.PNT_GNLGR_SN, ADM-011-04 |
+| pntDlngTypeCd | String | Y | 거래 유형 코드 | PNT_GNLGR.PNT_DLNG_TYPE_CD, ADM-011-04 |
+| pntDlngTypeCdNm | String | Y | 거래 유형 이름 | COM_CD.COM_CD_NM, ADM-011-04 |
+| dlngPnt | Integer | Y | 증감. 부호로 적립·사용 구분 | PNT_GNLGR.DLNG_PNT, ADM-011-04 |
+| dlngAftrBlncPnt | Integer | Y | 거래 후 잔액 | PNT_GNLGR.DLNG_AFTR_BLNC_PNT, ADM-011-04 |
+| memoCn | String | N | | PNT_GNLGR.MEMO_CN, ADM-011-04 |
+| regDt | LocalDateTime | Y | 일시 | PNT_GNLGR.REG_DT, ADM-011-04 |
 
 ### BreedSummary
 쓰는 API: GET /breeds

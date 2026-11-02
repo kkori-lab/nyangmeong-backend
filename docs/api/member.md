@@ -38,6 +38,9 @@
 | POST | /admin/members/{mbrSn}/suspension | 회원 정지(상태 정지, 상태 이력, 모든 세션 폐기, 감사 로그). 종료 일시는 오늘+N일 00:00. 7·30·null 외 값 400 INVALID_INPUT_VALUE, 관리자·본인·탈퇴·이미 정지 409 MEMBER_NOT_SUSPENDABLE, 없는 회원 404 MEMBER_NOT_FOUND | ADM-012-01·02·05 | LJS | AdminMemberSuspendRequest | - |
 | DELETE | /admin/members/{mbrSn}/suspension | 회원 정지 해제(상태 정상, 종료 일시 비움, 상태 이력, 감사 로그). 사유를 본문으로 보낸다. 정지 중이 아니면 409 ALREADY_PROCESSED, 없는 회원 404 MEMBER_NOT_FOUND | ADM-012-03 | LJS | AdminMemberReleaseRequest | - |
 | GET | /admin/members/withdrawn | 보관 기간 안의 탈퇴 회원 목록. 탈퇴 최신순 20건씩. 이메일은 마스킹, 파기 예정일은 탈퇴 일시 + 탈퇴 회원 보관 일수. 파기·복구는 실행하지 않는다. 일반 회원 403 ADMIN_ONLY | ADM-013-01 | LJS | - | PageResponse<AdminWithdrawnMemberSummary> |
+| GET | /admin/members/{mbrSn} | 관리자 회원 상세 기본 정보. 정상·정지·탈퇴·파기 전부. 이메일·휴대전화는 마스킹. 일반 회원 403 ADMIN_ONLY, 없는 회원 404 MEMBER_NOT_FOUND | ADM-011-01 | LJS | - | AdminMemberDetailResponse |
+| GET | /admin/members/{mbrSn}/terms-agreements | 관리자 회원 상세 약관 동의. 사용 중 약관 종류마다 1행, 최신 동의 기록. 기록이 없으면 미동의. 마케팅 동의는 선택 약관 행. 일반 회원 403 ADMIN_ONLY, 없는 회원 404 MEMBER_NOT_FOUND | ADM-011-03 | LJS | - | List\<AdminMemberTermsAgreeSummary\> |
+| GET | /admin/members/{mbrSn}/status-histories | 관리자 회원 상세 상태 이력. 최신순 20건씩. 일반 회원 403 ADMIN_ONLY, 없는 회원 404 MEMBER_NOT_FOUND | ADM-011-05 | LJS | - | PageResponse\<AdminMemberStatusHistorySummary\> |
 | GET | /admin/admins | 탈퇴를 뺀 관리자 목록. 지정 최신순 20건씩, 지정 기록이 없으면 맨 뒤. 이메일은 마스킹. 일반 회원 403 ADMIN_ONLY | ADM-113-01 | LJS | - | PageResponse<AdminAccountSummary> |
 | POST | /admin/admins/{mbrSn} | 관리자 지정(권한 변경, 감사 로그). 대상 검색은 GET /admin/members?q=&status=USRC0001&role=USRC0004. 정지·탈퇴·이미 관리자 409 MEMBER_NOT_APPOINTABLE, 없는 회원 404 MEMBER_NOT_FOUND | ADM-113-02 | LJS | - | - |
 | DELETE | /admin/admins/{mbrSn} | 관리자 해제(권한 일반회원, 감사 로그). 세션은 폐기하지 않고 다음 요청부터 일반 회원이다. 본인·마지막 정상 관리자 409 ADMIN_NOT_RELEASABLE, 관리자 아님·탈퇴 409 ALREADY_PROCESSED, 없는 회원 404 MEMBER_NOT_FOUND | ADM-113-03 | LJS | - | - |
@@ -67,6 +70,48 @@
 | mbrAuthrtCd | String | Y | 회원 권한(USRG02) | MBR.MBR_AUTHRT_CD, ADM-010-01 |
 | regDt | LocalDateTime | Y | 가입일 | MBR.REG_DT, ADM-010-01 |
 | lastLgnDt | LocalDateTime | N | 최근 로그인. 첫 로그인 전이면 null | MBR.LAST_LGN_DT, ADM-010-01 |
+
+### AdminMemberDetailResponse
+쓰는 API: GET /admin/members/{mbrSn}
+
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| mbrSn | Long | Y | | MBR.MBR_SN, ADM-011-01 |
+| mbrNcnm | String | Y | | MBR.MBR_NCNM, ADM-011-01 |
+| maskedAcntEml | String | Y | 앞 3자 + `***` + @도메인 | MBR.ACNT_EML_ENC, ADM-011-01 |
+| maskedMblTelno | String | N | `010-****-1234`. 번호가 없으면 null | MBR.MBL_TELNO_ENC, ADM-011-01 |
+| joinPathCd | String | Y | 가입경로공통코드 | MBR.JOIN_PATH_CD, ADM-011-01 |
+| snsLinks | List\<MemberSnsAccountSummary\> | Y | 연동 중인 SNS 제공자 | SNS_ACNT_LINK, ADM-011-01 |
+| regDt | LocalDateTime | Y | 가입일 | MBR.REG_DT, ADM-011-01 |
+| lastLgnDt | LocalDateTime | N | 최근 로그인 | MBR.LAST_LGN_DT, ADM-011-01 |
+| hldPnt | Integer | Y | 보유 포인트 | MBR.HLD_PNT, ADM-011-01 |
+| mbrSttsCd | String | Y | 회원상태공통코드 | MBR.MBR_STTS_CD, ADM-011-01 |
+| suspnEndDt | LocalDateTime | N | 정지 종료 일시. 영구 정지·정상은 null | MBR.SUSPN_END_DT, ADM-011-01 |
+
+### AdminMemberTermsAgreeSummary
+쓰는 API: GET /admin/members/{mbrSn}/terms-agreements
+
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| trmsFixIdntfKey | String | Y | 약관 종류 | TRMS.TRMS_FIX_IDNTF_KEY, ADM-011-03 |
+| trmsTtl | String | Y | | TRMS.TRMS_TTL, ADM-011-03 |
+| esntlAgreYn | boolean | Y | 필수 약관 여부 | TRMS.ESNTL_AGRE_YN, ADM-011-03 |
+| trmsVerId | String | N | 동의한 버전. 기록이 없으면 null | TRMS.TRMS_VER_ID, ADM-011-03 |
+| agreYn | boolean | Y | 기록이 없으면 false | MBR_TRMS_AGRE.AGRE_YN, ADM-011-03 |
+| agreDt | LocalDateTime | N | 기록이 없으면 null | MBR_TRMS_AGRE.AGRE_DT, ADM-011-03 |
+
+### AdminMemberStatusHistorySummary
+쓰는 API: GET /admin/members/{mbrSn}/status-histories
+
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| mbrSttsHstrySn | Long | Y | | MBR_STTS_HSTRY.MBR_STTS_HSTRY_SN, ADM-011-05 |
+| bfrSttsCd | String | N | 변경 전 상태. 가입 이력은 null | MBR_STTS_HSTRY.BFR_STTS_CD, ADM-011-05 |
+| aftrSttsCd | String | Y | 변경 후 상태 | MBR_STTS_HSTRY.AFTR_STTS_CD, ADM-011-05 |
+| chgRsn | String | N | 사유 | MBR_STTS_HSTRY.CHG_RSN, ADM-011-05 |
+| prcsMbrSn | Long | N | 처리 회원. 배치 처리는 null | MBR_STTS_HSTRY.PRCS_MBR_SN, ADM-011-05 |
+| prcsMbrNcnm | String | N | 처리 회원 닉네임 | MBR.MBR_NCNM, ADM-011-05 |
+| regDt | LocalDateTime | Y | 일시 | MBR_STTS_HSTRY.REG_DT, ADM-011-05 |
 
 ### AdminSuspensionSearchCond
 쓰는 API: GET /admin/members/suspensions

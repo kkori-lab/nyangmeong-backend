@@ -91,7 +91,6 @@ public class MemberRecoveryService {
         if (mblTelnoEnc == null) {
             return null;
         }
-        String mblTelno = fieldCryptoService.decrypt(mblTelnoEnc);
-        return mblTelno.substring(0, 3) + "-****-" + mblTelno.substring(mblTelno.length() - 4);
+        return MemberService.maskPhone(fieldCryptoService.decrypt(mblTelnoEnc));
     }
 }

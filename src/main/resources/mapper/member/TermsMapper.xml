@@ -20,6 +20,50 @@
         <result column="ESNTL_AGRE_YN"      property="esntlAgreYn" />
     </resultMap>
 
+    <resultMap id="adminMemberTermsAgreeSummaryResultMap"
+               type="com.nyangmeong.member.dto.AdminMemberTermsAgreeSummary">
+        <id     column="TRMS_FIX_IDNTF_KEY" property="trmsFixIdntfKey" />
+        <result column="TRMS_TTL"           property="trmsTtl" />
+        <result column="ESNTL_AGRE_YN"      property="esntlAgreYn" />
+        <result column="TRMS_VER_ID"        property="trmsVerId" />
+        <result column="AGRE_YN"            property="agreYn" />
+        <result column="AGRE_DT"            property="agreDt" />
+    </resultMap>
+
+    <!-- 재동의로 한 종류에 버전이 여럿일 수 있어 종류별 최신 1행만, 기록이 없으면 미동의 -->
+    <select id="selectAdminAgreementList" resultMap="adminMemberTermsAgreeSummaryResultMap">
+        /* 회원 약관 동의 조회 */
+        SELECT T.TRMS_FIX_IDNTF_KEY
+             , T.TRMS_TTL
+             , (T.ESNTL_AGRE_YN = 'Y') AS ESNTL_AGRE_YN
+             , L.TRMS_VER_ID
+             , COALESCE(L.AGRE_YN = 'Y', FALSE) AS AGRE_YN
+             , L.AGRE_DT
+          FROM (SELECT TRMS_SN
+                     , TRMS_FIX_IDNTF_KEY
+                     , TRMS_TTL
+                     , ESNTL_AGRE_YN
+                     , SORT_SEQ
+                     , ROW_NUMBER() OVER (PARTITION BY TRMS_FIX_IDNTF_KEY ORDER BY TRMS_SN DESC) AS RN
+                  FROM TRMS
+                 WHERE USE_YN = 'Y') T
+          LEFT JOIN (SELECT S.TRMS_FIX_IDNTF_KEY
+                          , S.TRMS_VER_ID
+                          , A.AGRE_YN
+                          , A.AGRE_DT
+                          , ROW_NUMBER() OVER (PARTITION BY S.TRMS_FIX_IDNTF_KEY
+                                                   ORDER BY A.AGRE_DT DESC, A.MBR_TRMS_AGRE_SN DESC) AS RN
+                       FROM MBR_TRMS_AGRE A
+                       JOIN TRMS S
+                         ON S.TRMS_SN = A.TRMS_SN
+                      WHERE A.MBR_SN = #{mbrSn}) L
+            ON L.TRMS_FIX_IDNTF_KEY = T.TRMS_FIX_IDNTF_KEY
+           AND L.RN = 1
+         WHERE T.RN = 1
+         ORDER BY T.SORT_SEQ
+                , T.TRMS_SN
+    </select>
+
     <!-- TRMS 는 DEL_YN 없음, 사용 여부는 USE_YN -->
     <select id="selectUsableList" resultMap="termsSummaryResultMap">
         SELECT TRMS_SN

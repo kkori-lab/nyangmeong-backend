@@ -15,6 +15,7 @@
         <result column="LAST_LGN_DT"        property="lastLgnDt" />
         <result column="WHDWL_DT"           property="whdwlDt" />
         <result column="SUSPN_END_DT"       property="suspnEndDt" />
+        <result column="HLD_PNT"            property="hldPnt" />
         <result column="NCNM_STNG_CMPTN_YN" property="ncnmStngCmptnYn" />
         <result column="REG_DT"             property="regDt" />
     </resultMap>
@@ -37,6 +38,39 @@
          WHERE ACNT_EML_HMAC = #{acntEmlHmac}
     </select>
 
+    <select id="existsBySn" resultType="boolean">
+        /* 회원 존재 여부 */
+        SELECT EXISTS (SELECT 1 FROM MBR WHERE MBR_SN = #{mbrSn})
+    </select>
+
+    <resultMap id="adminMemberStatusHistorySummaryResultMap"
+               type="com.nyangmeong.member.dto.AdminMemberStatusHistorySummary">
+        <id     column="MBR_STTS_HSTRY_SN" property="mbrSttsHstrySn" />
+        <result column="BFR_STTS_CD"       property="bfrSttsCd" />
+        <result column="AFTR_STTS_CD"      property="aftrSttsCd" />
+        <result column="CHG_RSN"           property="chgRsn" />
+        <result column="PRCS_MBR_SN"       property="prcsMbrSn" />
+        <result column="PRCS_MBR_NCNM"     property="prcsMbrNcnm" />
+        <result column="REG_DT"            property="regDt" />
+    </resultMap>
+
+    <select id="selectStatusHistoryList" resultMap="adminMemberStatusHistorySummaryResultMap">
+        /* 회원 상태 이력 목록 조회 */
+        SELECT H.MBR_STTS_HSTRY_SN
+             , H.BFR_STTS_CD
+             , H.AFTR_STTS_CD
+             , H.CHG_RSN
+             , H.PRCS_MBR_SN
+             , P.MBR_NCNM AS PRCS_MBR_NCNM
+             , H.REG_DT
+          FROM MBR_STTS_HSTRY H
+          LEFT JOIN MBR P
+            ON P.MBR_SN = H.PRCS_MBR_SN
+         WHERE H.MBR_SN = #{mbrSn}
+         ORDER BY H.REG_DT DESC
+                , H.MBR_STTS_HSTRY_SN DESC
+    </select>
+
     <select id="selectBySn" parameterType="long" resultMap="memberResultMap">
         SELECT MBR_SN
              , ATCH_FILE_SN
@@ -47,6 +81,7 @@
              , MBL_TELNO_ENC
              , PSWD_HASH
              , MBR_NCNM
+             , HLD_PNT
              , LAST_LGN_DT
              , SUSPN_END_DT
              , NCNM_STNG_CMPTN_YN

@@ -32,13 +32,16 @@ import com.nyangmeong.global.code.CommonCodeService;
 import com.nyangmeong.global.code.CommonCodeSummary;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.notification.EventPublisher;
 import com.nyangmeong.global.notification.NotificationEvent;
 import com.nyangmeong.global.notification.NotificationType;
+import com.nyangmeong.member.service.MemberService;
 import com.nyangmeong.pet.domain.BrupLinkSttsHstry;
 import com.nyangmeong.pet.domain.BrupRel;
 import com.nyangmeong.pet.domain.Pet;
 import com.nyangmeong.pet.domain.PetDeletedEvent;
+import com.nyangmeong.pet.dto.AdminPetSummary;
 import com.nyangmeong.pet.dto.CaregiverSummary;
 import com.nyangmeong.pet.dto.PetCreateRequest;
 import com.nyangmeong.pet.dto.PetResponse;
@@ -74,8 +77,9 @@ class PetServiceTest {
     private final CareMissionMapper missionMapper = mock(CareMissionMapper.class);
     private final CaregiverInvitationMapper invitationMapper = mock(CaregiverInvitationMapper.class);
     private final ApplicationEventPublisher domainEvents = mock(ApplicationEventPublisher.class);
+    private final MemberService memberService = mock(MemberService.class);
     private final PetService service = new PetService(mapper, authorizer, codes, pixelMapper, events, missionMapper,
-            invitationMapper, domainEvents);
+            invitationMapper, domainEvents, memberService);
 
     @BeforeEach
     void setUp() {
@@ -91,6 +95,26 @@ class PetServiceTest {
         when(mapper.selectPet(PET)).thenAnswer(inv -> storedPet());
         when(mapper.selectBrupRel(anyLong(), eq(PET))).thenReturn(rel(BrupRole.PRIMARY.getCode(), "N"));
         when(mapper.selectCaregivers(PET, PRIMARY, ACCEPTED)).thenReturn(new ArrayList<>());
+    }
+
+    @Test
+    void 관리자_반려동물_목록은_없는_회원이면_404() {
+        doThrow(new CustomException(ErrorCode.MEMBER_NOT_FOUND)).when(memberService).checkExists(2L);
+
+        assertThatThrownBy(() -> service.searchForAdmin(2L, new PageQuery(null, null, null)))
+                .isInstanceOfSatisfying(CustomException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.MEMBER_NOT_FOUND));
+        verify(mapper, never()).selectAdminList(any(), any());
+    }
+
+    @Test
+    void 관리자_반려동물_목록은_공동양육_역할로_세고_삭제_동물도_돌려준다() {
+        AdminPetSummary deleted = new AdminPetSummary();
+        deleted.setDelYn(true);
+        deleted.setCaregiverCount(0);
+        when(mapper.selectAdminList(1L, CO_PARENT)).thenReturn(List.of(deleted));
+
+        assertThat(service.searchForAdmin(1L, new PageQuery(null, null, null)).content()).containsExactly(deleted);
     }
 
     @Test

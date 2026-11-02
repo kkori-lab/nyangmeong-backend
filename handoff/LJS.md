@@ -2,10 +2,15 @@
 
 ## 지금 하는 것
 
-SCR-ADM-113 관리자 계정 — 끝 (2026-11-02). `GET·POST·DELETE /api/admin/admins`로 관리자 목록·지정·해제. 본인과 마지막 정상 관리자는 해제할 수 없고 지정·해제는 감사 로그에 남는다
+SCR-ADM-011 회원 상세 — 끝 (2026-11-02). `GET /api/admin/members/{mbrSn}`와 탭 API(`/pets`, `/terms-agreements`, `/point-ledgers`, `/status-histories`)로 회원 상세를 조회한다. 이메일·휴대전화는 마스킹하고 건강기록·AI 대화·채팅은 없다
 
 ## 다음에 할 것
 
+- SCR-ADM-011 연결 남음: FN-ADM-011-01 (프론트 연결 회원 상세 화면 SCR-ADM-011과 [정지]·[정지 해제] 모달, 프론트 저장소에서 /start), FN-ADM-011-02 (프론트 연결 반려동물 탭, 프론트 저장소에서 /start), FN-ADM-011-03 (프론트 연결 약관 동의 탭, 프론트 저장소에서 /start), FN-ADM-011-04 (프론트 연결 포인트 탭과 [포인트 조정] 이동 SCR-ADM-072, 프론트 저장소에서 /start), FN-ADM-011-05 (프론트 연결 상태 이력 탭, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트는 가짜 응답으로 끝나 있어 필드 이름을 맞춘다
+- 실행해 보지 못한 SQL(SCR-ADM-011): 재동의 시 최신 1행, 동의 기록 없는 약관(`TermsMapper.selectAdminAgreementList`), 해제된 연동 제외(`PetMapper.selectAdminList`). 자동 테스트는 매퍼 목이고 공용 DB에 해당 데이터가 없어 SQL 읽기로만 확인했다. 파기 회원 상세도 데이터가 없어 코드로만 확인했다
+- PR 전 확인(사람): YAY·SJM에게 SCR-ADM-011을 알린다. `member`: `MemberService.checkExists`, `maskPhone` 이동, `Member.hldPnt`, `TermsService`에 `MemberMapper` 주입. `pet`: `PetService`에 `MemberService` 주입, `AdminPetController`·`AdminPointController`. SCR-ADM-072 원장 조회는 `selectAdminLedgerList`를 재사용할 수 있다
+- 공용 DB 정리(사람): SCR-ADM-011 검증의 `dev-tokens`로 회원 1~5 세션이 생겼다. 지울지 정한다
+- 8082 서버(사람): 검증 때 이미 떠 있던 서버(12:18 시작)를 내리지 않았다. 띄운 곳이 확인되지 않았다. 필요 없으면 내린다
 - SCR-ADM-113 연결 남음: FN-ADM-113-02 (프론트 연결 관리자 계정 화면 SCR-ADM-113 목록과 지정 모달, 프론트 저장소에서 /start), FN-ADM-113-03 (프론트 연결 해제 버튼과 확인 모달, 본인·마지막 비활성, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
 - PR 전 확인(사람): YAY에게 SCR-ADM-113을 알린다. `AdminMemberController` 클래스 경로를 `/api/admin`으로 내렸고(기존 URL 그대로) `MemberAuthorityService`를 넣었다. 마일스톤의 협의가 저장소에 기록되지 않았다
 - 판단 필요(SCR-ADM-113): 지정 기록이 없는 기존 관리자는 `apntDt`가 null이다. `MBR_AUTHRT_CD`에 인덱스가 없어 해제 트랜잭션 동안 `MBR`의 많은 행이 잠길 수 있다(부하 상황 확인 안 함)

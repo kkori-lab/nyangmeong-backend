@@ -40,7 +40,9 @@ import com.nyangmeong.global.setting.SystemSetting;
 import com.nyangmeong.global.setting.SystemSettingService;
 import com.nyangmeong.member.domain.JoinPath;
 import com.nyangmeong.member.domain.Member;
+import com.nyangmeong.member.dto.AdminMemberDetailResponse;
 import com.nyangmeong.member.dto.AdminMemberSearchCond;
+import com.nyangmeong.member.dto.AdminMemberStatusHistorySummary;
 import com.nyangmeong.member.dto.AdminMemberSummary;
 import com.nyangmeong.member.dto.AdminWithdrawnMemberSummary;
 import com.nyangmeong.member.dto.MemberNicknameUpdateRequest;
@@ -103,6 +105,58 @@ class MemberServiceTest {
             invocation.<Member>getArgument(0).setMbrSn(mbrSn);
             return 1;
         }).when(memberMapper).insert(any());
+    }
+
+    @Test
+    void 관리자_회원_상세는_이메일과_번호를_마스킹한다() {
+        Member member = stored(7L, MemberStatus.NORMAL.getCode(), "나비집사", "Y");
+        member.setHldPnt(1250);
+        when(memberMapper.selectBySn(7L)).thenReturn(member);
+        when(memberMapper.selectSnsOffrCds(7L)).thenReturn(List.of("USRC0100"));
+
+        AdminMemberDetailResponse response = service.getForAdmin(7L);
+
+        assertThat(response.maskedAcntEml()).isEqualTo("new***@example.com");
+        assertThat(response.maskedMblTelno()).isEqualTo("010-****-5678");
+        assertThat(response.hldPnt()).isEqualTo(1250);
+        assertThat(response.snsLinks()).hasSize(1);
+    }
+
+    @Test
+    void 관리자_회원_상세는_번호가_없으면_null() {
+        Member member = stored(7L, MemberStatus.NORMAL.getCode(), "나비집사", "Y");
+        member.setMblTelnoEnc(null);
+        when(memberMapper.selectBySn(7L)).thenReturn(member);
+        when(memberMapper.selectSnsOffrCds(7L)).thenReturn(List.of());
+
+        assertThat(service.getForAdmin(7L).maskedMblTelno()).isNull();
+    }
+
+    @Test
+    void 관리자_회원_상세와_상태_이력은_없는_회원이면_404() {
+        when(memberMapper.selectBySn(7L)).thenReturn(null);
+        when(memberMapper.existsBySn(7L)).thenReturn(false);
+
+        assertCode(catchThrowable(() -> service.getForAdmin(7L)), ErrorCode.MEMBER_NOT_FOUND);
+        assertCode(catchThrowable(() -> service.searchStatusHistoriesForAdmin(7L, new PageQuery(null, null, null))),
+                ErrorCode.MEMBER_NOT_FOUND);
+        verify(memberMapper, never()).selectStatusHistoryList(any());
+    }
+
+    @Test
+    void 관리자_상태_이력은_매퍼의_최신순을_그대로_돌려준다() {
+        AdminMemberStatusHistorySummary newer = new AdminMemberStatusHistorySummary();
+        newer.setMbrSttsHstrySn(2L);
+        AdminMemberStatusHistorySummary older = new AdminMemberStatusHistorySummary();
+        older.setMbrSttsHstrySn(1L);
+        when(memberMapper.existsBySn(7L)).thenReturn(true);
+        when(memberMapper.selectStatusHistoryList(7L)).thenReturn(List.of(newer, older));
+
+        PageResponse<AdminMemberStatusHistorySummary> page = service.searchStatusHistoriesForAdmin(7L,
+                new PageQuery(null, null, null));
+
+        assertThat(page.content()).containsExactly(newer, older);
+        assertThat(page.content().get(0).getPrcsMbrSn()).isNull();
     }
 
     @Test
