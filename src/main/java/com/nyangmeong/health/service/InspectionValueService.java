@@ -29,6 +29,7 @@ import com.nyangmeong.health.dto.InspectionValueResponse;
 import com.nyangmeong.health.dto.InspectionValueSearchCond;
 import com.nyangmeong.health.dto.InspectionValueSummary;
 import com.nyangmeong.health.dto.InspectionValueUpdateRequest;
+import com.nyangmeong.health.dto.InspectionValueUpdateRequest.RefRange;
 import com.nyangmeong.health.mapper.InspectionValueMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -138,6 +139,7 @@ public class InspectionValueService {
     /**
      * 검사 수치 수정
      * - 보낸 항목만 수정, 검사 항목은 변경 불가
+     * - 참고범위는 refRange를 보냈을 때만 두 값으로 덮어씀({null, null}이면 비움)
      */
     @Transactional
     public InspectionValueResponse update(Long mbrSn, Long petSn, Long inspNvlSn, InspectionValueUpdateRequest req) {
@@ -149,16 +151,16 @@ public class InspectionValueService {
         if (req.unitNm() != null) {
             value.setUnitNm(requiredText(req.unitNm()));
         }
-        if (req.refLlmtNvl() != null) {
-            value.setRefLlmtNvl(req.refLlmtNvl());
-        }
-        if (req.refUplmtNvl() != null) {
-            value.setRefUplmtNvl(req.refUplmtNvl());
+        RefRange refRange = req.refRange();
+        if (refRange != null) {
+            checkRefPair(refRange.refLlmtNvl(), refRange.refUplmtNvl());
+            checkRefOrder(refRange.refLlmtNvl(), refRange.refUplmtNvl());
+            value.setRefLlmtNvl(refRange.refLlmtNvl());
+            value.setRefUplmtNvl(refRange.refUplmtNvl());
         }
         if (req.memoCn() != null) {
             value.setMemoCn(emptyToNull(req.memoCn()));
         }
-        checkRefPair(value.getRefLlmtNvl(), value.getRefUplmtNvl());
         inspectionValueMapper.updateValue(value, String.valueOf(mbrSn));
         return InspectionValueResponse.from(inspectionValueMapper.selectValue(inspNvlSn));
     }
@@ -188,6 +190,7 @@ public class InspectionValueService {
             value.setInspArtclDrctInptNm("");
         }
         checkRefPair(item.refLlmtNvl(), item.refUplmtNvl());
+        checkRefOrder(item.refLlmtNvl(), item.refUplmtNvl());
         value.setRsltNvl(item.rsltNvl());
         value.setUnitNm(requiredText(item.unitNm()));
         value.setRefLlmtNvl(item.refLlmtNvl());
@@ -217,6 +220,12 @@ public class InspectionValueService {
      */
     private void checkRefPair(BigDecimal llmt, BigDecimal uplmt) {
         if ((llmt == null) != (uplmt == null)) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private void checkRefOrder(BigDecimal llmt, BigDecimal uplmt) {
+        if (llmt != null && uplmt != null && llmt.compareTo(uplmt) > 0) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
     }

@@ -63,7 +63,7 @@ public class InspectionValueController {
                 .body(ApiResponse.created(inspectionValueService.create(me.id(), petSn, req)));
     }
 
-    @Operation(summary = "검사 수치 수정")
+    @Operation(summary = "검사 수치 수정", description = "보낸 항목만 수정한다. refRange를 보내면 하한·상한을 덮어쓰고 {null, null}이면 참고범위를 비운다. 안 보내면 유지한다. 한쪽만 null이거나 하한 > 상한이면 400")
     @PatchMapping("/{inspNvlSn}")
     public ResponseEntity<ApiResponse<InspectionValueResponse>> update(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long inspNvlSn,
