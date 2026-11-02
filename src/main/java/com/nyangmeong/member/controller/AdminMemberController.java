@@ -20,6 +20,7 @@ import com.nyangmeong.member.dto.AdminMemberSummary;
 import com.nyangmeong.member.dto.AdminMemberSuspendRequest;
 import com.nyangmeong.member.dto.AdminSuspensionSearchCond;
 import com.nyangmeong.member.dto.AdminSuspensionSummary;
+import com.nyangmeong.member.dto.AdminWithdrawnMemberSummary;
 import com.nyangmeong.member.service.MemberService;
 import com.nyangmeong.member.service.MemberSuspensionService;
 
@@ -29,7 +30,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * [관리자 회원 컨트롤러]
- * - SCR-ADM-010 (FN-ADM-010-01~03), SCR-ADM-012 (FN-ADM-012-01·03)
+ * - SCR-ADM-010 (FN-ADM-010-01~03), SCR-ADM-012 (FN-ADM-012-01·03), SCR-ADM-013 (FN-ADM-013-01)
  */
 @RestController
 @RequiredArgsConstructor
@@ -51,6 +52,12 @@ public class AdminMemberController {
     public ResponseEntity<ApiResponse<PageResponse<AdminSuspensionSummary>>> searchSuspensions(
             AdminSuspensionSearchCond cond, PageQuery pq) {
         return ResponseEntity.ok(ApiResponse.success(memberSuspensionService.searchSuspensions(cond, pq)));
+    }
+
+    @Operation(summary = "탈퇴 회원 목록")
+    @GetMapping("/withdrawn")
+    public ResponseEntity<ApiResponse<PageResponse<AdminWithdrawnMemberSummary>>> searchWithdrawn(PageQuery pq) {
+        return ResponseEntity.ok(ApiResponse.success(memberService.searchWithdrawnForAdmin(pq)));
     }
 
     @Operation(summary = "회원 정지")

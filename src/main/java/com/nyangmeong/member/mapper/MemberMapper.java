@@ -10,6 +10,7 @@ import com.nyangmeong.member.domain.Member;
 import com.nyangmeong.member.dto.AdminMemberSearchCond;
 import com.nyangmeong.member.dto.AdminMemberSummary;
 import com.nyangmeong.member.dto.AdminSuspensionSummary;
+import com.nyangmeong.member.dto.AdminWithdrawnMemberSummary;
 
 /**
  * [회원 Mapper]
@@ -134,4 +135,10 @@ public interface MemberMapper {
      */
     List<AdminSuspensionSummary> selectSuspensionList(@Param("suspendedSttsCd") String suspendedSttsCd,
             @Param("mbrNcnm") String mbrNcnm, @Param("permanent") Boolean permanent);
+
+    /**
+     * 보관 기간 안의 탈퇴 회원 목록 조회
+     */
+    List<AdminWithdrawnMemberSummary> selectWithdrawnList(@Param("withdrawnSttsCd") String withdrawnSttsCd,
+            @Param("keepDayCnt") int keepDayCnt);
 }
