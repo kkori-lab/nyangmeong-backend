@@ -38,6 +38,11 @@ public interface NewsMapper {
     List<NewsKeyword> selectKeywords();
 
     /**
+     * 뉴스 제외 키워드 조회 : 행마다 쉼표로 구분한 키워드
+     */
+    List<String> selectExcludeKeywords();
+
+    /**
      * 중복 판정용 최근 기사 조회 (숨긴 기사 포함, 제목·요약만)
      */
     List<News> selectRecentNews(@Param("since") LocalDateTime since);

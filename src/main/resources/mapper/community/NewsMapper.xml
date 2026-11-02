@@ -109,6 +109,16 @@
          ORDER BY K.SORT_SEQ ASC, K.KWRD_DICT_SN ASC
     </select>
 
+    <select id="selectExcludeKeywords" resultType="string">
+        /* 뉴스 제외 키워드 조회 */
+        SELECT K.KWRD_CN
+          FROM KWRD_DICT K
+         WHERE K.DICT_USG_CD = 'AIMC0040'
+           AND K.USE_YN = 'Y'
+           AND K.DEL_YN = 'N'
+         ORDER BY K.SORT_SEQ ASC, K.KWRD_DICT_SN ASC
+    </select>
+
     <select id="selectRecentNews" resultMap="newsRecentResultMap">
         /* 중복 판정용 최근 기사 조회 */
         SELECT N.NEWS_TTL
