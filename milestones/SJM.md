@@ -65,6 +65,8 @@
 - 완료 조건: 주양육자만 삭제할 수 있다. 삭제하면 연동이 모두 해제되고 공동양육자에게 알림이 가며, 대표였으면 다음 주양육 동물로 승계된다. 지출은 남는다
 - 연결 남음: FN-MYP-002-07 (프론트 연결 SCR-MYP-002 ⋮ 메뉴 [반려동물 삭제]·2-3 삭제 확인 팝업·2-4 등록 카드 복귀, 프론트 저장소에서 /start)
 - 연결 남음: FN-MYP-002-08 (알림함 COM-004에 공동양육 연동 해제 알림 표시, LJS)
+- 남은 테스트: FN-MYP-002-08 삭제 중 연동이 동시에 해제돼 updateBrupRelUnlink가 0이면 이력·알림을 남기지 않는지 PetServiceTest에 추가
+- 남은 테스트: FN-MYP-002-08 PetMapper XML 테스트(selectLinkedCoParentRels가 연동 중 공동양육자만 고르는지, updateBrupRelUnlink가 USE_YN='Y' 행만 해제하는지) — 다른 도메인의 *MapperXmlTest 방식
 
 ## SCR-MYP-040 회원정보 수정 — 끝
 - 기능: FN-MYP-040-02 프로필 사진, FN-MYP-040-03 이메일(로그인 아이디), FN-MYP-040-05 휴대폰 번호 변경, FN-MYP-040-08 프로필 사진(SNS), FN-MYP-040-09 계정 표시(SNS), FN-MYP-040-11 휴대폰 번호 변경(SNS), FN-MYP-040-13 계정 정보
