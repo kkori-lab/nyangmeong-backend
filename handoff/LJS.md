@@ -10,6 +10,7 @@ SCR-MYP-011 아이템 상점 모달 · 캐릭터 작업·시트 내부 API (SCR-
 - 팀에 알린다(PR): DB 기준 파일이 v0.12로 바뀌었다. v0.11 두 파일은 `db/archive/v0.11/`에 있고, 아직 병합 안 된 브랜치의 v0.11 변경 항목은 v0.12 파일의 변경 절로 옮겨야 한다. `handoff/KSJ.md`에 옛 v0.11 경로가 남아 있다(KSJ)
 - ERDCloud(사람): `PIXEL_CHAR.BODY_SHEET_FILE_SN`·`SHEET_SCALE`·`SHEET_ORIGIN_X`·`SHEET_ORIGIN_Y`, 새 테이블 `CHAR_ITEM_SHEET`, `ITEM.ENGINE_ITEM_KEY`를 추가한다
 - 병합 순서(ai-d1): 백엔드 PR 먼저, 그다음 AI 저장소 `LJS`(`b2f2e84`, 쿠키 전환) PR. Python이 먼저 들어가면 캐릭터 생성이 실패한다. 백엔드 PR 번호를 ai-d1 세션에 알린다
+- 정하기: 옛 흐름으로 만든 캐릭터(시드 포함)는 맨몸 시트가 없어 미리보기가 404 `PIXEL_CHARACTER_NOT_FOUND`이고, 결과 사진이 있어 다시 생성도 `PIXEL_CHARACTER_ALREADY_EXISTS`로 막힌다(ai-d1 확인, 2026-11-02). 시트를 채울지(재생성), 시드를 새 흐름으로 다시 만들지 정한다
 - 정하기(SCR-ADM-042 전): 무료 재생성(FN-MYP-010-23). 사진이 Java로 오지 않아 `finishErrorCheck(regenerate=true)`는 원본 사진이 없어 `FILE_NOT_FOUND`이고 Python에 재생성 API도 없다. 계약을 정한 뒤 `CharacterCreationWorker`·`CharacterGenerator`·`FakeCharacterGenerator`를 정리한다
 - 굽기 켜기 전(AI 저장소와 함께): 백그라운드 호출이 쿠키를 쓰므로 `access_token`(30분)이 생성·굽기 중에 만료되면 성공 보고·시트 저장이 401이다. 성공 보고를 잃은 작업은 10분 뒤 시간 초과로 실패하고 다시 요청할 수 있다
 - 시드(SCR-ADM-070): `ENGINE_ITEM_KEY`는 이름이 같은 14개만 넣었다. AI `items.json` 26개와 시드 24개(신발 `MYPC0006` 4개 포함)를 맞춘다. 교체된 착용 시트의 이전 `ATCH_FILE`은 연결이 끊긴 채 남는다
