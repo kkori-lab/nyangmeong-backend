@@ -68,7 +68,7 @@ class ReportServiceTest {
     @Test
     void 글_신고는_접수_상태로_저장하고_이력을_남긴다() {
         stubTargets();
-        when(reportMapper.countReports(PST, null)).thenReturn(1);
+        when(reportMapper.countAccumulatedReports(PST, null, "CMUC0017")).thenReturn(1);
 
         ReportResponse res = service.create(MBR, new ReportCreateRequest(PST, null, "CMUC0009", null));
 
@@ -84,7 +84,7 @@ class ReportServiceTest {
     @Test
     void 글_신고가_5건째면_블라인드_처리하고_이력을_남긴다() {
         stubTargets();
-        when(reportMapper.countReports(PST, null)).thenReturn(5);
+        when(reportMapper.countAccumulatedReports(PST, null, "CMUC0017")).thenReturn(5);
         when(postMapper.updateStatus(PST, NORMAL, "CMUC0004", "SYSTEM")).thenReturn(1);
 
         service.create(MBR, new ReportCreateRequest(PST, null, "CMUC0010", null));
@@ -98,13 +98,27 @@ class ReportServiceTest {
     @Test
     void 댓글_신고가_4건이면_그대로이고_5건째면_삭제_처리() {
         stubTargets();
-        when(reportMapper.countReports(null, CMNT)).thenReturn(4, 5);
+        when(reportMapper.countAccumulatedReports(null, CMNT, "CMUC0017")).thenReturn(4, 5);
 
         service.create(MBR, new ReportCreateRequest(null, CMNT, "CMUC0009", null));
         verify(commentMapper, never()).updateDeleted(anyLong());
 
         service.create(MBR, new ReportCreateRequest(null, CMNT, "CMUC0009", null));
         verify(commentMapper).updateDeleted(CMNT);
+    }
+
+    @Test
+    void 댓글이_자동_삭제되면_판별_이력을_남긴다() {
+        stubTargets();
+        when(reportMapper.countAccumulatedReports(null, CMNT, "CMUC0017")).thenReturn(5);
+        when(commentMapper.updateDeleted(CMNT)).thenReturn(1);
+
+        service.create(MBR, new ReportCreateRequest(null, CMNT, "CMUC0009", null));
+
+        ArgumentCaptor<ReportStatusHistory> history = ArgumentCaptor.forClass(ReportStatusHistory.class);
+        verify(reportMapper, org.mockito.Mockito.times(2)).insertStatusHistory(history.capture());
+        assertThat(history.getAllValues().get(1).getChgRsn()).isEqualTo(ReportService.AUTO_DELETE_RSN);
+        assertThat(history.getAllValues().get(1).getMbrSn()).isNull();
     }
 
     @Test

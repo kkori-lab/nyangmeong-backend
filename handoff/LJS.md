@@ -2,18 +2,20 @@
 
 ## 지금 하는 것
 
-SCR-ADM-020 게시글·댓글 — 끝 (2026-11-02). `/api/admin/posts` 목록·상세·블라인드·복구와 `/api/admin/comments` 조회·삭제를 만들었다. 삭제 사유는 감사 로그에 남고 게시판 필터는 펫돌봄 없이 3개다
-
-### 추가 요청
-
-| 추가-2 | `CommentMapper.xml`, `AdminPostDetailResponse`, `AdminCommentSummary`, `AdminCommentService`, `MapperXmlRuleTest` | 명령: `./gradlew build -q` 통과. PR #102에서 추가한 주석만 `/* */`·명사형으로 고친다 | 요청 2026-11-02 "<!-- --> 주석은 /* */로, 동사형은 명사형으로 수정해서 같은 PR에 푸시" |
+SCR-ADM-030 신고 처리 — 끝 (2026-11-02). `/api/admin/reports` 목록·상세·처리 완료·반려와 자동 블라인드 목록·복구를 만들었다. 조치 코드는 `DCLR_ACTN_CD`(v0.11 (7)), 신고 결과 알림은 댓글 알림 설정을 타지 않는다
 
 ## 다음에 할 것
 
+- SCR-ADM-030 연결 남음: FN-ADM-030-01 (프론트 연결 신고 처리 목록 SCR-ADM-030, 프론트 저장소에서 /start), FN-ADM-030-02 (프론트 연결 상태 탭·필터 영역, 프론트 저장소에서 /start), FN-ADM-030-03 (프론트 연결 상세 `/admin/reports/:dclrSn`, 프론트 저장소에서 /start), FN-ADM-030-04 (프론트 연결 조치 선택과 처리 완료, 프론트 저장소에서 /start), FN-ADM-030-05 (프론트 연결 반려 사유 입력, 프론트 저장소에서 /start), FN-ADM-030-07 (프론트 연결 자동 블라인드 탭과 복구, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
+- 공용 DB(PR): v0.11 (7)은 사람이 PR 전에 공용 DB에 적용했다고 답했다. 병합 뒤 다시 실행하지 않는다. PR 본문에 "DB 변경 있음, v0.11 (7) 공용 DB 적용 완료"로 적는다. 로컬 `nyangmeong_local`에는 없다
+- 판단 필요(시드): 시드의 자동 블라인드 이력 18건은 사유가 `신고 누적으로 블라인드`라 `신고 누적`과 달라 자동 블라인드 탭에 나오지 않는다. 시드를 고칠지 탭 판별을 넓힐지 정한다. 이 코드 이전에 자동 삭제된 댓글도 나오지 않는다
+- ERDCloud(사람): `DCLR.DCLR_ACTN_CD` 신고조치공통코드(CMUG08)를 추가한다
+- KSJ에게 알린다(PR 전): SCR-ADM-030을 LJS가 구현했다(구현 계획 담당 KSJ, 저장소에 협의 기록 없음). `ReportService` 누적 계산에서 반려를 뺐고 자동 삭제 댓글에 `DCLR_STTS_HSTRY` 표시 행을 남긴다. 알림 `NotificationType.REPORT_RESULT`는 `COMMUNITY`와 코드 `AIMC0010`이 같다
+- 명세 정리(사람): 설정 화면 FN-COM-008-11 항상 받는 알림에 신고 처리 결과를 넣을지 정한다(2026-11-02 결정: 댓글 알림 설정과 무관하게 보낸다. 앱 알림 채널을 끄면 안 간다)
+- 테스트 부족: 복구 뒤 재삭제 판별(`autoTargetCondition`의 `MDFCN_DT` 비교)은 SQL 조건이라 자동 테스트가 없다
 - SCR-ADM-020 연결 남음: FN-ADM-020-01 (프론트 연결 관리자 게시글 목록 화면 SCR-ADM-020, 프론트 저장소에서 /start), FN-ADM-020-02 (프론트 연결 검색·필터 영역, 프론트 저장소에서 /start), FN-ADM-020-03 (프론트 연결 상세 화면 `/admin/posts/:pstSn`, 프론트 저장소에서 /start), FN-ADM-020-04 (프론트 연결 [블라인드] 사유 모달, 프론트 저장소에서 /start), FN-ADM-020-05 (프론트 연결 [복구] 사유 모달, 프론트 저장소에서 /start), FN-ADM-020-06 (프론트 연결 댓글 탭 `?tab=comments`, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
 - 실제 DB 확인 범위(SCR-ADM-020): 사람 확인 내용은 `확인`이라고만 기록됐다. 검증 에이전트는 공용 DB라 블라인드·복구·댓글 삭제 성공 경로를 실행하지 않았다
 - KSJ에게 알린다(PR 전): SCR-ADM-020을 LJS가 구현했다(구현 계획 담당은 KSJ, 저장소에 협의 기록 없음). `community`에 관리자 컨트롤러·서비스, `PostMapper`·`CommentMapper` 관리자 쿼리를 넣었다. `MapperXmlRuleTest` 예외 2줄 추가
-- KSJ에게 넘긴다(위험): 신고 수가 복구 뒤에도 초기화되지 않아, 자동 블라인드 글을 복구해도 새 신고 1건에 다시 자동 블라인드된다(`ReportService.applyAccumulation`). SCR-ADM-030과 함께 정한다
 - 펫돌봄 구현 뒤(KSJ·LJS): 관리자 게시판 필터에 펫돌봄을 추가한다. 지금은 CMUG01에 코드가 없다. 화면설계서는 4개다
 - 시드 확인(KSJ): 공용 DB의 "[실종]" 글이 `CMUC0002`라 `bbsCd=CMUC0024` 필터가 0건이다. 코드 문제는 확인되지 않았다
 - SCR-ADM-011 연결 남음: FN-ADM-011-01 (백엔드 연결 `AdminMemberDetailResponse.mbrAuthrtCd`, 백엔드 저장소에서 /start). 프론트 마일스톤 결정이며 프론트 5개 탭 연결은 끝났다

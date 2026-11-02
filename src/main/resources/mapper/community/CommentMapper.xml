@@ -116,6 +116,14 @@
            AND DEL_YN = 'N'
     </update>
 
+    <update id="updateRestored" parameterType="long">
+        UPDATE CMNT
+           SET DEL_YN = 'N'
+             , MDFCN_DT = NOW()
+         WHERE CMNT_SN = #{cmntSn}
+           AND DEL_YN = 'Y'
+    </update>
+
     <resultMap id="adminCommentSummaryResultMap" type="com.nyangmeong.community.dto.AdminCommentSummary">
         <id     column="CMNT_SN"           property="cmntSn" />
         <result column="PRNT_CMNT_SN"      property="prntCmntSn" />

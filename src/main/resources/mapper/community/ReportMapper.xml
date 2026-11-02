@@ -32,6 +32,21 @@
         </where>
     </select>
 
+    <select id="countAccumulatedReports" resultType="int">
+        /* 누적 판단용 신고 수 조회 : 반려 제외 */
+        SELECT COUNT(*)
+          FROM DCLR
+         WHERE DCLR_PRCS_STTS_CD &lt;&gt; #{rejectedCd}
+        <choose>
+            <when test="pstSn != null">
+           AND PST_SN = #{pstSn}
+            </when>
+            <otherwise>
+           AND CMNT_SN = #{cmntSn}
+            </otherwise>
+        </choose>
+    </select>
+
     <insert id="insertReport" parameterType="com.nyangmeong.community.domain.Report"
             useGeneratedKeys="true" keyProperty="dclrSn" keyColumn="DCLR_SN">
         INSERT INTO DCLR
@@ -71,4 +86,266 @@
              , #{chgRsn}
              , NOW() )
     </insert>
+
+    <resultMap id="reportResultMap" type="com.nyangmeong.community.domain.Report">
+        <id     column="DCLR_SN"           property="dclrSn" />
+        <result column="CMNT_SN"           property="cmntSn" />
+        <result column="MBR_SN"            property="mbrSn" />
+        <result column="PRCS_MBR_SN"       property="prcsMbrSn" />
+        <result column="PST_SN"            property="pstSn" />
+        <result column="DCLR_RSN_CD"       property="dclrRsnCd" />
+        <result column="DCLR_PRCS_STTS_CD" property="dclrPrcsSttsCd" />
+        <result column="DCLR_ACTN_CD"      property="dclrActnCd" />
+        <result column="DCLR_DTL_CN"       property="dclrDtlCn" />
+        <result column="PRCS_DT"           property="prcsDt" />
+        <result column="REG_DT"            property="regDt" />
+        <result column="MDFCN_DT"          property="mdfcnDt" />
+    </resultMap>
+
+    <resultMap id="adminReportSummaryResultMap" type="com.nyangmeong.community.dto.AdminReportSummary">
+        <id     column="DCLR_SN"           property="dclrSn" />
+        <result column="PST_SN"            property="pstSn" />
+        <result column="CMNT_SN"           property="cmntSn" />
+        <result column="TRGT_CN"           property="trgtCn" />
+        <result column="DCLR_RSN_CD"       property="dclrRsnCd" />
+        <result column="MBR_SN"            property="mbrSn" />
+        <result column="MBR_NCNM"          property="mbrNcnm" />
+        <result column="DCLR_CNT"          property="dclrCnt" />
+        <result column="DCLR_PRCS_STTS_CD" property="dclrPrcsSttsCd" />
+        <result column="DCLR_ACTN_CD"      property="dclrActnCd" />
+        <result column="REG_DT"            property="regDt" />
+    </resultMap>
+
+    <resultMap id="adminAutoBlindSummaryResultMap" type="com.nyangmeong.community.dto.AdminReportAutoBlindSummary">
+        <id     column="DCLR_SN"       property="dclrSn" />
+        <result column="PST_SN"        property="pstSn" />
+        <result column="CMNT_SN"       property="cmntSn" />
+        <result column="TRGT_CN"       property="trgtCn" />
+        <result column="TRGT_MBR_SN"   property="trgtMbrSn" />
+        <result column="TRGT_MBR_NCNM" property="trgtMbrNcnm" />
+        <result column="DCLR_CNT"      property="dclrCnt" />
+        <result column="RCPT_DCLR_CNT" property="rcptDclrCnt" />
+        <result column="LAST_REG_DT"   property="lastRegDt" />
+    </resultMap>
+
+    <resultMap id="adminStatusHistoryResultMap" type="com.nyangmeong.community.dto.AdminReportStatusHistorySummary">
+        <id     column="DCLR_STTS_HSTRY_SN" property="dclrSttsHstrySn" />
+        <result column="BFR_STTS_CD"        property="bfrSttsCd" />
+        <result column="AFTR_STTS_CD"       property="aftrSttsCd" />
+        <result column="CHG_RSN"            property="chgRsn" />
+        <result column="PRCS_MBR_SN"        property="prcsMbrSn" />
+        <result column="PRCS_MBR_NCNM"      property="prcsMbrNcnm" />
+        <result column="REG_DT"             property="regDt" />
+    </resultMap>
+
+    <sql id="reportColumns">
+        DCLR_SN
+             , CMNT_SN
+             , MBR_SN
+             , PRCS_MBR_SN
+             , PST_SN
+             , DCLR_RSN_CD
+             , DCLR_PRCS_STTS_CD
+             , DCLR_ACTN_CD
+             , DCLR_DTL_CN
+             , PRCS_DT
+             , REG_DT
+             , MDFCN_DT
+    </sql>
+
+    <sql id="adminSummaryColumns">
+        D.DCLR_SN
+             , D.PST_SN
+             , D.CMNT_SN
+             , COALESCE(P.PST_TTL, C.CMNT_CN) AS TRGT_CN
+             , D.DCLR_RSN_CD
+             , D.MBR_SN
+             , M.MBR_NCNM
+             , (SELECT COUNT(*)
+                  FROM DCLR S
+                 WHERE S.PST_SN &lt;=&gt; D.PST_SN
+                   AND S.CMNT_SN &lt;=&gt; D.CMNT_SN) AS DCLR_CNT
+             , D.DCLR_PRCS_STTS_CD
+             , D.DCLR_ACTN_CD
+             , D.REG_DT
+    </sql>
+
+    <sql id="targetJoin">
+          LEFT JOIN PST P
+            ON P.PST_SN = D.PST_SN
+          LEFT JOIN CMNT C
+            ON C.CMNT_SN = D.CMNT_SN
+    </sql>
+
+    <sql id="autoTargetCondition">
+        /* 자동 대상 판별 : 글은 마지막 이력이 처리자 없는 누적 사유, 댓글은 자동 삭제 이력 뒤 변경 없음 (복구 뒤 재삭제 제외) */
+        ((D.PST_SN IS NOT NULL
+          AND P.PST_STTS_CD = #{blindCd}
+          AND (SELECT H.MBR_SN IS NULL AND H.CHG_RSN = #{autoBlindRsn}
+                 FROM PST_STTS_HSTRY H
+                WHERE H.PST_SN = D.PST_SN
+                ORDER BY H.PST_STTS_HSTRY_SN DESC
+                LIMIT 1) = 1)
+         OR (D.CMNT_SN IS NOT NULL
+             AND C.DEL_YN = 'Y'
+             AND EXISTS (SELECT 1
+                           FROM DCLR_STTS_HSTRY H
+                           JOIN DCLR X
+                             ON X.DCLR_SN = H.DCLR_SN
+                          WHERE X.CMNT_SN = D.CMNT_SN
+                            AND H.CHG_RSN = #{autoDeleteRsn}
+                            AND C.MDFCN_DT &lt;= H.REG_DT)))
+    </sql>
+
+    <select id="selectReport" parameterType="long" resultMap="reportResultMap">
+        SELECT <include refid="reportColumns" />
+          FROM DCLR
+         WHERE DCLR_SN = #{dclrSn}
+    </select>
+
+    <select id="selectReportsByStatus" resultMap="reportResultMap">
+        SELECT <include refid="reportColumns" />
+          FROM DCLR
+         WHERE DCLR_PRCS_STTS_CD = #{status}
+        <choose>
+            <when test="pstSn != null">
+           AND PST_SN = #{pstSn}
+            </when>
+            <otherwise>
+           AND CMNT_SN = #{cmntSn}
+            </otherwise>
+        </choose>
+         ORDER BY DCLR_SN
+    </select>
+
+    <select id="selectAdminList" resultMap="adminReportSummaryResultMap">
+        /* 관리자 신고 목록 조회 : 삭제된 대상의 내용도 표시 */
+        SELECT <include refid="adminSummaryColumns" />
+          FROM DCLR D
+          JOIN MBR M
+            ON M.MBR_SN = D.MBR_SN
+        <include refid="targetJoin" />
+        <where>
+            <if test="cond.status != null and cond.status.trim() != ''">
+                AND D.DCLR_PRCS_STTS_CD = #{cond.status}
+            </if>
+            <if test="cond.dclrRsnCd != null and cond.dclrRsnCd.trim() != ''">
+                AND D.DCLR_RSN_CD = #{cond.dclrRsnCd}
+            </if>
+            <if test="postTarget != null and postTarget">
+                AND D.PST_SN IS NOT NULL
+            </if>
+            <if test="postTarget != null and !postTarget">
+                AND D.CMNT_SN IS NOT NULL
+            </if>
+            <if test="cond.autoBlindYn != null and cond.autoBlindYn">
+                AND <include refid="autoTargetCondition" />
+            </if>
+            <if test="cond.autoBlindYn != null and !cond.autoBlindYn">
+                AND NOT COALESCE(<include refid="autoTargetCondition" />, FALSE)
+            </if>
+            <if test="cond.bgngYmd != null">
+                AND D.REG_DT &gt;= #{cond.bgngYmd}
+            </if>
+            <if test="cond.endYmd != null">
+                AND D.REG_DT &lt; DATE_ADD(#{cond.endYmd}, INTERVAL 1 DAY)
+            </if>
+        </where>
+         ORDER BY D.REG_DT DESC
+                , D.DCLR_SN DESC
+    </select>
+
+    <select id="selectSameTargetList" resultMap="adminReportSummaryResultMap">
+        /* 같은 대상 신고 목록 조회 */
+        SELECT <include refid="adminSummaryColumns" />
+          FROM DCLR D
+          JOIN MBR M
+            ON M.MBR_SN = D.MBR_SN
+        <include refid="targetJoin" />
+        <where>
+            <choose>
+                <when test="pstSn != null">
+                    D.PST_SN = #{pstSn}
+                </when>
+                <otherwise>
+                    D.CMNT_SN = #{cmntSn}
+                </otherwise>
+            </choose>
+        </where>
+         ORDER BY D.REG_DT DESC
+                , D.DCLR_SN DESC
+    </select>
+
+    <select id="selectAutoBlindList" resultMap="adminAutoBlindSummaryResultMap">
+        /* 자동 블라인드 대상 목록 조회 : 대상별 1행 */
+        SELECT MAX(D.DCLR_SN) AS DCLR_SN
+             , D.PST_SN
+             , D.CMNT_SN
+             , COALESCE(P.PST_TTL, C.CMNT_CN) AS TRGT_CN
+             , T.MBR_SN AS TRGT_MBR_SN
+             , T.MBR_NCNM AS TRGT_MBR_NCNM
+             , COUNT(*) AS DCLR_CNT
+             , SUM(D.DCLR_PRCS_STTS_CD = #{receivedCd}) AS RCPT_DCLR_CNT
+             , MAX(D.REG_DT) AS LAST_REG_DT
+          FROM DCLR D
+        <include refid="targetJoin" />
+          JOIN MBR T
+            ON T.MBR_SN = COALESCE(P.MBR_SN, C.MBR_SN)
+         WHERE <include refid="autoTargetCondition" />
+         GROUP BY D.PST_SN
+                , D.CMNT_SN
+                , P.PST_TTL
+                , C.CMNT_CN
+                , T.MBR_SN
+                , T.MBR_NCNM
+         ORDER BY MAX(D.DCLR_SN) DESC
+    </select>
+
+    <select id="selectAutoBlindList_COUNT" resultType="long">
+        /* 자동 블라인드 대상 수 조회 : PageHelper 자동 count 파싱이 이 조건에서 멈춰 직접 작성 */
+        SELECT COUNT(*)
+          FROM (SELECT 1
+                  FROM DCLR D
+        <include refid="targetJoin" />
+                 WHERE <include refid="autoTargetCondition" />
+                 GROUP BY D.PST_SN
+                        , D.CMNT_SN) A
+    </select>
+
+    <select id="existsAutoTarget" resultType="boolean">
+        /* 신고 대상의 자동 블라인드 여부 조회 */
+        SELECT EXISTS (SELECT 1
+                         FROM DCLR D
+        <include refid="targetJoin" />
+                        WHERE D.DCLR_SN = #{dclrSn}
+                          AND <include refid="autoTargetCondition" />
+                       )
+    </select>
+
+    <select id="selectAdminStatusHistories" parameterType="long" resultMap="adminStatusHistoryResultMap">
+        /* 신고 처리 이력 조회 : 처리자 없음은 시스템 처리 */
+        SELECT H.DCLR_STTS_HSTRY_SN
+             , H.BFR_STTS_CD
+             , H.AFTR_STTS_CD
+             , H.CHG_RSN
+             , H.MBR_SN AS PRCS_MBR_SN
+             , M.MBR_NCNM AS PRCS_MBR_NCNM
+             , H.REG_DT
+          FROM DCLR_STTS_HSTRY H
+          LEFT JOIN MBR M
+            ON M.MBR_SN = H.MBR_SN
+         WHERE H.DCLR_SN = #{dclrSn}
+         ORDER BY H.DCLR_STTS_HSTRY_SN DESC
+    </select>
+
+    <update id="updateProcessed">
+        UPDATE DCLR
+           SET DCLR_PRCS_STTS_CD = #{afterCd}
+             , DCLR_ACTN_CD = #{dclrActnCd}
+             , PRCS_MBR_SN = #{prcsMbrSn}
+             , PRCS_DT = NOW()
+             , MDFCN_DT = NOW()
+         WHERE DCLR_SN = #{dclrSn}
+           AND DCLR_PRCS_STTS_CD = #{beforeCd}
+    </update>
 </mapper>

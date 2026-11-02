@@ -151,6 +151,12 @@
 --     ('AIMC0039','뉴스 카테고리','정책','정부,법안,법률,개정,시행,의무화,과태료,지원금,조례,지자체,제도,규제,등록제,단속','카테고리 = 정책(CMUG06)','CMUC0020',180,'FN-CMU-003-06'),
 --     ('AIMC0039','뉴스 카테고리','여행','여행,숙소,캠핑,휴가,관광,펜션,호텔,항공,동반 출입','카테고리 = 여행(CMUG06)','CMUC0021',190,'FN-CMU-003-06');
 --   COMMIT;
+-- v0.11 (7) 신고 조치 코드 (2026-11-02, LJS, 근거: 관리자_기능명세서 FN-ADM-030-04 / docs/admin/implementation-plan.md 결정 6). 컬럼은 20261030_create_tables_v0.11.sql의 v0.11 (7), 이 절을 먼저 실행한다
+--   SET NAMES utf8mb4;
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES (NULL,'CMUG08','신고조치','사용 컬럼: DCLR.DCLR_ACTN_CD',80);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='CMUG08') p),'CMUC0025','유지','대상 변경 없음',10);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='CMUG08') p),'CMUC0026','게시물 블라인드','글은 블라인드, 댓글은 삭제',20);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='CMUG08') p),'CMUC0027','작성자 정지','회원 제재와 같은 규칙',30);
 -- =====================================================================
 SET NAMES utf8mb4;
 START TRANSACTION;
@@ -650,6 +656,11 @@ INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0027','탈퇴 회원 파기','member/MemberPurgeJob',60);
 -- ■ SYS 시스템 — v0.11 추가: 뉴스 수집 배치 구분 (v0.11 (6))
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0028','뉴스 수집','community/NewsCollectJob',50);
+-- ■ CMU 커뮤니티 — v0.11 추가: 신고 조치 (v0.11 (7))
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES (NULL,'CMUG08','신고조치','사용 컬럼: DCLR.DCLR_ACTN_CD',80);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='CMUG08') p),'CMUC0025','유지','대상 변경 없음',10);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='CMUG08') p),'CMUC0026','게시물 블라인드','글은 블라인드, 댓글은 삭제',20);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='CMUG08') p),'CMUC0027','작성자 정지','회원 제재와 같은 규칙',30);
 
 -- =====================================================================
 -- [2] 케어미션 마스터 (CARE_MSN) — 20261027_02_update_care_msn_and_ckup_pnt 의 최종 상태
