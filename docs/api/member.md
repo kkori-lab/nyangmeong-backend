@@ -38,6 +38,9 @@
 | POST | /admin/members/{mbrSn}/suspension | 회원 정지(상태 정지, 상태 이력, 모든 세션 폐기, 감사 로그). 종료 일시는 오늘+N일 00:00. 7·30·null 외 값 400 INVALID_INPUT_VALUE, 관리자·본인·탈퇴·이미 정지 409 MEMBER_NOT_SUSPENDABLE, 없는 회원 404 MEMBER_NOT_FOUND | ADM-012-01·02·05 | LJS | AdminMemberSuspendRequest | - |
 | DELETE | /admin/members/{mbrSn}/suspension | 회원 정지 해제(상태 정상, 종료 일시 비움, 상태 이력, 감사 로그). 사유를 본문으로 보낸다. 정지 중이 아니면 409 ALREADY_PROCESSED, 없는 회원 404 MEMBER_NOT_FOUND | ADM-012-03 | LJS | AdminMemberReleaseRequest | - |
 | GET | /admin/members/withdrawn | 보관 기간 안의 탈퇴 회원 목록. 탈퇴 최신순 20건씩. 이메일은 마스킹, 파기 예정일은 탈퇴 일시 + 탈퇴 회원 보관 일수. 파기·복구는 실행하지 않는다. 일반 회원 403 ADMIN_ONLY | ADM-013-01 | LJS | - | PageResponse<AdminWithdrawnMemberSummary> |
+| GET | /admin/admins | 탈퇴를 뺀 관리자 목록. 지정 최신순 20건씩, 지정 기록이 없으면 맨 뒤. 이메일은 마스킹. 일반 회원 403 ADMIN_ONLY | ADM-113-01 | LJS | - | PageResponse<AdminAccountSummary> |
+| POST | /admin/admins/{mbrSn} | 관리자 지정(권한 변경, 감사 로그). 대상 검색은 GET /admin/members?q=&status=USRC0001&role=USRC0004. 정지·탈퇴·이미 관리자 409 MEMBER_NOT_APPOINTABLE, 없는 회원 404 MEMBER_NOT_FOUND | ADM-113-02 | LJS | - | - |
+| DELETE | /admin/admins/{mbrSn} | 관리자 해제(권한 일반회원, 감사 로그). 세션은 폐기하지 않고 다음 요청부터 일반 회원이다. 본인·마지막 정상 관리자 409 ADMIN_NOT_RELEASABLE, 관리자 아님·탈퇴 409 ALREADY_PROCESSED, 없는 회원 404 MEMBER_NOT_FOUND | ADM-113-03 | LJS | - | - |
 
 ## DTO
 
@@ -92,6 +95,15 @@
 | maskedAcntEml | String | Y | 앞 3자 + `***` + @도메인 | MBR.ACNT_EML_ENC, ADM-013-01 |
 | whdwlDt | LocalDateTime | Y | 탈퇴 일시 | MBR.WHDWL_DT, ADM-013-01 |
 | purgeYmd | LocalDate | Y | 파기 예정일. 탈퇴 일시 + 탈퇴 회원 보관 일수 | SYS_STNG.WHDWL_MBR_KPNG_DAY_CNT, ADM-013-01 |
+
+### AdminAccountSummary
+쓰는 API: GET /admin/admins
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| mbrSn | Long | Y | 지정·해제 경로 값 | MBR.MBR_SN, ADM-113-01 |
+| mbrNcnm | String | Y | | MBR.MBR_NCNM, ADM-113-01 |
+| maskedAcntEml | String | Y | 앞 3자 + `***` + @도메인 | MBR.ACNT_EML_ENC, ADM-113-01 |
+| apntDt | LocalDateTime | N | 지정일. 최근 "관리자 지정" 작업 로그 일시. 기록이 없으면 null | MNGR_TASK_LOG.REG_DT, SCR-ADM-113 |
 
 ### AdminMemberSuspendRequest
 쓰는 API: POST /admin/members/{mbrSn}/suspension

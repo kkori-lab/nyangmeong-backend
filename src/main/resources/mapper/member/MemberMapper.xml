@@ -390,4 +390,50 @@
          ORDER BY WHDWL_DT DESC
                 , MBR_SN DESC
     </select>
+
+    <resultMap id="adminAccountSummaryResultMap" type="com.nyangmeong.member.dto.AdminAccountSummary">
+        <id     column="MBR_SN"       property="mbrSn" />
+        <result column="MBR_NCNM"     property="mbrNcnm" />
+        <result column="ACNT_EML_ENC" property="acntEmlEnc" />
+        <result column="APNT_DT"      property="apntDt" />
+    </resultMap>
+
+    <select id="selectAdminAccountList" resultMap="adminAccountSummaryResultMap">
+        /* 관리자 목록 조회 : 지정일시는 최근 지정 기록, 기록이 없으면 NULL 로 맨 뒤 */
+        SELECT M.MBR_SN
+             , M.MBR_NCNM
+             , M.ACNT_EML_ENC
+             , (SELECT MAX(L.REG_DT)
+                  FROM MNGR_TASK_LOG L
+                 WHERE L.TRGT_TBL_NM = #{trgtTblNm}
+                   AND L.TRGT_SN = M.MBR_SN
+                   AND L.TASK_SMRY_CN = #{taskSmryCn}) AS APNT_DT
+          FROM MBR M
+         WHERE M.MBR_AUTHRT_CD = #{adminAuthrtCd}
+           AND M.MBR_STTS_CD &lt;&gt; #{withdrawnSttsCd}
+         ORDER BY APNT_DT DESC
+                , M.MBR_SN DESC
+    </select>
+
+    <select id="selectNormalAdminSnsForUpdate" resultType="long">
+        /* 정상 관리자 번호 잠금 조회 : 마지막 관리자 검사용 */
+        SELECT MBR_SN
+          FROM MBR
+         WHERE MBR_AUTHRT_CD = #{adminAuthrtCd}
+           AND MBR_STTS_CD = #{normalSttsCd}
+           FOR UPDATE
+    </select>
+
+    <update id="updateAuthority">
+        /* 회원 권한 변경 */
+        UPDATE MBR
+           SET MBR_AUTHRT_CD = #{afterAuthrtCd}
+             , MDFR_ID = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE MBR_SN = #{mbrSn}
+           AND MBR_AUTHRT_CD = #{beforeAuthrtCd}
+        <if test="mbrSttsCd != null">
+           AND MBR_STTS_CD = #{mbrSttsCd}
+        </if>
+    </update>
 </mapper>
