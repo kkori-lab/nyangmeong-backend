@@ -21,6 +21,7 @@
         <result column="CMNT_CN"           property="cmntCn" />
         <result column="MBR_SN"            property="mbrSn" />
         <result column="MBR_NCNM"          property="mbrNcnm" />
+        <result column="MBR_ATCH_FILE_SN"  property="mbrAtchFileSn" />
         <result column="SYS_AUTO_CRT_FLAG" property="sysAutoCrtYn" />
         <result column="OWNER_FLAG"        property="owner" />
         <result column="REG_DT"            property="regDt" />
@@ -34,6 +35,7 @@
              , CASE WHEN C.DEL_YN = 'Y' THEN NULL ELSE C.CMNT_CN END AS CMNT_CN
              , CASE WHEN C.DEL_YN = 'Y' THEN NULL ELSE C.MBR_SN END AS MBR_SN
              , CASE WHEN C.DEL_YN = 'Y' THEN NULL ELSE M.MBR_NCNM END AS MBR_NCNM
+             , CASE WHEN C.DEL_YN = 'Y' THEN NULL ELSE M.ATCH_FILE_SN END AS MBR_ATCH_FILE_SN
              , CASE WHEN C.SYS_AUTO_CRT_YN = 'Y' THEN 1 ELSE 0 END AS SYS_AUTO_CRT_FLAG
              , CASE WHEN C.DEL_YN = 'N' AND C.MBR_SN = #{mbrSn} THEN 1 ELSE 0 END AS OWNER_FLAG
              , C.REG_DT

@@ -11,6 +11,7 @@ import com.nyangmeong.community.domain.PostStatusHistory;
 import com.nyangmeong.community.dto.AdminPostSearchCond;
 import com.nyangmeong.community.dto.AdminPostStatusHistorySummary;
 import com.nyangmeong.community.dto.AdminPostSummary;
+import com.nyangmeong.community.dto.PostAuthor;
 import com.nyangmeong.community.dto.PostSummary;
 
 /**
@@ -45,6 +46,11 @@ public interface PostMapper {
      * 작성자 닉네임 조회
      */
     String selectMbrNcnm(Long mbrSn);
+
+    /**
+     * 작성자 닉네임과 프로필 사진 번호 조회
+     */
+    PostAuthor selectAuthor(Long mbrSn);
 
     /**
      * 삭제 댓글을 뺀 댓글 수 조회

@@ -16,6 +16,7 @@ public record PostResponse(
         String pstCn,
         Long mbrSn,
         String mbrNcnm,
+        Long mbrAtchFileSn,
         LocalDateTime regDt,
         Integer inqCnt,
         Integer rcmdtnCnt,
@@ -24,9 +25,9 @@ public record PostResponse(
         Boolean liked,
         Boolean owner) {
 
-    public static PostResponse from(Post post, String mbrNcnm, int cmntCnt, List<PostImageSummary> imgs,
+    public static PostResponse from(Post post, PostAuthor author, int cmntCnt, List<PostImageSummary> imgs,
             boolean liked, boolean owner) {
         return new PostResponse(post.getPstSn(), post.getBbsCd(), post.getPstTtl(), post.getPstCn(), post.getMbrSn(),
-                mbrNcnm, post.getRegDt(), post.getInqCnt(), post.getRcmdtnCnt(), cmntCnt, imgs, liked, owner);
+                author.getMbrNcnm(), author.getMbrAtchFileSn(), post.getRegDt(), post.getInqCnt(), post.getRcmdtnCnt(), cmntCnt, imgs, liked, owner);
     }
 }

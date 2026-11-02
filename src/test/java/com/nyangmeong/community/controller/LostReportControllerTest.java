@@ -71,6 +71,7 @@ class LostReportControllerTest {
         detail.setLostTpofSn(5L);
         detail.setPstSn(7L);
         detail.setMbrSn(1L);
+        detail.setMbrAtchFileSn(25L);
         detail.setPstTtl("보리 (말티즈)를 찾습니다");
         detail.setLostTpofSttsCd("CMUC0006");
         detail.setPetNm("보리");
@@ -131,6 +132,7 @@ class LostReportControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.cnpl").value("010-1234-5678"))
                 .andExpect(jsonPath("$.data.mbrSn").value(1))
+                .andExpect(jsonPath("$.data.mbrAtchFileSn").value(25))
                 .andExpect(jsonPath("$.data.owner").value(true));
     }
 

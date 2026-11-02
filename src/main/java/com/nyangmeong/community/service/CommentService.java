@@ -76,7 +76,7 @@ public class CommentService {
         comment.setCmntCn(req.cmntCn());
         commentMapper.insertComment(comment);
         return CommentResponse.from(commentMapper.selectComment(comment.getCmntSn()),
-                postMapper.selectMbrNcnm(mbrSn));
+                postMapper.selectAuthor(mbrSn));
     }
 
     /**

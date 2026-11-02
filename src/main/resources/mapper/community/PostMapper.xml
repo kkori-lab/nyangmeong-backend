@@ -23,6 +23,7 @@
         <result column="PST_TTL"            property="pstTtl" />
         <result column="PST_CN"             property="pstCn" />
         <result column="MBR_NCNM"           property="mbrNcnm" />
+        <result column="MBR_ATCH_FILE_SN"   property="mbrAtchFileSn" />
         <result column="REG_DT"             property="regDt" />
         <result column="THUMB_ATCH_FILE_SN" property="thumbAtchFileSn" />
         <result column="RCMDTN_CNT"         property="rcmdtnCnt" />
@@ -64,6 +65,7 @@
         , P.PST_TTL
         , P.PST_CN
         , M.MBR_NCNM
+        , M.ATCH_FILE_SN AS MBR_ATCH_FILE_SN
         , P.REG_DT
         , (SELECT I.ATCH_FILE_SN
              FROM PST_IMG I
@@ -157,6 +159,13 @@
 
     <select id="selectMbrNcnm" parameterType="long" resultType="string">
         SELECT MBR_NCNM
+          FROM MBR
+         WHERE MBR_SN = #{mbrSn}
+    </select>
+
+    <select id="selectAuthor" parameterType="long" resultType="com.nyangmeong.community.dto.PostAuthor">
+        SELECT MBR_NCNM AS mbrNcnm
+             , ATCH_FILE_SN AS mbrAtchFileSn
           FROM MBR
          WHERE MBR_SN = #{mbrSn}
     </select>
