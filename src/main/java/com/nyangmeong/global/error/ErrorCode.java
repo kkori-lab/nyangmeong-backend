@@ -156,6 +156,7 @@ public enum ErrorCode {
     LOST_REPORT_NOT_RENEWABLE(HttpStatus.BAD_REQUEST, "게시 종료 7일 전부터 종료 전까지 한 번만 연장할 수 있습니다."),
     LOST_REPORT_CLOSED(HttpStatus.BAD_REQUEST, "찾았어요 처리된 제보에는 댓글을 달 수 없습니다."),
     NEWS_NOT_FOUND(HttpStatus.NOT_FOUND, "뉴스를 찾을 수 없습니다."),
+    NEWS_FEED_FETCH_FAILED(HttpStatus.BAD_GATEWAY, "뉴스를 가져오지 못했습니다."),
     CARE_RECRUITMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "펫돌봄 모집글을 찾을 수 없습니다."),
     CARE_RECRUITMENT_CLOSED(HttpStatus.CONFLICT, "마감된 모집글입니다."),
     CARE_WAGE_BELOW_MINIMUM(HttpStatus.BAD_REQUEST, "돌봄 비용은 최저시급 이상이어야 합니다."),

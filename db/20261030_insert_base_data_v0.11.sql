@@ -1,7 +1,7 @@
 -- =====================================================================
 -- 냥멍케어 기준 데이터 v0.11 (2026-10-30)  |  공통코드 + 케어미션 마스터
 -- 대상 DDL : 20261030_create_tables_v0.11.sql  (테이블 COM_CD, CARE_MSN, AI_ROUT_MPNG, KWRD_DICT)
--- 범위     : [1] 공통코드 그룹 76개 전체 (303개 코드)  [2] 케어미션 마스터 21건  [3] AI 라우팅 매핑 45건  [4] 키워드 사전 16건
+-- 범위     : [1] 공통코드 그룹 76개 전체 (304개 코드)  [2] 케어미션 마스터 21건  [3] AI 라우팅 매핑 45건  [4] 키워드 사전 19건
 -- 원천     : 기준 데이터 v0.10(db/archive/v0.10/) 위에 아래 "v0.10 → v0.11 변경"을 더한 것
 --            새 코드는 기존 DB와 COM_CD_SN이 같도록 공용 DB에 실행한 순서대로 파일 끝에 둔다
 -- 채번 규칙: 그룹 = 도메인3자 + G + 2자리(ERD 그대로) / 코드 = 도메인3자 + C + 4자리
@@ -136,6 +136,15 @@
 --   SET NAMES utf8mb4;
 --   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG05') p),'SYSC0024','AI 분류','Python AI 서버, 토큰 수 기록 (FN-ADM-112-01·02)',70);
 --   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG05') p),'SYSC0025','PDF 분석','Python AI 서버 (FN-ADM-112-01)',80);
+-- v0.11 (4) 뉴스 수집 배치 코드와 뉴스 분류 키워드 (2026-11-02, KSJ, 근거: 커뮤니티_기능명세서_v0.8 FN-CMU-003-06 — 배치 이력 BTCH_SE_CD에 뉴스 수집이 없고 KWRD_DICT에 뉴스 분류 행(AIMC0039)이 없음)
+--   SET NAMES utf8mb4;
+--   START TRANSACTION;
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0028','뉴스 수집','community/NewsCollectJob',50);
+--   INSERT INTO `KWRD_DICT` (`DICT_USG_CD`,`KWRD_CLSF_NM`,`ARTCL_NM`,`KWRD_CN`,`INTRP_RSLT_CN`,`MPNG_CD`,`SORT_SEQ`,`RMRK_CN`) VALUES
+--     ('AIMC0039','뉴스 카테고리','건강','건강,질병,질환,병원,진료,수의사,백신,접종,진드기,구충,치료,수술,감염,전염병,비만,관절,영양제','카테고리 = 건강(CMUG06)','CMUC0018',170,'기사 제목에 키워드가 있으면 그 카테고리, 정렬 순서대로 처음 걸린 분류. 어디에도 안 걸리면 생활(CMUC0019). FN-CMU-003-06'),
+--     ('AIMC0039','뉴스 카테고리','정책','정부,법안,법률,개정,시행,의무화,과태료,지원금,조례,지자체,제도,규제,등록제,단속','카테고리 = 정책(CMUG06)','CMUC0020',180,'FN-CMU-003-06'),
+--     ('AIMC0039','뉴스 카테고리','여행','여행,숙소,캠핑,휴가,관광,펜션,호텔,항공,동반 출입','카테고리 = 여행(CMUG06)','CMUC0021',190,'FN-CMU-003-06');
+--   COMMIT;
 -- =====================================================================
 SET NAMES utf8mb4;
 START TRANSACTION;
@@ -629,6 +638,9 @@ INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG05') p),'SYSC0024','AI 분류','Python AI 서버, 토큰 수 기록 (FN-ADM-112-01·02)',70);
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG05') p),'SYSC0025','PDF 분석','Python AI 서버 (FN-ADM-112-01)',80);
 
+-- ■ SYS 시스템 — v0.11 추가: 뉴스 수집 배치 구분 (v0.11 (4))
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0028','뉴스 수집','community/NewsCollectJob',50);
+
 -- =====================================================================
 -- [2] 케어미션 마스터 (CARE_MSN) — 20261027_02_update_care_msn_and_ckup_pnt 의 최종 상태
 --     일상케어(MYPC0010) 9개, 활동기반(MYPC0011) 12개. 근거: FN-MYP-020-03·05, FN-HLT-003-12
@@ -710,7 +722,7 @@ INSERT INTO `AI_ROUT_MPNG` (`DOMN_NM`,`TRGT_SCRN_NM`,`SCRN_ID`,`SCRN_PARAM_CN`,`
 
 -- =====================================================================
 -- [4] 키워드 사전 (KWRD_DICT) — AI매니저 기능명세서 v0.12 부록 B 등록 판정 사전 (v0.11 (1), 결정 25)
---     검진유형 행은 해석 결과(HLTG01)별로 나눴다. 가계부·뉴스 분류 키워드는 아직 없다
+--     검진유형 행은 해석 결과(HLTG01)별로 나눴다. 뉴스 분류 키워드(AIMC0039)는 v0.11 (4). 가계부 분류 키워드는 아직 없다
 -- =====================================================================
 INSERT INTO `KWRD_DICT` (`DICT_USG_CD`,`KWRD_CLSF_NM`,`ARTCL_NM`,`KWRD_CN`,`INTRP_RSLT_CN`,`MPNG_CD`,`SORT_SEQ`,`RMRK_CN`) VALUES
   ('AIMC0037','판정 규칙','등록 요청','등록 동사 + (날짜 또는 시간 또는 주기 표현)','둘 다 있으면 등록 요청 → SCR-AIM-012',NULL,10,'한쪽만 있으면 등록 요청 아님(라우팅·검색 판정으로 진행). FN-AIM-001-05 ①'),
@@ -728,7 +740,10 @@ INSERT INTO `KWRD_DICT` (`DICT_USG_CD`,`KWRD_CLSF_NM`,`ARTCL_NM`,`KWRD_CN`,`INTR
   ('AIMC0037','검진유형','병원 일정','예방접종·접종·백신','검진유형 = 예방접종(HLTG01)','HLTC0002',130,'못 정하면 되물음(FN-AIM-012-05)'),
   ('AIMC0037','검진유형','병원 일정','진료·아파서','검진유형 = 질병진료(HLTG01)','HLTC0003',140,'못 정하면 되물음(FN-AIM-012-05)'),
   ('AIMC0037','검진유형','병원 일정','검사','검진유형 = 검사(HLTG01)','HLTC0004',150,'못 정하면 되물음(FN-AIM-012-05)'),
-  ('AIMC0037','검진유형','병원 일정','그 외','검진유형 = 기타 진료(HLTG01)','HLTC0005',160,'못 정하면 되물음(FN-AIM-012-05)');
+  ('AIMC0037','검진유형','병원 일정','그 외','검진유형 = 기타 진료(HLTG01)','HLTC0005',160,'못 정하면 되물음(FN-AIM-012-05)'),
+  ('AIMC0039','뉴스 카테고리','건강','건강,질병,질환,병원,진료,수의사,백신,접종,진드기,구충,치료,수술,감염,전염병,비만,관절,영양제','카테고리 = 건강(CMUG06)','CMUC0018',170,'기사 제목에 키워드가 있으면 그 카테고리, 정렬 순서대로 처음 걸린 분류. 어디에도 안 걸리면 생활(CMUC0019). FN-CMU-003-06'),
+  ('AIMC0039','뉴스 카테고리','정책','정부,법안,법률,개정,시행,의무화,과태료,지원금,조례,지자체,제도,규제,등록제,단속','카테고리 = 정책(CMUG06)','CMUC0020',180,'FN-CMU-003-06'),
+  ('AIMC0039','뉴스 카테고리','여행','여행,숙소,캠핑,휴가,관광,펜션,호텔,항공,동반 출입','카테고리 = 여행(CMUG06)','CMUC0021',190,'FN-CMU-003-06');
 
 COMMIT;
--- 합계: 공통코드 그룹 76건 + 코드 302건 = 378건, 케어미션 21건, AI 라우팅 매핑 45건, 키워드 사전 16건
+-- 합계: 공통코드 그룹 76건 + 코드 303건 = 379건, 케어미션 21건, AI 라우팅 매핑 45건, 키워드 사전 19건

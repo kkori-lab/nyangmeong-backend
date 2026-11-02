@@ -16,7 +16,7 @@
 | GET | /community-ai-commentaries | 오늘의 이야기 조회(`?cmtryCrtrYmd=`) | CMU-001-05 | KSJ | - | CommunityAiCommentaryResponse |
 | GET | /lost-reports | 실종 제보 목록(상태·지역·동물 구분·최종 목격 기간·키워드, 12건), `mineYn=true`면 내 글만(만료 글 포함) | CMU-002-01~04 | KSJ | - | Page<LostReportSummary> |
 | GET | /lost-reports/{lostTpofSn} | 실종 제보 상세(목격 장소 좌표, 찾았어요 후 비공개 처리) | CMU-002-05·06 | KSJ | - | LostReportResponse |
-| GET | /news | 펫뉴스 목록(카테고리·키워드, 10건) | CMU-003-01~04 | KSJ | - | Page<NewsSummary> |
+| GET | /news | 펫뉴스 목록(쿼리 `newsClsfCd`·`keyword`·`page`·`size`, 최신순 10건, 상세 하단 최신 5건은 `size=5`) | CMU-003-01~04 | KSJ | - | Page<NewsSummary> |
 | GET | /news/{newsSn} | 펫뉴스 상세 | CMU-003-04 | KSJ | - | NewsResponse |
 | GET | /posts | 펫이야기 목록(게시판·정렬·키워드, 인기글 배지, 10건). 상세 하단 최신 5건도 사용 | CMU-001-01~04·08·10 | KSJ | - | Page<PostSummary> |
 | GET | /posts/health-tips | 오늘의 건강팁(관리자 선정 3건) | CMU-001-07 | KSJ | - | List<PostSummary> |
@@ -489,7 +489,9 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | newsClsfCd | String | Y | 공통코드 CMUG06 | NEWS.NEWS_CLSF_CD, CMU-003-02 |
 | newsSrcCd | String | Y | 공통코드 CMUG07 | NEWS.NEWS_SRC_CD, CMU-003-01 |
 | newsSrcCdNm | String | Y | 출처 배지 | COM_CD.COM_CD_NM, CMU-003-01 |
+| srcPressNm | String | N | 외부 기사 언론사(목록 카드의 언론사명) | NEWS.SRC_PRESS_NM, CMU-003-01 |
 | newsTtl | String | Y | | NEWS.NEWS_TTL, CMU-003-01 |
+| newsCn | String | Y | 요약 줄, 앞 200자 | NEWS.NEWS_CN, CMU-003-01 |
 | pblcnDt | LocalDateTime | Y | 최신순 기준 | NEWS.PBLCN_DT, CMU-003-01 |
 | thmbUrlPath | String | N | | NEWS.THMB_URL_PATH, CMU-003-06 |
 | atchFileSn | Long | N | | NEWS.ATCH_FILE_SN |
