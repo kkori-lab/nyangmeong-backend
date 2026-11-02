@@ -108,6 +108,26 @@ class PetServiceTest {
     }
 
     @Test
+    void 목록은_중성화_여부와_정상_체중_범위를_그대로_돌려준다() {
+        PetSummary primary = pet(10L, BrupRole.PRIMARY.getCode(), true, 0, null);
+        primary.setNutrYn(true);
+        primary.setMinBdwg(new BigDecimal("3.500"));
+        primary.setMaxBdwg(new BigDecimal("5.250"));
+        PetSummary coParent = pet(11L, BrupRole.CO_PARENT.getCode(), false, 1, null);
+        coParent.setMinBdwg(new BigDecimal("2.000"));
+        coParent.setMaxBdwg(new BigDecimal("4.000"));
+        when(mapper.selectList(MBR, BrupRole.CO_PARENT.getCode())).thenReturn(List.of(primary, coParent));
+
+        List<PetSummary> result = service.searchMyPets(MBR);
+
+        assertThat(result).extracting(PetSummary::isNutrYn).containsExactly(true, false);
+        assertThat(result).extracting(PetSummary::getMinBdwg)
+                .containsExactly(new BigDecimal("3.500"), new BigDecimal("2.000"));
+        assertThat(result).extracting(PetSummary::getMaxBdwg)
+                .containsExactly(new BigDecimal("5.250"), new BigDecimal("4.000"));
+    }
+
+    @Test
     void 칩이_없는_반려동물의_chipNo는_null() {
         when(mapper.selectList(MBR, BrupRole.CO_PARENT.getCode()))
                 .thenReturn(List.of(pet(10L, BrupRole.PRIMARY.getCode(), true, 0, null)));

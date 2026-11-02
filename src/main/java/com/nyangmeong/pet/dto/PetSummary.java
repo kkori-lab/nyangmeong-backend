@@ -9,6 +9,7 @@ import lombok.Data;
  * [내 반려동물 목록 항목]
  * - GET /api/pets, 주양육·공동양육 모두 (SCR-MYP-001 카드, SCR-MYP-002 슬라이드)
  * - bscCharSbstYn : 캐릭터 오류 확인 중 배지, 캐릭터가 없으면 false
+ * - nutrYn·minBdwg·maxBdwg : 슬라이드의 "성별(중성화)"·"정상 a~bkg" (FN-MYP-002-02)
  */
 @Data
 public class PetSummary {
@@ -21,6 +22,9 @@ public class PetSummary {
     private String petGndrCd;
     private LocalDate petBrdt;
     private BigDecimal petBdwg;
+    private boolean nutrYn;
+    private BigDecimal minBdwg;
+    private BigDecimal maxBdwg;
     private String colrCd;
     private String colrDrctInptNm;
     private String chipNo;
