@@ -183,7 +183,7 @@ public class ObservationService {
     }
 
     /**
-     * 관찰 회차 수정(보낸 값만, 사진을 보내면 교체)
+     * 관찰 회차 수정(보낸 값만, 사진을 보내면 교체, clearFields의 크기·변화·메모는 비움)
      */
     @Transactional
     public ObservationCycleResponse updateCycle(Long mbrSn, Long petSn, Long obsrvCyclSn,
@@ -206,6 +206,15 @@ public class ObservationService {
         }
         if (req.memoCn() != null) {
             cycle.setMemoCn(blankToNull(req.memoCn()));
+        }
+        if (req.clears(ObservationCycleUpdateRequest.CLEAR_SIZE)) {
+            cycle.setObsrvSz(null);
+        }
+        if (req.clears(ObservationCycleUpdateRequest.CLEAR_CHANGE)) {
+            cycle.setObsrvChgCd(null);
+        }
+        if (req.clears(ObservationCycleUpdateRequest.CLEAR_MEMO)) {
+            cycle.setMemoCn(null);
         }
         if (req.file() != null && !req.file().isEmpty()) {
             cycle.setAtchFileSn(fileStore.store(req.file(), actorId));

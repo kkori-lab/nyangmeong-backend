@@ -504,7 +504,8 @@
 | obsrvDt | LocalDateTime | N | 오늘 이후 불가 | OBSRV_CYCL.OBSRV_DT, HLT-002-32 |
 | obsrvSz | BigDecimal | N | mm | OBSRV_CYCL.OBSRV_SZ, HLT-002-23 |
 | obsrvChgCd | String | N | HLTG17 | OBSRV_CYCL.OBSRV_CHG_CD, HLT-002-23 |
-| memoCn | String | N | 최대 200자 | OBSRV_CYCL.MEMO_CN, HLT-002-24 |
+| memoCn | String | N | 최대 200자. 빈 문자열이면 비움 | OBSRV_CYCL.MEMO_CN, HLT-002-24 |
+| clearFields | List<String> | N | 비울 필드 이름(`obsrvSz`·`obsrvChgCd`·`memoCn`). 반복 키 또는 쉼표로 보냄. 빈 칸은 "안 보냄"과 구분되지 않아 따로 받는다. 그 밖의 이름은 400(`clearFields[i]`), 같은 필드에 값과 함께 보내면 400(`clearFieldsDistinct`). 사진은 비울 수 없다(교체만) | HLT-002-19·23·24 |
 
 ### ObservationItemCreateRequest
 쓰는 API: POST /pets/{petSn}/observation-items (multipart/form-data, 모달 A 항목 + 1회차)
