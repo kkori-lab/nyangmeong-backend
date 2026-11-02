@@ -33,8 +33,33 @@
 | PATCH | /members/me | 회원정보 수정. 휴대전화(저장 시 중복 재검사)·프로필 사진 | MYP-040-02·05·08·11 | SJM | MemberUpdateRequest | MemberResponse |
 | PATCH | /members/me/nickname | 닉네임 설정 확정(로그인 회원 또는 가입 직후 받은 `ncnm_setup` 쿠키, 둘 다 없으면 401), 설정 완료 여부 반영 | ACC-001-26 | YAY | MemberNicknameUpdateRequest | MemberResponse |
 | PATCH | /members/me/password | 로그인 상태에서 비밀번호 변경 *통합 때 추가* | MYP-040-06 | YAY | PasswordChangeRequest | - |
+| GET | /admin/members | 관리자 회원 목록. 최신 가입순 20건씩, 정상·정지·탈퇴 전부. `q`에 @가 있으면 이메일 완전 일치, 없으면 닉네임 부분 일치. 시작일이 종료일보다 늦으면 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-010-01·02·03·04 | LJS | AdminMemberSearchCond | PageResponse<AdminMemberSummary> |
 
 ## DTO
+
+### AdminMemberSearchCond
+쓰는 API: GET /admin/members
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| q | String | N | @가 있으면 이메일 완전 일치(HMAC, 대소문자·앞뒤 공백 무시), 없으면 닉네임 부분 일치 | MBR.ACNT_EML_HMAC, MBR.MBR_NCNM, ADM-010-02 |
+| status | String | N | 회원 상태(USRG01) | MBR.MBR_STTS_CD, ADM-010-03 |
+| joinPath | String | N | 가입 경로(USRG03) | MBR.JOIN_PATH_CD, ADM-010-03 |
+| role | String | N | 회원 권한(USRG02) | MBR.MBR_AUTHRT_CD, ADM-010-03 |
+| bgngYmd | LocalDate | N | 가입일 시작(포함) | MBR.REG_DT, ADM-010-03 |
+| endYmd | LocalDate | N | 가입일 종료(포함) | MBR.REG_DT, ADM-010-03 |
+
+### AdminMemberSummary
+쓰는 API: GET /admin/members
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| mbrSn | Long | Y | 회원 상세 이동 값 | MBR.MBR_SN, ADM-010-04 |
+| mbrNcnm | String | Y | | MBR.MBR_NCNM, ADM-010-01 |
+| maskedAcntEml | String | Y | 앞 3자 + `***` + @도메인 | MBR.ACNT_EML_ENC, ADM-010-01 |
+| joinPathCd | String | Y | 가입 경로(USRG03) | MBR.JOIN_PATH_CD, ADM-010-01 |
+| mbrSttsCd | String | Y | 회원 상태(USRG01) | MBR.MBR_STTS_CD, ADM-010-01 |
+| mbrAuthrtCd | String | Y | 회원 권한(USRG02) | MBR.MBR_AUTHRT_CD, ADM-010-01 |
+| regDt | LocalDateTime | Y | 가입일 | MBR.REG_DT, ADM-010-01 |
+| lastLgnDt | LocalDateTime | N | 최근 로그인. 첫 로그인 전이면 null | MBR.LAST_LGN_DT, ADM-010-01 |
 
 ### CaptchaCreateRequest
 쓰는 API: POST /auth/captchas

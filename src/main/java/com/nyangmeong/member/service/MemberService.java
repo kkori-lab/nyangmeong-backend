@@ -10,7 +10,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.nyangmeong.global.file.FileStore;
+import com.nyangmeong.global.response.PageQuery;
+import com.nyangmeong.global.response.PageResponse;
 import com.nyangmeong.global.security.crypto.FieldCryptoService;
 import com.nyangmeong.global.security.domain.MemberAuthority;
 import com.nyangmeong.global.security.domain.MemberStatus;
@@ -18,6 +22,8 @@ import com.nyangmeong.global.setting.SystemSettingService;
 import com.nyangmeong.global.validation.PhoneNumberNormalizer;
 import com.nyangmeong.member.domain.JoinPath;
 import com.nyangmeong.member.domain.Member;
+import com.nyangmeong.member.dto.AdminMemberSearchCond;
+import com.nyangmeong.member.dto.AdminMemberSummary;
 import com.nyangmeong.member.dto.MemberNicknameAvailabilityResponse;
 import com.nyangmeong.member.dto.MemberNicknameUpdateRequest;
 import com.nyangmeong.member.dto.MemberPhoneAvailabilityResponse;
@@ -43,11 +49,44 @@ public class MemberService {
     private static final int NICKNAME_MAX_TRY = 5;
     private static final String SIGNUP_REASON = "회원가입";
     private static final String RECOVERY_REASON = "재가입 복구";
+    private static final int MASK_VISIBLE_LENGTH = 3;
 
     private final MemberMapper memberMapper;
     private final FieldCryptoService fieldCryptoService;
     private final SystemSettingService systemSettingService;
     private final FileStore fileStore;
+
+    /**
+     * 관리자 회원 목록 조회
+     * - 페이지 정보를 잃지 않도록 목록을 새로 만들지 않고 행에 마스킹 값만 채움
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<AdminMemberSummary> searchForAdmin(AdminMemberSearchCond cond, PageQuery pq) {
+        if (cond.getBgngYmd() != null && cond.getEndYmd() != null && cond.getBgngYmd().isAfter(cond.getEndYmd())) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        String q = cond.getQ();
+        boolean hasKeyword = q != null && !q.isBlank();
+        boolean isEmailKeyword = hasKeyword && q.contains("@");
+        String acntEmlHmac = isEmailKeyword ? fieldCryptoService.emailHmac(q) : null;
+        String mbrNcnm = hasKeyword && !isEmailKeyword ? q.strip() : null;
+
+        PageHelper.startPage(pq.pageOrDefault(), pq.sizeOrDefault());
+        List<AdminMemberSummary> rows = memberMapper.selectAdminList(cond, acntEmlHmac, mbrNcnm);
+        rows.forEach(row -> row.setMaskedAcntEml(maskEmail(fieldCryptoService.decrypt(row.getAcntEmlEnc()))));
+        return PageResponse.of(new PageInfo<>(rows));
+    }
+
+    /**
+     * 이메일 마스킹 (cho***@gmail.com)
+     */
+    private String maskEmail(String email) {
+        int at = email.indexOf('@');
+        if (at < 0) {
+            return "***";
+        }
+        return email.substring(0, Math.min(MASK_VISIBLE_LENGTH, at)) + "***" + email.substring(at);
+    }
 
     /**
      * 로그인용 회원 조회 : 없으면 null (없는 아이디도 불일치와 같게 다루기 위해)

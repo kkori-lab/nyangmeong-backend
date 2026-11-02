@@ -2,10 +2,14 @@
 
 ## 지금 하는 것
 
-SCR-ADM-112 외부 API 사용량 — 끝 (2026-11-02). `GET /api/admin/external-api-usage`·`/daily`·`/tokens`·`/failures`, Python 통지 `POST /internal/ai/external-api-calls`, 공통코드 `SYSC0024`·`SYSC0025`(`global/external`). 추가-1: 구현 계획 문서 별도 커밋(dd4b8e6)
+SCR-ADM-010 회원 목록 — 끝 (2026-11-02). `GET /api/admin/members`(`member/controller/AdminMemberController`), 닉네임 부분 일치·이메일 완전 일치 검색, 상태·가입 경로·권한·가입일 필터, 이메일 마스킹
 
 ## 다음에 할 것
 
+- SCR-ADM-010 연결 남음: FN-ADM-010-01 (프론트 연결 관리자 회원 목록 화면 `features/adminMember/api.js` `getAdminMembers`, 프론트 저장소에서 /start), FN-ADM-010-04 (프론트 연결 행 클릭 이동, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
+- PR 전 확인(사람): `MemberService`·`MemberMapper`에 관리자 목록 조회를 넣은 것을 YAY에게 알린다(마일스톤 `member` 관리자 조회 협의). 저장소에 협의 기록 없음
+- 로컬 `application.properties` 정리(사람): `springdoc.*.enabled=false` 두 줄 때문에 Swagger가 404다. `spring.profiles.default`도 없어 로컬 프로필이 적용되지 않을 수 있다. 디스코드 최신 파일로 받는다
+- 판단 필요: 잘못 인코딩된 `q`(UTF-8 아님)는 400이 아니라 500이다(Tomcat 디코딩 실패, 이번 기획 밖). 검증의 `dev-tokens`(회원 1·2)가 공용 DB에 세션을 남겼는지 확인 못 함
 - SCR-ADM-112 연결 남음: FN-ADM-112-01·02·03 (프론트 연결 관리자 외부 API 사용량 화면 SCR-ADM-112, 프론트 저장소에서 /start. 프론트 마일스톤에 절 있음), FN-ADM-112-02 (Python이 `POST /internal/ai/external-api-calls`를 부른다, 호출마다 쿠키가 있어야 하고 쿠키 없는 백그라운드 호출은 기록되지 않는다, ai 세션)
 - 공용 DB(사람, PR 병합 직후): `db/20261030_insert_base_data_v0.11.sql`의 v0.11 (3)을 실행한다. 실행 전에는 `SYSC0024`·`SYSC0025` 통지가 외래키 위반이다. 사람 확인으로 공용 DB에 남은 `FAIL_RSN = 'verify 확인용'` 행과 토큰 120·30 행을 지울지 정한다(삭제 API 없음)
 - 외부 API Java 호출 기록(2026-11-01 결정: 아직 안 함): `RegionResolver`·`MailSender`·`CharacterGenerator` 실제 구현을 붙일 때 `EXTL_API_CALL_LOG`에 기록한다. 호출 실패 기록이 업무 트랜잭션과 같이 롤백되지 않게 별도 트랜잭션으로 저장한다. `SYSC0019` 장소 공공데이터는 코드만 남고 화면 7종에는 없다
