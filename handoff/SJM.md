@@ -1,18 +1,12 @@
 # SJM 핸드오프
 
 ## 지금 하는 것
-SCR-MYP-002 반려동물 프로필 목록 · 목록 응답에 중성화 여부·정상 체중 범위 추가 — 구현 중 (승인 2026-11-02 01:43, 시작 2026-11-02 10:38)
-
-근거: 마이페이지_기능명세서_v0.5_20261101 FN-MYP-002-02 "나이 · 품종 · 성별(중성화)", "체중(정상범위 함께 표시)". 마이페이지_화면설계서_v0.6_20261025 SCR-MYP-002 같은 문구. 명세에 새 기능 ID는 없다.
-
-- FN-MYP-002-02 반려동물 슬라이드(목록 응답 보강): `pet/dto/PetSummary`에 `nutrYn`(boolean, `PetResponse`와 같게)·`minBdwg`·`maxBdwg`(BigDecimal) 추가, `mapper/pet/PetMapper.xml` `petSummaryResultMap`·`selectList`에 `P.NUTR_YN`(`RPRS_PET_YN`처럼 'Y'→TRUE, 그 밖→FALSE)·`P.MIN_BDWG`·`P.MAX_BDWG` 추가, `docs/api/pet.md` PetSummary 표에 세 필드 추가(근거 PET.NUTR_YN·MIN_BDWG·MAX_BDWG, MYP-002-02, 세 컬럼 모두 NOT NULL이라 필수 Y), `PetServiceTest`·`PetControllerTest` 목록 테스트에 세 필드 확인 추가. API: `GET /pets`(SJM, 응답 `List<PetSummary>`, 기존 필드는 그대로). 완료 조건 — 명령: `./gradlew build -q`(PetControllerTest가 `GET /api/pets` 응답 JSON에 `nutrYn`·`minBdwg`·`maxBdwg`를 확인). 화면: Postman `GET /api/pets` → 200, 각 항목에 `nutrYn`(true/false)·`minBdwg`·`maxBdwg`가 있고 값이 같은 동물의 `GET /api/pets/{petSn}`과 같다. 공동양육 동물에도 나온다. 프론트 연결: SCR-MYP-002 슬라이드의 "(중성화 완료)"·"정상 a~bkg"를 상세 조회 대신 목록 값으로 채우기 (프론트 저장소에서 /start)
-- 다른 쪽 영향: `PetSummary`를 쓰는 `ai/AiRegisterContextService`·`expense/ExpenseQueryService`·`CaregiverInvitationService`는 필드 추가만이라 고치지 않는다(컴파일·기존 테스트로 확인)
-
-새 의존성: 없음
+SCR-MYP-002 반려동물 프로필 목록 · 목록 응답에 중성화 여부·정상 체중 범위 추가 — 끝남. `GET /pets`의 `PetSummary`에 `nutrYn`·`minBdwg`·`maxBdwg` 추가(검증 1회차 `확인 못 함 있음`(연결 남음만), 사람 확인 통과)
 
 ## 다음에 할 것
-- 사람 확인(SCR-MYP-003 추가-3): 통과 2026-10-31. Postman Runner 16건 통과·실패 0(mbrSn 6, petSn 20). ① goalBdwg 4.5 200 ② goalBdwg+reset 400 BAD_REQUEST ③ 4.5 그대로 ④ reset=false 4.5 그대로 ⑤ reset=true null, 원래 값으로 되돌림
-- 프론트 연결(SCR-MYP-003 추가-3): 완료(프론트 PR에 포함). `PetFormModal`이 목표체중 지우기를 `goalBdwgReset: true`로 보낸다. 로컬 백엔드로 화면 확인함(지우고 저장 → 다시 열면 비어 있음). 품종은 `vrtySn`·`vrtyDrctInptNm` 중 하나만 보내면 다른 쪽이 비워진다
+- 사람 확인(SCR-MYP-002 목록 응답 보강): 통과 2026-11-02. Postman Runner 24건 통과·실패 0(mbrSn 1, 주양육 petSn 2·공동양육 petSn 14 상세 값이 목록과 같음)
+- 연결 남음(SCR-MYP-002 목록 응답 보강): 프론트 SCR-MYP-002 슬라이드의 "(중성화 완료)"·"정상 a~bkg"를 상세 조회 대신 `GET /pets`의 `nutrYn`·`minBdwg`·`maxBdwg`로 채우기(프론트 저장소에서 /start)
+- Postman 컬렉션: 3번 회원이 정지(`MEMBER_INACTIVE`)라 그 회원을 쓰는 변수(`mbrSnB`·`emailB`·`delCoMbrSn`·`delCoEmail`·`invReceiverMbrSn`·`infoOtherMbrSn`)가 있는 폴더는 403. 돌릴 때 정상 회원으로 바꾼다(이메일은 `GET /members/me`의 `acntEml`)
 - 연결 남음(SCR-MYP-005 추가-2): 프론트 5-1 초대 모달의 409 처리를 `data.linkedPets`("이미 ○○의 가족이에요")·`data.pendingPets`("이미 초대를 보냈어요 (MM-DD에 만료돼요)") 목록 기준으로 바꾸기(프론트 저장소에서 /start). 예전 단일 `data.petSn·petNm·invtnExpryDt`는 없어졌다
 - 연결 남음(SCR-MYP-040): FN-MYP-040-02·03·08·09·13 프론트 SCR-MYP-040 6-2·6-3 프로필 요약·계정 정보, FN-MYP-040-02·05·08·11 프론트 6-2·6-3 사진 변경·기본 이미지로·휴대폰 번호 [수정]·[저장](프론트 저장소에서 /start). API: `GET /members/me`(`MemberResponse`에 `joinDt`·`lastLgnDt` 추가), `PATCH /members/me`(multipart `mblTelno`·`profilePhoto`·`profilePhotoReset`, 다른 회원 번호 409 PHONE_ALREADY_USED, 사진과 되돌리기 함께 400)
 - YAY와 정하기(SCR-MYP-040): 본인 확인(6-1)을 통과했는지 `PATCH /members/me`에서 서버가 검사하지 않는다. `POST /members/me/password-verification`을 만들 때 통과 표시를 어떻게 남길지 함께 정한다
