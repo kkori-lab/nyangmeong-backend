@@ -1,9 +1,11 @@
 package com.nyangmeong.community.service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -47,6 +49,7 @@ public class NewsService {
     private static final int CONTENT_MAX_LENGTH = 4000;
     private static final int PRESS_MAX_LENGTH = 100;
     private static final int PATH_MAX_LENGTH = 500;
+    private static final int RECENT_DAYS = 7;
 
     private final NewsMapper newsMapper;
     private final NewsFeedClient newsFeedClient;
@@ -93,11 +96,30 @@ public class NewsService {
         Set<String> saved = items.isEmpty() ? Set.of()
                 : new HashSet<>(newsMapper.selectOrgtxtPaths(List.copyOf(items.keySet())));
         List<NewsKeyword> keywords = newsMapper.selectKeywords();
+        List<String> excludes = splitKeywords(newsMapper.selectExcludeKeywords());
+
+        NewsDuplicateChecker checker = new NewsDuplicateChecker(
+                newsMapper.selectRecentNews(today.minusDays(RECENT_DAYS).atStartOfDay()));
 
         int created = 0;
+        int duplicated = 0;
+        int offTopic = 0;
         boolean first = true;
         for (NewsFeedItem item : items.values()) {
             if (saved.contains(item.link())) {
+                continue;
+            }
+            String excluded = findExcludeKeyword(item.title(), excludes);
+            if (excluded != null) {
+                offTopic++;
+                log.info("뉴스 수집 : 주제 무관 건너뜀 '{}' (키워드 '{}')", item.title(), excluded);
+                continue;
+            }
+            String title = cut(item.title(), TITLE_MAX_LENGTH);
+            String twin = checker.findDuplicateTitle(title);
+            if (twin != null) {
+                duplicated++;
+                log.info("뉴스 수집 : 중복 건너뜀 '{}' (기존 '{}')", title, twin);
                 continue;
             }
             if (!first && !pause()) {
@@ -105,12 +127,47 @@ public class NewsService {
             }
             first = false;
             NewsPreview preview = newsFeedClient.fetchPreview(item.link());
-            if (save(toNews(item, preview, keywords))) {
+            News news = toNews(item, preview, keywords);
+            if (preview.description() != null && checker.shouldReplaceSummary(title, news.getNewsCn())) {
+                news.setNewsCn(title);
+            }
+            if (save(news)) {
                 created++;
+                checker.add(news.getNewsTtl(), news.getNewsCn());
             }
         }
-        log.info("뉴스 수집 : 피드 {}건 중 새로 저장 {}건", items.size(), created);
+        log.info("뉴스 수집 : 피드 {}건 중 새로 저장 {}건, 중복 건너뜀 {}건, 주제 무관 건너뜀 {}건",
+                items.size(), created, duplicated, offTopic);
         return created;
+    }
+
+    /**
+     * 제목에 든 제외 키워드 : 영문 대소문자 무시, 없으면 null
+     */
+    static String findExcludeKeyword(String title, List<String> keywords) {
+        String lowerTitle = title.toLowerCase(Locale.ROOT);
+        for (String keyword : keywords) {
+            if (lowerTitle.contains(keyword.toLowerCase(Locale.ROOT))) {
+                return keyword;
+            }
+        }
+        return null;
+    }
+
+    private static List<String> splitKeywords(List<String> rows) {
+        List<String> words = new ArrayList<>();
+        for (String row : rows) {
+            if (row == null) {
+                continue;
+            }
+            for (String word : row.split(",")) {
+                String trimmed = word.trim();
+                if (!trimmed.isEmpty()) {
+                    words.add(trimmed);
+                }
+            }
+        }
+        return words;
     }
 
     /**

@@ -34,6 +34,11 @@
         <result column="KWRD_CN" property="kwrdCn" />
     </resultMap>
 
+    <resultMap id="newsRecentResultMap" type="com.nyangmeong.community.domain.News">
+        <result column="NEWS_TTL" property="newsTtl" />
+        <result column="NEWS_CN"  property="newsCn" />
+    </resultMap>
+
     <select id="selectList" resultMap="newsSummaryResultMap">
         /* 뉴스 목록 조회 */
         SELECT N.NEWS_SN
@@ -102,6 +107,24 @@
            AND K.DEL_YN = 'N'
            AND K.MPNG_CD IS NOT NULL
          ORDER BY K.SORT_SEQ ASC, K.KWRD_DICT_SN ASC
+    </select>
+
+    <select id="selectExcludeKeywords" resultType="string">
+        /* 뉴스 제외 키워드 조회 */
+        SELECT K.KWRD_CN
+          FROM KWRD_DICT K
+         WHERE K.DICT_USG_CD = 'AIMC0040'
+           AND K.USE_YN = 'Y'
+           AND K.DEL_YN = 'N'
+         ORDER BY K.SORT_SEQ ASC, K.KWRD_DICT_SN ASC
+    </select>
+
+    <select id="selectRecentNews" resultMap="newsRecentResultMap">
+        /* 중복 판정용 최근 기사 조회 */
+        SELECT N.NEWS_TTL
+             , N.NEWS_CN
+          FROM NEWS N
+         WHERE N.PBLCN_DT &gt;= #{since}
     </select>
 
     <insert id="insert" parameterType="com.nyangmeong.community.domain.News" useGeneratedKeys="true" keyProperty="newsSn">
