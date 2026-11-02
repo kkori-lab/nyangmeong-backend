@@ -1,22 +1,30 @@
 package com.nyangmeong.pet.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.awt.image.BufferedImage;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.mock.web.MockMultipartFile;
 
+import com.nyangmeong.global.auth.OwnerAuthorizer;
+import com.nyangmeong.global.error.CustomException;
+import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.external.CharacterGenerationRequest;
+import com.nyangmeong.global.external.CharacterSpec;
 import com.nyangmeong.global.file.FileExtension;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.file.StoredFile;
@@ -29,6 +37,8 @@ import com.nyangmeong.pet.domain.CharacterJobStatusHistory;
 import com.nyangmeong.pet.domain.CharacterPhoto;
 import com.nyangmeong.pet.domain.PhotoRole;
 import com.nyangmeong.pet.domain.PixelCharacter;
+import com.nyangmeong.pet.dto.CharacterSuccessRequest;
+import com.nyangmeong.pet.dto.CharacterSuccessResponse;
 import com.nyangmeong.pet.dto.PetProfileSummary;
 import com.nyangmeong.pet.mapper.PixelCharacterMapper;
 
@@ -40,7 +50,126 @@ class CharacterCreationServiceTest {
     private final PixelCharacterMapper mapper = mock(PixelCharacterMapper.class);
     private final FileStore fileStore = mock(FileStore.class);
     private final EventPublisher eventPublisher = mock(EventPublisher.class);
-    private final CharacterCreationService service = new CharacterCreationService(mapper, fileStore, eventPublisher);
+    private final OwnerAuthorizer ownerAuthorizer = mock(OwnerAuthorizer.class);
+    private final CharacterCreationService service = new CharacterCreationService(mapper, fileStore, eventPublisher,
+            ownerAuthorizer);
+
+    private static byte[] png(int size) {
+        return CharacterSpec.toPng(new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB));
+    }
+
+    private CharacterSuccessRequest success(byte[] image, byte[] sheet) {
+        return new CharacterSuccessRequest(new MockMultipartFile("image", image),
+                new MockMultipartFile("sheet", sheet), 1.5, 2.0, 3.0);
+    }
+
+    private PixelCharacter pixelCharacter() {
+        PixelCharacter character = new PixelCharacter();
+        character.setPixelCharSn(3L);
+        character.setPetSn(10L);
+        character.setMbrSn(1L);
+        return character;
+    }
+
+    private void givenReport(CharacterJobStatus status) {
+        when(mapper.selectJob(5L)).thenReturn(job(status));
+        when(mapper.selectByPetSn(10L)).thenReturn(pixelCharacter());
+        when(mapper.selectPetProfile(10L)).thenReturn(pet());
+    }
+
+    @Test
+    void 성공_보고는_결과와_맨몸_시트를_저장하고_이전_착용_시트를_지우고_알림을_보낸다() {
+        givenReport(CharacterJobStatus.CREATING);
+        when(fileStore.storePublic(any(byte[].class), eq(FileExtension.PNG), anyString(), anyString())).thenReturn(30L);
+        when(fileStore.store(any(byte[].class), eq(FileExtension.PNG), anyString(), anyString())).thenReturn(31L);
+
+        CharacterSuccessResponse res = service.reportSuccess(1L, 5L, success(png(512), png(1024)));
+
+        assertThat(res.pixelCharSn()).isEqualTo(3L);
+        verify(ownerAuthorizer).checkOwner(1L, 1L);
+        verify(mapper).updateBodySheet(3L, 31L, 1.5, 2.0, 3.0, "SYSTEM");
+        verify(mapper).updateItemSheetDelete(3L);
+        verify(mapper).updateJobFinished(5L, List.of(CharacterJobStatus.CREATING.getCode()),
+                CharacterJobStatus.COMPLETED.getCode(), null);
+        verify(eventPublisher).publish(any(NotificationEvent.class));
+    }
+
+    @Test
+    void 이미_완료된_작업의_성공_보고는_저장_없이_같은_번호를_준다() {
+        givenReport(CharacterJobStatus.COMPLETED);
+
+        CharacterSuccessResponse res = service.reportSuccess(1L, 5L, success(png(512), png(1024)));
+
+        assertThat(res.pixelCharSn()).isEqualTo(3L);
+        verify(fileStore, never()).storePublic(any(byte[].class), any(), anyString(), anyString());
+        verify(eventPublisher, never()).publish(any(NotificationEvent.class));
+    }
+
+    @Test
+    void 실패로_끝난_작업의_성공_보고는_ALREADY_PROCESSED() {
+        givenReport(CharacterJobStatus.FAILED);
+
+        assertThatThrownBy(() -> service.reportSuccess(1L, 5L, success(png(512), png(1024))))
+                .extracting("errorCode").isEqualTo(ErrorCode.ALREADY_PROCESSED);
+    }
+
+    @Test
+    void 규격_밖_이미지나_시트는_FILE_TYPE_NOT_ALLOWED() {
+        givenReport(CharacterJobStatus.CREATING);
+
+        assertThatThrownBy(() -> service.reportSuccess(1L, 5L, success(png(100), png(1024))))
+                .extracting("errorCode").isEqualTo(ErrorCode.FILE_TYPE_NOT_ALLOWED);
+        assertThatThrownBy(() -> service.reportSuccess(1L, 5L, success(png(512), png(512))))
+                .extracting("errorCode").isEqualTo(ErrorCode.FILE_TYPE_NOT_ALLOWED);
+        verify(fileStore, never()).storePublic(any(byte[].class), any(), anyString(), anyString());
+    }
+
+    @Test
+    void 남의_작업은_보고할_수_없다() {
+        when(mapper.selectJob(5L)).thenReturn(job(CharacterJobStatus.CREATING));
+        doThrow(new CustomException(ErrorCode.NOT_OWNER)).when(ownerAuthorizer).checkOwner(2L, 1L);
+
+        assertThatThrownBy(() -> service.reportSuccess(2L, 5L, success(png(512), png(1024))))
+                .extracting("errorCode").isEqualTo(ErrorCode.NOT_OWNER);
+        assertThatThrownBy(() -> service.reportFailure(2L, 5L, "CHARACTER_API_ERROR"))
+                .extracting("errorCode").isEqualTo(ErrorCode.NOT_OWNER);
+        verify(mapper, never()).updateJobFinished(anyLong(), anyList(), anyString(), any());
+    }
+
+    @Test
+    void 없는_작업은_PIXEL_CHARACTER_NOT_FOUND() {
+        assertThatThrownBy(() -> service.reportFailure(1L, 5L, "CHARACTER_API_ERROR"))
+                .extracting("errorCode").isEqualTo(ErrorCode.PIXEL_CHARACTER_NOT_FOUND);
+    }
+
+    @Test
+    void 실패_보고는_진행_중_작업만_실패로_바꾸고_이력을_남긴다() {
+        when(mapper.selectJob(5L)).thenReturn(job(CharacterJobStatus.CREATING));
+        when(mapper.updateJobFinished(eq(5L), anyList(), eq(CharacterJobStatus.FAILED.getCode()),
+                eq("CHARACTER_API_ERROR"))).thenReturn(1);
+
+        service.reportFailure(1L, 5L, "CHARACTER_API_ERROR");
+
+        ArgumentCaptor<CharacterJobStatusHistory> history = ArgumentCaptor.forClass(CharacterJobStatusHistory.class);
+        verify(mapper).insertJobStatusHistory(history.capture());
+        assertThat(history.getValue().getAftrSttsCd()).isEqualTo(CharacterJobStatus.FAILED.getCode());
+    }
+
+    @Test
+    void 끝난_작업의_실패_보고는_그대로_둔다() {
+        when(mapper.selectJob(5L)).thenReturn(job(CharacterJobStatus.COMPLETED));
+
+        service.reportFailure(1L, 5L, "CHARACTER_API_ERROR");
+
+        verify(mapper, never()).updateJobFinished(anyLong(), anyList(), anyString(), any());
+    }
+
+    @Test
+    void 시간_초과_대상은_생성_중_작업을_10분_기준으로_찾는다() {
+        when(mapper.selectTimedOutJobs(CharacterJobStatus.CREATING.getCode(), 10)).thenReturn(List.of(5L));
+
+        assertThat(service.searchTimedOutJobs()).containsExactly(5L);
+    }
 
     private CharacterCreationJob job(CharacterJobStatus status) {
         CharacterCreationJob job = new CharacterCreationJob();

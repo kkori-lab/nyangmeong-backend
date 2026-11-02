@@ -165,6 +165,12 @@
 -- v0.11 (8) 뉴스 제외 키워드의 「다른 개념」 행 삭제 (2026-11-02, KSJ, 근거: 검색어가 반려동물이라 반려식물·반려가전·반려로봇·반려돌만 든 기사는 수집되지 않고 「반려동물과 반려식물 …」 같은 정상 기사가 같이 빠질 수 있음, 개미 투자자도 같은 이유로 뺌). 테이블 변경 없음. v0.11 (7)을 실행한 뒤에 실행한다
 --   SET NAMES utf8mb4;
 --   UPDATE `KWRD_DICT` SET `DEL_YN` = 'Y' WHERE `DICT_USG_CD` = 'AIMC0040' AND `ARTCL_NM` = '다른 개념' AND `DEL_YN` = 'N';
+-- v0.11 (9) 신고 조치 코드 (2026-11-02, LJS, 근거: 관리자_기능명세서 FN-ADM-030-04 / docs/admin/implementation-plan.md 결정 6). 컬럼은 20261030_create_tables_v0.11.sql의 v0.11 (9), 이 절을 먼저 실행한다
+--   SET NAMES utf8mb4;
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES (NULL,'CMUG08','신고조치','사용 컬럼: DCLR.DCLR_ACTN_CD',80);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='CMUG08') p),'CMUC0025','유지','대상 변경 없음',10);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='CMUG08') p),'CMUC0026','게시물 블라인드','글은 블라인드, 댓글은 삭제',20);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='CMUG08') p),'CMUC0027','작성자 정지','회원 제재와 같은 규칙',30);
 -- =====================================================================
 SET NAMES utf8mb4;
 START TRANSACTION;
@@ -666,6 +672,11 @@ INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0028','뉴스 수집','community/NewsCollectJob',50);
 -- ■ AIM 사전용도 — v0.11 추가: 뉴스 제외 (v0.11 (7))
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='AIMG10') p),'AIMC0040','뉴스 제외','RSS 기사 제목 제외 키워드, 하나라도 들면 수집하지 않음',40);
+-- ■ CMU 커뮤니티 — v0.11 추가: 신고 조치 (v0.11 (9))
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES (NULL,'CMUG08','신고조치','사용 컬럼: DCLR.DCLR_ACTN_CD',80);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='CMUG08') p),'CMUC0025','유지','대상 변경 없음',10);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='CMUG08') p),'CMUC0026','게시물 블라인드','글은 블라인드, 댓글은 삭제',20);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='CMUG08') p),'CMUC0027','작성자 정지','회원 제재와 같은 규칙',30);
 
 -- =====================================================================
 -- [2] 케어미션 마스터 (CARE_MSN) — 20261027_02_update_care_msn_and_ckup_pnt 의 최종 상태

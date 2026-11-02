@@ -5,6 +5,7 @@ import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import com.nyangmeong.pet.dto.BakeItemSummary;
 import com.nyangmeong.pet.dto.ShopItemSummary;
 
 /**
@@ -29,6 +30,16 @@ public interface ItemMapper {
      */
     List<ShopItemSummary> selectShopItemsBySn(@Param("pixelCharSn") Long pixelCharSn,
             @Param("itemSns") List<Long> itemSns);
+
+    /**
+     * 굽기 대상 아이템 조회 (판매 중이고 엔진 키 있음)
+     */
+    List<BakeItemSummary> selectBakeItems();
+
+    /**
+     * 굽기 대상 아이템 여부
+     */
+    int countBakeItem(Long itemSn);
 
     /**
      * 보유 아이템 등록 (미착용)

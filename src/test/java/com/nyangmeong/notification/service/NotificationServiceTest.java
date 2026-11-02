@@ -138,6 +138,19 @@ class NotificationServiceTest {
     }
 
     @Test
+    void 신고_결과는_댓글_알림을_꺼도_만들고_같은_코드로_저장한다() {
+        NotificationReceiveSetting setting = allOn();
+        setting.setCmntNotiRcptnYn("N");
+        when(notificationMapper.selectReceiveSetting(1L)).thenReturn(setting);
+
+        notificationService.create(event(NotificationType.REPORT_RESULT));
+        notificationService.create(event(NotificationType.COMMUNITY));
+
+        verify(notificationMapper, times(1)).insert(any());
+        assertThat(NotificationType.REPORT_RESULT.getCode()).isEqualTo(NotificationType.COMMUNITY.getCode());
+    }
+
+    @Test
     void 인앱_채널을_끄면_어떤_유형도_만들지_않는다() {
         NotificationReceiveSetting setting = allOn();
         setting.setInappNotiRcptnYn("N");
