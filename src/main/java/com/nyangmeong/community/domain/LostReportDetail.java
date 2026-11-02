@@ -14,6 +14,7 @@ import lombok.Setter;
 public class LostReportDetail extends LostReport {
     private Long mbrSn;
     private String mbrNcnm;
+    private Long mbrAtchFileSn;
     private String pstSttsCd;
     private String pstTtl;
     private String pstCn;

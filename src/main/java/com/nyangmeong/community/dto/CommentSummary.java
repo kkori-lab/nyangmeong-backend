@@ -16,6 +16,7 @@ public class CommentSummary {
     private String cmntCn;
     private Long mbrSn;
     private String mbrNcnm;
+    private Long mbrAtchFileSn;
     private boolean sysAutoCrtYn;
     private Boolean owner;
     private LocalDateTime regDt;

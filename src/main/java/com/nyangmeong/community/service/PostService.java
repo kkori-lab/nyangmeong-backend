@@ -309,7 +309,7 @@ public class PostService {
     private PostResponse toResponse(Long mbrSn, Post post) {
         List<PostImageSummary> imgs = postMapper.selectImages(post.getPstSn()).stream()
                 .map(PostImageSummary::from).toList();
-        return PostResponse.from(post, postMapper.selectMbrNcnm(post.getMbrSn()),
+        return PostResponse.from(post, postMapper.selectAuthor(post.getMbrSn()),
                 postMapper.countComments(post.getPstSn()), imgs, postMapper.existsLike(post.getPstSn(), mbrSn),
                 mbrSn.equals(post.getMbrSn()));
     }
