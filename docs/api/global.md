@@ -14,7 +14,7 @@
 | GET | /admin/audit-logs | 감사 로그 목록. `?mbrSn=&taskTypeCd=&trgtTblNm=&bgngYmd=&endYmd=&page=&size=`, 조건은 모두 선택, 기본 20건, 최신순. `trgtTblNm`은 완전 일치, 기간은 끝 날짜 하루를 포함한다. `bgngYmd`가 `endYmd`보다 뒤면 400 `INVALID_INPUT_VALUE`. 작업 유형 목록은 `GET /common-codes?prntComCd=SYSG01`. 관리자만 | ADM-114-01 | LJS | - | PageResponse<AdminTaskLogSummary> |
 | GET | /admin/audit-logs/admins | 감사 로그에 나온 관리자 목록(관리자 필터 드롭다운). 관리자만 | ADM-114-01 | LJS | - | List<AdminTaskLogAdminSummary> |
 | GET | /admin/audit-logs/{mngrTaskLogSn} | 감사 로그 상세(바뀌기 전·후 값, 접속 IP). 없는 번호는 404 `NOT_FOUND`. 관리자만. 수정·삭제 API는 없다 | ADM-114-02·04 | LJS | - | AdminTaskLogDetailResponse |
-| GET | /admin/batches | 배치 목록과 배치별 마지막 실행. 코드에 있는 배치 4종(공통코드 SYSG02). 실행 이력이 없으면 마지막 실행 필드는 null. 관리자만 | ADM-111-01 | LJS | - | List<BatchSummary> |
+| GET | /admin/batches | 배치 목록과 배치별 마지막 실행. 코드에 있는 배치 6종(공통코드 SYSG02). 실행 이력이 없으면 마지막 실행 필드는 null. 관리자만 | ADM-111-01 | LJS | - | List<BatchSummary> |
 | GET | /admin/batches/{btchSeCd}/executions | 실행 이력. `?page=&size=`, 기본 20건, 최신순. 없는 코드는 404 `NOT_FOUND`. 실패 건수는 없다(배치가 건별 실패를 세지 않는다). 관리자만 | ADM-111-02 | LJS | - | PageResponse<BatchExecutionSummary> |
 | POST | /admin/batches/{btchSeCd}/run | 수동 실행. 이력을 남기고 바로 200을 돌려준 뒤 비동기로 실행한다. 결과는 실행 이력으로 본다. 감사 로그(PROCESS)를 남긴다. 실행 중이면 409 `BATCH_ALREADY_RUNNING`, 이 서버에서 꺼진 배치면 409 `BATCH_NOT_AVAILABLE`, 없는 코드는 404 `NOT_FOUND`. 관리자만 | ADM-111-03 | LJS | - | BatchRunResponse |
 | GET | /admin/external-api-usage | 종류별 사용량. `?bgngYmd=&endYmd=&extlApiSeCd=`, 조건은 모두 선택. 기간 기본 최근 7일, 최대 92일, 끝 날짜 하루를 포함한다. 호출이 없는 종류도 0으로 나온다. 실패율은 (실패 + 시간초과) / 호출 수. 기간이 뒤집혔거나 92일을 넘거나 없는 코드면 400 `INVALID_INPUT_VALUE`. 관리자만 | ADM-112-01 | LJS | - | List<ExternalApiUsageSummary> |

@@ -2,24 +2,23 @@
 
 ## 지금 하는 것
 
-SCR-ADM-013 탈퇴 회원 — 끝 (2026-11-02). 관리자 탈퇴 회원 목록 API `GET /api/admin/members/withdrawn`(`AdminMemberController`, `MemberService.searchWithdrawnForAdmin`, `AdminWithdrawnMemberSummary`), 보관 기간 안의 회원만 마스킹 이메일과 파기 예정일(`purgeYmd`)을 준다
+SCR-ADM-013 탈퇴 회원 · 탈퇴 파기 배치 — 끝 (2026-11-02). `member/MemberPurgeJob`(SYSC0027, 매일 03:30)이 보관 기간이 지난 탈퇴 회원의 식별값을 없애고 `SNS_ACNT_LINK`를 지운다. `MBR` 행과 탈퇴 상태는 유지
 
 ## 다음에 할 것
 
-- SCR-ADM-013 연결 남음: FN-ADM-013-01 (프론트 연결 관리자 탈퇴 회원 화면 `features/adminMember/api.js` `getAdminWithdrawnMembers`, 프론트 저장소에서 /start. 가짜의 `prgPrnmntYmd`는 백엔드 `purgeYmd`로 바꾼다), FN-ADM-013-02 (프론트 연결 안내 문구와 [배치 현황] 이동 → SCR-ADM-111, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
-- 회원 파기 배치가 없다: `BatchType`에 회원 파기가 없어 SCR-ADM-013 안내 "파기는 매일 배치가 처리해요"가 지금 사실과 다르고, 보관 기간이 지난 회원은 목록에서만 빠지고 DB에 남는다. 담당과 시점을 정한다(`scheduler`, `docs/api/issues.md` 8번의 파기 범위 미확정과 같이)
+- SCR-ADM-013 연결 남음: FN-ADM-013-02 (프론트 연결 배치 현황 링크 `?batch=SYSC0027`, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
+- 공용 DB(사람, PR 병합 전): `db/20261030_insert_base_data_v0.11.sql`의 v0.11 (5)를 실행한다. 없으면 03:30 배치 이력이 `BTCH_SE_CD` 외래키에 걸린다. 공용 DB의 보관 기간 지난 탈퇴 회원은 첫 실행에서 되돌릴 수 없이 파기된다
+- PR 전 확인(사람): YAY에게 `member`에 넣은 것을 알린다. `MemberPurgeJob`·`MemberPurgeService`, 탈퇴 회원 목록, `MemberSuspensionService`, 관리자 목록 조회. 파기 뒤 같은 이메일은 새 가입이 되고 복구는 `MEMBER_NOT_FOUND`다. 저장소에 협의 기록 없음
+- 탈퇴 파기 남은 범위: 채팅 원문(REQ-NFR-002, 채팅 구현 뒤 KSJ와 `scheduler`로 묶는다), 프로필 파일 실물(`FileStore`에 삭제 없음, 지금은 연결만 끊는다), 게시물·댓글·포인트·반려동물·건강기록(정책 미확정, `docs/api/issues.md` 8번)
+- KSJ에게 알린다: 게시글·댓글 작성자 '탈퇴한 회원' 표시가 없어 파기 회원은 `탈퇴회원#<번호>`로 보인다. 쿼리에서 탈퇴 상태로 표시를 바꾼다
+- 로컬 DB `nyangmeong_local`에 SYSC0026·SYSC0027과 `MBR.SUSPN_END_DT`가 없다. v0.11 변경 절을 실행한다(사람)
 - 회원 탈퇴 처리가 코드에 없다: `POST /members/me/withdraw` 초안은 있으나 `src/main`에 `WHDWL_DT`를 채우는 코드가 없다(YAY에게 확인)
-- PR 전 확인(사람): `MemberService`·`MemberMapper`에 탈퇴 회원 목록을 넣은 것을 YAY에게 알린다(마일스톤 `member` 협의). 저장소에 협의 기록 없음
 - 테스트 부족: `selectWithdrawnList`의 보관 기간 경계를 검사하는 매퍼 테스트가 없다. 검증은 같은 조건을 바꾼 읽기 전용 SELECT로 했다
-- 공용 DB 정리(사람): 검증의 `dev-tokens`로 회원 1·2·3 로그인 세션이 생겼다. 만료되면 무효라 그대로 둬도 된다
 - SCR-ADM-012 연결 남음: FN-ADM-012-01·03·05 (프론트 연결 관리자 회원 제재 화면 `features/adminMember/api.js` `suspendMember`·`releaseMember`와 회원 정지 모달, 프론트 저장소에서 /start), 정지 회원 목록 (프론트 연결 `getAdminSuspensions`, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
 - 위험, PR 병합 전(사람): v0.11 (4) 없는 DB에서는 `selectBySn`이 `Unknown column`이라 `GET /api/members/me` 등 기존 API도 500이다. 공용 DB에는 규칙의 "병합 직후"가 아니라 병합 전에 실행하고 팀에 각자 로컬 DB 실행을 알린다. 사람이 실행했다고 답했으나(2026-11-02) 어느 DB인지는 기록이 없다
-- PR 전 확인(사람): `member`에 `MemberSuspensionService`를 넣은 것을 YAY에게 알린다(마일스톤 `member` 협의). 저장소에 협의 기록 없음
 - ERDCloud(사람): `MBR.SUSPN_END_DT` 정지종료일시를 추가한다
 - 판단 필요: 구현 계획에는 정지 안내 알림이 있으나 기능명세서에 없어 넣지 않았다. `suspnDayCnt`가 빠진 정지 요청은 영구 정지로 처리된다(프론트 계약). 만료 배치는 하루 한 번이라 00:00에 서버가 내려가 있으면 수동 실행 전까지 정지가 이어진다
-- 공용 DB 정리(사람): 검증의 `dev-tokens`로 생긴 회원 1~5 리프레시 토큰 행은 만료되면 무효라 그대로 둬도 된다
 - SCR-ADM-010 연결 남음: FN-ADM-010-01 (프론트 연결 관리자 회원 목록 화면 `features/adminMember/api.js` `getAdminMembers`, 프론트 저장소에서 /start), FN-ADM-010-04 (프론트 연결 행 클릭 이동, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
-- PR 전 확인(사람): `MemberService`·`MemberMapper`에 관리자 목록 조회를 넣은 것을 YAY에게 알린다(마일스톤 `member` 관리자 조회 협의). 저장소에 협의 기록 없음
 - 로컬 `application.properties` 정리(사람): `springdoc.*.enabled=false` 두 줄 때문에 Swagger가 404다. `spring.profiles.default`도 없어 로컬 프로필이 적용되지 않을 수 있다. 디스코드 최신 파일로 받는다
 - 판단 필요: 잘못 인코딩된 `q`(UTF-8 아님)는 400이 아니라 500이다(Tomcat 디코딩 실패, 이번 기획 밖). 검증의 `dev-tokens`(회원 1·2)가 공용 DB에 세션을 남겼는지 확인 못 함
 - SCR-ADM-112 연결 남음: FN-ADM-112-01·02·03 (프론트 연결 관리자 외부 API 사용량 화면 SCR-ADM-112, 프론트 저장소에서 /start. 프론트 마일스톤에 절 있음), FN-ADM-112-02 (Python이 `POST /internal/ai/external-api-calls`를 부른다, 호출마다 쿠키가 있어야 하고 쿠키 없는 백그라운드 호출은 기록되지 않는다, ai 세션)
