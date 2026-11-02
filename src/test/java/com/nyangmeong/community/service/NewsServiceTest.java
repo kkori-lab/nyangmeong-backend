@@ -238,7 +238,7 @@ class NewsServiceTest {
     void 긴_제목과_요약은_컬럼_길이로_자른다() {
         when(feedClient.fetchFeed(any(), any())).thenReturn(List.of(
                 item("가".repeat(300), "https://news.google.com/rss/articles/a")));
-        when(feedClient.fetchPreview(anyString())).thenReturn(new NewsPreview("나".repeat(5000), null));
+        when(feedClient.fetchPreview(anyString())).thenReturn(new NewsPreview("가".repeat(200) + "나".repeat(4800), null));
 
         service.collect(TODAY);
 
@@ -261,6 +261,64 @@ class NewsServiceTest {
 
         assertThat(created).isEqualTo(1);
         verify(newsMapper, times(3)).insert(any(News.class));
+    }
+
+    @Test
+    void 같은_제목이면_언론사가_달라도_미리보기_없이_건너뛴다() {
+        when(feedClient.fetchFeed(any(), any())).thenReturn(List.of(
+                item("여름철 산책 시간 추천 관련 소식", "https://news.google.com/rss/articles/a"),
+                item("[포토] 여름철 산책 시간 추천 '관련 소식'", "https://news.google.com/rss/articles/b"),
+                item("노령견 식단 관리 요령 안내", "https://news.google.com/rss/articles/c")));
+        when(feedClient.fetchPreview(anyString())).thenReturn(NewsPreview.empty());
+
+        assertThat(service.collect(TODAY)).isEqualTo(2);
+
+        verify(feedClient, never()).fetchPreview("https://news.google.com/rss/articles/b");
+    }
+
+    @Test
+    void 최근_저장한_기사와_제목이_같으면_건너뛴다() {
+        News old = new News();
+        old.setNewsTtl("여름철 산책 시간 추천 관련 소식");
+        old.setNewsCn("요약");
+        when(newsMapper.selectRecentNews(any())).thenReturn(List.of(old));
+        when(feedClient.fetchFeed(any(), any())).thenReturn(List.of(
+                item("여름철 산책 시간 추천 관련 소식", "https://news.google.com/rss/articles/a")));
+
+        assertThat(service.collect(TODAY)).isZero();
+
+        verify(newsMapper).selectRecentNews(LocalDate.of(2026, 10, 26).atStartOfDay());
+        verify(feedClient, never()).fetchPreview(anyString());
+    }
+
+    @Test
+    void 다른_제목과_요약이_같으면_요약을_제목으로_바꾼다() {
+        when(feedClient.fetchFeed(any(), any())).thenReturn(List.of(
+                item("전북 유기동물 입양 캠페인 시작", "https://news.google.com/rss/articles/a"),
+                item("강아지 산책 코스 소개합니다", "https://news.google.com/rss/articles/b")));
+        when(feedClient.fetchPreview(anyString()))
+                .thenReturn(new NewsPreview("전북 유기동물 입양 캠페인 시작 공통 요약", null));
+
+        service.collect(TODAY);
+
+        ArgumentCaptor<News> captor = ArgumentCaptor.forClass(News.class);
+        verify(newsMapper, times(2)).insert(captor.capture());
+        assertThat(captor.getAllValues().get(0).getNewsCn()).isEqualTo("전북 유기동물 입양 캠페인 시작 공통 요약");
+        assertThat(captor.getAllValues().get(1).getNewsCn()).isEqualTo("강아지 산책 코스 소개합니다");
+    }
+
+    @Test
+    void 제목과_겹치는_낱말이_없는_요약은_제목으로_바꾼다() {
+        when(feedClient.fetchFeed(any(), any())).thenReturn(List.of(
+                item("반려동물 보험 가입 늘어", "https://news.google.com/rss/articles/a")));
+        when(feedClient.fetchPreview(anyString()))
+                .thenReturn(new NewsPreview("경제/금융 핵심 정리 VOD 클립영상", "https://img.example.com/a.jpg"));
+
+        service.collect(TODAY);
+
+        News news = savedNews();
+        assertThat(news.getNewsCn()).isEqualTo("반려동물 보험 가입 늘어");
+        assertThat(news.getThmbUrlPath()).isEqualTo("https://img.example.com/a.jpg");
     }
 
     @Test

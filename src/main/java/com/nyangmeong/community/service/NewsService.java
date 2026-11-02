@@ -47,6 +47,7 @@ public class NewsService {
     private static final int CONTENT_MAX_LENGTH = 4000;
     private static final int PRESS_MAX_LENGTH = 100;
     private static final int PATH_MAX_LENGTH = 500;
+    private static final int RECENT_DAYS = 7;
 
     private final NewsMapper newsMapper;
     private final NewsFeedClient newsFeedClient;
@@ -94,10 +95,21 @@ public class NewsService {
                 : new HashSet<>(newsMapper.selectOrgtxtPaths(List.copyOf(items.keySet())));
         List<NewsKeyword> keywords = newsMapper.selectKeywords();
 
+        NewsDuplicateChecker checker = new NewsDuplicateChecker(
+                newsMapper.selectRecentNews(today.minusDays(RECENT_DAYS).atStartOfDay()));
+
         int created = 0;
+        int duplicated = 0;
         boolean first = true;
         for (NewsFeedItem item : items.values()) {
             if (saved.contains(item.link())) {
+                continue;
+            }
+            String title = cut(item.title(), TITLE_MAX_LENGTH);
+            String twin = checker.findDuplicateTitle(title);
+            if (twin != null) {
+                duplicated++;
+                log.info("뉴스 수집 : 중복 건너뜀 '{}' (기존 '{}')", title, twin);
                 continue;
             }
             if (!first && !pause()) {
@@ -105,11 +117,16 @@ public class NewsService {
             }
             first = false;
             NewsPreview preview = newsFeedClient.fetchPreview(item.link());
-            if (save(toNews(item, preview, keywords))) {
+            News news = toNews(item, preview, keywords);
+            if (preview.description() != null && checker.shouldReplaceSummary(title, news.getNewsCn())) {
+                news.setNewsCn(title);
+            }
+            if (save(news)) {
                 created++;
+                checker.add(news.getNewsTtl(), news.getNewsCn());
             }
         }
-        log.info("뉴스 수집 : 피드 {}건 중 새로 저장 {}건", items.size(), created);
+        log.info("뉴스 수집 : 피드 {}건 중 새로 저장 {}건, 중복 건너뜀 {}건", items.size(), created, duplicated);
         return created;
     }
 
