@@ -17,6 +17,11 @@
 | GET | /admin/batches | 배치 목록과 배치별 마지막 실행. 코드에 있는 배치 4종(공통코드 SYSG02). 실행 이력이 없으면 마지막 실행 필드는 null. 관리자만 | ADM-111-01 | LJS | - | List<BatchSummary> |
 | GET | /admin/batches/{btchSeCd}/executions | 실행 이력. `?page=&size=`, 기본 20건, 최신순. 없는 코드는 404 `NOT_FOUND`. 실패 건수는 없다(배치가 건별 실패를 세지 않는다). 관리자만 | ADM-111-02 | LJS | - | PageResponse<BatchExecutionSummary> |
 | POST | /admin/batches/{btchSeCd}/run | 수동 실행. 이력을 남기고 바로 200을 돌려준 뒤 비동기로 실행한다. 결과는 실행 이력으로 본다. 감사 로그(PROCESS)를 남긴다. 실행 중이면 409 `BATCH_ALREADY_RUNNING`, 이 서버에서 꺼진 배치면 409 `BATCH_NOT_AVAILABLE`, 없는 코드는 404 `NOT_FOUND`. 관리자만 | ADM-111-03 | LJS | - | BatchRunResponse |
+| GET | /admin/external-api-usage | 종류별 사용량. `?bgngYmd=&endYmd=&extlApiSeCd=`, 조건은 모두 선택. 기간 기본 최근 7일, 최대 92일, 끝 날짜 하루를 포함한다. 호출이 없는 종류도 0으로 나온다. 실패율은 (실패 + 시간초과) / 호출 수. 기간이 뒤집혔거나 92일을 넘거나 없는 코드면 400 `INVALID_INPUT_VALUE`. 관리자만 | ADM-112-01 | LJS | - | List<ExternalApiUsageSummary> |
+| GET | /admin/external-api-usage/daily | 일별·종류별 사용량(최신 날짜순, 호출이 있는 날만). 조건은 위와 같다. 관리자만 | ADM-112-01 | LJS | - | List<ExternalApiDailyUsage> |
+| GET | /admin/external-api-usage/tokens | AI 대화·AI 분류의 일별 입력·출력 토큰 합계(최신 날짜순). 조건은 위와 같다. 관리자만 | ADM-112-02 | LJS | - | List<ExternalApiDailyToken> |
+| GET | /admin/external-api-usage/failures | 실패·시간초과 목록. 조건은 위와 같고 `page=&size=`를 더 받는다. 기본 20건, 최신순. 요청·응답 본문은 없다. 관리자만 | ADM-112-03 | LJS | - | PageResponse<ExternalApiFailureSummary> |
+| POST | /internal/ai/external-api-calls | Python 외부 호출 통지(사용자 쿠키 그대로, 201). 없는 코드는 400 `INVALID_INPUT_VALUE`. 통지 실패가 사용자 응답을 막으면 안 된다(Python 쪽 책임) | ADM-112-01·02 | LJS | ExternalApiCallRequest | ExternalApiCallResponse |
 
 ## DTO
 
@@ -147,3 +152,58 @@
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | btchExcnHstrySn | Long | Y | 만들어진 실행 이력 번호 | BTCH_EXCN_HSTRY.BTCH_EXCN_HSTRY_SN |
+
+### ExternalApiUsageSummary
+쓰는 API: GET /admin/external-api-usage
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| extlApiSeCd | String | Y | 외부 API 구분. 공통코드 SYSG05 중 7종 | EXTL_API_CALL_LOG.EXTL_API_SE_CD |
+| extlApiNm | String | Y | 화면 이름(AI 대화, AI 분류, OCR, 캐릭터 생성, PDF 분석, 카카오 로컬, 메일) | 코드 enum |
+| callCnt | long | Y | 호출 수 | 계산 |
+| failCnt | long | Y | 실패 + 시간초과 수 | 계산 |
+| failRate | BigDecimal | Y | 실패율(%), 소수 첫째 자리. 호출이 없으면 0.0 | 계산 |
+| avgRspnsMs | Long | N | 평균 응답 밀리초. 응답 시간이 있는 호출만, 없으면 null | EXTL_API_CALL_LOG.RSPNS_MS |
+
+### ExternalApiDailyUsage
+쓰는 API: GET /admin/external-api-usage/daily. ExternalApiUsageSummary 필드 + 아래.
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| callYmd | LocalDate | Y | 호출일자 | EXTL_API_CALL_LOG.CALL_DT |
+
+### ExternalApiDailyToken
+쓰는 API: GET /admin/external-api-usage/tokens
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| callYmd | LocalDate | Y | 호출일자 | EXTL_API_CALL_LOG.CALL_DT |
+| inptTknCnt | long | Y | 입력 토큰 합계 | EXTL_API_CALL_LOG.INPT_TKN_CNT |
+| otptTknCnt | long | Y | 출력 토큰 합계 | EXTL_API_CALL_LOG.OTPT_TKN_CNT |
+
+### ExternalApiFailureSummary
+쓰는 API: GET /admin/external-api-usage/failures
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| extlApiCallLogSn | Long | Y | | EXTL_API_CALL_LOG.EXTL_API_CALL_LOG_SN |
+| callDt | LocalDateTime | Y | 호출 시각 | EXTL_API_CALL_LOG.CALL_DT |
+| extlApiSeCd | String | Y | 외부 API 구분 | EXTL_API_CALL_LOG.EXTL_API_SE_CD |
+| extlApiNm | String | Y | 화면 이름 | 코드 enum |
+| callRsltCd | String | Y | 결과. 공통코드 SYSG06(실패·시간초과) | EXTL_API_CALL_LOG.CALL_RSLT_CD |
+| failRsn | String | N | 실패 사유 | EXTL_API_CALL_LOG.FAIL_RSN |
+
+### ExternalApiCallRequest
+쓰는 API: POST /internal/ai/external-api-calls
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| extlApiSeCd | String | Y | SYSC0015 AI 대화, SYSC0024 AI 분류, SYSC0016 OCR, SYSC0017 캐릭터 생성, SYSC0025 PDF 분석, SYSC0018 카카오 로컬, SYSC0020 메일 | EXTL_API_CALL_LOG.EXTL_API_SE_CD |
+| callRsltCd | String | Y | SYSC0021 성공, SYSC0022 실패, SYSC0023 시간초과 | EXTL_API_CALL_LOG.CALL_RSLT_CD |
+| callDt | LocalDateTime | N | 호출 시각. 없으면 저장 시각 | EXTL_API_CALL_LOG.CALL_DT |
+| rspnsMs | Long | N | 0 이상 | EXTL_API_CALL_LOG.RSPNS_MS |
+| httpSttsVl | Integer | N | 100~599 | EXTL_API_CALL_LOG.HTTP_STTS_VL |
+| inptTknCnt | Long | N | 0 이상 | EXTL_API_CALL_LOG.INPT_TKN_CNT |
+| otptTknCnt | Long | N | 0 이상 | EXTL_API_CALL_LOG.OTPT_TKN_CNT |
+| failRsn | String | N | 1000자 이하. 요청·응답 본문을 넣지 않는다 | EXTL_API_CALL_LOG.FAIL_RSN |
+
+### ExternalApiCallResponse
+쓰는 API: POST /internal/ai/external-api-calls
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| extlApiCallLogSn | Long | Y | 만들어진 로그 번호 | EXTL_API_CALL_LOG.EXTL_API_CALL_LOG_SN |

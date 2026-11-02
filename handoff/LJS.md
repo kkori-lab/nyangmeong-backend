@@ -2,11 +2,14 @@
 
 ## 지금 하는 것
 
-SCR-ADM-111 배치 현황 — 끝 (2026-11-01). `GET /api/admin/batches`·`/{btchSeCd}/executions`, `POST /{btchSeCd}/run`, 기존 배치 4개 실행 이력 기록(`global/batch`). 추가-1: 구현 계획 문서 별도 커밋(88de591)
+SCR-ADM-112 외부 API 사용량 — 끝 (2026-11-02). `GET /api/admin/external-api-usage`·`/daily`·`/tokens`·`/failures`, Python 통지 `POST /internal/ai/external-api-calls`, 공통코드 `SYSC0024`·`SYSC0025`(`global/external`). 추가-1: 구현 계획 문서 별도 커밋(dd4b8e6)
 
 ## 다음에 할 것
 
-- SCR-ADM-111 연결 남음: FN-ADM-111-01·02·03 (프론트 연결 관리자 배치 현황 화면 SCR-ADM-111, 프론트 저장소에서 /start. 프론트 마일스톤에 절 있음)
+- SCR-ADM-112 연결 남음: FN-ADM-112-01·02·03 (프론트 연결 관리자 외부 API 사용량 화면 SCR-ADM-112, 프론트 저장소에서 /start. 프론트 마일스톤에 절 있음), FN-ADM-112-02 (Python이 `POST /internal/ai/external-api-calls`를 부른다, 호출마다 쿠키가 있어야 하고 쿠키 없는 백그라운드 호출은 기록되지 않는다, ai 세션)
+- 공용 DB(사람, PR 병합 직후): `db/20261030_insert_base_data_v0.11.sql`의 v0.11 (3)을 실행한다. 실행 전에는 `SYSC0024`·`SYSC0025` 통지가 외래키 위반이다. 사람 확인으로 공용 DB에 남은 `FAIL_RSN = 'verify 확인용'` 행과 토큰 120·30 행을 지울지 정한다(삭제 API 없음)
+- 외부 API Java 호출 기록(2026-11-01 결정: 아직 안 함): `RegionResolver`·`MailSender`·`CharacterGenerator` 실제 구현을 붙일 때 `EXTL_API_CALL_LOG`에 기록한다. 호출 실패 기록이 업무 트랜잭션과 같이 롤백되지 않게 별도 트랜잭션으로 저장한다. `SYSC0019` 장소 공공데이터는 코드만 남고 화면 7종에는 없다
+- 로컬 DB `nyangmeong_ljs`에 `EXTL_API_CALL_LOG`가 없다. 로컬 프로필에서 이 화면을 보려면 v0.11 변경 절을 실행한다(사람)
 - SJM·JAJ에게 PR에서 알린다: `CareMissionJob`·`PrescriptionExpiryJob`이 `BatchJob` 구현으로 바뀌었다. cron과 하는 일은 같고, 실행마다 `BTCH_EXCN_HSTRY`에 1행이 쌓이며 관리자가 수동 실행할 수 있다
 - 팀에 알린다(배치): 새 배치는 `@Scheduled` 대신 `BatchJob`을 구현하고, `BatchType`에 넣고, 공통코드 SYSG02를 추가한다
 - 배치 위험(판단 필요): 서버 기동 때 공용 DB의 실행중 행을 서버 구분 없이 실패로 바꾼다(끝나면 실제 결과로 덮어씀). 수동 실행 풀(스레드 4·큐 0)이 거부하면 잠금과 실행중 행이 재시작까지 남는다(코드 확인, 재현 안 함). `SchedulingConfig.java:11` 주석의 "@Scheduled 배치"는 낡음

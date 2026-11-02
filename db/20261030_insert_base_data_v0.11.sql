@@ -132,6 +132,10 @@
 -- v0.11 (2) 검사항목 SDMA 공통코드 (2026-11-01, JAJ, 근거: SCR-HLT-005 검사 수치 — InspectionArticle.SDMA가 HLTC0078을 쓰는데 COM_CD에 없어 INSP_NVL 외래키 위반 500)
 --   SET NAMES utf8mb4;
 --   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG12') p),'HLTC0078','SDMA',NULL,115);
+-- v0.11 (3) 외부 API 구분 2건 추가 (2026-11-01, LJS, 근거: 관리자_기능명세서 FN-ADM-112-01 7종 — AI 분류·PDF 분석이 SYSG05에 없음)
+--   SET NAMES utf8mb4;
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG05') p),'SYSC0024','AI 분류','Python AI 서버, 토큰 수 기록 (FN-ADM-112-01·02)',70);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG05') p),'SYSC0025','PDF 분석','Python AI 서버 (FN-ADM-112-01)',80);
 -- =====================================================================
 SET NAMES utf8mb4;
 START TRANSACTION;
@@ -620,6 +624,10 @@ INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT
 
 -- ■ HLT 건강 — v0.11 추가: 검사항목 SDMA (v0.11 (2)). 직접입력(120)이 마지막에 남도록 정렬순서 115
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG12') p),'HLTC0078','SDMA',NULL,115);
+
+-- ■ SYS 시스템 — v0.11 추가: 외부 API 구분 (v0.11 (3))
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG05') p),'SYSC0024','AI 분류','Python AI 서버, 토큰 수 기록 (FN-ADM-112-01·02)',70);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG05') p),'SYSC0025','PDF 분석','Python AI 서버 (FN-ADM-112-01)',80);
 
 -- =====================================================================
 -- [2] 케어미션 마스터 (CARE_MSN) — 20261027_02_update_care_msn_and_ckup_pnt 의 최종 상태
