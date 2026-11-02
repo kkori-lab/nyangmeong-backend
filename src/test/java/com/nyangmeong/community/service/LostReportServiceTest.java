@@ -273,6 +273,29 @@ class LostReportServiceTest {
     }
 
     @Test
+    void 상세_응답에_작성자_프로필_사진_번호가_온다() {
+        LostReportDetail found = missing();
+        found.setMbrAtchFileSn(25L);
+        when(lostReportMapper.selectDetail(LOST, NORMAL)).thenReturn(found);
+        when(fieldCryptoService.decrypt("enc")).thenReturn("010-1234-5678");
+
+        LostReportResponse res = service.getReport(OTHER, LOST);
+
+        assertThat(res.mbrAtchFileSn()).isEqualTo(25L);
+    }
+
+    @Test
+    void 찾았어요로_닫힌_응답은_프로필_사진_번호가_없다() {
+        LostReportDetail closed = detail(FOUND, LocalDateTime.now().plusDays(20));
+        closed.setMbrAtchFileSn(25L);
+        when(lostReportMapper.selectDetail(LOST, NORMAL)).thenReturn(closed);
+
+        LostReportResponse res = service.getReport(OTHER, LOST);
+
+        assertThat(res.mbrAtchFileSn()).isNull();
+    }
+
+    @Test
     void 조회수는_같은_회원_하루_한_번만_올린다() {
         when(lostReportMapper.selectDetail(LOST, NORMAL)).thenReturn(missing());
         when(postMapper.insertViewIgnore(PST, OTHER)).thenReturn(1);

@@ -461,6 +461,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | cmntCn | String | Y | | CMNT.CMNT_CN |
 | mbrSn | Long | Y | | CMNT.MBR_SN |
 | mbrNcnm | String | Y | | MBR.MBR_NCNM |
+| mbrAtchFileSn | Long | N | 작성자 프로필 사진 번호(`GET /files/public/{번호}`). 사진이 없으면 null | MBR.ATCH_FILE_SN, 추가 요청 2026-10-30 |
 | regDt | LocalDateTime | Y | 화면의 "1시간 전" 표시용 | CMNT.REG_DT, CMU-001-11 |
 
 ### CommentSummary
@@ -473,6 +474,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | cmntCn | String | N | 삭제된 댓글이면 null | CMNT.CMNT_CN |
 | mbrSn | Long | N | 삭제된 댓글이면 null | CMNT.MBR_SN |
 | mbrNcnm | String | N | 삭제된 댓글이면 null | MBR.MBR_NCNM |
+| mbrAtchFileSn | Long | N | 작성자 프로필 사진 번호(`GET /files/public/{번호}`). 사진이 없거나 삭제된 댓글이면 null | MBR.ATCH_FILE_SN, 추가 요청 2026-10-30 |
 | sysAutoCrtYn | boolean | Y | 찾았어요 완료 안내 자동 댓글 | CMNT.SYS_AUTO_CRT_YN, CMU-002-09 |
 | owner | Boolean | Y | 내 댓글인지(삭제 버튼) | CMNT.MBR_SN, CMU-001-11 |
 | regDt | LocalDateTime | Y | 화면의 "1시간 전" 표시용 | CMNT.REG_DT, CMU-001-11 |
@@ -522,6 +524,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | pstSn | Long | Y | 좋아요·댓글·신고에 쓴다 | LOST_TPOF.PST_SN |
 | mbrSn | Long | N | 작성자 회원 번호(댓글 「작성자」 배지). 찾았어요로 닫힌 응답은 null | PST.MBR_SN, CMU-002-07, 추가 요청 2026-10-30 |
 | mbrNcnm | String | N | 작성자 닉네임(화면 "토리맘 · 등록일시") | MBR.MBR_NCNM, 화면설계서 SCR-CMU-002-02 |
+| mbrAtchFileSn | Long | N | 작성자 프로필 사진 번호(`GET /files/public/{번호}`). 사진이 없거나 찾았어요로 닫힌 응답이면 null | MBR.ATCH_FILE_SN, 추가 요청 2026-10-30 |
 | regDt | LocalDateTime | N | 게시글 등록 일시 | PST.REG_DT, 화면설계서 SCR-CMU-002-02 |
 | pstTtl | String | Y | | PST.PST_TTL, CMU-002-09 |
 | lostTpofSttsCd | String | Y | 공통코드 CMUG03(실종·찾았어요) | LOST_TPOF.LOST_TPOF_STTS_CD, CMU-002-09 |
@@ -623,6 +626,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | pstCn | String | Y | | PST.PST_CN, CMU-001-10 |
 | mbrSn | Long | Y | 작성자 | PST.MBR_SN, CMU-001-10 |
 | mbrNcnm | String | Y | 작성자 | MBR.MBR_NCNM, CMU-001-10 |
+| mbrAtchFileSn | Long | N | 작성자 프로필 사진 번호(`GET /files/public/{번호}`). 사진이 없으면 null(정지·탈퇴 회원도 닉네임처럼 그대로 줌) | MBR.ATCH_FILE_SN, 추가 요청 2026-10-30 |
 | regDt | LocalDateTime | Y | 작성일 | 공통 감사 컬럼 REG_DT, CMU-001-10 |
 | inqCnt | Integer | Y | | PST.INQ_CNT, CMU-001-10 |
 | rcmdtnCnt | Integer | Y | | PST.RCMDTN_CNT, CMU-001-09 |
@@ -640,6 +644,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | pstTtl | String | Y | 1행 말줄임 | PST.PST_TTL, CMU-001-01 |
 | pstCn | String | Y | 2행 말줄임 | PST.PST_CN, CMU-001-01 |
 | mbrNcnm | String | Y | 작성자 | MBR.MBR_NCNM, CMU-001-01 |
+| mbrAtchFileSn | Long | N | 작성자 프로필 사진 번호(`GET /files/public/{번호}`). 사진이 없으면 null(정지·탈퇴 회원도 닉네임처럼 그대로 줌) | MBR.ATCH_FILE_SN, 추가 요청 2026-10-30 |
 | regDt | LocalDateTime | Y | 작성일("1시간 전" 표시용) | 공통 감사 컬럼 REG_DT, CMU-001-01 |
 | thumbAtchFileSn | Long | N | 대표 사진(첫 장). 사진이 없으면 null | PST_IMG.ATCH_FILE_SN, CMU-001-01 |
 | rcmdtnCnt | Integer | Y | | PST.RCMDTN_CNT, CMU-001-03 |

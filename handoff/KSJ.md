@@ -2,18 +2,18 @@
 
 ## 지금 하는 것
 
-SCR-CMU-002 실종센터 · 상세 글쓴이 번호 — 끝남 (승인 2026-11-02 15:56, 시작 2026-11-02 15:52, 검증 통과 2회차, 사람 확인 2026-11-02)
-기준: 명세 기능 ID 추가 없음(`milestones/KSJ.md` 완료 조건). 걸치는 기능 FN-CMU-002-07 댓글·대댓글 등록(글쓴이 댓글 「작성자」 배지), API 행은 `GET /lost-reports/{lostTpofSn}`(CMU-002-05·06, 응답 `LostReportResponse`). 문서는 앞 마일스톤 기준(커뮤니티 기능명세서·화면설계서 v0.8)과 같아 다시 받지 않았다. DB·`ErrorCode`·요청 DTO 변경 없음
-- 응답 필드 추가: `LostReportResponse`에 `Long mbrSn`(작성자 회원 번호, `PST.MBR_SN`)을 `mbrNcnm` 앞에 넣는다. 값은 이미 조회하는 `LostReportDetail.mbrSn`을 쓴다(Mapper 변경 없음). `of()`는 채우고, 찾았어요로 닫힌 응답 `closed()`는 null. 등록·수정 응답도 `of()`를 쓰므로 같이 채워진다. 펫이야기 `PostResponse.mbrSn`과 같은 이름·뜻
-- API 초안: `docs/api/community.md` `### LostReportResponse`에 `| mbrSn | Long | N | 작성자 회원 번호(댓글 「작성자」 배지). 찾았어요로 닫힌 응답은 null | PST.MBR_SN, CMU-002-07, 추가 요청 2026-10-30 |` 행을 `mbrNcnm` 앞에 넣는다(구현과 같은 PR)
-- 바꿀 파일: `community/dto/LostReportResponse.java`, `docs/api/community.md`, 테스트 `LostReportServiceTest`·`LostReportControllerTest`
-- 완료 조건 명령: `LostReportServiceTest` 「상세_응답에_글쓴이_번호가_온다」(작성자가 아닌 회원이 실종 상태 글을 보면 `mbrSn`이 글쓴이 번호), 「찾았어요로_닫힌_응답은_글쓴이_번호가_없다」(`closed()` → null), `LostReportControllerTest`에서 상세 JSON `$.data.mbrSn` 확인, 기존 테스트 그대로 통과, `./gradlew build -q` 종료 코드 0
-- 완료 조건 화면: 로컬에서 다른 회원으로 로그인해 `GET /api/lost-reports/{lostTpofSn}`(실종 상태 글) → 응답에 글쓴이 `mbrSn`이 있다. 찾았어요 처리된 남의 글은 `mbrSn`이 null
-- 프론트: `CommentSection`에 `authorSn={post.mbrSn}`을 이미 넘기고 있어 새 프론트 연결은 없다(마일스톤 기록)
-이번에 하지 않는 것: 전북 밖 좌표 거절(다음 마일스톤), 목록(`LostReportSummary`)에 글쓴이 번호 추가(목록은 `owner`로 충분)
+SCR-CMU-001 펫이야기 · 작성자 프로필 사진 — 끝남 (승인 2026-11-02 16:53, 시작 2026-11-02 16:33, 검증 통과 1회차, 사람 확인 2026-11-02)
+기준: 명세 기능 ID 추가 없음(사람 요청 2026-10-30·11-02). 걸치는 기능 FN-CMU-001-01·04·06·10·11, FN-CMU-002-05·07. DB·`ErrorCode`·요청 DTO 변경 없음
+- 작성자 닉네임(`mbrNcnm`)을 주는 사용자 응답(`PostSummary`·`PostResponse`·`CommentSummary`·`CommentResponse`·`LostReportResponse`)에 `Long mbrAtchFileSn`(`MBR.ATCH_FILE_SN`)을 `mbrNcnm` 뒤에 넣었다. 사진이 없을 때만 null이고, 삭제된 댓글과 찾았어요로 닫힌 실종 응답도 null이다
+- 결정(사람 2026-11-02, 「추천대로」): 정지·탈퇴 회원도 닉네임처럼 상태와 무관하게 사진을 그대로 준다. 가림 기준은 탈퇴 시 게시물·댓글 처리(`docs/api/issues.md` 95번, 미확정) 확정 때 닉네임과 함께 정한다. 탈퇴 30일 뒤에는 `MemberPurgeJob`이 프로필 파일 연결을 비워 null이 된다
+- 새 `PostMapper.selectAuthor(mbrSn)`·`PostAuthor`로 게시글·댓글 등록 응답을 채운다. 관리자 응답은 `selectMbrNcnm` 그대로. 테스트는 `PostMapperSqlTest` 하나에 SQL 검사 5개를 모았다(기획은 클래스 3개였고 사람이 받아들임)
+- 알려 둔 것: `selectAuthor`가 null이면 `PostResponse.from`·`CommentResponse.from`에서 NPE가 난다. 글쓴이 회원 행은 항상 있어 지금은 문제 없음
+이번에 하지 않은 것: 정지·탈퇴 회원의 닉네임·사진 가리기, 관리자 게시글·댓글 응답, 실종 목록 작성자, 펫돌봄(SCR-CMU-004 완료 조건에 이미 있음)
 새 의존성: 없음
 
 ## 다음에 할 것
+- 연결 남음: SCR-CMU-001 펫이야기 · 작성자 프로필 사진 (프론트 연결 커뮤니티 목록·상세·댓글·실종 상세의 작성자 아바타를 `GET /api/files/public/{mbrAtchFileSn}`로 그림, null이면 기본 이미지, 프론트 저장소에서 /start)
+- 확인 남음: 공용 DB 시드에서 회원 1의 사진 25는 공개 주소가 404일 수 있다(시드 이미지 묶음 문제). 응답에 번호가 오면 백엔드는 맞다
 - 다음 작업: SCR-CMU-002 실종센터 · 전북 밖 좌표 거절(`/start CMU-002 전북`). 우선순위 낮음. 그 뒤 SCR-CMU-004·005 펫돌봄은 장소 검색(YAY)을 기다린다
 - 이번 작업 메모: 상세 응답 `mbrSn` 추가로 프론트 `CommentSection`의 `authorSn={post.mbrSn}`에 값이 들어가 글쓴이 댓글에 「작성자」 배지가 붙는다. 프론트 변경 없음
 - SCR-CMU-003 주제 무관 기사 거르기(PR #104 병합): 제외 키워드는 `KWRD_DICT` `AIMC0040` 분류별 4행, 공용 DB 실행 완료. 키워드를 늘릴 때는 수집 로그의 `주제 무관 건너뜀`을 보고 정상 기사가 걸리는지 먼저 본다. 쌓인 무관 기사는 2026-11-02 확인에서 0건이라 정리할 것 없음

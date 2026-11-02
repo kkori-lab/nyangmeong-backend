@@ -84,7 +84,7 @@ class PostControllerTest {
     AuthMemberMapper authMemberMapper;
 
     private PostResponse response() {
-        return new PostResponse(7L, "CMUC0002", "제목", "내용", 1L, "닉네임", LocalDateTime.of(2026, 10, 26, 9, 0), 10,
+        return new PostResponse(7L, "CMUC0002", "제목", "내용", 1L, "닉네임", 25L, LocalDateTime.of(2026, 10, 26, 9, 0), 10,
                 3, 2, List.of(new PostImageSummary(101L, 0)), false, true);
     }
 
@@ -217,7 +217,7 @@ class PostControllerTest {
         row.setDelYn(true);
         when(commentService.search(1L, 7L)).thenReturn(List.of(row));
         when(commentService.create(eq(1L), eq(7L), any()))
-                .thenReturn(new CommentResponse(11L, 7L, 10L, "답글", 1L, "닉네임", LocalDateTime.of(2026, 10, 26, 9, 0)));
+                .thenReturn(new CommentResponse(11L, 7L, 10L, "답글", 1L, "닉네임", 25L, LocalDateTime.of(2026, 10, 26, 9, 0)));
 
         mockMvc.perform(get("/api/posts/7/comments"))
                 .andExpect(status().isOk())
@@ -225,7 +225,8 @@ class PostControllerTest {
         mockMvc.perform(post("/api/posts/7/comments").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"cmntCn\":\"답글\",\"prntCmntSn\":10}").header("X-Requested-With", AJAX))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.prntCmntSn").value(10));
+                .andExpect(jsonPath("$.data.prntCmntSn").value(10))
+                .andExpect(jsonPath("$.data.mbrAtchFileSn").value(25));
     }
 
     @Test

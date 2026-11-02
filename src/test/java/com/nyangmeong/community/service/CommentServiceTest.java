@@ -19,6 +19,7 @@ import com.nyangmeong.community.domain.Comment;
 import com.nyangmeong.community.domain.Post;
 import com.nyangmeong.community.dto.CommentCreateRequest;
 import com.nyangmeong.community.dto.CommentResponse;
+import com.nyangmeong.community.dto.PostAuthor;
 import com.nyangmeong.community.mapper.CommentMapper;
 import com.nyangmeong.community.mapper.LostReportMapper;
 import com.nyangmeong.community.mapper.PostMapper;
@@ -57,7 +58,10 @@ class CommentServiceTest {
     /** 등록한 댓글을 다시 조회하면 돌려주도록 준비 */
     private void stubInsert() {
         when(postMapper.selectPost(PST, NORMAL)).thenReturn(new Post());
-        when(postMapper.selectMbrNcnm(MBR)).thenReturn("닉네임");
+        PostAuthor author = new PostAuthor();
+        author.setMbrNcnm("닉네임");
+        author.setMbrAtchFileSn(25L);
+        when(postMapper.selectAuthor(MBR)).thenReturn(author);
         doAnswer(invocation -> {
             Comment arg = invocation.getArgument(0);
             arg.setCmntSn(NEW_CMNT);
@@ -87,6 +91,7 @@ class CommentServiceTest {
         assertThat(savedParent()).isNull();
         assertThat(res.cmntSn()).isEqualTo(NEW_CMNT);
         assertThat(res.mbrNcnm()).isEqualTo("닉네임");
+        assertThat(res.mbrAtchFileSn()).isEqualTo(25L);
     }
 
     @Test

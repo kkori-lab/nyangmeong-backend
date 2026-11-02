@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockMultipartFile;
@@ -28,6 +29,7 @@ import com.github.pagehelper.PageHelper;
 import com.nyangmeong.community.domain.Post;
 import com.nyangmeong.community.domain.PostImage;
 import com.nyangmeong.community.domain.PostStatusHistory;
+import com.nyangmeong.community.dto.PostAuthor;
 import com.nyangmeong.community.dto.PostCreateRequest;
 import com.nyangmeong.community.dto.PostLikeResponse;
 import com.nyangmeong.community.dto.PostResponse;
@@ -58,6 +60,11 @@ class PostServiceTest {
     private final SystemSettingService systemSettingService = mock(SystemSettingService.class);
     private final PostService service = new PostService(postMapper, fileStore, new OwnerAuthorizer(),
             systemSettingService);
+
+    @BeforeEach
+    void stubAuthor() {
+        when(postMapper.selectAuthor(any())).thenReturn(new PostAuthor());
+    }
 
     @AfterEach
     void clearPage() {
@@ -183,7 +190,10 @@ class PostServiceTest {
     void 상세는_처음_열면_조회수가_오르고_응답에_반영된다() {
         when(postMapper.selectPost(PST, NORMAL)).thenReturn(post(OTHER));
         when(postMapper.insertViewIgnore(PST, MBR)).thenReturn(1);
-        when(postMapper.selectMbrNcnm(OTHER)).thenReturn("작성자");
+        PostAuthor author = new PostAuthor();
+        author.setMbrNcnm("작성자");
+        author.setMbrAtchFileSn(25L);
+        when(postMapper.selectAuthor(OTHER)).thenReturn(author);
         when(postMapper.countComments(PST)).thenReturn(2);
         when(postMapper.existsLike(PST, MBR)).thenReturn(true);
 
@@ -192,6 +202,7 @@ class PostServiceTest {
         verify(postMapper).updateInqCnt(PST);
         assertThat(res.inqCnt()).isEqualTo(11);
         assertThat(res.mbrNcnm()).isEqualTo("작성자");
+        assertThat(res.mbrAtchFileSn()).isEqualTo(25L);
         assertThat(res.cmntCnt()).isEqualTo(2);
         assertThat(res.liked()).isTrue();
         assertThat(res.owner()).isFalse();
