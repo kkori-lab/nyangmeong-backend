@@ -22,7 +22,9 @@ import com.nyangmeong.global.setting.SystemSettingService;
 import com.nyangmeong.global.validation.PhoneNumberNormalizer;
 import com.nyangmeong.member.domain.JoinPath;
 import com.nyangmeong.member.domain.Member;
+import com.nyangmeong.member.dto.AdminMemberDetailResponse;
 import com.nyangmeong.member.dto.AdminMemberSearchCond;
+import com.nyangmeong.member.dto.AdminMemberStatusHistorySummary;
 import com.nyangmeong.member.dto.AdminMemberSummary;
 import com.nyangmeong.member.dto.AdminWithdrawnMemberSummary;
 import com.nyangmeong.member.dto.MemberNicknameAvailabilityResponse;
@@ -97,9 +99,56 @@ public class MemberService {
     }
 
     /**
+     * 관리자 회원 상세 기본 정보 조회
+     */
+    @Transactional(readOnly = true)
+    public AdminMemberDetailResponse getForAdmin(Long mbrSn) {
+        Member member = memberMapper.selectBySn(mbrSn);
+        if (member == null) {
+            throw new CustomException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+        List<MemberSnsAccountSummary> snsLinks = memberMapper.selectSnsOffrCds(mbrSn).stream()
+                .map(MemberSnsAccountSummary::new)
+                .toList();
+        String mblTelnoEnc = member.getMblTelnoEnc();
+        return new AdminMemberDetailResponse(member.getMbrSn(), member.getMbrNcnm(),
+                maskEmail(fieldCryptoService.decrypt(member.getAcntEmlEnc())),
+                mblTelnoEnc == null ? null : maskPhone(fieldCryptoService.decrypt(mblTelnoEnc)),
+                member.getJoinPathCd(), snsLinks, member.getRegDt(), member.getLastLgnDt(), member.getHldPnt(),
+                member.getMbrSttsCd(), member.getSuspnEndDt());
+    }
+
+    /**
+     * 관리자 회원 상세 상태 이력 조회
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<AdminMemberStatusHistorySummary> searchStatusHistoriesForAdmin(Long mbrSn, PageQuery pq) {
+        checkExists(mbrSn);
+        PageHelper.startPage(pq.pageOrDefault(), pq.sizeOrDefault());
+        return PageResponse.of(new PageInfo<>(memberMapper.selectStatusHistoryList(mbrSn)));
+    }
+
+    /**
+     * 회원 존재 검사
+     */
+    @Transactional(readOnly = true)
+    public void checkExists(Long mbrSn) {
+        if (!memberMapper.existsBySn(mbrSn)) {
+            throw new CustomException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+    }
+
+    /**
+     * 휴대전화번호 마스킹 (010-****-5678)
+     */
+    static String maskPhone(String mblTelno) {
+        return mblTelno.substring(0, 3) + "-****-" + mblTelno.substring(mblTelno.length() - 4);
+    }
+
+    /**
      * 이메일 마스킹 (cho***@gmail.com)
      */
-    private String maskEmail(String email) {
+    static String maskEmail(String email) {
         int at = email.indexOf('@');
         if (at < 0) {
             return "***";

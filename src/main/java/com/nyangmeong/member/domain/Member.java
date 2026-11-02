@@ -22,6 +22,7 @@ public class Member {
     private String mblTelnoHmac;
     private String pswdHash;
     private String mbrNcnm;
+    private Integer hldPnt;
     private LocalDateTime lastLgnDt;
     private LocalDateTime whdwlDt;
     private LocalDateTime suspnEndDt;

@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 import com.nyangmeong.pet.domain.BrupLinkSttsHstry;
 import com.nyangmeong.pet.domain.BrupRel;
 import com.nyangmeong.pet.domain.Pet;
+import com.nyangmeong.pet.dto.AdminPetSummary;
 import com.nyangmeong.pet.dto.CaregiverSummary;
 import com.nyangmeong.pet.dto.PetSummary;
 
@@ -22,6 +23,11 @@ public interface PetMapper {
      * 회원의 양육 반려동물 목록 조회
      */
     List<PetSummary> selectList(@Param("mbrSn") Long mbrSn, @Param("coParentRoleCd") String coParentRoleCd);
+
+    /**
+     * 회원의 양육 반려동물 목록 조회 (삭제 포함)
+     */
+    List<AdminPetSummary> selectAdminList(@Param("mbrSn") Long mbrSn, @Param("coParentRoleCd") String coParentRoleCd);
 
     /**
      * 반려동물 단건 조회

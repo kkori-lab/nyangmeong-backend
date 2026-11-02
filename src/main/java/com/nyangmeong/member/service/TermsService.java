@@ -13,9 +13,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.member.domain.Terms;
+import com.nyangmeong.member.dto.AdminMemberTermsAgreeSummary;
 import com.nyangmeong.member.dto.TermsAgreeRequest;
 import com.nyangmeong.member.dto.TermsResponse;
 import com.nyangmeong.member.dto.TermsSummary;
+import com.nyangmeong.member.mapper.MemberMapper;
 import com.nyangmeong.member.mapper.TermsMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 public class TermsService {
 
     private final TermsMapper termsMapper;
+    private final MemberMapper memberMapper;
 
     /**
      * 사용 중인 약관 목록
@@ -37,6 +40,17 @@ public class TermsService {
     @Transactional(readOnly = true)
     public List<TermsSummary> search() {
         return termsMapper.selectUsableList();
+    }
+
+    /**
+     * 관리자 회원 상세 약관 동의 조회
+     */
+    @Transactional(readOnly = true)
+    public List<AdminMemberTermsAgreeSummary> searchAgreementsForAdmin(Long mbrSn) {
+        if (!memberMapper.existsBySn(mbrSn)) {
+            throw new CustomException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+        return termsMapper.selectAdminAgreementList(mbrSn);
     }
 
     /**

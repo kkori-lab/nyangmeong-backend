@@ -2,16 +2,23 @@
 
 ## 지금 하는 것
 
-SCR-ADM-013 탈퇴 회원 · 탈퇴 파기 배치 — 끝 (2026-11-02). `member/MemberPurgeJob`(SYSC0027, 매일 03:30)이 보관 기간이 지난 탈퇴 회원의 식별값을 없애고 `SNS_ACNT_LINK`를 지운다. `MBR` 행과 탈퇴 상태는 유지
+SCR-ADM-011 회원 상세 — 끝 (2026-11-02). `GET /api/admin/members/{mbrSn}`와 탭 API(`/pets`, `/terms-agreements`, `/point-ledgers`, `/status-histories`)로 회원 상세를 조회한다. 이메일·휴대전화는 마스킹하고 건강기록·AI 대화·채팅은 없다
 
 ## 다음에 할 것
 
-- SCR-ADM-013 연결 남음: FN-ADM-013-02 (프론트 연결 배치 현황 링크 `?batch=SYSC0027`, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
+- SCR-ADM-011 연결 남음: FN-ADM-011-01 (프론트 연결 회원 상세 화면 SCR-ADM-011과 [정지]·[정지 해제] 모달, 프론트 저장소에서 /start), FN-ADM-011-02 (프론트 연결 반려동물 탭, 프론트 저장소에서 /start), FN-ADM-011-03 (프론트 연결 약관 동의 탭, 프론트 저장소에서 /start), FN-ADM-011-04 (프론트 연결 포인트 탭과 [포인트 조정] 이동 SCR-ADM-072, 프론트 저장소에서 /start), FN-ADM-011-05 (프론트 연결 상태 이력 탭, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트는 가짜 응답으로 끝나 있어 필드 이름을 맞춘다
+- 실행해 보지 못한 SQL(SCR-ADM-011): 재동의 시 최신 1행, 동의 기록 없는 약관(`TermsMapper.selectAdminAgreementList`), 해제된 연동 제외(`PetMapper.selectAdminList`). 자동 테스트는 매퍼 목이고 공용 DB에 해당 데이터가 없어 SQL 읽기로만 확인했다. 파기 회원 상세도 데이터가 없어 코드로만 확인했다
+- PR 전 확인(사람): YAY·SJM에게 SCR-ADM-011을 알린다. `member`: `MemberService.checkExists`, `maskPhone` 이동, `Member.hldPnt`, `TermsService`에 `MemberMapper` 주입. `pet`: `PetService`에 `MemberService` 주입, `AdminPetController`·`AdminPointController`. SCR-ADM-072 원장 조회는 `selectAdminLedgerList`를 재사용할 수 있다
+- 공용 DB 정리(사람): SCR-ADM-011 검증의 `dev-tokens`로 회원 1~5 세션이 생겼다. 지울지 정한다
+- 8082 서버(사람): 검증 때 이미 떠 있던 서버(12:18 시작)를 내리지 않았다. 띄운 곳이 확인되지 않았다. 필요 없으면 내린다
+- SCR-ADM-113 연결 남음: FN-ADM-113-02 (프론트 연결 관리자 계정 화면 SCR-ADM-113 목록과 지정 모달, 프론트 저장소에서 /start), FN-ADM-113-03 (프론트 연결 해제 버튼과 확인 모달, 본인·마지막 비활성, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
+- PR 전 확인(사람): YAY에게 SCR-ADM-113을 알린다. `AdminMemberController` 클래스 경로를 `/api/admin`으로 내렸고(기존 URL 그대로) `MemberAuthorityService`를 넣었다. 마일스톤의 협의가 저장소에 기록되지 않았다
+- 판단 필요(SCR-ADM-113): 지정 기록이 없는 기존 관리자는 `apntDt`가 null이다. `MBR_AUTHRT_CD`에 인덱스가 없어 해제 트랜잭션 동안 `MBR`의 많은 행이 잠길 수 있다(부하 상황 확인 안 함)
+- 공용 DB 정리(사람): SCR-ADM-113 1회차 검증의 `dev-tokens`로 회원 1·2 세션이 생겼다. 지울지 정한다
 - 공용 DB(사람, PR 병합 전): `db/20261030_insert_base_data_v0.11.sql`의 v0.11 (5)를 실행한다. 없으면 03:30 배치 이력이 `BTCH_SE_CD` 외래키에 걸린다. 공용 DB의 보관 기간 지난 탈퇴 회원은 첫 실행에서 되돌릴 수 없이 파기된다
 - PR 전 확인(사람): YAY에게 `member`에 넣은 것을 알린다. `MemberPurgeJob`·`MemberPurgeService`, 탈퇴 회원 목록, `MemberSuspensionService`, 관리자 목록 조회. 파기 뒤 같은 이메일은 새 가입이 되고 복구는 `MEMBER_NOT_FOUND`다. 저장소에 협의 기록 없음
 - 탈퇴 파기 남은 범위: 채팅 원문(REQ-NFR-002, 채팅 구현 뒤 KSJ와 `scheduler`로 묶는다), 프로필 파일 실물(`FileStore`에 삭제 없음, 지금은 연결만 끊는다), 게시물·댓글·포인트·반려동물·건강기록(정책 미확정, `docs/api/issues.md` 8번)
 - KSJ에게 알린다: 게시글·댓글 작성자 '탈퇴한 회원' 표시가 없어 파기 회원은 `탈퇴회원#<번호>`로 보인다. 쿼리에서 탈퇴 상태로 표시를 바꾼다
-- 로컬 DB `nyangmeong_local`에 SYSC0026·SYSC0027과 `MBR.SUSPN_END_DT`가 없다. v0.11 변경 절을 실행한다(사람)
 - 회원 탈퇴 처리가 코드에 없다: `POST /members/me/withdraw` 초안은 있으나 `src/main`에 `WHDWL_DT`를 채우는 코드가 없다(YAY에게 확인)
 - 테스트 부족: `selectWithdrawnList`의 보관 기간 경계를 검사하는 매퍼 테스트가 없다. 검증은 같은 조건을 바꾼 읽기 전용 SELECT로 했다
 - SCR-ADM-012 연결 남음: FN-ADM-012-01·03·05 (프론트 연결 관리자 회원 제재 화면 `features/adminMember/api.js` `suspendMember`·`releaseMember`와 회원 정지 모달, 프론트 저장소에서 /start), 정지 회원 목록 (프론트 연결 `getAdminSuspensions`, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
