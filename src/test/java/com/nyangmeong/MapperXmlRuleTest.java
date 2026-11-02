@@ -49,7 +49,10 @@ class MapperXmlRuleTest {
             /** 삭제된 같은 날짜 완료 기록도 읽어 되살림·미션 중복 반영을 가린다 (FN-HLT-003-12) */
             "com.nyangmeong.health.mapper.CareItemMapper.selectCompletionByDateForUpdate",
             /** 관리자 회원 상세 : 삭제 여부 표시 (FN-ADM-011-02) */
-            "com.nyangmeong.pet.mapper.PetMapper.selectAdminList");
+            "com.nyangmeong.pet.mapper.PetMapper.selectAdminList",
+            /** 관리자 : 삭제된 댓글 원문 표시, 이미 삭제된 댓글 구분 (FN-ADM-020-06) */
+            "com.nyangmeong.community.mapper.CommentMapper.selectAdminList",
+            "com.nyangmeong.community.mapper.CommentMapper.selectAdminComment");
 
     private static final Pattern TABLE = Pattern.compile("\\b(?:FROM|JOIN)\\s+`?(\\w+)`?", Pattern.CASE_INSENSITIVE);
     private static final Pattern DEL_YN_CONDITION = Pattern.compile("DEL_YN`?\\s*=\\s*'N'", Pattern.CASE_INSENSITIVE);

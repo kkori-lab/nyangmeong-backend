@@ -49,6 +49,12 @@
 | DELETE | /posts/{pstSn} | 게시글 삭제(작성자) | CMU-001-15 | KSJ | - | - |
 | DELETE | /posts/{pstSn}/comments/{cmntSn} | 댓글 삭제(답글 유지) | CMU-001-11, CMU-002-07 | KSJ | - | - |
 | DELETE | /posts/{pstSn}/likes | 좋아요 취소. 멱등: 누르지 않은 상태여도 200 | CMU-001-09, CMU-002-08, CMU-004-12 | KSJ | - | - |
+| GET | /admin/posts | 관리자 게시글 목록. 최신순 20건씩, 정상·블라인드·삭제 전부. `q`는 제목·작성자 닉네임 부분 일치. 시작일이 종료일보다 늦거나 코드가 틀리면 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-020-01·02 | LJS | AdminPostSearchCond | PageResponse<AdminPostSummary> |
+| GET | /admin/posts/{pstSn} | 관리자 게시글 상세(상태 무관). 댓글 목록은 `GET /admin/comments?pstSn=`. 없는 글 404 POST_NOT_FOUND | ADM-020-03 | LJS | - | AdminPostDetailResponse |
+| POST | /admin/posts/{pstSn}/blind | 게시글 블라인드(상태 이력, 감사 로그). 정상 글이 아니면 409 ALREADY_PROCESSED, 없는 글 404 POST_NOT_FOUND | ADM-020-04 | LJS | AdminPostStatusChangeRequest | - |
+| POST | /admin/posts/{pstSn}/restore | 블라인드 복구(상태 이력, 감사 로그). 신고 누적 자동 블라인드 포함. 블라인드 글이 아니면 409 ALREADY_PROCESSED, 없는 글 404 POST_NOT_FOUND | ADM-020-05 | LJS | AdminPostStatusChangeRequest | - |
+| GET | /admin/comments | 관리자 댓글 목록. 최신순 20건씩, 삭제된 댓글도 원문 표시. `q`는 작성자 닉네임 부분 일치 | ADM-020-06 | LJS | AdminCommentSearchCond | PageResponse<AdminCommentSummary> |
+| POST | /admin/comments/{cmntSn}/deletion | 관리자 댓글 삭제. 사유는 감사 로그에 남긴다(`CMNT`에 사유 컬럼 없음). DELETE 본문 금지라 POST. 이미 삭제면 409 ALREADY_PROCESSED, 없는 댓글 404 COMMENT_NOT_FOUND | ADM-020-06 | LJS | AdminCommentDeleteRequest | - |
 
 ## 실시간 (채팅, 2026-10-22 제안)
 
@@ -67,6 +73,100 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 - 서버가 한 대면 내장 브로커로 충분하다. 여러 대가 되면 외부 브로커(Redis pub/sub 등)가 필요하다
 
 ## DTO
+
+### AdminPostSearchCond
+쓰는 API: GET /admin/posts
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| q | String | N | 제목·작성자 닉네임 부분 일치 | PST.PST_TTL, MBR.MBR_NCNM, ADM-020-02 |
+| bbsCd | String | N | 게시판 코드(CMUG01). 펫돌봄은 코드가 없어 제외 | PST.BBS_CD, ADM-020-02 |
+| status | String | N | 게시글 상태 코드(CMUG02) | PST.PST_STTS_CD, ADM-020-02 |
+| bgngYmd | LocalDate | N | 작성 시작일 | PST.REG_DT, ADM-020-02 |
+| endYmd | LocalDate | N | 작성 종료일 | PST.REG_DT, ADM-020-02 |
+
+### AdminPostSummary
+쓰는 API: GET /admin/posts
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| pstSn | Long | Y | | PST.PST_SN, ADM-020-01 |
+| bbsCd | String | Y | | PST.BBS_CD, ADM-020-01 |
+| pstTtl | String | Y | | PST.PST_TTL, ADM-020-01 |
+| mbrSn | Long | Y | 회원 상세 이동 값 | PST.MBR_SN, SCR-ADM-020 |
+| mbrNcnm | String | Y | | MBR.MBR_NCNM, ADM-020-01 |
+| pstSttsCd | String | Y | | PST.PST_STTS_CD, ADM-020-01 |
+| dclrCnt | int | Y | 신고 수 | DCLR, ADM-020-01 |
+| regDt | LocalDateTime | Y | | PST.REG_DT, ADM-020-01 |
+
+### AdminPostDetailResponse
+쓰는 API: GET /admin/posts/{pstSn}
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| pstSn | Long | Y | | PST.PST_SN, ADM-020-03 |
+| bbsCd | String | Y | | PST.BBS_CD, ADM-020-03 |
+| pstSttsCd | String | Y | | PST.PST_STTS_CD, ADM-020-03 |
+| pstTtl | String | Y | | PST.PST_TTL, ADM-020-03 |
+| pstCn | String | Y | | PST.PST_CN, ADM-020-03 |
+| mbrSn | Long | Y | | PST.MBR_SN, ADM-020-03 |
+| mbrNcnm | String | Y | | MBR.MBR_NCNM, ADM-020-03 |
+| regDt | LocalDateTime | Y | | PST.REG_DT, ADM-020-03 |
+| dclrCnt | int | Y | 신고 수 | DCLR, ADM-020-03 |
+| cmntCnt | int | Y | 삭제 제외 댓글 수 | CMNT, ADM-020-03 |
+| images | List<PostImageSummary> | Y | | PST_IMG, ADM-020-03 |
+| statusHistories | List<AdminPostStatusHistorySummary> | Y | 최신순 | PST_STTS_HSTRY, ADM-020-03 |
+
+#### AdminPostStatusHistorySummary (AdminPostDetailResponse.statusHistories)
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| pstSttsHstrySn | Long | Y | | PST_STTS_HSTRY.PST_STTS_HSTRY_SN, ADM-020-03 |
+| bfrSttsCd | String | N | | PST_STTS_HSTRY.BFR_STTS_CD, ADM-020-03 |
+| aftrSttsCd | String | Y | | PST_STTS_HSTRY.AFTR_STTS_CD, ADM-020-03 |
+| chgRsn | String | N | | PST_STTS_HSTRY.CHG_RSN, ADM-020-03 |
+| prcsMbrSn | Long | N | 처리자. null이면 시스템 | PST_STTS_HSTRY.MBR_SN, ADM-020-03 |
+| prcsMbrNcnm | String | N | 처리자 닉네임 | MBR.MBR_NCNM, ADM-020-03 |
+| regDt | LocalDateTime | Y | | PST_STTS_HSTRY.REG_DT, ADM-020-03 |
+
+### AdminPostStatusChangeRequest
+쓰는 API: POST /admin/posts/{pstSn}/blind, POST /admin/posts/{pstSn}/restore
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| chgRsn | String | Y | 사유. 1000자 이내 | PST_STTS_HSTRY.CHG_RSN, ADM-020-04·05 |
+
+### AdminCommentSearchCond
+쓰는 API: GET /admin/comments
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| pstSn | Long | N | 게시글별 조회 | CMNT.PST_SN, ADM-020-06 |
+| mbrSn | Long | N | 작성자별 조회 | CMNT.MBR_SN, ADM-020-06 |
+| q | String | N | 작성자 닉네임 부분 일치 | MBR.MBR_NCNM, ADM-020-06 |
+
+### AdminCommentSummary
+쓰는 API: GET /admin/comments
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| cmntSn | Long | Y | | CMNT.CMNT_SN, ADM-020-06 |
+| prntCmntSn | Long | N | | CMNT.PRNT_CMNT_SN, ADM-020-06 |
+| pstSn | Long | Y | | CMNT.PST_SN, ADM-020-06 |
+| pstTtl | String | Y | | PST.PST_TTL, ADM-020-06 |
+| mbrSn | Long | Y | | CMNT.MBR_SN, ADM-020-06 |
+| mbrNcnm | String | Y | | MBR.MBR_NCNM, ADM-020-06 |
+| cmntCn | String | Y | 삭제된 댓글도 원문 | CMNT.CMNT_CN, ADM-020-06 |
+| delYn | boolean | Y | | CMNT.DEL_YN, ADM-020-06 |
+| sysAutoCrtYn | boolean | Y | | CMNT.SYS_AUTO_CRT_YN, ADM-020-06 |
+| regDt | LocalDateTime | Y | | CMNT.REG_DT, ADM-020-06 |
+
+### AdminCommentDeleteRequest
+쓰는 API: POST /admin/comments/{cmntSn}/deletion
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| delRsn | String | Y | 삭제 사유. 1000자 이내 | MNGR_TASK_LOG.CHG_AFTR_CN, ADM-020-06 |
 
 ### CareCompletionRequestCreateRequest
 쓰는 API: POST /care-matches/{petPrtcMtchSn}/completion-requests

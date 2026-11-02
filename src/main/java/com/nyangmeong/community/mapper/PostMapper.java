@@ -8,6 +8,9 @@ import org.apache.ibatis.annotations.Param;
 import com.nyangmeong.community.domain.Post;
 import com.nyangmeong.community.domain.PostImage;
 import com.nyangmeong.community.domain.PostStatusHistory;
+import com.nyangmeong.community.dto.AdminPostSearchCond;
+import com.nyangmeong.community.dto.AdminPostStatusHistorySummary;
+import com.nyangmeong.community.dto.AdminPostSummary;
 import com.nyangmeong.community.dto.PostSummary;
 
 /**
@@ -125,4 +128,19 @@ public interface PostMapper {
      * 좋아요 수 증감
      */
     int updateRcmdtnCnt(@Param("pstSn") Long pstSn, @Param("delta") int delta);
+
+    /**
+     * 관리자 게시글 목록 조회 (상태 무관)
+     */
+    List<AdminPostSummary> selectAdminList(@Param("cond") AdminPostSearchCond cond, @Param("keyword") String keyword);
+
+    /**
+     * 관리자 게시글 단건 조회 (상태 무관)
+     */
+    Post selectAdminPost(Long pstSn);
+
+    /**
+     * 게시글 상태 이력 조회 (최신순)
+     */
+    List<AdminPostStatusHistorySummary> selectAdminStatusHistories(Long pstSn);
 }
