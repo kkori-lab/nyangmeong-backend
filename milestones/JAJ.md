@@ -78,11 +78,12 @@
 - 완료 조건: `POST /api/receipts/{recptSn}/save`가 실제 CKUP_RCD(영수증 연결·출처 영수증)·PRSC(`CARE_RFLT_YN='N'`)·병원 일정을 만들고, 저장 전 확인이 실제 가까운 미연결 병원 일정을 준다. `POST /api/receipts/{recptSn}/checkups`가 인식 실패 영수증을 저장완료로 바꾸고 영수증이 연결된 검진기록을 만든다. 같은 반려동물·날짜·금액의 병원 지출이 있으면 `save-check`의 `duplicateExpenses`에 나오고, `save` 뒤 가계부에 지출이 생긴다
 - 연결 남음: FN-HLT-002-31 (프론트 연결 검진기록 등록 모달을 영수증 실패 화면의 [직접 입력]으로 열었을 때 저장을 `POST /api/receipts/{recptSn}/checkups?petSn=`로, 프론트 저장소에서 /start)
 
-## SCR-HLT-002 건강 일지 · 검진 포인트 연결 — 대기
+## SCR-HLT-002 건강 일지 · 검진 포인트 연결 — 끝
 - 기능: 명세 기능 ID 추가 없음, FN-MYP-020-08 검진기록 등록 포인트(화면은 SCR-MYP-020, API는 SJM `PointService.earnCheckupPoint`)를 검진기록 등록에서 부른다. FN-HLT-002-26~31 직접 등록, FN-HLT-002-31 영수증 [직접 입력] 저장, FN-HLT-002-45·46 영수증 저장에 걸침(모두 `CheckupService.create`·`createFromReceipt`를 지난다)
 - 기다리는 것: 없음 (SJM `earnCheckupPoint`는 이미 있다. 이 연결이 SJM SCR-MYP-020 "기다리는 것"을 푼다)
 - 완료 조건: 검진일이 오늘~7일 전인 검진기록을 등록하면 주양육자에게 검진 포인트가 쌓이고, 같은 반려동물·검진일로 두 번 등록해도 한 번만 쌓인다. 검진일이 8일 이상 지났거나 미래면 포인트 없이 등록만 된다
 - 정할 것: 검진기록 수정으로 검진일을 바꿀 때 포인트를 줄지(SJM과 맞춘다)
+- 결정: 수정으로 검진일을 바꿔도 지급하지 않는다(기능명세서 FN-MYP-020-08 "등록하면" 기준, 2026-11-03)
 
 ## SCR-HLT-003 케어 캘린더 · 일정 등록 케어미션 반영 — 대기
 - 기능: 명세 기능 ID 추가 없음, FN-MYP-020-04 케어미션 기록(화면은 SCR-MYP-020, API는 SJM)의 `CareMission.SCHEDULE_CREATE`("케어 캘린더 일정 등록하기")를 FN-HLT-003-33~37 일정 등록에서 반영한다. 지금 일상 기록·케어리스트·관찰 기록은 `CareMissionService.reflect`를 부르지만 `CareScheduleService.create`는 부르지 않는다

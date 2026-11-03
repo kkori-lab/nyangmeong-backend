@@ -33,6 +33,7 @@ import com.nyangmeong.health.dto.ReceiptCheckupCommand;
 import com.nyangmeong.health.dto.ReceiptCheckupSummary;
 import com.nyangmeong.health.mapper.CareScheduleMapper;
 import com.nyangmeong.health.mapper.CheckupMapper;
+import com.nyangmeong.pet.service.PointService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -53,6 +54,7 @@ public class CheckupService {
     private final CheckupMapper checkupMapper;
     private final CareScheduleMapper careScheduleMapper;
     private final PetAuthorizer petAuthorizer;
+    private final PointService pointService;
 
     /**
      * 검진기록 목록 조회
@@ -277,6 +279,8 @@ public class CheckupService {
         record.setMdfrId(actorId);
         checkupMapper.insertCheckup(record);
         checkupMapper.insertStatusHistory(record.getCkupRcdSn(), mbrSn, null, CheckupStatus.COMPLETED.getCode());
+        /** 검진기록 등록 포인트 : 기간·중복은 PointService 가 판단. 수정에서는 주지 않는다 (FN-MYP-020-08) */
+        pointService.earnCheckupPoint(petSn, command.ckupYmd());
         return record.getCkupRcdSn();
     }
 
