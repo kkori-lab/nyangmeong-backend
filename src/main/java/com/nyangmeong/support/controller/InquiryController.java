@@ -1,9 +1,11 @@
 package com.nyangmeong.support.controller;
 
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.file.StoredFile;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.response.PageResponse;
@@ -29,7 +32,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * [1:1 문의 컨트롤러]
- * - SCR-CSC-003 목록·작성·상세·수정, 작성·수정은 multipart/form-data
+ * - SCR-CSC-003 목록·작성·상세·수정·첨부 이미지, 작성·수정은 multipart/form-data
  */
 @RestController
 @RequiredArgsConstructor
@@ -52,6 +55,17 @@ public class InquiryController {
         return ResponseEntity.ok(ApiResponse.success(inquiryService.getInquiry(me.id(), otoInqrySn)));
     }
 
+    @Operation(summary = "내 1:1 문의 첨부 이미지")
+    @GetMapping("/{otoInqrySn}/images/{atchFileSn}")
+    public ResponseEntity<byte[]> getImage(@AuthenticationPrincipal LoginMember me, @PathVariable Long otoInqrySn,
+            @PathVariable Long atchFileSn) {
+        StoredFile image = inquiryService.getImage(me.id(), otoInqrySn, atchFileSn);
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noCache())
+                .contentType(MediaType.parseMediaType(image.contentType()))
+                .body(image.content());
+    }
+
     @Operation(summary = "1:1 문의 작성")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<InquiryResponse>> create(@AuthenticationPrincipal LoginMember me,
@@ -64,5 +78,13 @@ public class InquiryController {
     public ResponseEntity<ApiResponse<InquiryResponse>> update(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long otoInqrySn, @Valid @ModelAttribute InquiryUpdateRequest req) {
         return ResponseEntity.ok(ApiResponse.success(inquiryService.update(me.id(), otoInqrySn, req)));
+    }
+
+    @Operation(summary = "1:1 문의 삭제(접수 상태만)")
+    @DeleteMapping("/{otoInqrySn}")
+    public ResponseEntity<ApiResponse<Void>> delete(@AuthenticationPrincipal LoginMember me,
+            @PathVariable Long otoInqrySn) {
+        inquiryService.delete(me.id(), otoInqrySn);
+        return ResponseEntity.ok(ApiResponse.success());
     }
 }

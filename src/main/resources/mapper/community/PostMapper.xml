@@ -23,6 +23,7 @@
         <result column="PST_TTL"            property="pstTtl" />
         <result column="PST_CN"             property="pstCn" />
         <result column="MBR_NCNM"           property="mbrNcnm" />
+        <result column="MBR_ATCH_FILE_SN"   property="mbrAtchFileSn" />
         <result column="REG_DT"             property="regDt" />
         <result column="THUMB_ATCH_FILE_SN" property="thumbAtchFileSn" />
         <result column="RCMDTN_CNT"         property="rcmdtnCnt" />
@@ -64,6 +65,7 @@
         , P.PST_TTL
         , P.PST_CN
         , M.MBR_NCNM
+        , M.ATCH_FILE_SN AS MBR_ATCH_FILE_SN
         , P.REG_DT
         , (SELECT I.ATCH_FILE_SN
              FROM PST_IMG I
@@ -80,6 +82,7 @@
                                    FROM (SELECT PST_SN
                                            FROM PST
                                           WHERE PST_STTS_CD = #{pstSttsCd}
+                                            AND BBS_CD IN ('CMUC0001', 'CMUC0002')
                                             AND RCMDTN_CNT > 0
                                             AND REG_DT >= DATE_SUB(NOW(), INTERVAL 7 DAY)
                                           ORDER BY RCMDTN_CNT DESC, REG_DT DESC, PST_SN DESC
@@ -93,9 +96,14 @@
           JOIN MBR M
             ON M.MBR_SN = P.MBR_SN
          WHERE P.PST_STTS_CD = #{pstSttsCd}
-        <if test="bbsCd != null">
+        <choose>
+            <when test="bbsCd != null">
            AND P.BBS_CD = #{bbsCd}
-        </if>
+            </when>
+            <otherwise>
+           AND P.BBS_CD IN ('CMUC0001', 'CMUC0002')
+            </otherwise>
+        </choose>
         <if test="keyword != null">
            AND (P.PST_TTL LIKE CONCAT('%', #{keyword}, '%')
                 OR P.PST_CN LIKE CONCAT('%', #{keyword}, '%'))
@@ -151,6 +159,13 @@
 
     <select id="selectMbrNcnm" parameterType="long" resultType="string">
         SELECT MBR_NCNM
+          FROM MBR
+         WHERE MBR_SN = #{mbrSn}
+    </select>
+
+    <select id="selectAuthor" parameterType="long" resultType="com.nyangmeong.community.dto.PostAuthor">
+        SELECT MBR_NCNM AS mbrNcnm
+             , ATCH_FILE_SN AS mbrAtchFileSn
           FROM MBR
          WHERE MBR_SN = #{mbrSn}
     </select>
@@ -350,4 +365,86 @@
              , MDFCN_DT = MDFCN_DT
          WHERE PST_SN = #{pstSn}
     </update>
+
+    <resultMap id="adminPostSummaryResultMap" type="com.nyangmeong.community.dto.AdminPostSummary">
+        <id     column="PST_SN"      property="pstSn" />
+        <result column="BBS_CD"      property="bbsCd" />
+        <result column="PST_TTL"     property="pstTtl" />
+        <result column="MBR_SN"      property="mbrSn" />
+        <result column="MBR_NCNM"    property="mbrNcnm" />
+        <result column="PST_STTS_CD" property="pstSttsCd" />
+        <result column="DCLR_CNT"    property="dclrCnt" />
+        <result column="REG_DT"      property="regDt" />
+    </resultMap>
+
+    <resultMap id="adminPostStatusHistoryResultMap" type="com.nyangmeong.community.dto.AdminPostStatusHistorySummary">
+        <id     column="PST_STTS_HSTRY_SN" property="pstSttsHstrySn" />
+        <result column="BFR_STTS_CD"       property="bfrSttsCd" />
+        <result column="AFTR_STTS_CD"      property="aftrSttsCd" />
+        <result column="CHG_RSN"           property="chgRsn" />
+        <result column="PRCS_MBR_SN"       property="prcsMbrSn" />
+        <result column="PRCS_MBR_NCNM"     property="prcsMbrNcnm" />
+        <result column="REG_DT"            property="regDt" />
+    </resultMap>
+
+    <select id="selectAdminList" resultMap="adminPostSummaryResultMap">
+        /* 관리자 게시글 목록 조회 : 삭제 글 포함 */
+        SELECT P.PST_SN
+             , P.BBS_CD
+             , P.PST_TTL
+             , P.MBR_SN
+             , M.MBR_NCNM
+             , P.PST_STTS_CD
+             , (SELECT COUNT(*)
+                  FROM DCLR D
+                 WHERE D.PST_SN = P.PST_SN) AS DCLR_CNT
+             , P.REG_DT
+          FROM PST P
+          JOIN MBR M
+            ON M.MBR_SN = P.MBR_SN
+        <where>
+            <if test="keyword != null">
+                AND (P.PST_TTL LIKE CONCAT('%', #{keyword}, '%')
+                     OR M.MBR_NCNM LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="cond.bbsCd != null and cond.bbsCd.trim() != ''">
+                AND P.BBS_CD = #{cond.bbsCd}
+            </if>
+            <if test="cond.status != null and cond.status.trim() != ''">
+                AND P.PST_STTS_CD = #{cond.status}
+            </if>
+            <if test="cond.bgngYmd != null">
+                AND P.REG_DT &gt;= #{cond.bgngYmd}
+            </if>
+            <if test="cond.endYmd != null">
+                AND P.REG_DT &lt; DATE_ADD(#{cond.endYmd}, INTERVAL 1 DAY)
+            </if>
+        </where>
+         ORDER BY P.REG_DT DESC
+                , P.PST_SN DESC
+    </select>
+
+    <select id="selectAdminPost" parameterType="long" resultMap="postResultMap">
+        /* 관리자 게시글 단건 조회 : 상태 무관 */
+        SELECT <include refid="postColumns" />
+          FROM PST P
+         WHERE P.PST_SN = #{pstSn}
+    </select>
+
+    <select id="selectAdminStatusHistories" parameterType="long" resultMap="adminPostStatusHistoryResultMap">
+        /* 게시글 상태 이력 조회 : 처리자 없음은 시스템 처리 */
+        SELECT H.PST_STTS_HSTRY_SN
+             , H.BFR_STTS_CD
+             , H.AFTR_STTS_CD
+             , H.CHG_RSN
+             , H.MBR_SN AS PRCS_MBR_SN
+             , M.MBR_NCNM AS PRCS_MBR_NCNM
+             , H.REG_DT
+          FROM PST_STTS_HSTRY H
+          LEFT JOIN MBR M
+            ON M.MBR_SN = H.MBR_SN
+         WHERE H.PST_SN = #{pstSn}
+         ORDER BY H.REG_DT DESC
+                , H.PST_STTS_HSTRY_SN DESC
+    </select>
 </mapper>

@@ -4,35 +4,45 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.nyangmeong.global.batch.BatchJob;
+import com.nyangmeong.global.batch.BatchType;
+import com.nyangmeong.health.service.ObservationService;
 import com.nyangmeong.pet.service.CareMissionService;
 
 import lombok.RequiredArgsConstructor;
 
 /**
  * [케어미션 정산·출제 배치 (SCR-MYP-020)]
- * - 전날 미션 정산 -> 오늘 미션 출제, 관찰 중 반려동물은 health 몫이라 여기서 넘김
+ * - 전날 미션 정산 -> 오늘 미션 출제, 관찰 중 반려동물은 health 관찰 service 에서 읽어 넘김
  * - 매시 정각 : 이미 정산·출제한 것은 건너뛰므로 자정에 서버가 꺼져 있던 날도 다음 정각에 채움
  * - app.care-mission.batch-enabled=true 일 때만 등록 : 배포(prod)는 켬, 로컬은 확인할 때만 켬(팀원 PC마다 공용 DB에 쓰지 않게)
  */
 @Component
 @ConditionalOnProperty(name = "app.care-mission.batch-enabled", havingValue = "true")
 @RequiredArgsConstructor
-public class CareMissionJob {
+public class CareMissionJob implements BatchJob {
 
     static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
 
     private final CareMissionService careMissionService;
-    private final ObservationFake observationFake;
+    private final ObservationService observationService;
 
-    /**
-     * 매시 정각 실행
-     */
-    @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul")
-    public void run() {
+    @Override
+    public BatchType type() {
+        return BatchType.CARE_MISSION;
+    }
+
+    @Override
+    public String cron() {
+        return "0 0 * * * *";
+    }
+
+    @Override
+    public Integer execute() {
         run(LocalDate.now(ZONE));
+        return null;
     }
 
     /**
@@ -40,6 +50,6 @@ public class CareMissionJob {
      */
     public void run(LocalDate today) {
         careMissionService.settle(today.minusDays(1));
-        careMissionService.issue(today, observationFake.search(today));
+        careMissionService.issue(today, observationService.searchObservingPetSns());
     }
 }

@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import com.nyangmeong.member.domain.Terms;
+import com.nyangmeong.member.dto.AdminMemberTermsAgreeSummary;
 import com.nyangmeong.member.dto.TermsSummary;
 
 /**
@@ -20,9 +21,24 @@ public interface TermsMapper {
     List<TermsSummary> selectUsableList();
 
     /**
+     * 사용 중 약관 종류별 회원의 최신 동의 (정렬순서)
+     */
+    List<AdminMemberTermsAgreeSummary> selectAdminAgreementList(@Param("mbrSn") Long mbrSn);
+
+    /**
      * 사용 중인 약관 전문, 없으면 null
      */
     Terms selectUsableBySn(Long trmsSn);
+
+    /**
+     * 회원이 동의(AGRE_YN='Y')하지 않은 현재 사용 중 필수 약관 (정렬순서)
+     */
+    List<TermsSummary> selectMissingEssential(Long mbrSn);
+
+    /**
+     * 복구 때 필수 약관 동의 저장 (이미 행이 있으면 동의로 갱신)
+     */
+    int upsertAgreement(@Param("mbrSn") Long mbrSn, @Param("trmsSn") Long trmsSn, @Param("actorId") String actorId);
 
     /**
      * 회원 약관 동의 등록

@@ -20,5 +20,7 @@ public class EmailCertification {
     private LocalDateTime certCmptnDt;
     private LocalDateTime certUseCmptnDt;
     private LocalDateTime certInvldDt;
+    private String pswdInitTknHash;
+    private LocalDateTime initAuthrtExpryDt;
     private LocalDateTime regDt;
 }

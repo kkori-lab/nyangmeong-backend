@@ -68,4 +68,13 @@
          WHERE RFRSH_TKN_HASH = #{rfrshTknHash}
            AND DSCD_DT IS NULL
     </update>
+
+    <update id="updateDiscardAllByMbrSn" parameterType="long">
+        /* 회원의 리프레시 토큰 모두 폐기 */
+        UPDATE RFRSH_TKN
+           SET DSCD_DT = NOW()
+             , MDFCN_DT = NOW()
+         WHERE MBR_SN = #{mbrSn}
+           AND DSCD_DT IS NULL
+    </update>
 </mapper>

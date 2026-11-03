@@ -1,5 +1,6 @@
 package com.nyangmeong.member.service;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -12,9 +13,11 @@ import org.springframework.transaction.annotation.Transactional;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.member.domain.Terms;
+import com.nyangmeong.member.dto.AdminMemberTermsAgreeSummary;
 import com.nyangmeong.member.dto.TermsAgreeRequest;
 import com.nyangmeong.member.dto.TermsResponse;
 import com.nyangmeong.member.dto.TermsSummary;
+import com.nyangmeong.member.mapper.MemberMapper;
 import com.nyangmeong.member.mapper.TermsMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -29,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 public class TermsService {
 
     private final TermsMapper termsMapper;
+    private final MemberMapper memberMapper;
 
     /**
      * 사용 중인 약관 목록
@@ -36,6 +40,17 @@ public class TermsService {
     @Transactional(readOnly = true)
     public List<TermsSummary> search() {
         return termsMapper.selectUsableList();
+    }
+
+    /**
+     * 관리자 회원 상세 약관 동의 조회
+     */
+    @Transactional(readOnly = true)
+    public List<AdminMemberTermsAgreeSummary> searchAgreementsForAdmin(Long mbrSn) {
+        if (!memberMapper.existsBySn(mbrSn)) {
+            throw new CustomException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+        return termsMapper.selectAdminAgreementList(mbrSn);
     }
 
     /**
@@ -78,6 +93,42 @@ public class TermsService {
             result.put(terms.getTrmsSn(), isAgreed);
         }
         return result;
+    }
+
+    /**
+     * 복구 때 다시 받아야 할 현재 필수 약관 : 이미 같은 버전으로 동의한 것은 빠진다
+     */
+    @Transactional(readOnly = true)
+    public List<TermsSummary> searchMissingEssential(Long mbrSn) {
+        return termsMapper.selectMissingEssential(mbrSn);
+    }
+
+    /**
+     * 복구 약관 동의 검사 : 빠진 필수 약관을 모두 동의해야 한다, 그 밖의 항목은 무시
+     * - 돌려주는 값은 저장할 약관 번호
+     */
+    @Transactional(readOnly = true, noRollbackFor = CustomException.class)
+    public List<Long> checkRecoveryAgreements(List<TermsSummary> missing, List<TermsAgreeRequest> items) {
+        Set<Long> agreed = new HashSet<>();
+        if (items != null) {
+            items.stream().filter(item -> Boolean.TRUE.equals(item.agreYn())).forEach(item -> agreed.add(item.trmsSn()));
+        }
+        List<Long> result = new ArrayList<>();
+        for (TermsSummary terms : missing) {
+            if (!agreed.contains(terms.getTrmsSn())) {
+                throw new CustomException(ErrorCode.REQUIRED_TERMS_NOT_AGREED);
+            }
+            result.add(terms.getTrmsSn());
+        }
+        return result;
+    }
+
+    /**
+     * 복구 필수 약관 동의 저장
+     */
+    @Transactional
+    public void createRecoveryAgreements(Long mbrSn, List<Long> trmsSns) {
+        trmsSns.forEach(trmsSn -> termsMapper.upsertAgreement(mbrSn, trmsSn, String.valueOf(mbrSn)));
     }
 
     /**

@@ -15,6 +15,7 @@ public class PostSummary {
     private String pstTtl;
     private String pstCn;
     private String mbrNcnm;
+    private Long mbrAtchFileSn;
     private LocalDateTime regDt;
     private Long thumbAtchFileSn;
     private Integer rcmdtnCnt;

@@ -24,6 +24,7 @@ import com.nyangmeong.ai.dto.ConversationMessageCreateRequest;
 import com.nyangmeong.ai.dto.ConversationMessageResponse;
 import com.nyangmeong.ai.dto.ConversationResponse;
 import com.nyangmeong.ai.dto.ConversationSummary;
+import com.nyangmeong.ai.dto.ConversationTitleUpdateRequest;
 import com.nyangmeong.ai.mapper.AiConversationMapper;
 import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.CustomException;
@@ -232,6 +233,75 @@ class AiConversationServiceTest {
                 new ConversationMessageCreateRequest("XXXX", "내용", null)))
                 .isInstanceOfSatisfying(CustomException.class,
                         e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT_VALUE));
+    }
+
+    @Test
+    void 사용자_질문이_1000자를_넘으면_입력값_오류이고_저장하지_않는다() {
+        assertThatThrownBy(() -> service.createMessage(MBR, ROOM,
+                new ConversationMessageCreateRequest("AIMC0024", "가".repeat(1001), null)))
+                .isInstanceOfSatisfying(CustomException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT_VALUE));
+        verify(aiConversationMapper, never()).insertMessage(any());
+    }
+
+    @Test
+    void 사용자_질문은_1000자까지_저장한다() {
+        when(aiConversationMapper.selectRoomForUpdate(MBR, ROOM)).thenReturn(room(PET));
+        when(aiConversationMapper.selectNextMsgSeq(ROOM)).thenReturn(2);
+        doAnswer(inv -> {
+            AiConversationMessage saved = inv.getArgument(0);
+            saved.setAiCnvrsMsgSn(11L);
+            return 1;
+        }).when(aiConversationMapper).insertMessage(any());
+        when(aiConversationMapper.selectMessage(11L)).thenReturn(message(11L, "AIMC0024", 2, "Y"));
+
+        service.createMessage(MBR, ROOM, new ConversationMessageCreateRequest("AIMC0024", "가".repeat(1000), null));
+
+        verify(aiConversationMapper).insertMessage(any());
+    }
+
+    @Test
+    void AI_답변은_1000자를_넘어도_저장한다() {
+        when(aiConversationMapper.selectRoomForUpdate(MBR, ROOM)).thenReturn(room(PET));
+        when(aiConversationMapper.selectNextMsgSeq(ROOM)).thenReturn(2);
+        doAnswer(inv -> {
+            AiConversationMessage saved = inv.getArgument(0);
+            saved.setAiCnvrsMsgSn(11L);
+            return 1;
+        }).when(aiConversationMapper).insertMessage(any());
+        when(aiConversationMapper.selectMessage(11L)).thenReturn(message(11L, "AIMC0025", 2, "Y"));
+        String answer = "가".repeat(1001);
+
+        service.createMessage(MBR, ROOM, new ConversationMessageCreateRequest("AIMC0025", answer, null));
+
+        ArgumentCaptor<AiConversationMessage> captor = ArgumentCaptor.forClass(AiConversationMessage.class);
+        verify(aiConversationMapper).insertMessage(captor.capture());
+        assertThat(captor.getValue().getCnvrsCnEnc()).isEqualTo("ENC(" + answer + ")");
+    }
+
+    @Test
+    void 제목을_수정하면_암호문으로_저장하고_복호화한_요약을_준다() {
+        when(aiConversationMapper.updateRoomTitle(MBR, ROOM, "ENC(새 제목)")).thenReturn(1);
+        AiConversationRoom updated = room(PET);
+        updated.setCnvrsTtlEnc("ENC(새 제목)");
+        when(aiConversationMapper.selectRoom(MBR, ROOM)).thenReturn(updated);
+
+        ConversationSummary result = service.updateTitle(MBR, ROOM, new ConversationTitleUpdateRequest("새 제목"));
+
+        verify(aiConversationMapper).updateRoomTitle(MBR, ROOM, "ENC(새 제목)");
+        assertThat(result.aiCnvrsRoomSn()).isEqualTo(ROOM);
+        assertThat(result.petSn()).isEqualTo(PET);
+        assertThat(result.cnvrsTtl()).isEqualTo("새 제목");
+    }
+
+    @Test
+    void 남의_대화나_없는_번호의_제목_수정은_NOT_FOUND다() {
+        when(aiConversationMapper.updateRoomTitle(MBR, 99L, "ENC(새 제목)")).thenReturn(0);
+
+        assertThatThrownBy(() -> service.updateTitle(MBR, 99L, new ConversationTitleUpdateRequest("새 제목")))
+                .isInstanceOfSatisfying(CustomException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.NOT_FOUND));
+        verify(aiConversationMapper, never()).selectRoom(anyLong(), anyLong());
     }
 
     @Test

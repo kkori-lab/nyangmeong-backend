@@ -1,10 +1,10 @@
 # AI 대화(ai) 내부 API·DTO
 
-공통 규칙(응답 껍데기, `Yn` 필드, 정본)은 `docs/api/README.md`에 있다. 이 파일은 Python AI 서버가 호출하는 대화 저장·조회 내부 API만 담는다. 구현된 API의 정본은 Swagger(`/swagger-ui.html`)다.
+공통 규칙(응답 껍데기, `Yn` 필드, 정본)은 `docs/api/README.md`에 있다. 이 파일은 Python AI 서버가 호출하는 대화 저장·조회와 AI 설정값 조회 내부 API만 담는다. 구현된 API의 정본은 Swagger(`/swagger-ui.html`)다.
 
 ## 호출 규칙
 
-- 경로는 `/api` 접두어가 없는 `/internal/ai/conversations` 아래다(`/internal/auth/check`와 같다). nginx 밖에서만 부른다.
+- 경로는 `/api` 접두어가 없는 `/internal/ai/conversations`·`/internal/ai/settings`다(`/internal/auth/check`와 같다). nginx 밖에서만 부른다.
 - 회원은 쿠키로 판정한다(2026-10-27 ai 저장소 합의). Python은 React에서 받은 `Cookie` 헤더(`access_token`)를 그대로 실어 부르고, 요청에 `mbrSn`을 넣지 않는다. 회원 번호를 받으면 서버 간 키가 없는 상태에서 누구나 남의 대화를 읽고 지울 수 있다.
 - 인증 실패는 기존 필터와 같다: 세션 폐기 401 `UNAUTHORIZED`, 정지·탈퇴 403 `MEMBER_INACTIVE`(쿠키 삭제 `Set-Cookie`). Python은 이 본문을 그대로 React에 넘긴다.
 - 상태를 바꾸는 요청(POST·DELETE)은 `X-Requested-With: XMLHttpRequest` 헤더가 필요하다(`RequestedWithFilter`). Python은 React의 헤더를 같이 넘긴다.
@@ -20,11 +20,14 @@
 | GET | /internal/ai/conversations?petSn= | 대화 목록(최신순). petSn을 주면 그 태그만(태그 없는 「전체」 대화 제외) | AIM-011-08·09 | LJS | - | List<ConversationSummary> |
 | GET | /internal/ai/conversations/{aiCnvrsRoomSn} | 대화 상세(메시지 `msgSeq` 오름차순) | AIM-011-10 | LJS | - | ConversationResponse |
 | POST | /internal/ai/conversations/{aiCnvrsRoomSn}/messages | 메시지 추가(사용자·AI, 순서는 서버가 매김, 201) | AIM-011-10·14 | LJS | ConversationMessageCreateRequest | ConversationMessageResponse |
+| PATCH | /internal/ai/conversations/{aiCnvrsRoomSn} | 대화 제목 수정(첫 답변 요약 제목, Python이 1회 호출, 200) | AIM-011-11 | LJS | ConversationTitleUpdateRequest | ConversationSummary |
 | DELETE | /internal/ai/conversations/{aiCnvrsRoomSn} | 대화 삭제(물리 삭제, 메시지 CASCADE, 200) | AIM-011-13 | LJS | - | - |
+| GET | /internal/ai/settings | AI 설정값(응답 토큰 상한·대화 턴 수). 설정 행이 없으면 기본 4500·6 | AIM-002-02·11 | LJS | - | AiSettingResponse |
+| GET | /internal/ai/register-context | 등록 카드 컨텍스트. 쿠키 회원이 양육하는 반려동물 전부(공동양육 포함)와 각자의 케어 항목 이름. 반려동물이 없으면 빈 배열. 반려동물 목록은 외부 AI에 보내지 않는다 | AIM-012-04·08 | LJS | - | List<RegisterContextPet> |
 
 탈퇴 회원 대화 파기(AIM-011-19)는 API가 아니라 `scheduler/AiConversationPurgeJob`이 매일 03:00 KST에 한다. Python의 `DELETE /internal/v1/members/{mbrSn}/conversations`는 쓰지 않는다.
 
-후속 설계(이번에 만들지 않음): 미완료(`cmptnYn=false`) 메시지를 완료로 바꾸는 `PATCH /internal/ai/conversations/{aiCnvrsRoomSn}/messages/{aiCnvrsMsgSn}` {cmptnYn, cnvrsCn?}. SCR-AIM-002·012에서 필요해지면 추가한다.
+미완료(`cmptnYn=false`) 메시지를 완료로 바꾸는 API는 두지 않는다. [다시 생성]은 새 메시지를 덧붙이고, Python이 미완료 메시지를 AI 컨텍스트에서 뺀다(2026-10-28 ai 세션 합의, FN-AIM-002-07).
 
 ## DTO
 
@@ -41,11 +44,17 @@
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | roleCd | String | Y | `AIMC0024`·`AIMC0025` | AI_CNVRS_MSG.ROLE_CD |
-| cnvrsCn | String | Y | 1~1000자 | AI_CNVRS_MSG.CNVRS_CN_ENC |
-| cmptnYn | Boolean | N | 기본 true. false면 미완료 답변 | AI_CNVRS_MSG.CMPTN_YN |
+| cnvrsCn | String | Y | 사용자(`AIMC0024`) 1~1,000자, AI(`AIMC0025`) 1~10,000자. 넘으면 400 `INVALID_INPUT_VALUE`. AI 답변은 의료 고지를 포함해 자르지 않고 저장한다 | AI_CNVRS_MSG.CNVRS_CN_ENC, AIM-001-04, AIM-002-03 |
+| cmptnYn | Boolean | N | 기본 true. false면 미완료 답변 | AI_CNVRS_MSG.CMPTN_YN, AIM-002-07 |
+
+### ConversationTitleUpdateRequest
+쓰는 API: PATCH /internal/ai/conversations/{aiCnvrsRoomSn}
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| cnvrsTtl | String | Y | 1~200자, 공백만 불가, 서버가 암호화 | AI_CNVRS_ROOM.CNVRS_TTL_ENC, AIM-011-11 |
 
 ### ConversationSummary
-쓰는 API: POST·GET /internal/ai/conversations
+쓰는 API: POST·PATCH·GET /internal/ai/conversations
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | aiCnvrsRoomSn | Long | Y | | AI_CNVRS_ROOM.AI_CNVRS_ROOM_SN |
@@ -69,3 +78,18 @@
 | msgSeq | Integer | Y | 대화 안의 순서(1부터) | AI_CNVRS_MSG.MSG_SEQ |
 | cmptnYn | boolean | Y | 완료 여부 | AI_CNVRS_MSG.CMPTN_YN |
 | regDt | LocalDateTime | Y | | AI_CNVRS_MSG.REG_DT |
+
+### AiSettingResponse
+쓰는 API: GET /internal/ai/settings
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| aiTknUplmtCnt | int | Y | 응답 최대 생성 토큰 수(기본 4500) | SYS_STNG.AI_TKN_UPLMT_CNT, AIM-002-02 |
+| aiCnvrsTurnCnt | int | Y | 컨텍스트로 넘기는 최근 대화 턴 수(기본 6) | SYS_STNG.AI_CNVRS_TURN_CNT, AIM-002-11 |
+
+### RegisterContextPet
+쓰는 API: GET /internal/ai/register-context
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| petSn | Long | Y | | PET.PET_SN, AIM-012-04 |
+| petNm | String | Y | 문장 속 이름과 대조 | PET.PET_NM, AIM-012-04 |
+| careArtclNms | List<String> | Y | 그 반려동물의 케어 항목 이름(삭제 제외, 등록순). 없으면 빈 배열. 케어 항목 목록 service(JAJ) 연결 전까지 빈 배열 | CARE_ARTCL.CARE_ARTCL_NM, AIM-012-08 |

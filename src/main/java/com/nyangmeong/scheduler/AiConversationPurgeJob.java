@@ -2,11 +2,12 @@ package com.nyangmeong.scheduler;
 
 import java.util.List;
 
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.nyangmeong.ai.service.AiConversationService;
+import com.nyangmeong.global.batch.BatchJob;
+import com.nyangmeong.global.batch.BatchType;
 import com.nyangmeong.global.setting.SystemSettingService;
 import com.nyangmeong.member.service.MemberService;
 
@@ -20,19 +21,26 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class AiConversationPurgeJob {
+public class AiConversationPurgeJob implements BatchJob {
 
     private final SystemSettingService systemSettingService;
     private final MemberService memberService;
     private final AiConversationService aiConversationService;
 
-    /**
-     * 03:00 파기 실행
-     */
-    @Scheduled(cron = "0 0 3 * * *", zone = "Asia/Seoul")
+    @Override
+    public BatchType type() {
+        return BatchType.AI_CONVERSATION_PURGE;
+    }
+
+    @Override
+    public String cron() {
+        return "0 0 3 * * *";
+    }
+
+    @Override
     @Transactional
-    public void run() {
-        purge();
+    public Integer execute() {
+        return purge();
     }
 
     /**

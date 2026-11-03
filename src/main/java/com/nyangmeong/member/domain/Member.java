@@ -6,7 +6,7 @@ import lombok.Data;
 
 /**
  * [회원 VO]
- * - MBR 1:1 중 로그인·가입·닉네임에 쓰는 컬럼만
+ * - MBR 1:1 중 로그인·가입·닉네임·회원정보 수정에 쓰는 컬럼만
  * - 조회는 mapper/member/MemberMapper.xml
  */
 @Data
@@ -22,6 +22,10 @@ public class Member {
     private String mblTelnoHmac;
     private String pswdHash;
     private String mbrNcnm;
+    private Integer hldPnt;
     private LocalDateTime lastLgnDt;
+    private LocalDateTime whdwlDt;
+    private LocalDateTime suspnEndDt;
     private String ncnmStngCmptnYn;
+    private LocalDateTime regDt;
 }

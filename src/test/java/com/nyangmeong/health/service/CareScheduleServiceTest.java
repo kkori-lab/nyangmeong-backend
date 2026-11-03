@@ -12,6 +12,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -22,6 +23,7 @@ import org.mockito.ArgumentCaptor;
 import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.health.domain.CheckupStatus;
 import com.nyangmeong.health.domain.HealthCodeGroup;
 import com.nyangmeong.health.domain.Schedule;
 import com.nyangmeong.health.domain.ScheduleKind;
@@ -97,7 +99,7 @@ class CareScheduleServiceTest {
         CareScheduleSearchCond cond = new CareScheduleSearchCond();
         cond.setSize(3);
         List<CareScheduleSummary> rows = List.of(new CareScheduleSummary());
-        when(mapper.selectList(PET, cond)).thenReturn(rows);
+        when(mapper.selectList(PET, cond, CheckupStatus.COMPLETED.getCode())).thenReturn(rows);
 
         assertThat(service.search(MBR, PET, cond)).isSameAs(rows);
         verify(petAuthorizer).checkCaregiver(MBR, PET);
@@ -109,7 +111,7 @@ class CareScheduleServiceTest {
 
         assertThatThrownBy(() -> service.search(MBR, PET, new CareScheduleSearchCond()))
                 .isInstanceOf(CustomException.class);
-        verify(mapper, never()).selectList(anyLong(), any());
+        verify(mapper, never()).selectList(anyLong(), any(), anyString());
     }
 
     @Test
@@ -248,5 +250,15 @@ class CareScheduleServiceTest {
 
         verify(petAuthorizer).checkCaregiver(MBR, PET);
         verify(mapper).deleteSchedule(SCHDL, "1");
+    }
+
+    @Test
+    void 병원_일정_알림_대상은_병원_종류로_권한_검사_없이_조회한다() {
+        LocalDate schdlYmd = LocalDate.of(2026, 11, 3);
+
+        service.searchHospitalSchedules(schdlYmd);
+
+        verify(mapper).selectHospitalSchedules(schdlYmd, ScheduleKind.HOSPITAL.getCode());
+        verify(petAuthorizer, never()).checkCaregiver(anyLong(), anyLong());
     }
 }

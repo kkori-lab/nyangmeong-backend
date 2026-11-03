@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import com.nyangmeong.pet.domain.PointLedger;
+import com.nyangmeong.pet.dto.AdminPointLedgerSummary;
 import com.nyangmeong.pet.dto.PointLedgerSummary;
 import com.nyangmeong.pet.dto.PointMonthSummary;
 
@@ -37,6 +38,11 @@ public interface PointMapper {
      * 포인트 원장 등록
      */
     int insertLedger(PointLedger ledger);
+
+    /**
+     * 회원 포인트 원장 전체 조회 (최신순)
+     */
+    List<AdminPointLedgerSummary> selectAdminLedgerList(@Param("mbrSn") Long mbrSn);
 
     /**
      * 기간 포인트 내역 조회

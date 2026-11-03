@@ -2,10 +2,12 @@ package com.nyangmeong.ai.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -145,6 +147,62 @@ class AiConversationControllerTest {
         mockMvc.perform(post(PATH + "/7/messages").header("X-Requested-With", AJAX)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"roleCd\":\"AIMC0025\",\"cnvrsCn\":\"답변\"}"))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.data.msgSeq").value(2));
+    }
+
+    @Test
+    @WithMockLoginMember(id = 1L)
+    void 메시지_내용이_10000자를_넘으면_400이고_저장하지_않는다() throws Exception {
+        String longAnswer = "가".repeat(10001);
+
+        mockMvc.perform(post(PATH + "/7/messages").header("X-Requested-With", AJAX)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"roleCd\":\"AIMC0025\",\"cnvrsCn\":\"" + longAnswer + "\"}"))
+                .andExpect(status().isBadRequest());
+        verify(aiConversationService, never()).createMessage(any(), any(), any());
+    }
+
+    @Test
+    @WithMockLoginMember(id = 1L)
+    void 제목을_수정하면_200과_요약을_준다() throws Exception {
+        when(aiConversationService.updateTitle(eq(1L), eq(7L), any()))
+                .thenReturn(new ConversationSummary(7L, 3L, "요약 제목", AT));
+
+        mockMvc.perform(patch(PATH + "/7").header("X-Requested-With", AJAX).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"cnvrsTtl\":\"요약 제목\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.aiCnvrsRoomSn").value(7))
+                .andExpect(jsonPath("$.data.petSn").value(3))
+                .andExpect(jsonPath("$.data.cnvrsTtl").value("요약 제목"));
+    }
+
+    @Test
+    @WithMockLoginMember(id = 1L)
+    void 남의_대화_제목_수정은_404다() throws Exception {
+        when(aiConversationService.updateTitle(eq(1L), eq(7L), any()))
+                .thenThrow(new CustomException(ErrorCode.NOT_FOUND));
+
+        mockMvc.perform(patch(PATH + "/7").header("X-Requested-With", AJAX).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"cnvrsTtl\":\"요약 제목\"}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockLoginMember(id = 1L)
+    void 제목이_비었거나_공백뿐이거나_200자를_넘으면_400이고_수정하지_않는다() throws Exception {
+        for (String title : List.of("", "   ", "가".repeat(201))) {
+            mockMvc.perform(patch(PATH + "/7").header("X-Requested-With", AJAX)
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"cnvrsTtl\":\"" + title + "\"}"))
+                    .andExpect(status().isBadRequest());
+        }
+        mockMvc.perform(patch(PATH + "/7").header("X-Requested-With", AJAX).contentType(MediaType.APPLICATION_JSON)
+                .content("{}")).andExpect(status().isBadRequest());
+        verify(aiConversationService, never()).updateTitle(any(), any(), any());
+    }
+
+    @Test
+    void 쿠키가_없으면_제목_수정도_401이다() throws Exception {
+        mockMvc.perform(patch(PATH + "/7").header("X-Requested-With", AJAX).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"cnvrsTtl\":\"요약 제목\"}")).andExpect(status().isUnauthorized());
     }
 
     @Test

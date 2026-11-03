@@ -31,7 +31,7 @@ import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.file.FileStore;
 
 /**
- * [검사 - 영수증 업로드·다시 분석·분석 종료·취소]
+ * [검사 - 영수증 업로드·분석 종료]
  */
 class ReceiptServiceTest {
 
@@ -65,7 +65,7 @@ class ReceiptServiceTest {
             return null;
         }).when(mapper).insert(any());
 
-        Long recptSn = service.create(1L, 10L, image);
+        Long recptSn = service.create(1L, 10L, image, null);
 
         ArgumentCaptor<Receipt> captor = ArgumentCaptor.forClass(Receipt.class);
         verify(mapper).insert(captor.capture());
@@ -85,65 +85,14 @@ class ReceiptServiceTest {
     void 연동되지_않은_반려동물이면_파일도_저장하지_않는다() {
         doThrow(new CustomException(ErrorCode.PET_ACCESS_DENIED)).when(petAuthorizer).checkCaregiver(1L, 99L);
 
-        assertThatThrownBy(() -> service.create(1L, 99L, image))
+        assertThatThrownBy(() -> service.create(1L, 99L, image, null))
                 .extracting("errorCode").isEqualTo(ErrorCode.PET_ACCESS_DENIED);
         verify(fileStore, never()).store(any(MockMultipartFile.class), anyString());
         verify(mapper, never()).insert(any());
     }
 
     @Test
-    void 취소_인식실패_일시오류는_다시_분석할_수_있다() {
-        for (ReceiptStatus status : ReceiptStatus.RETRYABLE) {
-            ReceiptMapper retryMapper = mock(ReceiptMapper.class);
-            ReceiptService retryService = new ReceiptService(retryMapper, fileStore, petAuthorizer);
-            when(retryMapper.selectOwned(3L, 1L)).thenReturn(receipt(status));
-            when(retryMapper.updateStatus(eq(3L), anyList(), eq(ReceiptStatus.ANALYZING.getCode()))).thenReturn(1);
-
-            retryService.restart(1L, 3L, 10L);
-
-            ArgumentCaptor<ReceiptStatusHistory> captor = ArgumentCaptor.forClass(ReceiptStatusHistory.class);
-            verify(retryMapper).insertStatusHistory(captor.capture());
-            assertThat(captor.getValue().getBfrSttsCd()).isEqualTo(status.getCode());
-            assertThat(captor.getValue().getAftrSttsCd()).isEqualTo(ReceiptStatus.ANALYZING.getCode());
-        }
-    }
-
-    @Test
-    void 분석중_영수증을_다시_분석하면_RECEIPT_ANALYZING() {
-        when(mapper.selectOwned(3L, 1L)).thenReturn(receipt(ReceiptStatus.ANALYZING));
-
-        assertThatThrownBy(() -> service.restart(1L, 3L, 10L))
-                .extracting("errorCode").isEqualTo(ErrorCode.RECEIPT_ANALYZING);
-        verify(mapper, never()).updateStatus(anyLong(), anyList(), anyString());
-    }
-
-    @Test
-    void 동시에_다시_분석하면_나중_요청은_RECEIPT_ANALYZING() {
-        when(mapper.selectOwned(3L, 1L)).thenReturn(receipt(ReceiptStatus.CANCELED));
-        when(mapper.updateStatus(eq(3L), anyList(), anyString())).thenReturn(0);
-
-        assertThatThrownBy(() -> service.restart(1L, 3L, 10L))
-                .extracting("errorCode").isEqualTo(ErrorCode.RECEIPT_ANALYZING);
-        verify(mapper, never()).insertStatusHistory(any());
-    }
-
-    @Test
-    void 저장완료_인식성공_영수증은_다시_분석하지_않는다() {
-        when(mapper.selectOwned(3L, 1L)).thenReturn(receipt(ReceiptStatus.SAVED));
-        assertThatThrownBy(() -> service.restart(1L, 3L, 10L))
-                .extracting("errorCode").isEqualTo(ErrorCode.RECEIPT_ALREADY_SAVED);
-
-        when(mapper.selectOwned(3L, 1L)).thenReturn(receipt(ReceiptStatus.RECOGNIZED));
-        assertThatThrownBy(() -> service.restart(1L, 3L, 10L))
-                .extracting("errorCode").isEqualTo(ErrorCode.ALREADY_PROCESSED);
-    }
-
-    @Test
     void 남의_영수증은_RECEIPT_NOT_FOUND() {
-        assertThatThrownBy(() -> service.restart(1L, 3L, 10L))
-                .extracting("errorCode").isEqualTo(ErrorCode.RECEIPT_NOT_FOUND);
-        assertThatThrownBy(() -> service.cancel(1L, 3L))
-                .extracting("errorCode").isEqualTo(ErrorCode.RECEIPT_NOT_FOUND);
         assertThatThrownBy(() -> service.getImage(1L, 3L))
                 .extracting("errorCode").isEqualTo(ErrorCode.RECEIPT_NOT_FOUND);
     }
@@ -171,32 +120,34 @@ class ReceiptServiceTest {
     }
 
     @Test
-    void 분석중_영수증을_취소한다() {
-        when(mapper.selectOwned(3L, 1L)).thenReturn(receipt(ReceiptStatus.ANALYZING));
-        when(mapper.updateStatus(3L, List.of(ReceiptStatus.ANALYZING.getCode()), ReceiptStatus.CANCELED.getCode()))
-                .thenReturn(1);
+    void 가계부_출처는_반려동물_없이_권한_검사_없이_가계부_출처로_등록한다() {
+        when(fileStore.store(image, "1")).thenReturn(7L);
 
-        service.cancel(1L, 3L);
+        service.create(1L, null, image, ReceiptSource.EXPENSE.getCode());
 
-        ReceiptStatusHistory history = capturedHistory();
-        assertThat(history.getBfrSttsCd()).isEqualTo(ReceiptStatus.ANALYZING.getCode());
-        assertThat(history.getAftrSttsCd()).isEqualTo(ReceiptStatus.CANCELED.getCode());
+        ArgumentCaptor<Receipt> captor = ArgumentCaptor.forClass(Receipt.class);
+        verify(mapper).insert(captor.capture());
+        assertThat(captor.getValue().getOcrDmndSrcCd()).isEqualTo(ReceiptSource.EXPENSE.getCode());
+        verify(petAuthorizer, never()).checkCaregiver(any(), any());
     }
 
     @Test
-    void 이미_취소했거나_분석이_끝난_영수증은_취소하지_않는다() {
-        when(mapper.selectOwned(3L, 1L)).thenReturn(receipt(ReceiptStatus.CANCELED));
-        assertThatThrownBy(() -> service.cancel(1L, 3L))
-                .extracting("errorCode").isEqualTo(ErrorCode.RECEIPT_ALREADY_CANCELED);
+    void 가계부_출처가_아닌데_반려동물이_없으면_400_INVALID_INPUT_VALUE() {
+        for (String code : new String[] {null, ReceiptSource.HEALTH.getCode(), ReceiptSource.CHAT.getCode()}) {
+            assertThatThrownBy(() -> service.create(1L, null, image, code))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode").isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        verify(fileStore, never()).store(any(), any());
+        verify(mapper, never()).insert(any());
+    }
 
-        when(mapper.selectOwned(3L, 1L)).thenReturn(receipt(ReceiptStatus.PARTIAL));
-        assertThatThrownBy(() -> service.cancel(1L, 3L))
-                .extracting("errorCode").isEqualTo(ErrorCode.ALREADY_PROCESSED);
+    @Test
+    void 영수증_출처는_저장된_코드로_돌려준다() {
+        Receipt expense = receipt(ReceiptStatus.ANALYZING);
+        expense.setOcrDmndSrcCd(ReceiptSource.EXPENSE.getCode());
+        when(mapper.selectOwned(3L, 1L)).thenReturn(expense);
 
-        when(mapper.selectOwned(3L, 1L)).thenReturn(receipt(ReceiptStatus.ANALYZING));
-        when(mapper.updateStatus(anyLong(), anyList(), anyString())).thenReturn(0);
-        assertThatThrownBy(() -> service.cancel(1L, 3L))
-                .extracting("errorCode").isEqualTo(ErrorCode.ALREADY_PROCESSED);
-        verify(mapper, never()).insertStatusHistory(any());
+        assertThat(service.getSource(1L, 3L)).isEqualTo(ReceiptSource.EXPENSE);
     }
 }

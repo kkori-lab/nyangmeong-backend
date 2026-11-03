@@ -1,118 +1,75 @@
 package com.nyangmeong.expense.service;
 
-import java.time.LocalDate;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.List;
 
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
 
+import com.nyangmeong.expense.domain.Receipt;
 import com.nyangmeong.expense.domain.ReceiptFailReason;
+import com.nyangmeong.expense.domain.ReceiptOcrResult;
 import com.nyangmeong.expense.domain.ReceiptStatus;
-import com.nyangmeong.expense.dto.ReceiptResponse;
-import com.nyangmeong.global.external.OcrClient;
-import com.nyangmeong.global.external.OcrProperties;
-import com.nyangmeong.global.external.OcrTimeoutException;
+import com.nyangmeong.expense.dto.ReceiptReportResponse;
+import com.nyangmeong.expense.dto.ReceiptResultResponse;
+import com.nyangmeong.global.error.CustomException;
+import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.external.ReceiptOcrResponse;
-import com.nyangmeong.global.file.StoredFile;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * [영수증 OCR 분석]
- * - 요청 안에서 동기 분석, 제한 시간(app.ocr.timeout) 초과·API 오류 -> 일시 오류 (FN-AIM-008-07·010-01)
- * - 추출 0건 -> 인식 실패, 일부 -> 부분 인식, 실패해도 원본 유지 (FN-AIM-010-05·06)
+ * [영수증 OCR 분석 결과]
+ * - 분석은 Python AI 서버, 추출 0건 -> 인식 실패, 일부 -> 부분 인식, 실패해도 원본 유지 (FN-AIM-010-05·06)
+ * - 결과 다시 열기 : 저장된 OCR 응답 그대로 (FN-AIM-013-06)
+ * - Python AI 서버 분석 결과 보고 -> 상태 판정·반영 (FN-AIM-010-01·013-04)
  */
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class ReceiptAnalyzer {
 
     private final ReceiptService receiptService;
-    private final OcrClient ocrClient;
-    private final OcrProperties ocrProperties;
-    private final CaregiverPetFake caregiverPetFake;
     private final ObjectMapper objectMapper;
 
+    /** 저장된 OCR 응답으로 결과를 다시 주는 상태 */
+    private static final List<ReceiptStatus> RESULT_KEPT = List.of(ReceiptStatus.RECOGNIZED, ReceiptStatus.PARTIAL,
+            ReceiptStatus.SAVED);
+
     /**
-     * 영수증 업로드와 분석
+     * 분석 결과 다시 열기 : 저장된 OCR 응답 그대로
      */
-    public ReceiptResponse create(Long mbrSn, Long petSn, MultipartFile file) {
-        Long recptSn = receiptService.create(mbrSn, petSn, file);
-        return run(mbrSn, recptSn, petSn);
+    public ReceiptResultResponse getResult(Long mbrSn, Long recptSn, Long petSn) {
+        Receipt receipt = receiptService.get(mbrSn, recptSn, petSn);
+        ReceiptStatus status = ReceiptStatus.from(receipt.getOcrPrcsSttsCd());
+        String failRsn = status == ReceiptStatus.TEMPORARY_ERROR ? receiptService.getLastChgRsn(recptSn) : null;
+        ReceiptOcrResponse ocr = RESULT_KEPT.contains(status) && receipt.getOcrRspnsJson() != null
+                ? objectMapper.readValue(receipt.getOcrRspnsJson(), ReceiptOcrResponse.class)
+                : null;
+        return new ReceiptResultResponse(recptSn, petSn, status.getCode(), failRsn, ocr);
     }
 
     /**
-     * 다시 분석
+     * Python AI 서버의 분석 결과·상태 반영
+     * - RECOGNIZED -> OCR 응답으로 인식성공·부분인식·인식실패 판정, ocr 없으면 400
      */
-    public ReceiptResponse analyze(Long mbrSn, Long recptSn, Long petSn) {
-        receiptService.restart(mbrSn, recptSn, petSn);
-        return run(mbrSn, recptSn, petSn);
+    public ReceiptReportResponse report(Long mbrSn, Long recptSn, ReceiptOcrResult result, ReceiptOcrResponse ocr) {
+        if (result == ReceiptOcrResult.RECOGNIZED && ocr == null) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        ReceiptStatus status = switch (result) {
+            case RECOGNIZED -> ReceiptOcrConverter.classify(ocr, receiptService.getSource(mbrSn, recptSn));
+            case UNRECOGNIZED -> ReceiptStatus.NOT_RECOGNIZED;
+            case TIMEOUT, API_ERROR -> ReceiptStatus.TEMPORARY_ERROR;
+            case CANCELED -> ReceiptStatus.CANCELED;
+        };
+        String chgRsn = switch (result) {
+            case TIMEOUT -> ReceiptFailReason.TIMEOUT.name();
+            case API_ERROR -> ReceiptFailReason.API_ERROR.name();
+            default -> null;
+        };
+        boolean keepsOcr = result == ReceiptOcrResult.RECOGNIZED || result == ReceiptOcrResult.UNRECOGNIZED;
+        String ocrRspnsJson = keepsOcr && ocr != null ? objectMapper.writeValueAsString(ocr) : null;
+        receiptService.report(mbrSn, recptSn, status, chgRsn, ocrRspnsJson);
+        return new ReceiptReportResponse(recptSn, status.getCode());
     }
 
-    /**
-     * OCR 호출과 결과 반영
-     */
-    private ReceiptResponse run(Long mbrSn, Long recptSn, Long petSn) {
-        ReceiptOcrResponse ocr;
-        try {
-            ocr = recognize(receiptService.getImage(mbrSn, recptSn));
-        } catch (OcrTimeoutException e) {
-            return fail(mbrSn, recptSn, ReceiptFailReason.TIMEOUT, e);
-        } catch (RuntimeException e) {
-            return fail(mbrSn, recptSn, ReceiptFailReason.API_ERROR, e);
-        }
-
-        ReceiptStatus status = ReceiptOcrConverter.classify(ocr);
-        if (!receiptService.finish(mbrSn, recptSn, status, null, objectMapper.writeValueAsString(ocr))) {
-            return ReceiptResponse.empty(recptSn, ReceiptStatus.CANCELED.getCode(), null);
-        }
-        if (status == ReceiptStatus.NOT_RECOGNIZED) {
-            return ReceiptResponse.empty(recptSn, status.getCode(), null);
-        }
-        return ReceiptOcrConverter.toResponse(recptSn, status, ocr, petSn, caregiverPetFake.search(mbrSn),
-                LocalDate.now());
-    }
-
-    /**
-     * 제한 시간 안의 OCR 호출
-     * - 시간 초과 시 호출 스레드를 기다리지 않음 : try-with-resources 의 close 는 작업 종료까지 대기
-     */
-    private ReceiptOcrResponse recognize(StoredFile image) {
-        ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
-        try {
-            Future<ReceiptOcrResponse> future = executor
-                    .submit(() -> ocrClient.recognize(image.content(), image.contentType()));
-            return future.get(ocrProperties.getTimeout().toMillis(), TimeUnit.MILLISECONDS);
-        } catch (TimeoutException e) {
-            throw new OcrTimeoutException("OCR 분석 시간 초과");
-        } catch (ExecutionException e) {
-            if (e.getCause() instanceof RuntimeException cause) {
-                throw cause;
-            }
-            throw new IllegalStateException(e.getCause());
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException(e);
-        } finally {
-            executor.shutdownNow();
-        }
-    }
-
-    /**
-     * 일시 오류 반영
-     */
-    private ReceiptResponse fail(Long mbrSn, Long recptSn, ReceiptFailReason reason, RuntimeException e) {
-        log.warn("[Receipt] OCR 분석 실패 recptSn={} reason={}", recptSn, reason, e);
-        if (!receiptService.finish(mbrSn, recptSn, ReceiptStatus.TEMPORARY_ERROR, reason.name(), null)) {
-            return ReceiptResponse.empty(recptSn, ReceiptStatus.CANCELED.getCode(), null);
-        }
-        return ReceiptResponse.empty(recptSn, ReceiptStatus.TEMPORARY_ERROR.getCode(), reason.name());
-    }
 }

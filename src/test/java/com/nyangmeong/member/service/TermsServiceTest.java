@@ -2,6 +2,7 @@ package com.nyangmeong.member.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -15,8 +16,10 @@ import org.junit.jupiter.api.Test;
 import com.nyangmeong.global.error.BaseException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.member.domain.Terms;
+import com.nyangmeong.member.dto.AdminMemberTermsAgreeSummary;
 import com.nyangmeong.member.dto.TermsAgreeRequest;
 import com.nyangmeong.member.dto.TermsSummary;
+import com.nyangmeong.member.mapper.MemberMapper;
 import com.nyangmeong.member.mapper.TermsMapper;
 
 /**
@@ -26,7 +29,8 @@ import com.nyangmeong.member.mapper.TermsMapper;
 class TermsServiceTest {
 
     private final TermsMapper termsMapper = mock(TermsMapper.class);
-    private final TermsService service = new TermsService(termsMapper);
+    private final MemberMapper memberMapper = mock(MemberMapper.class);
+    private final TermsService service = new TermsService(termsMapper, memberMapper);
 
     private TermsSummary summary(long trmsSn, boolean isEssential) {
         TermsSummary summary = new TermsSummary();
@@ -43,6 +47,16 @@ class TermsServiceTest {
     private static void assertCode(Throwable thrown, ErrorCode expected) {
         assertThat(thrown).isInstanceOfSatisfying(BaseException.class,
                 e -> assertThat(e.getErrorCode()).isEqualTo(expected));
+    }
+
+    @Test
+    void 관리자_약관_동의_조회는_없는_회원을_막고_매퍼_결과를_돌려준다() {
+        AdminMemberTermsAgreeSummary row = new AdminMemberTermsAgreeSummary();
+        when(memberMapper.existsBySn(1L)).thenReturn(true);
+        when(termsMapper.selectAdminAgreementList(1L)).thenReturn(List.of(row));
+
+        assertThat(service.searchAgreementsForAdmin(1L)).containsExactly(row);
+        assertCode(catchThrowable(() -> service.searchAgreementsForAdmin(2L)), ErrorCode.MEMBER_NOT_FOUND);
     }
 
     @Test
@@ -127,5 +141,49 @@ class TermsServiceTest {
 
         assertThat(service.getTerms(5L).trmsCn()).isEqualTo("전문");
         assertThat(service.getTerms(5L).esntlAgreYn()).isTrue();
+    }
+
+    @Test
+    void 복구는_빠진_필수_약관에_모두_동의해야_하고_그_밖의_항목은_무시한다() {
+        List<TermsSummary> missing = List.of(summary(2, true), summary(3, true));
+
+        List<Long> saved = service.checkRecoveryAgreements(missing, List.of(new TermsAgreeRequest(2L, true),
+                new TermsAgreeRequest(3L, true), new TermsAgreeRequest(4L, true), new TermsAgreeRequest(99L, true)));
+
+        assertThat(saved).containsExactly(2L, 3L);
+    }
+
+    @Test
+    void 복구는_빠진_필수_약관을_동의하지_않거나_보내지_않으면_거절한다() {
+        List<TermsSummary> missing = List.of(summary(2, true), summary(3, true));
+
+        assertThatThrownBy(() -> service.checkRecoveryAgreements(missing,
+                List.of(new TermsAgreeRequest(2L, true), new TermsAgreeRequest(3L, false))))
+                .satisfies(e -> assertCode(e, ErrorCode.REQUIRED_TERMS_NOT_AGREED));
+        assertThatThrownBy(() -> service.checkRecoveryAgreements(missing, List.of(new TermsAgreeRequest(2L, true))))
+                .satisfies(e -> assertCode(e, ErrorCode.REQUIRED_TERMS_NOT_AGREED));
+        assertThatThrownBy(() -> service.checkRecoveryAgreements(missing, null))
+                .satisfies(e -> assertCode(e, ErrorCode.REQUIRED_TERMS_NOT_AGREED));
+    }
+
+    @Test
+    void 복구는_빠진_필수_약관이_없으면_아무것도_보내지_않아도_된다() {
+        assertThat(service.checkRecoveryAgreements(List.of(), null)).isEmpty();
+        assertThat(service.checkRecoveryAgreements(List.of(), List.of())).isEmpty();
+    }
+
+    @Test
+    void 복구_약관_조회는_회원이_동의하지_않은_필수_약관을_그대로_돌려준다() {
+        when(termsMapper.selectMissingEssential(9L)).thenReturn(List.of(summary(2, true)));
+
+        assertThat(service.searchMissingEssential(9L)).extracting(TermsSummary::getTrmsSn).containsExactly(2L);
+    }
+
+    @Test
+    void 복구_동의_저장은_약관마다_동의로_남긴다() {
+        service.createRecoveryAgreements(9L, List.of(2L, 3L));
+
+        verify(termsMapper).upsertAgreement(9L, 2L, "9");
+        verify(termsMapper).upsertAgreement(9L, 3L, "9");
     }
 }

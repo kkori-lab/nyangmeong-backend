@@ -33,7 +33,33 @@ class MapperXmlRuleTest {
 
     /** 삭제된 행까지 읽는 조회 ("namespace.id") */
     private static final Set<String> EXCEPTIONS = Set.of(
-            "com.nyangmeong.community.mapper.CommentMapper.selectList");
+            "com.nyangmeong.community.mapper.CommentMapper.selectList",
+            /** 가계부 : 삭제된 반려동물도 "(삭제됨)"과 이름을 보여 줌 (SCR-MYP-030), 지출 자체는 DEL_YN = 'N' */
+            "com.nyangmeong.expense.mapper.ExpenseMapper.selectByIdmptDmndIds",
+            "com.nyangmeong.expense.mapper.ExpenseMapper.selectDuplicates",
+            "com.nyangmeong.expense.mapper.ExpenseMapper.selectList",
+            "com.nyangmeong.expense.mapper.ExpenseMapper.selectPetOptions",
+            "com.nyangmeong.expense.mapper.ExpenseMapper.selectDayItems",
+            "com.nyangmeong.expense.mapper.ExpenseMapper.selectPetItems",
+            "com.nyangmeong.expense.mapper.ExpenseMapper.selectTopExpenses",
+            "com.nyangmeong.expense.mapper.ExpenseMapper.selectSummary",
+            /** 연결 일정이 삭제된 검진기록도 "연결된 일정 삭제됨"으로 남겨 보여 준다 (FN-HLT-002-05) */
+            "com.nyangmeong.health.mapper.CheckupMapper.selectList",
+            "com.nyangmeong.health.mapper.CheckupMapper.selectDetail",
+            /** 삭제된 같은 날짜 완료 기록도 읽어 되살림·미션 중복 반영을 가린다 (FN-HLT-003-12) */
+            "com.nyangmeong.health.mapper.CareItemMapper.selectCompletionByDateForUpdate",
+            /** 관리자 회원 상세 : 삭제 여부 표시 (FN-ADM-011-02) */
+            "com.nyangmeong.pet.mapper.PetMapper.selectAdminList",
+            /** 관리자 : 삭제된 댓글 원문 표시, 이미 삭제된 댓글 구분 (FN-ADM-020-06) */
+            "com.nyangmeong.community.mapper.CommentMapper.selectAdminList",
+            "com.nyangmeong.community.mapper.CommentMapper.selectAdminComment",
+            /** 관리자 : 삭제된 신고 대상 내용 표시, 자동 삭제 댓글 판별 (FN-ADM-030-01·03·07) */
+            "com.nyangmeong.community.mapper.ReportMapper.selectAdminList",
+            "com.nyangmeong.community.mapper.ReportMapper.selectSameTargetList",
+            "com.nyangmeong.community.mapper.ReportMapper.selectAutoBlindList",
+            "com.nyangmeong.community.mapper.ReportMapper.existsAutoTarget",
+            /** 관리자 : 회원이 삭제한 1:1 문의도 조회만 (FN-ADM-042-06) */
+            "com.nyangmeong.support.mapper.InquiryMapper.selectAdminInquiry");
 
     private static final Pattern TABLE = Pattern.compile("\\b(?:FROM|JOIN)\\s+`?(\\w+)`?", Pattern.CASE_INSENSITIVE);
     private static final Pattern DEL_YN_CONDITION = Pattern.compile("DEL_YN`?\\s*=\\s*'N'", Pattern.CASE_INSENSITIVE);

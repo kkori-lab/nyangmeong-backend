@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nyangmeong.pet.mapper.BreedMapper">
+
+    <resultMap id="breedResultMap" type="com.nyangmeong.pet.domain.Breed">
+        <id     column="VRTY_SN"   property="vrtySn" />
+        <result column="VRTY_CD"   property="vrtyCd" />
+        <result column="PET_SE_CD" property="petSeCd" />
+        <result column="VRTY_NM"   property="vrtyNm" />
+        <result column="SORT_SEQ"  property="sortSeq" />
+    </resultMap>
+
+    <sql id="breedColumns">
+          VRTY_SN
+        , VRTY_CD
+        , PET_SE_CD
+        , VRTY_NM
+        , SORT_SEQ
+    </sql>
+
+    <select id="selectList" resultMap="breedResultMap">
+        SELECT <include refid="breedColumns" />
+          FROM VRTY
+         WHERE PET_SE_CD = #{petSeCd}
+           AND USE_YN = 'Y'
+         ORDER BY SORT_SEQ
+                , VRTY_SN
+    </select>
+
+    <select id="selectBreed" resultMap="breedResultMap">
+        SELECT <include refid="breedColumns" />
+          FROM VRTY
+         WHERE VRTY_SN = #{vrtySn}
+           AND USE_YN = 'Y'
+    </select>
+</mapper>

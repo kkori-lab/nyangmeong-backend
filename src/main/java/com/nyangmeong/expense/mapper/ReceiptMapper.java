@@ -52,4 +52,9 @@ public interface ReceiptMapper {
      * 상태 이력 등록
      */
     void insertStatusHistory(ReceiptStatusHistory history);
+
+    /**
+     * 마지막 상태 이력의 변경 사유
+     */
+    String selectLastChgRsn(@Param("recptSn") Long recptSn);
 }

@@ -4,25 +4,41 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.nyangmeong.global.auth.BrupRole;
 import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.code.CommonCodeService;
 import com.nyangmeong.global.code.CommonCodeSummary;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.notification.EventPublisher;
+import com.nyangmeong.global.notification.NotificationEvent;
+import com.nyangmeong.global.notification.NotificationType;
+import com.nyangmeong.global.response.PageQuery;
+import com.nyangmeong.global.response.PageResponse;
+import com.nyangmeong.member.service.MemberService;
+import com.nyangmeong.pet.domain.BrupLinkSttsHstry;
 import com.nyangmeong.pet.domain.BrupRel;
+import com.nyangmeong.pet.domain.LinkChangeType;
 import com.nyangmeong.pet.domain.Pet;
 import com.nyangmeong.pet.domain.PetCodeGroup;
+import com.nyangmeong.pet.domain.PetDeletedEvent;
 import com.nyangmeong.pet.domain.PetColor;
+import com.nyangmeong.pet.dto.AdminPetSummary;
 import com.nyangmeong.pet.dto.CaregiverSummary;
 import com.nyangmeong.pet.dto.PetCreateRequest;
 import com.nyangmeong.pet.dto.PetResponse;
 import com.nyangmeong.pet.dto.PetSummary;
 import com.nyangmeong.pet.dto.PetUpdateRequest;
+import com.nyangmeong.pet.mapper.CareMissionMapper;
+import com.nyangmeong.pet.mapper.CaregiverInvitationMapper;
 import com.nyangmeong.pet.mapper.PetMapper;
+import com.nyangmeong.pet.mapper.PixelCharacterMapper;
 
 import lombok.RequiredArgsConstructor;
 
@@ -30,6 +46,8 @@ import lombok.RequiredArgsConstructor;
  * [반려동물 서비스]
  * - 내 반려동물 목록 (SCR-MYP-001·002), 다른 도메인도 이 목록을 씀
  * - 등록·수정·상세·대표 지정 (SCR-MYP-003, FN-MYP-010-05)
+ * - 양육자 목록·연동 해제 (SCR-MYP-004·006), 연동 양육자 회원 번호는 다른 도메인도 씀
+ * - 삭제 (SCR-MYP-002) : 가계부만 남기고 같은 트랜잭션에서 soft delete, 위층 기록은 PetDeletedEvent 를 받은 쪽이 지운다 (docs/api/issues.md 마이페이지 3번)
  * - 정렬 = 내 양육관계 등록순 (docs/api/issues.md 마이페이지 1번 결정 전까지)
  */
 @Service
@@ -39,9 +57,28 @@ public class PetService {
     /** 계정당 주양육 반려동물 상한 */
     private static final int MAX_PET_COUNT = 10;
 
+    /** 삭제 해제 알림 이동 경로 */
+    private static final String PET_LIST_PATH = "/mypage/pets";
+
     private final PetMapper petMapper;
     private final PetAuthorizer petAuthorizer;
     private final CommonCodeService commonCodeService;
+    private final PixelCharacterMapper pixelCharacterMapper;
+    private final EventPublisher eventPublisher;
+    private final CareMissionMapper careMissionMapper;
+    private final CaregiverInvitationMapper invitationMapper;
+    private final ApplicationEventPublisher applicationEventPublisher;
+    private final MemberService memberService;
+
+    /**
+     * 관리자 회원 상세 반려동물 목록 조회
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<AdminPetSummary> searchForAdmin(Long mbrSn, PageQuery pq) {
+        memberService.checkExists(mbrSn);
+        PageHelper.startPage(pq.pageOrDefault(), pq.sizeOrDefault());
+        return PageResponse.of(new PageInfo<>(petMapper.selectAdminList(mbrSn, BrupRole.CO_PARENT.getCode())));
+    }
 
     /**
      * 내 반려동물 목록 조회
@@ -113,6 +150,10 @@ public class PetService {
     @Transactional
     public PetResponse updatePet(Long mbrSn, Long petSn, PetUpdateRequest req) {
         petAuthorizer.checkCaregiver(mbrSn, petSn);
+        boolean goalBdwgReset = Boolean.TRUE.equals(req.goalBdwgReset());
+        if (goalBdwgReset && req.goalBdwg() != null) {
+            throw new CustomException(ErrorCode.BAD_REQUEST);
+        }
         Pet pet = loadPet(petSn);
 
         if (req.petNm() != null) {
@@ -151,6 +192,9 @@ public class PetService {
         }
         if (req.goalBdwg() != null) {
             pet.setGoalBdwg(req.goalBdwg());
+        }
+        if (goalBdwgReset) {
+            pet.setGoalBdwg(null);
         }
         if (req.minBdwg() != null) {
             pet.setMinBdwg(req.minBdwg());
@@ -192,6 +236,107 @@ public class PetService {
     }
 
     /**
+     * 반려동물 삭제
+     * - 주양육자만 (FN-MYP-002-05), 지출만 유지하고 나머지는 한 트랜잭션에서 DEL_YN = 'Y' (FN-MYP-002-07)
+     * - pet 안 : 캐릭터·보유 아이템·캐릭터 생성 작업·캐릭터 사진·일별 미션·초대 대상
+     * - 위층(건강기록·AI 대화) : PetDeletedEvent 를 같은 트랜잭션에서 받아 지운다. 받는 쪽이 실패하면 삭제 전체가 롤백된다
+     * - 공동양육 연동 자동 해제·알림 (FN-MYP-002-08), 대표였으면 남은 주양육 동물 첫 마리로 승계
+     */
+    @Transactional
+    public void deletePet(Long mbrSn, Long petSn) {
+        petAuthorizer.checkPrimary(mbrSn, petSn);
+        Pet pet = loadPet(petSn);
+        BrupRel own = petMapper.selectBrupRel(mbrSn, petSn);
+        String actorId = String.valueOf(mbrSn);
+
+        if (petMapper.updatePetDelete(petSn, actorId) == 0) {
+            throw new CustomException(ErrorCode.PET_NOT_FOUND);
+        }
+        pixelCharacterMapper.updateHeldItemDeleteByPetSn(petSn);
+        pixelCharacterMapper.updatePhotoDeleteByPetSn(petSn);
+        pixelCharacterMapper.updateItemSheetDeleteByPetSn(petSn);
+        pixelCharacterMapper.updateDeleteByPetSn(petSn, actorId);
+        pixelCharacterMapper.updateJobDeleteByPetSn(petSn);
+        careMissionMapper.updateDayMissionDeleteByPetSn(petSn);
+        invitationMapper.updateTargetPetDeleteByPetSn(petSn);
+
+        for (BrupRel coParent : petMapper.selectLinkedCoParentRels(petSn, BrupRole.CO_PARENT.getCode())) {
+            if (petMapper.updateBrupRelUnlink(coParent.getBrupRelSn(), actorId) == 0) {
+                continue;
+            }
+            BrupLinkSttsHstry history = new BrupLinkSttsHstry();
+            history.setBrupRelSn(coParent.getBrupRelSn());
+            history.setMbrSn(coParent.getMbrSn());
+            history.setLinkChgTypeCd(LinkChangeType.PET_DELETED.getCode());
+            petMapper.insertLinkHistory(history);
+            eventPublisher.publish(new NotificationEvent(coParent.getMbrSn(), NotificationType.CO_PARENTING,
+                    pet.getPetNm() + "의 기록이 정리되어 공동양육 연동이 해제되었어요", null, PET_LIST_PATH));
+        }
+
+        if (own != null && "Y".equals(own.getRprsPetYn())) {
+            petMapper.updateRepresentativeOff(mbrSn, actorId);
+            searchMyPets(mbrSn).stream()
+                    .filter(summary -> BrupRole.PRIMARY.is(summary.getBrupRoleCd()))
+                    .findFirst()
+                    .ifPresent(next -> petMapper.updateRepresentativeOn(mbrSn, next.getPetSn(), actorId));
+        }
+
+        /** 알림·메일 이벤트가 아니라 EventPublisher 대신 직접 발행 (docs/convention/service.md, 이 메서드의 트랜잭션 안) */
+        applicationEventPublisher.publishEvent(new PetDeletedEvent(petSn));
+    }
+
+    /**
+     * 양육자 목록 조회
+     */
+    @Transactional(readOnly = true)
+    public List<CaregiverSummary> searchCaregivers(Long mbrSn, Long petSn) {
+        petAuthorizer.checkCaregiver(mbrSn, petSn);
+        BrupRel rel = petMapper.selectBrupRel(mbrSn, petSn);
+        return visibleCaregivers(mbrSn, petSn, rel.getBrupRoleCd());
+    }
+
+    /**
+     * 공동양육 연동 해제
+     * - 주양육자 = 강제 해제 (FN-MYP-004-01), 공동양육자 = 본인만 자진 해제 (FN-MYP-006-02)
+     */
+    @Transactional
+    public void unlinkCaregiver(Long mbrSn, Long petSn, Long brupRelSn) {
+        petAuthorizer.checkCaregiver(mbrSn, petSn);
+        BrupRel target = petMapper.selectBrupRelBySn(brupRelSn);
+        /** 주양육자 행은 해제 대상 아님 */
+        if (target == null || !petSn.equals(target.getPetSn()) || !BrupRole.CO_PARENT.is(target.getBrupRoleCd())) {
+            throw new CustomException(ErrorCode.CAREGIVER_NOT_FOUND);
+        }
+
+        LinkChangeType type;
+        if (BrupRole.PRIMARY.is(petMapper.selectBrupRel(mbrSn, petSn).getBrupRoleCd())) {
+            type = LinkChangeType.FORCED_UNLINKED;
+        } else if (mbrSn.equals(target.getMbrSn())) {
+            type = LinkChangeType.SELF_UNLINKED;
+        } else {
+            throw new CustomException(ErrorCode.PET_PRIMARY_ONLY);
+        }
+
+        if (petMapper.updateBrupRelUnlink(brupRelSn, String.valueOf(mbrSn)) == 0) {
+            throw new CustomException(ErrorCode.CAREGIVER_NOT_FOUND);
+        }
+        BrupLinkSttsHstry history = new BrupLinkSttsHstry();
+        history.setBrupRelSn(brupRelSn);
+        history.setMbrSn(target.getMbrSn());
+        history.setLinkChgTypeCd(type.getCode());
+        petMapper.insertLinkHistory(history);
+    }
+
+    /**
+     * 연동 양육자 회원 번호 조회
+     * - 주양육자 + 연동 중 공동양육자, 삭제된 반려동물은 빈 목록
+     */
+    @Transactional(readOnly = true)
+    public List<Long> searchCaregiverMbrSns(Long petSn) {
+        return petMapper.selectCaregiverMbrSns(petSn);
+    }
+
+    /**
      * 삭제되지 않은 반려동물 조회
      */
     private Pet loadPet(Long petSn) {
@@ -207,12 +352,24 @@ public class PetService {
      */
     private PetResponse toResponse(Long mbrSn, Pet pet) {
         BrupRel rel = petMapper.selectBrupRel(mbrSn, pet.getPetSn());
-        List<CaregiverSummary> caregivers = petMapper.selectCaregivers(pet.getPetSn());
-        if (!BrupRole.PRIMARY.is(rel.getBrupRoleCd())) {
-            caregivers = caregivers.stream().filter(c -> mbrSn.equals(c.getMbrSn())).toList();
-        }
+        List<CaregiverSummary> caregivers = visibleCaregivers(mbrSn, pet.getPetSn(), rel.getBrupRoleCd());
         String vrtyNm = pet.getVrtySn() != null ? petMapper.selectVrtyNm(pet.getVrtySn()) : null;
         return PetResponse.from(pet, vrtyNm, rel, caregivers);
+    }
+
+    /**
+     * 역할별로 보이는 양육자 목록
+     * - 공동양육자에게는 주양육자와 본인만, 서로 모르는 사이일 수 있음 (FN-MYP-004-04)
+     */
+    private List<CaregiverSummary> visibleCaregivers(Long mbrSn, Long petSn, String myRoleCd) {
+        List<CaregiverSummary> caregivers = petMapper.selectCaregivers(petSn, BrupRole.PRIMARY.getCode(),
+                LinkChangeType.INVITATION_ACCEPTED.getCode());
+        if (BrupRole.PRIMARY.is(myRoleCd)) {
+            return caregivers;
+        }
+        return caregivers.stream()
+                .filter(c -> BrupRole.PRIMARY.is(c.getBrupRoleCd()) || mbrSn.equals(c.getMbrSn()))
+                .toList();
     }
 
     /**

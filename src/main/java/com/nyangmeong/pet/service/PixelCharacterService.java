@@ -6,7 +6,6 @@ import java.io.UncheckedIOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -18,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.CustomException;
@@ -38,6 +36,7 @@ import com.nyangmeong.pet.domain.CharacterJobStatusHistory;
 import com.nyangmeong.pet.domain.CharacterPhoto;
 import com.nyangmeong.pet.domain.PhotoRole;
 import com.nyangmeong.pet.domain.PixelCharacter;
+import com.nyangmeong.pet.dto.CharacterJobResponse;
 import com.nyangmeong.pet.dto.EquippedItemSaveRequest;
 import com.nyangmeong.pet.dto.HeldItemSummary;
 import com.nyangmeong.pet.dto.PetProfileSummary;
@@ -49,7 +48,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * [픽셀 캐릭터 서비스]
- * - SCR-MYP-010 : 목록·생성 요청·꾸미기(착용)·캐릭터 이미지
+ * - SCR-MYP-010 : 목록·생성 작업·꾸미기(착용)·캐릭터 이미지
  * - 캐릭터 경로(/pixel-characters/{pixelCharSn})는 캐릭터의 petSn 으로 권한 검사 (docs/api/issues.md 7번)
  * - 오류 문의 접수·처리 종료는 고객센터·관리자 service 가 호출 (FN-MYP-010-23·24)
  */
@@ -82,42 +81,36 @@ public class PixelCharacterService {
     }
 
     /**
-     * 캐릭터 생성 요청
+     * 캐릭터 생성 작업 생성
+     * - 사진·생성은 Python, 결과는 reportSuccess 보고로 저장
+     * - 멱등 ID는 직전 작업 기준 : 동시 요청은 유일 키 충돌 -> PIXEL_CHARACTER_CREATING
      */
     @Transactional
-    public PixelCharacterResponse create(Long mbrSn, Long petSn, String idmptDmndId, MultipartFile photo) {
+    public CharacterJobResponse createJob(Long mbrSn, Long petSn) {
         petAuthorizer.checkPrimary(mbrSn, petSn);
-        if (idmptDmndId == null || idmptDmndId.isBlank() || idmptDmndId.length() > 100) {
-            throw new CustomException(ErrorCode.IDEMPOTENCY_KEY_REQUIRED);
+        PetProfileSummary pet = pixelCharacterMapper.selectPetProfile(petSn);
+        if (pet == null) {
+            throw new CustomException(ErrorCode.PET_NOT_FOUND);
         }
-        CharacterCreationJob sameRequest = pixelCharacterMapper.selectJobByIdmptDmndId(idmptDmndId);
-        if (sameRequest != null) {
-            if (!Objects.equals(sameRequest.getMbrSn(), mbrSn) || !Objects.equals(sameRequest.getPetSn(), petSn)) {
-                throw new CustomException(ErrorCode.ALREADY_PROCESSED);
-            }
-            return toResponse(getCharacterOfPetOrThrow(petSn));
-        }
-        checkCreatable(petSn);
+        PixelCharacter existing = pixelCharacterMapper.selectByPetSn(petSn);
+        CharacterCreationJob latest = pixelCharacterMapper.selectLatestJob(petSn);
+        checkCreatable(existing, latest);
 
-        String actorId = String.valueOf(mbrSn);
-        Long atchFileSn = fileStore.store(photo, actorId);
-
-        PixelCharacter character = new PixelCharacter();
-        character.setMbrSn(mbrSn);
-        character.setPetSn(petSn);
-        character.setMdfrId(actorId);
         CharacterCreationJob job;
         try {
-            pixelCharacterMapper.insertPixelCharacter(character);
-            job = insertRequestedJob(petSn, mbrSn, idmptDmndId, mbrSn);
+            if (existing == null) {
+                PixelCharacter character = new PixelCharacter();
+                character.setMbrSn(mbrSn);
+                character.setPetSn(petSn);
+                character.setMdfrId(String.valueOf(mbrSn));
+                pixelCharacterMapper.insertPixelCharacter(character);
+            }
+            job = insertRequestedJob(petSn, mbrSn, idmptDmndId(petSn, latest), mbrSn);
         } catch (DuplicateKeyException e) {
             throw new CustomException(ErrorCode.PIXEL_CHARACTER_CREATING);
         }
-        insertOriginalPhoto(character.getPixelCharSn(), job.getCharCrtJobSn(), atchFileSn);
-        generateAfterCommit(job.getCharCrtJobSn());
-
-        character.setBscCharSbstYn("N");
-        return PixelCharacterResponse.from(character, job, List.of());
+        startJob(job.getCharCrtJobSn(), mbrSn);
+        return CharacterJobResponse.of(job.getCharCrtJobSn(), pet);
     }
 
     /**
@@ -190,6 +183,21 @@ public class PixelCharacterService {
     }
 
     /**
+     * 캐릭터 사진의 첨부 파일 번호 조회 : 없거나 그 캐릭터의 사진이 아니면 null
+     */
+    @Transactional(readOnly = true)
+    public Long getPhotoAtchFileSn(Long pixelCharSn, Long charPhotoSn) {
+        if (pixelCharSn == null || charPhotoSn == null) {
+            return null;
+        }
+        CharacterPhoto photo = pixelCharacterMapper.selectPhoto(charPhotoSn);
+        if (photo == null || !pixelCharSn.equals(photo.getPixelCharSn())) {
+            return null;
+        }
+        return photo.getAtchFileSn();
+    }
+
+    /**
      * 캐릭터 오류 확인 종료
      */
     @Transactional
@@ -226,16 +234,39 @@ public class PixelCharacterService {
 
     /**
      * 생성 가능 여부 검사
+     * - 실패로 끝나 결과가 없는 캐릭터는 다시 요청 가능
      */
-    private void checkCreatable(Long petSn) {
-        if (pixelCharacterMapper.selectByPetSn(petSn) == null) {
+    private void checkCreatable(PixelCharacter existing, CharacterCreationJob latest) {
+        if (existing == null) {
             return;
         }
-        CharacterCreationJob latest = pixelCharacterMapper.selectLatestJob(petSn);
         if (latest != null && CharacterJobStatus.isInProgress(latest.getCrtJobSttsCd())) {
             throw new CustomException(ErrorCode.PIXEL_CHARACTER_CREATING);
         }
-        throw new CustomException(ErrorCode.PIXEL_CHARACTER_ALREADY_EXISTS);
+        if (pixelCharacterMapper.selectCurrentPhoto(existing.getPixelCharSn()) != null) {
+            throw new CustomException(ErrorCode.PIXEL_CHARACTER_ALREADY_EXISTS);
+        }
+    }
+
+    /**
+     * 작업 멱등 ID
+     */
+    private String idmptDmndId(Long petSn, CharacterCreationJob latest) {
+        return "PET-" + petSn + "-" + (latest != null ? latest.getCharCrtJobSn() : 0);
+    }
+
+    /**
+     * 생성 중 처리
+     */
+    private void startJob(Long charCrtJobSn, Long mbrSn) {
+        pixelCharacterMapper.updateJobStarted(charCrtJobSn, CharacterJobStatus.REQUESTED.getCode(),
+                CharacterJobStatus.CREATING.getCode());
+        CharacterJobStatusHistory history = new CharacterJobStatusHistory();
+        history.setCharCrtJobSn(charCrtJobSn);
+        history.setMbrSn(mbrSn);
+        history.setBfrSttsCd(CharacterJobStatus.REQUESTED.getCode());
+        history.setAftrSttsCd(CharacterJobStatus.CREATING.getCode());
+        pixelCharacterMapper.insertJobStatusHistory(history);
     }
 
     /**

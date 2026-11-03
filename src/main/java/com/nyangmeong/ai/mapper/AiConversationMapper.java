@@ -55,6 +55,12 @@ public interface AiConversationMapper {
     int insertMessage(AiConversationMessage message);
 
     /**
+     * 본인 대화방 제목 수정
+     */
+    int updateRoomTitle(@Param("mbrSn") Long mbrSn, @Param("aiCnvrsRoomSn") Long aiCnvrsRoomSn,
+            @Param("cnvrsTtlEnc") String cnvrsTtlEnc);
+
+    /**
      * 본인 대화방 삭제 (메시지는 CASCADE)
      */
     int deleteRoom(@Param("mbrSn") Long mbrSn, @Param("aiCnvrsRoomSn") Long aiCnvrsRoomSn);

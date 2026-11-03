@@ -10,6 +10,40 @@
         <result column="HLD_YN"       property="hldYn" />
     </resultMap>
 
+    <resultMap id="bakeItemSummaryResultMap" type="com.nyangmeong.pet.dto.BakeItemSummary">
+        <id     column="ITEM_SN"         property="itemSn" />
+        <result column="ITEM_REGN_CD"    property="regnCd" />
+        <result column="BAKE_HINT"       property="bakeHint" />
+    </resultMap>
+
+    <resultMap id="itemResultMap" type="com.nyangmeong.pet.domain.Item">
+        <id     column="ITEM_SN"      property="itemSn" />
+        <result column="ATCH_FILE_SN" property="atchFileSn" />
+        <result column="ITEM_REGN_CD" property="itemRegnCd" />
+        <result column="ITEM_NM"      property="itemNm" />
+        <result column="NEED_PNT"     property="needPnt" />
+        <result column="SORT_SEQ"     property="sortSeq" />
+        <result column="NTSL_YN"      property="ntslYn" />
+        <result column="BAKE_HINT"    property="bakeHint" />
+        <result column="REG_DT"       property="regDt" />
+        <result column="MDFCN_DT"     property="mdfcnDt" />
+        <result column="RGTR_ID"      property="rgtrId" />
+        <result column="MDFR_ID"      property="mdfrId" />
+    </resultMap>
+
+    <resultMap id="adminItemSummaryResultMap" type="com.nyangmeong.pet.dto.AdminItemSummary">
+        <id     column="ITEM_SN"         property="itemSn" />
+        <result column="ITEM_NM"         property="itemNm" />
+        <result column="ITEM_REGN_CD"    property="itemRegnCd" />
+        <result column="ITEM_REGN_CD_NM" property="itemRegnCdNm" />
+        <result column="NEED_PNT"        property="needPnt" />
+        <result column="NTSL_YN"         property="ntslYn" />
+        <result column="SORT_SEQ"        property="sortSeq" />
+        <result column="ATCH_FILE_SN"    property="atchFileSn" />
+        <result column="BAKE_HINT"       property="bakeHint" />
+        <result column="HLD_MBR_CNT"     property="hldMbrCnt" />
+    </resultMap>
+
     <sql id="shopItemColumns">
         I.ITEM_SN
              , I.ITEM_NM
@@ -52,6 +86,26 @@
             </foreach>
     </select>
 
+    <select id="selectBakeItems" resultMap="bakeItemSummaryResultMap">
+        /* 굽기 대상 아이템 조회 */
+        SELECT ITEM_SN
+             , ITEM_REGN_CD
+             , BAKE_HINT
+          FROM ITEM
+         WHERE NTSL_YN = 'Y'
+           AND BAKE_HINT IS NOT NULL
+         ORDER BY ITEM_SN
+    </select>
+
+    <select id="countBakeItem" parameterType="long" resultType="int">
+        /* 굽기 대상 아이템 여부 */
+        SELECT COUNT(*)
+          FROM ITEM
+         WHERE ITEM_SN = #{itemSn}
+           AND NTSL_YN = 'Y'
+           AND BAKE_HINT IS NOT NULL
+    </select>
+
     <insert id="insertHeldItems">
         /* 보유 아이템 일괄 등록 */
         INSERT INTO HLD_ITEM
@@ -71,4 +125,146 @@
              , NOW() )
         </foreach>
     </insert>
+
+    <select id="selectAdminList" resultMap="adminItemSummaryResultMap">
+        /* 관리자 아이템 목록 조회(판매 중지 포함, 부위 필터) */
+        SELECT I.ITEM_SN
+             , I.ITEM_NM
+             , I.ITEM_REGN_CD
+             , C.COM_CD_NM AS ITEM_REGN_CD_NM
+             , I.NEED_PNT
+             , CASE WHEN I.NTSL_YN = 'Y' THEN TRUE ELSE FALSE END AS NTSL_YN
+             , I.SORT_SEQ
+             , I.ATCH_FILE_SN
+             , I.BAKE_HINT
+             , ( SELECT COUNT(*)
+                   FROM HLD_ITEM H
+                   JOIN PIXEL_CHAR P
+                     ON P.PIXEL_CHAR_SN = H.PIXEL_CHAR_SN
+                    AND P.DEL_YN = 'N'
+                  WHERE H.ITEM_SN = I.ITEM_SN
+                    AND H.DEL_YN = 'N' ) AS HLD_MBR_CNT
+          FROM ITEM I
+          LEFT JOIN COM_CD C
+            ON C.COM_CD = I.ITEM_REGN_CD
+        <where>
+            <if test="itemRegnCd != null and itemRegnCd != ''">
+               I.ITEM_REGN_CD = #{itemRegnCd}
+            </if>
+        </where>
+         ORDER BY I.ITEM_REGN_CD
+                , I.SORT_SEQ
+                , I.ITEM_SN
+    </select>
+
+    <select id="selectItem" parameterType="long" resultMap="itemResultMap">
+        /* 아이템 조회 */
+        SELECT ITEM_SN
+             , ATCH_FILE_SN
+             , ITEM_REGN_CD
+             , ITEM_NM
+             , NEED_PNT
+             , SORT_SEQ
+             , NTSL_YN
+             , BAKE_HINT
+             , REG_DT
+             , MDFCN_DT
+             , RGTR_ID
+             , MDFR_ID
+          FROM ITEM
+         WHERE ITEM_SN = #{itemSn}
+    </select>
+
+    <select id="selectItemSnsByRegion" parameterType="string" resultType="long">
+        /* 부위의 아이템 번호 목록 조회 */
+        SELECT ITEM_SN
+          FROM ITEM
+         WHERE ITEM_REGN_CD = #{itemRegnCd}
+         ORDER BY SORT_SEQ
+                , ITEM_SN
+    </select>
+
+    <select id="selectMaxSortSeq" parameterType="string" resultType="long">
+        /* 부위의 마지막 정렬 순서 조회 */
+        SELECT COALESCE(MAX(SORT_SEQ), 0)
+          FROM ITEM
+         WHERE ITEM_REGN_CD = #{itemRegnCd}
+    </select>
+
+    <select id="countHolders" parameterType="long" resultType="long">
+        /* 아이템 보유 캐릭터 수 */
+        SELECT COUNT(*)
+          FROM HLD_ITEM H
+          JOIN PIXEL_CHAR P
+            ON P.PIXEL_CHAR_SN = H.PIXEL_CHAR_SN
+           AND P.DEL_YN = 'N'
+         WHERE H.ITEM_SN = #{itemSn}
+           AND H.DEL_YN = 'N'
+    </select>
+
+    <insert id="insert" parameterType="com.nyangmeong.pet.domain.Item" useGeneratedKeys="true" keyProperty="itemSn">
+        /* 아이템 등록 */
+        INSERT INTO ITEM
+             ( ATCH_FILE_SN
+             , ITEM_REGN_CD
+             , ITEM_NM
+             , NEED_PNT
+             , SORT_SEQ
+             , NTSL_YN
+             , BAKE_HINT
+             , REG_DT
+             , MDFCN_DT
+             , RGTR_ID
+             , MDFR_ID )
+        VALUES
+             ( #{atchFileSn}
+             , #{itemRegnCd}
+             , #{itemNm}
+             , #{needPnt}
+             , #{sortSeq}
+             , #{ntslYn}
+             , #{bakeHint}
+             , NOW()
+             , NOW()
+             , #{rgtrId}
+             , #{mdfrId} )
+    </insert>
+
+    <update id="update">
+        /* 아이템 수정(보낸 칸만) */
+        UPDATE ITEM
+           SET MDFR_ID = #{item.mdfrId}
+             , MDFCN_DT = NOW()
+            <if test="item.atchFileSn != null">
+             , ATCH_FILE_SN = #{item.atchFileSn}
+            </if>
+            <if test="item.itemRegnCd != null">
+             , ITEM_REGN_CD = #{item.itemRegnCd}
+            </if>
+            <if test="item.itemNm != null">
+             , ITEM_NM = #{item.itemNm}
+            </if>
+            <if test="item.needPnt != null">
+             , NEED_PNT = #{item.needPnt}
+            </if>
+            <if test="item.sortSeq != null">
+             , SORT_SEQ = #{item.sortSeq}
+            </if>
+            <if test="item.ntslYn != null">
+             , NTSL_YN = #{item.ntslYn}
+            </if>
+            <if test="bakeHintChanged">
+             , BAKE_HINT = #{item.bakeHint}
+            </if>
+         WHERE ITEM_SN = #{item.itemSn}
+    </update>
+
+    <update id="updateSortSeq">
+        /* 아이템 정렬 순서 수정 */
+        UPDATE ITEM
+           SET SORT_SEQ = #{sortSeq}
+             , MDFR_ID = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE ITEM_SN = #{itemSn}
+    </update>
 </mapper>

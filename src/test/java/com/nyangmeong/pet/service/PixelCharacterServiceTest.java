@@ -18,9 +18,9 @@ import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DuplicateKeyException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -39,6 +39,7 @@ import com.nyangmeong.pet.domain.CharacterPhoto;
 import com.nyangmeong.pet.domain.PhotoRole;
 import com.nyangmeong.pet.domain.PixelCharacter;
 import com.nyangmeong.pet.dto.EquippedItemSaveRequest;
+import com.nyangmeong.pet.dto.CharacterJobResponse;
 import com.nyangmeong.pet.dto.HeldItemSummary;
 import com.nyangmeong.pet.dto.PetProfileSummary;
 import com.nyangmeong.pet.dto.PixelCharacterResponse;
@@ -61,8 +62,6 @@ class PixelCharacterServiceTest {
     private final CharacterCreationWorker worker = mock(CharacterCreationWorker.class);
     private final PixelCharacterService service = new PixelCharacterService(mapper, petAuthorizer, fileStore,
             eventPublisher, worker);
-
-    private final MockMultipartFile photo = new MockMultipartFile("photo", "kongi.jpg", "image/jpeg", new byte[] {1});
 
     @BeforeEach
     void initSynchronization() {
@@ -136,100 +135,79 @@ class PixelCharacterServiceTest {
     }
 
     @Test
-    void 생성_요청은_사진과_작업을_저장하고_커밋_뒤_생성을_시작한다() {
-        when(fileStore.store(photo, "1")).thenReturn(20L);
-        doAnswer(inv -> {
-            inv.<PixelCharacter>getArgument(0).setPixelCharSn(CHAR);
-            return null;
-        }).when(mapper).insertPixelCharacter(any());
+    void 작업_생성은_캐릭터와_생성_중_작업을_만들고_반려동물_정보를_준다() {
+        when(mapper.selectPetProfile(PET)).thenReturn(pet("PETC0002"));
         doAnswer(inv -> {
             inv.<CharacterCreationJob>getArgument(0).setCharCrtJobSn(5L);
             return null;
         }).when(mapper).insertJob(any());
 
-        PixelCharacterResponse res = service.create(MBR, PET, "key-1", photo);
+        CharacterJobResponse res = service.createJob(MBR, PET);
 
-        verify(petAuthorizer).checkPrimary(MBR, PET);
-        assertThat(res.pixelCharSn()).isEqualTo(CHAR);
         assertThat(res.charCrtJobSn()).isEqualTo(5L);
-        assertThat(res.crtJobSttsCd()).isEqualTo(CharacterJobStatus.REQUESTED.getCode());
-        assertThat(res.bscCharSbstYn()).isFalse();
-        assertThat(res.heldItems()).isEmpty();
-
-        ArgumentCaptor<CharacterCreationJob> jobCaptor = ArgumentCaptor.forClass(CharacterCreationJob.class);
-        verify(mapper).insertJob(jobCaptor.capture());
-        assertThat(jobCaptor.getValue().getIdmptDmndId()).isEqualTo("key-1");
-        ArgumentCaptor<CharacterPhoto> photoCaptor = ArgumentCaptor.forClass(CharacterPhoto.class);
-        verify(mapper).insertPhoto(photoCaptor.capture());
-        assertThat(photoCaptor.getValue().getAtchFileSn()).isEqualTo(20L);
-        assertThat(photoCaptor.getValue().getPhotoRoleCd()).isEqualTo(PhotoRole.ORIGINAL.getCode());
-        assertThat(photoCaptor.getValue().getNowIndctYn()).isEqualTo("N");
-
-        verify(worker, never()).generate(anyLong());
-        commit();
-        verify(worker).generate(5L);
+        assertThat(res.petSeCd()).isEqualTo("PETC0002");
+        verify(mapper).insertPixelCharacter(any());
+        verify(mapper).updateJobStarted(5L, CharacterJobStatus.REQUESTED.getCode(),
+                CharacterJobStatus.CREATING.getCode());
+        verify(worker, never()).generate(any());
     }
 
     @Test
-    void 주양육자가_아니면_생성할_수_없다() {
+    void 주양육자가_아니면_작업을_만들_수_없다() {
         doThrow(new CustomException(ErrorCode.PET_PRIMARY_ONLY)).when(petAuthorizer).checkPrimary(2L, PET);
 
-        assertThatThrownBy(() -> service.create(2L, PET, "key-1", photo))
+        assertThatThrownBy(() -> service.createJob(2L, PET))
                 .extracting("errorCode").isEqualTo(ErrorCode.PET_PRIMARY_ONLY);
-        verify(fileStore, never()).store(any(MockMultipartFile.class), anyString());
+        verify(mapper, never()).insertJob(any());
     }
 
     @Test
-    void 요청_식별값이_없으면_IDEMPOTENCY_KEY_REQUIRED() {
-        assertThatThrownBy(() -> service.create(MBR, PET, null, photo))
-                .extracting("errorCode").isEqualTo(ErrorCode.IDEMPOTENCY_KEY_REQUIRED);
-        assertThatThrownBy(() -> service.create(MBR, PET, " ", photo))
-                .extracting("errorCode").isEqualTo(ErrorCode.IDEMPOTENCY_KEY_REQUIRED);
-    }
-
-    @Test
-    void 이미_캐릭터가_있으면_PIXEL_CHARACTER_ALREADY_EXISTS() {
+    void 결과가_있으면_PIXEL_CHARACTER_ALREADY_EXISTS() {
+        when(mapper.selectPetProfile(PET)).thenReturn(pet("PETC0002"));
         when(mapper.selectByPetSn(PET)).thenReturn(character("N"));
         when(mapper.selectLatestJob(PET)).thenReturn(job(CharacterJobStatus.COMPLETED));
+        when(mapper.selectCurrentPhoto(CHAR)).thenReturn(photo(20L));
 
-        assertThatThrownBy(() -> service.create(MBR, PET, "key-2", photo))
+        assertThatThrownBy(() -> service.createJob(MBR, PET))
                 .extracting("errorCode").isEqualTo(ErrorCode.PIXEL_CHARACTER_ALREADY_EXISTS);
-        verify(mapper, never()).insertPixelCharacter(any());
     }
 
     @Test
     void 생성_중이면_PIXEL_CHARACTER_CREATING() {
+        when(mapper.selectPetProfile(PET)).thenReturn(pet("PETC0002"));
         when(mapper.selectByPetSn(PET)).thenReturn(character("N"));
         when(mapper.selectLatestJob(PET)).thenReturn(job(CharacterJobStatus.CREATING));
 
-        assertThatThrownBy(() -> service.create(MBR, PET, "key-2", photo))
+        assertThatThrownBy(() -> service.createJob(MBR, PET))
                 .extracting("errorCode").isEqualTo(ErrorCode.PIXEL_CHARACTER_CREATING);
     }
 
     @Test
-    void 같은_요청_식별값은_새로_만들지_않고_기존_작업을_돌려준다() {
-        when(mapper.selectJobByIdmptDmndId("key-1")).thenReturn(job(CharacterJobStatus.CREATING));
+    void 실패로_끝나_결과가_없으면_같은_캐릭터로_다시_요청한다() {
+        when(mapper.selectPetProfile(PET)).thenReturn(pet("PETC0002"));
         when(mapper.selectByPetSn(PET)).thenReturn(character("N"));
-        when(mapper.selectLatestJob(PET)).thenReturn(job(CharacterJobStatus.CREATING));
-        when(mapper.selectHeldItems(CHAR)).thenReturn(List.of());
+        when(mapper.selectLatestJob(PET)).thenReturn(job(CharacterJobStatus.FAILED));
+        doAnswer(inv -> {
+            inv.<CharacterCreationJob>getArgument(0).setCharCrtJobSn(6L);
+            return null;
+        }).when(mapper).insertJob(any());
 
-        PixelCharacterResponse res = service.create(MBR, PET, "key-1", photo);
+        CharacterJobResponse res = service.createJob(MBR, PET);
 
-        assertThat(res.charCrtJobSn()).isEqualTo(5L);
-        verify(fileStore, never()).store(any(MockMultipartFile.class), anyString());
-        verify(mapper, never()).insertJob(any());
-        commit();
-        verify(worker, never()).generate(anyLong());
+        assertThat(res.charCrtJobSn()).isEqualTo(6L);
+        verify(mapper, never()).insertPixelCharacter(any());
+        ArgumentCaptor<CharacterCreationJob> created = ArgumentCaptor.forClass(CharacterCreationJob.class);
+        verify(mapper).insertJob(created.capture());
+        assertThat(created.getValue().getIdmptDmndId()).isEqualTo("PET-" + PET + "-5");
     }
 
     @Test
-    void 남의_요청_식별값을_쓰면_ALREADY_PROCESSED() {
-        CharacterCreationJob other = job(CharacterJobStatus.COMPLETED);
-        other.setPetSn(99L);
-        when(mapper.selectJobByIdmptDmndId("key-1")).thenReturn(other);
+    void 동시_요청이_유일_키에_걸리면_PIXEL_CHARACTER_CREATING() {
+        when(mapper.selectPetProfile(PET)).thenReturn(pet("PETC0002"));
+        doThrow(new DuplicateKeyException("uk")).when(mapper).insertPixelCharacter(any());
 
-        assertThatThrownBy(() -> service.create(MBR, PET, "key-1", photo))
-                .extracting("errorCode").isEqualTo(ErrorCode.ALREADY_PROCESSED);
+        assertThatThrownBy(() -> service.createJob(MBR, PET))
+                .extracting("errorCode").isEqualTo(ErrorCode.PIXEL_CHARACTER_CREATING);
     }
 
     @Test
@@ -371,6 +349,26 @@ class PixelCharacterServiceTest {
         assertThat(atchFileSn).isEqualTo(30L);
         verify(petAuthorizer).checkPrimary(MBR, PET);
         verify(mapper).updateBscCharSbstYn(CHAR, "Y", "1");
+    }
+
+    @Test
+    void 캐릭터_사진의_첨부_파일_번호를_준다() {
+        CharacterPhoto photo = photo(2499L);
+        photo.setPixelCharSn(CHAR);
+        when(mapper.selectPhoto(1018L)).thenReturn(photo);
+
+        assertThat(service.getPhotoAtchFileSn(CHAR, 1018L)).isEqualTo(2499L);
+    }
+
+    @Test
+    void 다른_캐릭터의_사진이거나_없는_사진이면_첨부_파일_번호는_null() {
+        CharacterPhoto other = photo(2499L);
+        other.setPixelCharSn(99L);
+        when(mapper.selectPhoto(1018L)).thenReturn(other);
+
+        assertThat(service.getPhotoAtchFileSn(CHAR, 1018L)).isNull();
+        assertThat(service.getPhotoAtchFileSn(CHAR, 1019L)).isNull();
+        assertThat(service.getPhotoAtchFileSn(CHAR, null)).isNull();
     }
 
     @Test

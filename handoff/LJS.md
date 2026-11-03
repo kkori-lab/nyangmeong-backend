@@ -2,33 +2,108 @@
 
 ## 지금 하는 것
 
-SCR-MYP-010 파일 저장 외부 디렉토리·OS별 기본 경로·서빙 — 끝 (2026-10-27, `/start`·`/impl` 검증 2회차 통과, 사람 확인). 프론트 LJS 세션 요청. 저장 루트는 `app.file.root-dir`, 비우면 Windows는 프로젝트 드라이브 루트 아래·Mac은 `/Users/Shared` 아래(`FileRootResolver`, 시작 로그 `[FileRoot]` 한 줄, prod는 쓸 수 없으면 시작 실패). 공개 파일은 `public/` 아래에 저장하고 `GET /api/files/public/{atchFileSn}`로 로그인 없이 연다(게시글 사진·생성 캐릭터 PNG). 기획과 다른 점: 요청한 정적 리소스 핸들러·`WebConfig`·비공개 범용 `/api/files/{fileSn}` 대신 번호 방식 컨트롤러(응답에 경로가 없고 `global`은 소유 검사를 못 해서). 비공개는 각 도메인 API가 준다.
-
-### 추가 요청
-
-| ID | 바꿀 파일 | 완료 조건 | 요청 |
-| --- | --- | --- | --- |
-| 추가-1 | `global/file/FileRootResolver`, `global/log/LogDirEnvironmentPostProcessor`(새), `META-INF/spring.factories`, `logback-spring.xml`, `application.properties.example`, 테스트 | 명령: `./gradlew build -q` 종료 코드 0. 화면: bootRun 시 Windows는 `C:\home\ggorilab\logs\application.log`에 로그가 쌓인다 | 요청 2026-10-28 10:20 "개발 시에도 home/ggorilab/logs에 로그가 쌓여야 한다, FileRootResolver처럼" |
+SCR-MYP-031 영수증 업로드 · 가계부 출처 다시 열기 — 끝 (2026-11-03). `GET /api/receipts/{recptSn}`의 `petSn`을 가계부 출처(`AIMC0027`)만 생략 가능하게 했다(생략하면 응답 `petSn` null, 그 밖의 출처는 400 `INVALID_INPUT_VALUE`, 주면 돌봄 권한 검사). 영수증을 먼저 읽어 없는 영수증 + 남의 반려동물은 403이 아니라 404. DB 구조 변경 없음
 
 ## 다음에 할 것
 
+- SCR-ADM-022 연결 남음: FN-ADM-022-01·02 (프론트 연결 `features/adminCommunity/api.js` 펫돌봄 목록·매칭 상세 모달, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트 가짜와 다른 점: 조건 버전·완료 요청이 목록(`cndVers`·`cmptnDmnds`), 매칭 거래 상태 PCAG05(PCAC0012~0018)·보호자 확인 결과 PCAG06(PCAC0019·0020) 공통코드
+- SCR-ADM-022 연결 남음: FN-ADM-022-02 완료 사진 보기. `/api/files/public/{atchFileSn}`은 `public/` 경로 파일만 열어 지금 완료 사진(시드 3543·3544)은 404다. 완료 사진 업로드가 아직 없어(KSJ) 저장 경로를 정할 때 관리자가 볼 방법(공개 경로 또는 관리자 이미지 API)을 같이 정한다
+- JAJ에게 알린다: `POST /api/receipts/{recptSn}/save-check` 저장완료 409 `RECEIPT_ALREADY_SAVED`를 LJS가 넣었다(`ReceiptSaveService.check`, `docs/api/receipt.md`). `milestones/JAJ.md` `SCR-HLT-002 … 저장완료 409` 절 상태는 JAJ가 바꾼다
+- 팀에 알린다(시드): `db/seed/20261028_seed_data.sql`에 RGN 전북 시군구 13건·행정동 243건을 넣었다(전주 완산·덕진 동은 전주시 아래). 공용 DB에는 반영돼 있다. 각자 로컬 DB에는 시드 파일의 `-- 2026-11-03 추가: 전북특별자치도…` 아래 INSERT 두 개만 실행한다(전북 행이 시도·전주시 2건일 때만). 출처 표시(SGIS 공공누리 1유형, admdongkor CC BY 4.0)는 그 주석에 있다
+- SCR-ADM-021 연결 남음: FN-ADM-021-01·02 (프론트 연결 `features/adminCommunity/api.js` 실종제보 목록·상세 모달, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트에 알릴 것: 필드 이름은 가짜와 같은 `mbrNcnm`·`expryCrtrDt`, 블라인드·삭제 글은 목록에 안 나옴, 상세에 연락처·반려동물 정보 없음
+- 마일스톤 정리(사람): `milestones/LJS.md`의 `## SCR-ADM-021 실종제보 — 대기` 절(KSJ 협의 표기)은 같은 기능 ID를 이번 `· 프론트 연결 API 계약` 절로 끝냈다. 그 절과 `docs/admin/implementation-plan.md` 담당 표기를 사람이 맞춘다
+- 공용 DB 정리(사람): SCR-ADM-091 확인용 발송 이력 4건. `DELETE FROM NOTI_SNDNG_LOG WHERE RGTR_ID='ADM091TEST';`
+- SCR-ADM-091 연결 남음: FN-ADM-091-01 (프론트 연결 `features/adminNotificationLog/api.js` 목록, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트 가짜와 다른 점: 기간 파라미터가 `fromYmd`·`toYmd`가 아니라 `bgngYmd`·`endYmd`(종료일 그날 끝까지 포함)
+- SCR-MYP-031 연결 남음: FN-AIM-013-06 가계부 출처 영수증 다시 열기 (프론트 연결 가계부 화면의 영수증 다시 열기, 화면 SJM, 프론트 저장소에서 /start). SJM에게 알린다: `GET /api/receipts/{recptSn}`을 `petSn` 없이 부르면 된다(응답 `petSn` null, `docs/api/receipt.md`). 프론트 저장소 마일스톤 절은 옆 폴더가 없어 넣지 못했다(아래 정리 항목)
+- 프론트 마일스톤(사람): 프론트 저장소 가계부 담당(SJM) 마일스톤 `## 제외` 앞에 `## SCR-MYP-031 영수증 업로드 · 가계부 출처 영수증 다시 열기 연결 — 대기` 절(기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-AIM-013-06·FN-MYP-031-03 / 기다리는 것: 백엔드 SCR-MYP-031 가계부 출처 다시 열기(LJS, 끝) / 완료 조건: 가계부 화면에서 올린 영수증을 `petSn` 없이 다시 열어 인식 결과 확인 모달이 뜬다)을 넣는다
+- 가계부 화면 쪽에 답한다: OCR이 날짜를 못 읽으면 `ckupYmd` null이 계약상 맞다(`docs/api/receipt.md`). 프론트가 오늘로 채우고 고칠 수 있게 한다(저장 때 미래 날짜 400). 라벨 없는 날짜("진료일" 표시 없음) 인식은 AI 저장소(ai-47)에 알린다
+- ai-47에 알린다: SCR-MYP-031 백엔드 PR 번호(AI PR kkori-lab/nyangmeong-ai#33보다 먼저 병합). 가계부 출처 원본 저장은 `petSn` 파트 없이, 다른 출처는 `petSn` 없으면 400 `INVALID_INPUT_VALUE`
+- SJM에게 알린다: 영수증 저장 경로(`ExpenseService.create(ExpenseCreateCommand)`) 미래 날짜 검사는 SJM이 넣는다(LJS 동의, 검진기록·처방약까지 롤백 OK). `docs/api/receipt.md` `POST /receipts/{recptSn}/save` 오류 목록의 `INVALID_INPUT_VALUE`(400)는 LJS가 이미 넣었다
+- 공용 DB 정리(사람): SCR-MYP-031 검증·사람 확인으로 생긴 회원 1의 가계부 출처 `RECPT` 501·502(ai-47)·505(검증, `ATCH_FILE` 4199)·508(사람 확인)과 원본 파일. 상태 이력(`RECPT_STTS_HSTRY`)도 같이 지운다
+- SCR-ADM-090 연결 남음: FN-ADM-090-03 (SJM이 만든 `PetService.searchCaregiverMbrSns(petSn)`로 `scheduler/CaregiverFake`를 바꾼 뒤(2026-11-03 메서드 있음 확인), 실제 케어 일정 알림에 등록한 템플릿이 쓰이고 `useYn=false`면 기본 문구인지 확인)
+- SCR-ADM-090 연결 남음: FN-ADM-090-01·02 (프론트 연결 `features/adminNotificationTemplate/api.js` 목록·등록·수정, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트 가짜와 다른 점: `useYn`이 `'Y'|'N'`이 아니라 true/false, 케어 일정 외 유형은 등록 400(화면은 "기본 문구"만)
+- 공용 DB 정리(사람): SCR-ADM-090 사람 확인으로 만든 템플릿은 삭제 API가 없다. `DELETE FROM NOTI_TMPLT WHERE NOTI_TMPLT_SN=<번호>;`(관리자 작업 로그 `TRGT_TBL_NM='NOTI_TMPLT'`는 남거나 같이 지운다)
+- 정리(판단 필요): 핸드오프가 60줄을 넘는다(2026-11-03 /end 때 143줄. 펫돌봄 게시판 필터 항목은 `BoardType.CARE`(CMUC0028)가 생겨 지웠다. 2026-11-03 공용 DB에 반영된 것을 확인한 v0.12 (1)·v0.11 (5) 실행 항목 2건은 지웠다). 대부분 알림·사람 할 일이라 끝났는지 코드로 판단할 수 없어 남겼다. 끝난 알림·정리 항목을 사람이 지운다
+- ai-47에 알린다: 굽기 계약 구현 끝(SCR-ADM-070). `bake-items` 응답 `{itemSn, regnCd, bakeHint}`(판매 중이고 지시 있음 30개), `GET /internal/ai/items/{itemSn}/bake-targets?page=`(관리자 쿠키, 100개씩 `{pixelCharSns, last}`, 아니면 403 `ADMIN_ONLY`, 굽기 대상 아님 404). 굽기 지시가 바뀌면 그 아이템 착용 시트를 지워 다시 굽기 대상이 된다. 시드에만 있던 6개(빨간 리본·작은 왕관·털모자·줄무늬 티셔츠·꼬까 한복·곰돌이 후드티)의 지시 문장은 LJS 초안이라 검토를 부탁한다. 백엔드 PR이 AI PR보다 먼저 병합돼야 한다
+- 공용 DB 정리(사람): SCR-ADM-070 사람 확인으로 만든 아이템(예: "확인용 가방")은 삭제 API가 없다. `DELETE FROM MNGR_TASK_LOG WHERE TRGT_TBL_NM='ITEM' AND TRGT_SN=<번호>; DELETE FROM ITEM WHERE ITEM_SN=<번호>;` 또는 판매 중지. 바꾼 순서·판매 여부·굽기 지시를 되돌린다
+- SCR-ADM-070 연결 남음: FN-ADM-070-01~04 (프론트 연결 `features/adminItem/api.js` 목록·등록·수정·순서 저장, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
+- 판단 필요(SCR-ADM-070, ai-47 검토 2026-11-03, 사람이 보류): 곰돌이 후드티 굽기 지시는 모자를 쓴 모습으로 구워져 귀·머리 아이템과 겹칠 수 있어 `a brown pullover dog hoodie with the hood down and small round bear ears on the hood`로 고치기를 권함. 선택: 빨간 리본·작은 왕관은 위치 말 빼기(`a red satin ribbon bow`, `a small shiny golden crown`), 꼬까 한복은 끝에 `with a tied front ribbon`. 고치면 공용 DB `UPDATE ITEM SET BAKE_HINT=... WHERE ITEM_NM=...`와 변경 절 새 항목·시드 파일을 같이 고친다. ERDCloud `내용V300` 도메인을 새로 만들었다(표준사전에 넣을지 `내용V500`으로 맞출지 사람이 정한다)
+- 판단 필요(SCR-ADM-070): 순서 저장 400 `INVALID_INPUT_VALUE`는 어떤 번호가 빠졌는지 알려 주지 않는다(사람 확인 때 헷갈림). 메시지를 붙일지 정한다. 새 아이템 12개는 이미지가 빨간 리본·노란 우비와 같다(디자인 이미지가 오면 교체)
+- 시험 데이터 정리(사람): 로컬 DB 문의 202(회원 4, 캐릭터 601)는 local 프로필에서 회원 4로 `DELETE /api/inquiries/202`. 공용 DB에서 사람 확인으로 캐릭터 601 오류 문의를 접수했다면 `POST /api/admin/inquiries/{번호}/character-error`에 `{"charErrPrcsRsltCd":"CHRC0009"}`로 원래 캐릭터로 복원하고 문의를 지운다(ai-47의 시험 캐릭터)
+- SCR-ADM-042 연결 남음: FN-ADM-042-07 무료 재생성. 생성 흐름이 원본 사진(`FILC0006`)을 Java에 남기지 않아 관리자 [무료 재생성]은 404 FILE_NOT_FOUND로 롤백된다(복원만 실제 동작). FN-MYP-010-23 계약과 함께 정한다(LJS·ai)
+- SCR-ADM-042 연결 남음: FN-ADM-042-08 (작성자 매칭 목록. SCR-ADM-022 상세는 모집글 번호 기준이라 문의 작성자 기준 목록(`?mbrSn=`)이 필요하면 따로 만든다, KSJ 협의)
+- KSJ에게 알린다(PR 전): SCR-ADM-042를 LJS가 구현했다. `InquiryService`·`InquiryMapper` 기존 메서드는 그대로 두고 관리자 쿼리(`selectAdminList`·`selectAdminInquiry`·`selectNickname`·`selectStatusHistories`·`updateAnswerContent`·`updateCharErrResult`)를 더했다. `ErrorCode.INQUIRY_NOT_ANSWERED`·`INQUIRY_DELETED`, `MapperXmlRuleTest` 예외 1줄
+- SCR-ADM-041 연결 남음: FN-ADM-041-01 (프론트 연결 관리자 FAQ 목록 `/admin/faqs`, 프론트 저장소에서 /start), FN-ADM-041-02 (프론트 연결 등록·수정 모달, 프론트 저장소에서 /start), FN-ADM-041-03 (프론트 연결 목록·모달의 사용 토글, 프론트 저장소에서 /start), FN-ADM-041-04 (프론트 연결 카테고리 탭·모달 선택지, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
+- KSJ에게 알린다(PR 전): SCR-ADM-041을 LJS가 구현했다. 사용자 FAQ(`FaqController`·`FaqMapper.selectList`)는 그대로 두고 같은 Mapper에 관리자 쿼리(`selectAdminList`·`selectAdminFaq`·`insert`·`update`)와 `Faq` VO 등록자·수정자 필드, `ErrorCode.FAQ_NOT_FOUND`를 더했다
+- 공용 DB 정리(사람): 검증으로 생긴 FAQ 41번(비노출, "[검증] 4000자 답변 FAQ")과 그 감사 로그. 지우려면 `DELETE FROM MNGR_TASK_LOG WHERE TRGT_TBL_NM='FAQ' AND TRGT_SN=41; DELETE FROM FAQ WHERE FAQ_SN=41;`. 사람 확인으로 만든 FAQ도 같은 방식
+- 정하기(공용 DB 정리, 사람): 구현·확인 중 생긴 공지 31·32번과 `/notices/32` 알림 191건(최적화 전 방식으로 실제 회원에게 감)을 지울지 정한다. 지우면 `INAPP_NOTI`의 `MVMN_PATH='/notices/<번호>'`와 `NTC_MTTR` 행
+- ERDCloud(사람): `NTC_MTTR.NOTI_SNDNG_DT`(datetime NULL, 알림발송일시)·`NOTI_TRGT_CNT`(decimal(10,0) NULL, 알림대상수)를 추가한다
+- KSJ에게 알린다(PR 전): SCR-ADM-040을 LJS가 구현했다(`support`에 `AdminNoticeController`·`AdminNoticeService`·DTO 7개, `NoticeMapper` 관리자 쿼리, `Notice` VO 필드). 본문 이미지는 `![](/api/files/public/{atchFileSn})` 줄로 넣고 HTML은 저장하지 않는다(`docs/api/issues.md` 고객센터 10). 사용자 공지 상세가 이 줄을 이미지로 그려야 한다. 삭제는 `USE_YN='N'`
+- YAY에게 알린다(PR 전): `MemberService.countNormalMembers()`·`MemberMapper.countByStatus` 추가(공지 알림 대상 수)
+- 팀에 알린다(알림): 여러 회원에게 같은 알림을 보낼 때는 회원마다 `NotificationEvent`를 발행하지 않는다(커밋 뒤 회원마다 트랜잭션, 191명 46초). 공지는 `NoticeNotificationEvent` + `NotificationMapper.insertForNormalMembers` 한 번이다
+- 팀에 알린다(PR): DB 기준 파일이 v0.12로 바뀌었다. v0.11 두 파일은 `db/archive/v0.11/`에 있고, 아직 병합 안 된 브랜치의 v0.11 변경 항목은 v0.12 파일의 변경 절로 옮겨야 한다. `handoff/KSJ.md`에 옛 v0.11 경로가 남아 있다(KSJ)
+- ERDCloud(사람): `PIXEL_CHAR.BODY_SHEET_FILE_SN`·`SHEET_SCALE`·`SHEET_ORIGIN_X`·`SHEET_ORIGIN_Y`, 새 테이블 `CHAR_ITEM_SHEET`, `ITEM.BAKE_HINT`(varchar(300) NULL, 굽기지시)를 추가한다. `ITEM.ENGINE_ITEM_KEY`는 넣지 않는다(v0.12 (3)에서 삭제)
+- 병합 순서(ai-d1): 백엔드 PR 먼저, 그다음 AI 저장소 `LJS`(`b2f2e84`, 쿠키 전환) PR. Python이 먼저 들어가면 캐릭터 생성이 실패한다. 백엔드 PR 번호를 ai-d1 세션에 알린다
+- 정하기: 옛 흐름으로 만든 캐릭터(시드 포함)는 맨몸 시트가 없어 미리보기가 404 `PIXEL_CHARACTER_NOT_FOUND`이고, 결과 사진이 있어 다시 생성도 `PIXEL_CHARACTER_ALREADY_EXISTS`로 막힌다(ai-d1 확인, 2026-11-02). 시트를 채울지(재생성), 시드를 새 흐름으로 다시 만들지 정한다
+- 굽기 켜기 전(AI 저장소와 함께): 백그라운드 호출이 쿠키를 쓰므로 `access_token`(30분)이 생성·굽기 중에 만료되면 성공 보고·시트 저장이 401이다. 성공 보고를 잃은 작업은 10분 뒤 시간 초과로 실패하고 다시 요청할 수 있다
+- 테스트 부족: 시간 초과 조회(`PRCS_BGNG_DT < NOW() - INTERVAL 10 MINUTE`) 경계를 실제 DB에서 돌려 보지 않았다(매퍼 목)
+- 로컬 DB 정리(`nyangmeong_local`, 사람): 검증·확인으로 생긴 반려동물 5의 `PIXEL_CHAR` 601·`CHAR_CRT_JOB` 780·`ATCH_FILE` 4178과 결과 사진, 반려동물 10의 캐릭터 데이터. 반려동물 삭제 API나 `DEL_YN='Y'`로 지운다
+- 로컬 Python 서버(사람): 8000은 `--reload`로 띄운다. 14:29에 띄운 옛 프로세스가 가짜 저장소로 돌아 미리보기가 `PIXEL_CHARACTER_NOT_FOUND`였다
+- 판단 필요(시드): 시드의 자동 블라인드 이력 18건은 사유가 `신고 누적으로 블라인드`라 `신고 누적`과 달라 자동 블라인드 탭에 나오지 않는다. 시드를 고칠지 탭 판별을 넓힐지 정한다. 이 코드 이전에 자동 삭제된 댓글도 나오지 않는다
+- ERDCloud(사람): `DCLR.DCLR_ACTN_CD` 신고조치공통코드(CMUG08)를 추가한다
+- KSJ에게 알린다(PR 전): SCR-ADM-030을 LJS가 구현했다(구현 계획 담당 KSJ, 저장소에 협의 기록 없음). `ReportService` 누적 계산에서 반려를 뺐고 자동 삭제 댓글에 `DCLR_STTS_HSTRY` 표시 행을 남긴다. 알림 `NotificationType.REPORT_RESULT`는 `COMMUNITY`와 코드 `AIMC0010`이 같다
+- 명세 정리(사람): 설정 화면 FN-COM-008-11 항상 받는 알림에 신고 처리 결과를 넣을지 정한다(2026-11-02 결정: 댓글 알림 설정과 무관하게 보낸다. 앱 알림 채널을 끄면 안 간다)
+- 테스트 부족: 복구 뒤 재삭제 판별(`autoTargetCondition`의 `MDFCN_DT` 비교)은 SQL 조건이라 자동 테스트가 없다
+- 실제 DB 확인 범위(SCR-ADM-020): 사람 확인 내용은 `확인`이라고만 기록됐다. 검증 에이전트는 공용 DB라 블라인드·복구·댓글 삭제 성공 경로를 실행하지 않았다
+- KSJ에게 알린다(PR 전): SCR-ADM-020을 LJS가 구현했다(구현 계획 담당은 KSJ, 저장소에 협의 기록 없음). `community`에 관리자 컨트롤러·서비스, `PostMapper`·`CommentMapper` 관리자 쿼리를 넣었다. `MapperXmlRuleTest` 예외 2줄 추가
+- 시드 확인(KSJ): 공용 DB의 "[실종]" 글이 `CMUC0002`라 `bbsCd=CMUC0024` 필터가 0건이다. 코드 문제는 확인되지 않았다
+- SCR-ADM-011 연결 남음: FN-ADM-011-01 (백엔드 연결 `AdminMemberDetailResponse.mbrAuthrtCd`, 백엔드 저장소에서 /start). 프론트 마일스톤 결정이며 프론트 5개 탭 연결은 끝났다
+- 공용 DB 정리(사람): SCR-ADM-020·011·113·114 검증의 `dev-tokens`로 회원 1~6 세션이 생겼다. 지울지 정한다
+- 실행해 보지 못한 SQL(SCR-ADM-011): 재동의 시 최신 1행, 동의 기록 없는 약관(`TermsMapper.selectAdminAgreementList`), 해제된 연동 제외(`PetMapper.selectAdminList`). 자동 테스트는 매퍼 목이고 공용 DB에 해당 데이터가 없어 SQL 읽기로만 확인했다. 파기 회원 상세도 데이터가 없어 코드로만 확인했다
+- PR 전 확인(사람): YAY·SJM에게 SCR-ADM-011을 알린다. `member`: `MemberService.checkExists`, `maskPhone` 이동, `Member.hldPnt`, `TermsService`에 `MemberMapper` 주입. `pet`: `PetService`에 `MemberService` 주입, `AdminPetController`·`AdminPointController`. SCR-ADM-072 원장 조회는 `selectAdminLedgerList`를 재사용할 수 있다
+- SCR-ADM-113 연결 남음: FN-ADM-113-02 (프론트 연결 관리자 계정 화면 SCR-ADM-113 목록과 지정 모달, 프론트 저장소에서 /start), FN-ADM-113-03 (프론트 연결 해제 버튼과 확인 모달, 본인·마지막 비활성, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
+- PR 전 확인(사람): YAY에게 SCR-ADM-113을 알린다. `AdminMemberController` 클래스 경로를 `/api/admin`으로 내렸고(기존 URL 그대로) `MemberAuthorityService`를 넣었다. 마일스톤의 협의가 저장소에 기록되지 않았다
+- 판단 필요(SCR-ADM-113): 지정 기록이 없는 기존 관리자는 `apntDt`가 null이다. `MBR_AUTHRT_CD`에 인덱스가 없어 해제 트랜잭션 동안 `MBR`의 많은 행이 잠길 수 있다(부하 상황 확인 안 함)
+- PR 전 확인(사람): YAY에게 `member`에 넣은 것을 알린다. `MemberPurgeJob`·`MemberPurgeService`, 탈퇴 회원 목록, `MemberSuspensionService`, 관리자 목록 조회. 파기 뒤 같은 이메일은 새 가입이 되고 복구는 `MEMBER_NOT_FOUND`다. 저장소에 협의 기록 없음
+- 탈퇴 파기 남은 범위: 채팅 원문(REQ-NFR-002, 채팅 구현 뒤 KSJ와 `scheduler`로 묶는다), 프로필 파일 실물(`FileStore`에 삭제 없음, 지금은 연결만 끊는다), 게시물·댓글·포인트·반려동물·건강기록(정책 미확정, `docs/api/issues.md` 8번)
+- KSJ에게 알린다: 게시글·댓글 작성자 '탈퇴한 회원' 표시가 없어 파기 회원은 `탈퇴회원#<번호>`로 보인다. 쿼리에서 탈퇴 상태로 표시를 바꾼다
+- 회원 탈퇴 처리가 코드에 없다: `POST /members/me/withdraw` 초안은 있으나 `src/main`에 `WHDWL_DT`를 채우는 코드가 없다(YAY에게 확인)
+- 테스트 부족: `selectWithdrawnList`의 보관 기간 경계를 검사하는 매퍼 테스트가 없다. 검증은 같은 조건을 바꾼 읽기 전용 SELECT로 했다
+- 위험, PR 병합 전(사람): v0.11 (4) 없는 DB에서는 `selectBySn`이 `Unknown column`이라 `GET /api/members/me` 등 기존 API도 500이다. 공용 DB에는 규칙의 "병합 직후"가 아니라 병합 전에 실행하고 팀에 각자 로컬 DB 실행을 알린다. 사람이 실행했다고 답했으나(2026-11-02) 어느 DB인지는 기록이 없다
+- ERDCloud(사람): `MBR.SUSPN_END_DT` 정지종료일시를 추가한다
+- 판단 필요: 구현 계획에는 정지 안내 알림이 있으나 기능명세서에 없어 넣지 않았다. `suspnDayCnt`가 빠진 정지 요청은 영구 정지로 처리된다(프론트 계약). 만료 배치는 하루 한 번이라 00:00에 서버가 내려가 있으면 수동 실행 전까지 정지가 이어진다
+- 로컬 `application.properties` 정리(사람): `springdoc.*.enabled=false` 두 줄 때문에 Swagger가 404다. `spring.profiles.default`도 없어 로컬 프로필이 적용되지 않을 수 있다. 디스코드 최신 파일로 받는다
+- 판단 필요: 잘못 인코딩된 `q`(UTF-8 아님)는 400이 아니라 500이다(Tomcat 디코딩 실패, 이번 기획 밖). 검증의 `dev-tokens`(회원 1·2)가 공용 DB에 세션을 남겼는지 확인 못 함
+- SCR-ADM-112 연결 남음: FN-ADM-112-01·02·03 (프론트 연결 관리자 외부 API 사용량 화면 SCR-ADM-112, 프론트 저장소에서 /start. 프론트 마일스톤에 절 있음), FN-ADM-112-02 (Python이 `POST /internal/ai/external-api-calls`를 부른다, 호출마다 쿠키가 있어야 하고 쿠키 없는 백그라운드 호출은 기록되지 않는다, ai 세션)
+- 공용 DB(사람, PR 병합 직후): `db/archive/v0.11/20261030_insert_base_data_v0.11.sql`의 v0.11 (3)을 실행한다. 실행 전에는 `SYSC0024`·`SYSC0025` 통지가 외래키 위반이다. 사람 확인으로 공용 DB에 남은 `FAIL_RSN = 'verify 확인용'` 행과 토큰 120·30 행을 지울지 정한다(삭제 API 없음)
+- 외부 API Java 호출 기록(2026-11-01 결정: 아직 안 함): `RegionResolver`·`MailSender`·`CharacterGenerator` 실제 구현을 붙일 때 `EXTL_API_CALL_LOG`에 기록한다. 호출 실패 기록이 업무 트랜잭션과 같이 롤백되지 않게 별도 트랜잭션으로 저장한다. `SYSC0019` 장소 공공데이터는 코드만 남고 화면 7종에는 없다
+- 로컬 DB `nyangmeong_ljs`에 `EXTL_API_CALL_LOG`가 없다. 로컬 프로필에서 이 화면을 보려면 v0.11 변경 절을 실행한다(사람)
+- SJM·JAJ에게 PR에서 알린다: `CareMissionJob`·`PrescriptionExpiryJob`이 `BatchJob` 구현으로 바뀌었다. cron과 하는 일은 같고, 실행마다 `BTCH_EXCN_HSTRY`에 1행이 쌓이며 관리자가 수동 실행할 수 있다
+- 팀에 알린다(배치): 새 배치는 `@Scheduled` 대신 `BatchJob`을 구현하고, `BatchType`에 넣고, 공통코드 SYSG02를 추가한다
+- 배치 위험(판단 필요): 서버 기동 때 공용 DB의 실행중 행을 서버 구분 없이 실패로 바꾼다(끝나면 실제 결과로 덮어씀). 수동 실행 풀(스레드 4·큐 0)이 거부하면 잠금과 실행중 행이 재시작까지 남는다(코드 확인, 재현 안 함). `SchedulingConfig.java:11` 주석의 "@Scheduled 배치"는 낡음
+- 관리자 문서 후속(사람): 기능명세서 FN-ADM-111-02와 화면설계서 SCR-ADM-111에서 실패 건수를 뺀다(2026-11-01 결정, 컬럼 없음)
+- PR 전 확인(사람): `LoginService`에 관리자 로그인 기록을 넣은 것을 YAY와 협의. 저장소에 협의 기록 없음
+- 공통코드 화면(SCR-ADM-100) 제외 후속(사람, 2026-11-01 결정: 코드 변경이 드물어 만들지 않고 SQL로 처리): 요구사항정의서 REQ-ADM-010, 관리자 기능명세서·화면설계서 SCR-ADM-100, IA 구조도(DMS)를 고치고 프론트 사이드바 메뉴를 뺀다. `docs/admin/implementation-plan.md`는 반영함. 다시 만들게 되면: 공통코드 enum 44개 중 값마다 로직이 갈리는 enum은 추가해도 쓸 수 없고, `InspectionArticle` 등 허용 목록 enum은 DB 검사로 바꿔야 추가한 코드를 쓸 수 있다
+- SCR-ADM-114 연결 남음: FN-ADM-114-01·02 (프론트 연결 관리자 감사 로그 화면 SCR-ADM-114와 상세 모달, 프론트 저장소에서 /start. 프론트 마일스톤에 절 있음)
+- 프론트 운영 설정 화면(SCR-ADM-110): 탈퇴 회원 보관일수를 읽기 전용으로. 필드를 보내도 200으로 무시돼 수정된 것처럼 보인다(프론트 저장소에서 /start)
+- 관리자 다음 마일스톤 전 확인(사람): 구현 계획 6절 확인 항목(인기 포토 제외·RSS 피드·알림 기본값 저장 위치, 기준정보 28번). REQ-ADM-014~022 요구사항정의서 반영은 별도 에이전트가 맡는다(2026-10-30 사람). 다른 담당 도메인 화면은 계획 2절 "협의" 표대로 먼저 이야기한다. 감사 로그가 필요한 관리자 기능은 `AdminTaskLogService.record`를 `@Transactional` 안에서 부른다
+- SCR-ADM-110 연결 남음: FN-ADM-110-01~04 (프론트 연결 관리자 운영 설정 화면 SCR-ADM-110, 프론트 저장소에서 /start. 프론트 마일스톤에 절 있음)
+- 관리자 문서 후속(사람): DMS 기능명세서 폴더에 "관리자" 하위 폴더를 만들어 명세서를 옮긴다(도구로는 폴더 생성 불가). 공통레이아웃 FN-COM-006-04 건강기록 2차 메뉴명과 랜딩 화면 ID(SCR-LAN-001 vs SCR-MAN-002) 정리. 프론트 저장소 `milestone.md` 담당 표에도 관리자 추가(frontend-83에 전달함)
+- SCR-AIM-011 연결 남음: FN-AIM-011-11 (Python이 `PATCH /internal/ai/conversations/{번호}`를 실제로 부르는 확인, ai 저장소 `docs/api/internal.md` 초안 행 확정, ai 세션). PR을 올리면 PR 번호를 ai-2e 세션에 알린다
+- 기다림(ai 세션 연결) — 영수증 Python 중심 연결(백엔드 PR #64·#67, ai 세션 진행 중): Python `FakeReceiptRepository`를 `POST /internal/ai/receipts`(multipart `file`·`petSn`·`ocrDmndSrcCd` — Python의 `ocrRqstSrcCd` 값을 이 이름으로, 쿠키 + `X-Requested-With`, 201 `{recptSn}`)·`POST /internal/ai/receipts/{recptSn}/result`(JSON `{ocrRslt: RECOGNIZED|UNRECOGNIZED|TIMEOUT|API_ERROR|CANCELED, ocr?}`, 200 `{recptSn, ocrPrcsSttsCd}`, 분석중 아니면 409)로 바꾸고 ai `docs/api/internal.md` 미정 2행을 확정으로. 실패 때 `finally`로 `API_ERROR`·`TIMEOUT` 보고 요청 포함
+- 팀에 알린다(SCR-AIM-013): 공통코드 `AIMC0031` AI 대화창은 migration 없이 기준 데이터 SQL에만 넣었다. 각자 로컬 DB에 그 한 줄을 직접 넣는다(공용 DB에는 이미 있음). 검증·확인 중 공용 DB에 만든 RECPT 504번 이후 행과 그 이력·ATCH_FILE 정리(사람, 2026-10-29 Python 중심 작업 확인분 포함). DMS 공통코드 정의서 AIMG07에 `AIMC0031` 추가(ai 세션은 아직 안 고쳤다)
+- 케어미션 배치(SJM에게 알린다): `CareMissionService.issue`가 반려동물 약 950마리 × 미션 8개를 트랜잭션 하나에서 한 건씩 INSERT해 약 10분이 걸린다. 그 사이 서버를 재시작하면 롤백돼 다음 정각에 처음부터 다시 출제한다(2026-10-29 14시·15시 로그). 제안: 반려동물 단위 커밋 + 여러 줄 INSERT. 디스코드 공유 `application.properties`의 `app.care-mission.batch-enabled=true`는 로컬에서 끈다(사람, prod는 그대로)
+- SCR-AIM-012 연결 남음: FN-AIM-012-04·08 (Python `FakeRegisterContextRepository`를 `GET /internal/ai/register-context`로, ai 세션). PR을 올리면 ai 세션에 PR 번호를 알린다(ai `docs/api/internal.md` 미정 행을 확정으로). 케어 항목 이름은 이제 실제 데이터다. 알려진 한계: 기본 케어 항목은 케어리스트를 처음 열 때 생겨 한 번도 안 연 반려동물은 기본 항목명이 빠진다(바꾸려면 JAJ와 정한다). JAJ에게 출처 코드 `HLTC0067` 받는 방법 확인(메시지 전달은 사람)
+- SCR-AIM-002 연결 남음: FN-AIM-002-02·11 (Python AI 서버가 `GET /internal/ai/settings`를 붙인다, ai 세션). PR을 올리면 ai 세션에 PR 번호와 계약(경로·응답 `AiSettingResponse`)을 알린다(ai 저장소 `docs/api/internal.md`와 같은 때 병합)
 - 프론트 연결(frontend 세션 회신 완료): 공통 파일 이미지 컴포넌트(공개 `/api/files/public/{atchFileSn}` + 비공개 blob 훅)를 프론트가 만든다. 캐릭터 번호가 필요하다고 하면 응답에 번호 추가를 추가 요청으로 받는다
 - 팀에 알린다(파일 저장): 각자 `application.properties`의 `app.security.permit-all-paths`에 `/api/files/public/**` 추가, 기존 `uploads/` 파일은 새 경로로 옮기거나 `seedFiles` 다시. 공용 DB(`pawever`)는 옛 시드라 `public/` 행이 없어 시드 사진이 404 → 다음에 공용 시드를 넣을 때 반영
 - 운영(사람): 서버에 저장 폴더와 쓰기 권한, nginx `client_max_body_size` 10m 이상. SJM에게 공개·비공개 분류 확인(반려동물·캐릭터를 공동양육자에게만 보이게 할지)
 - AIM-011 연결(ai 세션): Python이 쿠키·`X-Requested-With`를 그대로 넘겨 이 API를 부른 뒤 실제 연결 확인. 이때 탈퇴 보관일수 경계 SQL(`MemberMapper.xml` `selectExpiredWithdrawnMbrSns`)은 mock 테스트라 실제 DB에서 아직 실행하지 않았다
-- AIM-011 후속: 미완료 메시지를 완료로 바꾸는 `PATCH …/messages/{aiCnvrsMsgSn}`는 설계만(`docs/api/ai.md`). SCR-AIM-002·012에서 필요해지면 추가
-- `app.seed.password` 필수값 제외(2026-10-26 사람 요청, 범위 미정): (가) `/start` 설정 키 경고에서만 빼기(`scripts/start-check.sh:51` 제외 목록) (나) `seedData`도 값 없이(기본 비밀번호가 공개 저장소에 들어감). 추천 (가)
 - 팀에 알린다(2026-10-26): 공용 DB(`pawever`) 시드를 `seedClean`→`seedData`로 다시 넣었다(팀원 테스트 데이터 삭제됨, 원인 판단 착오로 불필요했던 작업). 예전 시드는 지금 디스코드 키와 다른 AES 키로 암호화돼 있었다. 각 PC는 `./gradlew seedFiles`를 다시. 로컬 서버는 `spring.profiles.default=local`이라 로컬 DB를 쓴다(로컬 데이터가 예전 키면 `seedData -Ptarget=local -Preset`)
 - 디스코드 공유 `application.properties`에 `app.seed.password`(새 값) 추가, `app.internal.*` 줄은 지운다(서버 간 키 제거, 사람). 각 PC 로컬 파일의 `app.internal.inbound-key`도 지운다
-- 키 제거가 develop에 반영되면 Python 세션(nyangmeong-ai-8a)에 알린다. 그쪽은 이 알림 뒤에 `X-Internal-Key` 헤더·`INTERNAL_API_KEY` 검사·`BACKEND_INTERNAL_KEY` 정리와 실제 연결 확인(`BACKEND_BASE_URL=http://localhost:8080`)을 한다. 그 전에 Python이 헤더를 먼저 빼도 키 제거된 Spring은 무시한다
-- Spring→Python HTTP 클라이언트(OCR·캐릭터 실제 구현)는 키 없이 호출한다. Python의 `INTERNAL_API_KEY` 검사가 지워진 뒤에 붙인다
-- 영수증 인식 결과 조회(2026-10-26 승인, 프론트 요청): `GET /api/receipts/{recptSn}` → `ReceiptResponse`. 저장된 `RECPT.OCR_RSPNS_JSON`을 `ReceiptOcrConverter.toResponse`로 다시 가공(오늘 날짜·현재 공동양육 반려동물 기준이라 분석 직후와 달라질 수 있음을 허용, 테스트하며 조정). 남의·없는 영수증은 `RECEIPT_NOT_FOUND`. 대화창에서 분석한 영수증을 본창 건강 일지 "인식 결과 확인" 모달에서 다시 연다. `docs/api/receipt.md`에 행 추가
-- PR 병합 뒤 공용 DB에 `db/migration/20261025_01_add_expnd_plcus_nm.sql` 실행하고 PR에 완료 댓글(사람). 그 뒤 시드 `ExpenseSeeder`의 OCR 지출을 사용처 = 병원명, 세부사항 = null로 맞춘다
+- 키 제거가 develop에 반영되면 Python 세션(nyangmeong-ai-8a)에 알린다. 그쪽은 이 알림 뒤에 `X-Internal-Key` 헤더·`INTERNAL_API_KEY` 검사·`BACKEND_INTERNAL_KEY` 정리와 실제 연결 확인(`BACKEND_BASE_URL=http://localhost:8080`)을 한다. 그 전에 Python이 헤더를 먼저 빼도 키 제거된 Spring은 무시한다 / Spring→Python HTTP 클라이언트(OCR·캐릭터 실제 구현)는 키 없이 호출한다. Python의 `INTERNAL_API_KEY` 검사가 지워진 뒤에 붙인다
 - 요청자에게 알린다: AI매니저 FN-AIM-009-10·21과 건강기록 FN-HLT-002-41 명세서에 아직 "내용 = 병원명". 사용처로 고치고 SCR-HLT-002에 사용처 칸(선택, 80자, 병원명 기본값)을 넣는다
-- KSJ에게 확인: 실종 제보·펫돌봄 모집 글의 `PST.BBS_CD` 규칙이 없어 시드는 펫일상으로 넣었다. 정해지면 `CommunitySeeder`를 맞춘다
 - 로컬 테스트 DB `nyangmeong_seedtest`가 필요 없으면 `DROP DATABASE nyangmeong_seedtest`(사람)
-- 프론트엔드: `getMe` → `/auth/me` 변경(frontend 세션, 커밋 전)과 아래 프론트 변경을 커밋한다
-- 하네스 공통화(2026-10-22)의 `scripts/` 5개 수정을 공용 하네스 PR로 올린다(커밋에서 뺐다)
 - 프론트 저장소: 같은 이름 스크립트에 같은 macOS 수정(`$( )` 안 `case (패턴)`, `sed -E`, `sed -i` 대신 임시 파일·`mv`, `{…;}`, 한글 앞 `cut -c` 대신 `sed`)을 적용하고, 커밋 전인 `verify-loop.sh` `scripts` 보호·verify·end 스킬 수정과 함께 프론트 PR
 - 하네스 아직 못 돌려 본 것: `pr-prep.sh --allow-dirty`(다음 PR 때), 검증 3회 실패 넘기기(다음 화면 작업)
 - ERDCloud `EXPND.IDMPT_DMND_ID`를 `EXPND_YMD` 뒤로, `EXPND.EXPND_PLCUS_NM`을 `DTL_MTTR` 앞으로 옮긴다(화면에서 끌기, 사람)
@@ -41,24 +116,16 @@ SCR-MYP-010 파일 저장 외부 디렉토리·OS별 기본 경로·서빙 — �
 - 프론트 `start` 스킬에도 `docs/api`(백엔드 저장소) 기준 줄을 넣을지 정한다
 - 정하기: 휴대폰 일정 가져오기(기획에 없음, JAJ 영역). 넣는다면 QR 짝짓기 `.ics` 업로드, iPhone 단축어, 웹 → 휴대폰은 `webcal://` 구독 QR
 - 정하기: 파일 저장소 운영(지금 서버 로컬 디스크 폴더. 서버 여러 대·재배포 대비 영구 볼륨 또는 S3), 영상 업로드 형식·용량
-- SCR-AIM-008 연결 남음: health 검진기록·일정 등록(JAJ)이 나오면 `expense/service/CheckupRecordFake`를 그 service로(같은 날 병원 일정 연결·새 일정·앞뒤 7일 미연결 일정·처방약 `CARE_RFLT_YN='N'`), 멱등 재전송용 `remember`·`findByReceipt`도 DB 조회로
-- SCR-AIM-008 연결 남음: 가계부 지출 생성·중복 확인(SJM)이 나오면 `ExpenseFake`를, pet 연동 반려동물 목록(SJM)이 나오면 `CaregiverPetFake`를 그 service로(그 전에는 FN-AIM-009-17 구역 자동 연결이 안 된다). 지출 생성에 줄마다 `idmptDmndId`, 사용처 `ExpenseCreateCommand.expndPlcusNm`(세부사항은 null)을 넘기고 중복 조회에 `expndPlcusNm`을 채운다
-- SCR-AIM-008 연결 남음: OCR 외부 API 규격이 정해지면 `OcrClient` 실제 구현을 두고 `app.ocr.client`를 바꾼다(지금 `FakeOcrClient`)
 - SJM에게 확인: 가계부 모달의 영수증 저장을 `ExpenseService`가 직접 하는지. 영수증 쪽이 하라면 `receipt`(4층) 분리를 다시 검토한다(`docs/OPEN_ISSUES.md` 영수증 행)
-- SCR-AIM-006 연결 남음: health 병원 일정 조회(JAJ)가 나오면 `scheduler/HospitalScheduleFake`를, pet 연동 양육자 조회(SJM)가 나오면 `scheduler/CaregiverFake`를 그 service로. 그 뒤 FN-AIM-006-11·13 화면과 01·02·20 실제 조회를 공용 DB 병원 일정으로 확인한다
-- SCR-AIM-006 연결 남음: 팀이 SMTP 계정을 정하면 `spring-boot-starter-mail`과 `MailSender` SMTP 구현. 그 전까지 메일은 로그만
+- SCR-AIM-006 연결 남음: pet 연동 양육자 조회(SJM)가 나오면 `scheduler/CaregiverFake`를 그 service로. 그 뒤 FN-AIM-006-11·13 화면과 01·02·20 실제 조회를 공용 DB 병원 일정으로 확인한다 / SCR-AIM-006 연결 남음: 팀이 SMTP 계정을 정하면 `spring-boot-starter-mail`과 `MailSender` SMTP 구현. 그 전까지 메일은 로그만
 - SCR-MYP-011 연결 남음: 포인트 조회·차감(SJM, FN-MYP-020)이 나오면 `pet/service/PointFake`를 그 service로. 구매의 `idmptDmndId`를 포인트 원장에 넘긴다
-- SCR-MYP-010 연결 남음: FN-MYP-010-24 1:1 문의 작성(SCR-CSC-003, KSJ)이 `PixelCharacterService.receiveErrorInquiry(mbrSn, pixelCharSn, otoInqrySn)`를 부르고 결과 ATCH_FILE_SN을 첨부한다
-- SCR-MYP-010 연결 남음: FN-MYP-010-23 관리자 확인 화면(담당 미정)이 `finishErrorCheck(pixelCharSn, regenerate)`를 부른다
 - FN-MYP-010-19: 캐릭터 생성 외부 API가 정해지면 `CharacterGenerator` 실제 구현과 베이스 캐릭터 선택 방식을 판단한다. 기본 캐릭터 이미지(`resources/character/default-*.png`)도 디자인 이미지로
 - SCR-COM-004 연결 남음: FN-COM-004-08 공동양육 초대 수락·거절(SJM) API가 나오면 알림 행 버튼과 연결하고 초대 알림 `mvmnPath` 형식을 SJM과 맞춘다
 - SCR-COM-002 연결 남음: `/auth/me`의 프로필 이미지 URL은 `FileStore`·파일 조회 API 뒤 연결. 지금은 `atchFileSn`만
 - 정하기: HLD_ITEM 유일 키 `UK_HLD_ITEM_1`에 DEL_YN이 없다. 보유 아이템 소프트 삭제가 생기면 재구매가 막히므로 그때 키를 고친다
-- 팀에 알린다: 배치 패키지 `job` → `scheduler`(기능 분배 정본은 아직 `job`과 AIM-006 담당 YAY), 케어 일정 사전 알림 `CareScheduleAlarmEvent`, 메일 `global/mail/MailSender`(로그만), 스케줄러 `global/batch/SchedulingConfig`
-- 팀에 알린다: 알림은 `EventPublisher.publish(new NotificationEvent(...))`(@Transactional 안), 반려동물 권한 `global/auth/PetAuthorizer`, 파일 `global/file/FileStore`, 공통코드 `GET /api/common-codes?prntComCd=`.
+- 팀에 알린다: 배치 패키지 `job` → `scheduler`(기능 분배 정본은 아직 `job`과 AIM-006 담당 YAY), 케어 일정 사전 알림 `CareScheduleAlarmEvent`, 메일 `global/mail/MailSender`(로그만), 스케줄러 `global/batch/SchedulingConfig`. 알림은 `EventPublisher.publish(new NotificationEvent(...))`(@Transactional 안), 반려동물 권한 `global/auth/PetAuthorizer`, 파일 `global/file/FileStore`, 공통코드 `GET /api/common-codes?prntComCd=`.
 - 팀에 알린다: 개인 로컬 DB는 `application-local.properties`(git 제외)에 `spring.datasource.*` 세 줄. `nyangmeong_` 접두어 스키마에 `db/` 기준 SQL 두 개와 `db/migration/`을 차례로 실행해 만든다
 - YAY에게 알린다: 로그인·재발급·로그아웃은 `auth/controller/AuthController`에 `LoginSessionManager`의 `issue`·`rotate`·`revoke`로. 새 공개 경로는 `app.security.permit-all-paths`에. 로그인이 생기면 `DevTokenController` 삭제. 스타터 분석(캡챠 LGN_ATMPT_LMT, 회원 조회 ACNT_EML_HMAC, 소셜 SNS_ACNT_LINK)과 nct-backend OAuth2 핸들러·`CustomOAuth2UserService`(위치는 `docs/OPEN_ISSUES.md`)도 넘긴다
-- `global/validation`은 처음 필요한 YAY(닉네임·휴대전화·비밀번호 검증)가 요청하면 만든다
 - 디스코드 공유 `application.properties`: `app.front-base-url=http://localhost:5173` 추가, 팀 공용 `app.crypto.*`·`app.jwt.secret-base64` 키를 정해 넣고 `mybatis.configuration.map-underscore-to-camel-case`는 넣지 않는다
 - 팀 안건: application.properties를 일반 설정(커밋) + git 제외 `application-secret.properties`로 나눌지 `docs/OPEN_ISSUES.md`에 올린다
 - 로컬 DB 정리(`nyangmeong_local`): RECPT 1~3·그 RECPT_STTS_HSTRY·ATCH_FILE, RGTR_ID `LJS`인 PET 4~6·BRUP_REL, PIXEL_CHAR 2와 작업·사진·이력, ITEM 1~3·6·7과 HLD_ITEM, ATCH_FILE 1~5, `uploads/` 아래 파일, RFRSH_TKN 회원 1 테스트 행(`REG_DT >= '2026-10-22'`). 확인용 회원 1·SYS_STNG는 둔다

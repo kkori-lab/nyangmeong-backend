@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nyangmeong.place.mapper.PlaceBookmarkMapper">
+
+    <resultMap id="placeBookmarkResultMap" type="com.nyangmeong.place.domain.PlaceBookmark">
+        <id     column="PLC_BKMK_SN" property="plcBkmkSn" />
+        <result column="PLC_SN"      property="plcSn" />
+        <result column="MBR_SN"      property="mbrSn" />
+        <result column="USE_YN"      property="useYn" />
+        <result column="REG_DT"      property="regDt" />
+        <result column="MDFCN_DT"    property="mdfcnDt" />
+    </resultMap>
+
+    <resultMap id="placeBookmarkSummaryResultMap" type="com.nyangmeong.place.dto.PlaceBookmarkSummary">
+        <id     column="PLC_BKMK_SN"    property="plcBkmkSn" />
+        <result column="PLC_SN"         property="plcSn" />
+        <result column="PLC_CLSF_CD"    property="plcClsfCd" />
+        <result column="PLC_CLSF_CD_NM" property="plcClsfCdNm" />
+        <result column="PLC_CONM"       property="plcConm" />
+        <result column="PLC_ADDR"       property="plcAddr" />
+        <result column="RPRS_TELNO"     property="rprsTelno" />
+        <result column="PLC_LAT"        property="plcLat" />
+        <result column="PLC_LOT"        property="plcLot" />
+        <result column="KAKAO_PLC_ID"   property="kakaoPlcId" />
+        <result column="KAKAO_URL_PATH" property="kakaoUrlPath" />
+    </resultMap>
+
+    <select id="selectByMemberAndPlace" resultMap="placeBookmarkResultMap">
+        /* 내 즐겨찾기 조회 : 해제한 행 포함 */
+        SELECT B.PLC_BKMK_SN
+             , B.PLC_SN
+             , B.MBR_SN
+             , B.USE_YN
+             , B.REG_DT
+             , B.MDFCN_DT
+          FROM PLC_BKMK B
+         WHERE B.MBR_SN = #{mbrSn}
+           AND B.PLC_SN = #{plcSn}
+    </select>
+
+    <insert id="insert" parameterType="com.nyangmeong.place.domain.PlaceBookmark" useGeneratedKeys="true" keyProperty="plcBkmkSn">
+        /* 즐겨찾기 등록 */
+        INSERT INTO PLC_BKMK (PLC_SN, MBR_SN, USE_YN, REG_DT, MDFCN_DT)
+        VALUES (#{plcSn}, #{mbrSn}, 'Y', NOW(), NOW())
+    </insert>
+
+    <update id="updateUseYn">
+        /* 즐겨찾기 사용 여부 변경 */
+        UPDATE PLC_BKMK
+           SET USE_YN   = #{toUseYn}
+             , MDFCN_DT = NOW()
+         WHERE PLC_BKMK_SN = #{plcBkmkSn}
+           AND MBR_SN = #{mbrSn}
+           AND USE_YN = #{fromUseYn}
+    </update>
+
+    <select id="selectList" resultMap="placeBookmarkSummaryResultMap">
+        /* 내 즐겨찾기 목록 조회 */
+        SELECT B.PLC_BKMK_SN
+             , B.PLC_SN
+             , P.PLC_CLSF_CD
+             , C.COM_CD_NM AS PLC_CLSF_CD_NM
+             , P.PLC_CONM
+             , P.PLC_ADDR
+             , P.RPRS_TELNO
+             , P.PLC_LAT
+             , P.PLC_LOT
+             , P.KAKAO_PLC_ID
+             , P.KAKAO_URL_PATH
+          FROM PLC_BKMK B
+         INNER JOIN PLC P
+            ON P.PLC_SN = B.PLC_SN
+           AND P.USE_YN = 'Y'
+          LEFT JOIN COM_CD C
+            ON C.COM_CD = P.PLC_CLSF_CD
+           AND C.COM_CD_PRNT_SN IS NOT NULL
+         WHERE B.MBR_SN = #{mbrSn}
+           AND B.USE_YN = 'Y'
+           AND P.PLC_CLSF_CD = #{plcClsfCd}
+         ORDER BY B.MDFCN_DT DESC, B.PLC_BKMK_SN DESC
+    </select>
+
+</mapper>

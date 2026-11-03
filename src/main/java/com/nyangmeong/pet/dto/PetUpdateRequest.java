@@ -11,7 +11,7 @@ import jakarta.validation.constraints.Size;
 /**
  * [반려동물 수정 요청]
  * - 보낸 필드만 수정, 문자열 "" -> 비움 (docs/convention/api.md)
- * - goalBdwg를 비우는 방법은 미정 (docs/api/issues.md 마이페이지 4번)
+ * - goalBdwgReset 이 true 면 목표체중을 비운다, goalBdwg 와 함께 보내면 400
  */
 public record PetUpdateRequest(@Size(min = 1, max = 20) String petNm,
         @Size(min = 1) String petSeCd,
@@ -29,5 +29,6 @@ public record PetUpdateRequest(@Size(min = 1, max = 20) String petNm,
         @Size(max = 20) String colrDrctInptNm,
         @Size(max = 1000) String chrcCn,
         @Size(max = 1000) String algyCn,
-        @Size(max = 1000) String dssCn) {
+        @Size(max = 1000) String dssCn,
+        Boolean goalBdwgReset) {
 }

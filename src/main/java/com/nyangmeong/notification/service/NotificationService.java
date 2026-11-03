@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.nyangmeong.auth.service.AuthService;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.notification.NoticeNotificationEvent;
 import com.nyangmeong.global.notification.NotificationEvent;
 import com.nyangmeong.global.notification.NotificationTab;
 import com.nyangmeong.global.notification.NotificationType;
@@ -53,6 +54,16 @@ public class NotificationService {
         notification.setNotiCn(event.notiCn());
         notification.setMvmnPath(event.mvmnPath());
         notificationMapper.insert(notification);
+    }
+
+    /**
+     * 공지 알림 일괄 생성 (정상 회원 중 앱 알림 채널을 켠 회원, SQL 한 번)
+     * - 공지 유형은 회원별 설정이 없어 앱 알림 채널만 본다 (canReceive 와 같은 기준)
+     */
+    @Transactional
+    public int createNotice(NoticeNotificationEvent event) {
+        return notificationMapper.insertForNormalMembers(MemberStatus.NORMAL.getCode(),
+                NotificationType.NOTICE.getCode(), event.notiTtl(), event.notiCn(), event.mvmnPath());
     }
 
     /**
@@ -146,8 +157,8 @@ public class NotificationService {
             case LOST_EXPIRY -> "Y".equals(setting.getLostExpryNotiRcptnYn());
             case EXPENSE -> "Y".equals(setting.getExpndLimNotiRcptnYn());
             case CHARACTER -> "Y".equals(setting.getCharCrtNotiRcptnYn());
-            /** 공동양육·1:1 문의 답변·공지는 설정 없음 */
-            case CO_PARENTING, INQUIRY_ANSWER, NOTICE -> true;
+            /** 공동양육·1:1 문의 답변·공지·신고 처리 결과는 설정 없음 */
+            case CO_PARENTING, INQUIRY_ANSWER, NOTICE, REPORT_RESULT -> true;
         };
     }
 }

@@ -63,6 +63,18 @@ class LoginSessionManagerTest {
         }
 
         @Override
+        public int updateDiscardAllByMbrSn(Long mbrSn) {
+            int count = 0;
+            for (RefreshToken r : rows) {
+                if (r.getMbrSn().equals(mbrSn) && r.getDscdDt() == null) {
+                    r.setDscdDt(LocalDateTime.now());
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        @Override
         public int updateDiscardByHash(String rfrshTknHash) {
             return rows.stream().filter(r -> r.getRfrshTknHash().equals(rfrshTknHash) && r.getDscdDt() == null)
                     .findFirst().map(this::discard).orElse(0);
@@ -195,5 +207,17 @@ class LoginSessionManagerTest {
 
         assertThat(noCookie.getHeaders(HttpHeaders.SET_COOKIE)).hasSize(2).allMatch(h -> h.contains("Max-Age=0"));
         assertThat(invalid.getHeaders(HttpHeaders.SET_COOKIE)).hasSize(2).allMatch(h -> h.contains("Max-Age=0"));
+    }
+
+    @Test
+    void 회원의_모든_세션을_폐기하고_다른_회원은_그대로다() {
+        manager.issue(7L, new MockHttpServletResponse());
+        manager.issue(7L, new MockHttpServletResponse());
+        manager.issue(8L, new MockHttpServletResponse());
+
+        manager.revokeAll(7L);
+
+        assertThat(mapper.rows).filteredOn(r -> r.getMbrSn().equals(7L)).allMatch(r -> r.getDscdDt() != null);
+        assertThat(mapper.rows).filteredOn(r -> r.getMbrSn().equals(8L)).allMatch(r -> r.getDscdDt() == null);
     }
 }

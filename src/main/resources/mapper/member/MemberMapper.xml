@@ -13,7 +13,11 @@
         <result column="PSWD_HASH"          property="pswdHash" />
         <result column="MBR_NCNM"           property="mbrNcnm" />
         <result column="LAST_LGN_DT"        property="lastLgnDt" />
+        <result column="WHDWL_DT"           property="whdwlDt" />
+        <result column="SUSPN_END_DT"       property="suspnEndDt" />
+        <result column="HLD_PNT"            property="hldPnt" />
         <result column="NCNM_STNG_CMPTN_YN" property="ncnmStngCmptnYn" />
+        <result column="REG_DT"             property="regDt" />
     </resultMap>
 
     <select id="selectByEmailHmac" parameterType="string" resultMap="memberResultMap">
@@ -28,9 +32,43 @@
              , PSWD_HASH
              , MBR_NCNM
              , LAST_LGN_DT
+             , WHDWL_DT
              , NCNM_STNG_CMPTN_YN
           FROM MBR
          WHERE ACNT_EML_HMAC = #{acntEmlHmac}
+    </select>
+
+    <select id="existsBySn" resultType="boolean">
+        /* 회원 존재 여부 */
+        SELECT EXISTS (SELECT 1 FROM MBR WHERE MBR_SN = #{mbrSn})
+    </select>
+
+    <resultMap id="adminMemberStatusHistorySummaryResultMap"
+               type="com.nyangmeong.member.dto.AdminMemberStatusHistorySummary">
+        <id     column="MBR_STTS_HSTRY_SN" property="mbrSttsHstrySn" />
+        <result column="BFR_STTS_CD"       property="bfrSttsCd" />
+        <result column="AFTR_STTS_CD"      property="aftrSttsCd" />
+        <result column="CHG_RSN"           property="chgRsn" />
+        <result column="PRCS_MBR_SN"       property="prcsMbrSn" />
+        <result column="PRCS_MBR_NCNM"     property="prcsMbrNcnm" />
+        <result column="REG_DT"            property="regDt" />
+    </resultMap>
+
+    <select id="selectStatusHistoryList" resultMap="adminMemberStatusHistorySummaryResultMap">
+        /* 회원 상태 이력 목록 조회 */
+        SELECT H.MBR_STTS_HSTRY_SN
+             , H.BFR_STTS_CD
+             , H.AFTR_STTS_CD
+             , H.CHG_RSN
+             , H.PRCS_MBR_SN
+             , P.MBR_NCNM AS PRCS_MBR_NCNM
+             , H.REG_DT
+          FROM MBR_STTS_HSTRY H
+          LEFT JOIN MBR P
+            ON P.MBR_SN = H.PRCS_MBR_SN
+         WHERE H.MBR_SN = #{mbrSn}
+         ORDER BY H.REG_DT DESC
+                , H.MBR_STTS_HSTRY_SN DESC
     </select>
 
     <select id="selectBySn" parameterType="long" resultMap="memberResultMap">
@@ -43,8 +81,11 @@
              , MBL_TELNO_ENC
              , PSWD_HASH
              , MBR_NCNM
+             , HLD_PNT
              , LAST_LGN_DT
+             , SUSPN_END_DT
              , NCNM_STNG_CMPTN_YN
+             , REG_DT
           FROM MBR
          WHERE MBR_SN = #{mbrSn}
     </select>
@@ -113,12 +154,80 @@
         )
     </insert>
 
+    <insert id="insertProcessedStatusHistory">
+        INSERT INTO MBR_STTS_HSTRY (
+               MBR_SN
+             , PRCS_MBR_SN
+             , BFR_STTS_CD
+             , AFTR_STTS_CD
+             , CHG_RSN
+        ) VALUES (
+               #{mbrSn}
+             , #{prcsMbrSn}
+             , #{bfrSttsCd}
+             , #{aftrSttsCd}
+             , #{chgRsn}
+        )
+    </insert>
+
     <update id="updateNickname">
         UPDATE MBR
            SET MBR_NCNM = #{mbrNcnm}
              , NCNM_STNG_CMPTN_YN = 'Y'
              , MDFR_ID = #{actorId}
              , MDFCN_DT = NOW()
+         WHERE MBR_SN = #{mbrSn}
+    </update>
+
+    <update id="updatePassword">
+        /* 비밀번호 해시 변경(재설정) */
+        UPDATE MBR
+           SET PSWD_HASH = #{pswdHash}
+             , MDFR_ID = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE MBR_SN = #{mbrSn}
+           AND MBR_STTS_CD != #{withdrawnSttsCd}
+    </update>
+
+    <update id="updateRecover">
+        /* 탈퇴 보관 회원 복구 : 보관 기간 안일 때만 정상으로 */
+        UPDATE MBR
+           SET MBR_STTS_CD = #{normalSttsCd}
+             , WHDWL_DT = NULL
+             , MDFR_ID = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE MBR_SN = #{mbrSn}
+           AND MBR_STTS_CD = #{withdrawnSttsCd}
+           AND WHDWL_DT IS NOT NULL
+           AND WHDWL_DT &gt; DATE_SUB(NOW(), INTERVAL #{keepDayCnt} DAY)
+    </update>
+
+    <update id="updatePhone">
+        /* 휴대전화번호 저장 : 번호가 없는 회원만 */
+        UPDATE MBR
+           SET MBL_TELNO_ENC = #{mblTelnoEnc}
+             , MBL_TELNO_HMAC = #{mblTelnoHmac}
+             , MDFR_ID = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE MBR_SN = #{mbrSn}
+           AND MBL_TELNO_HMAC IS NULL
+    </update>
+
+    <update id="updateProfile">
+        /* 회원정보 수정 : 보낸 값만 바꾼다(휴대전화번호, 프로필 사진 교체·기본 이미지로) */
+        UPDATE MBR
+           SET MDFR_ID = #{actorId}
+             , MDFCN_DT = NOW()
+        <if test="mblTelnoHmac != null">
+             , MBL_TELNO_ENC = #{mblTelnoEnc}
+             , MBL_TELNO_HMAC = #{mblTelnoHmac}
+        </if>
+        <if test="atchFileSn != null">
+             , ATCH_FILE_SN = #{atchFileSn}
+        </if>
+        <if test="atchFileSn == null and photoReset">
+             , ATCH_FILE_SN = NULL
+        </if>
          WHERE MBR_SN = #{mbrSn}
     </update>
 
@@ -138,5 +247,235 @@
          WHERE MBR_STTS_CD = #{mbrSttsCd}
            AND WHDWL_DT IS NOT NULL
            AND WHDWL_DT &lt; DATE_SUB(NOW(), INTERVAL #{keepDayCnt} DAY)
+    </select>
+
+    <select id="selectPurgeTargetMbrSns" resultType="long">
+        /* 파기 대상 회원 번호 조회 : 아직 파기하지 않은 회원만 */
+        SELECT MBR_SN
+          FROM MBR
+         WHERE MBR_STTS_CD = #{mbrSttsCd}
+           AND WHDWL_DT IS NOT NULL
+           AND WHDWL_DT &lt; DATE_SUB(NOW(), INTERVAL #{keepDayCnt} DAY)
+           AND ACNT_EML_HMAC NOT LIKE #{purgedHmacPattern}
+         ORDER BY MBR_SN
+    </select>
+
+    <update id="updatePurge">
+        /* 회원 식별값 파기 : 조회 뒤 복구한 회원은 바뀌지 않는다 */
+        UPDATE MBR
+           SET ACNT_EML_ENC = #{acntEmlEnc}
+             , ACNT_EML_HMAC = #{acntEmlHmac}
+             , MBL_TELNO_ENC = NULL
+             , MBL_TELNO_HMAC = NULL
+             , PSWD_HASH = NULL
+             , ATCH_FILE_SN = NULL
+             , MBR_NCNM = #{mbrNcnm}
+             , MDFR_ID = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE MBR_SN = #{mbrSn}
+           AND MBR_STTS_CD = #{mbrSttsCd}
+           AND WHDWL_DT IS NOT NULL
+           AND WHDWL_DT &lt; DATE_SUB(NOW(), INTERVAL #{keepDayCnt} DAY)
+    </update>
+
+    <delete id="deleteSnsLinks">
+        /* 회원의 SNS 연동 전체 삭제 */
+        DELETE FROM SNS_ACNT_LINK
+         WHERE MBR_SN = #{mbrSn}
+    </delete>
+
+    <resultMap id="adminMemberSummaryResultMap" type="com.nyangmeong.member.dto.AdminMemberSummary">
+        <id     column="MBR_SN"        property="mbrSn" />
+        <result column="MBR_NCNM"      property="mbrNcnm" />
+        <result column="ACNT_EML_ENC"  property="acntEmlEnc" />
+        <result column="JOIN_PATH_CD"  property="joinPathCd" />
+        <result column="MBR_STTS_CD"   property="mbrSttsCd" />
+        <result column="MBR_AUTHRT_CD" property="mbrAuthrtCd" />
+        <result column="REG_DT"        property="regDt" />
+        <result column="LAST_LGN_DT"   property="lastLgnDt" />
+    </resultMap>
+
+    <select id="selectAdminList" resultMap="adminMemberSummaryResultMap">
+        /* 관리자 회원 목록 조회 */
+        SELECT MBR_SN
+             , MBR_NCNM
+             , ACNT_EML_ENC
+             , JOIN_PATH_CD
+             , MBR_STTS_CD
+             , MBR_AUTHRT_CD
+             , REG_DT
+             , LAST_LGN_DT
+          FROM MBR
+        <where>
+            <if test="acntEmlHmac != null">
+                AND ACNT_EML_HMAC = #{acntEmlHmac}
+            </if>
+            <if test="mbrNcnm != null">
+                AND MBR_NCNM LIKE CONCAT('%', #{mbrNcnm}, '%')
+            </if>
+            <if test="cond.status != null and cond.status != ''">
+                AND MBR_STTS_CD = #{cond.status}
+            </if>
+            <if test="cond.joinPath != null and cond.joinPath != ''">
+                AND JOIN_PATH_CD = #{cond.joinPath}
+            </if>
+            <if test="cond.role != null and cond.role != ''">
+                AND MBR_AUTHRT_CD = #{cond.role}
+            </if>
+            <if test="cond.bgngYmd != null">
+                AND REG_DT &gt;= #{cond.bgngYmd}
+            </if>
+            <if test="cond.endYmd != null">
+                AND REG_DT &lt; DATE_ADD(#{cond.endYmd}, INTERVAL 1 DAY)
+            </if>
+        </where>
+         ORDER BY REG_DT DESC
+                , MBR_SN DESC
+    </select>
+
+    <update id="updateSuspend">
+        /* 회원 정지 : 정상 회원만 */
+        UPDATE MBR
+           SET MBR_STTS_CD = #{suspendedSttsCd}
+             , SUSPN_END_DT = #{suspnEndDt}
+             , MDFR_ID = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE MBR_SN = #{mbrSn}
+           AND MBR_STTS_CD = #{normalSttsCd}
+    </update>
+
+    <update id="updateRelease">
+        /* 회원 정지 해제 : 정지 회원만 */
+        UPDATE MBR
+           SET MBR_STTS_CD = #{normalSttsCd}
+             , SUSPN_END_DT = NULL
+             , MDFR_ID = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE MBR_SN = #{mbrSn}
+           AND MBR_STTS_CD = #{suspendedSttsCd}
+        <if test="expiredAt != null">
+           AND SUSPN_END_DT &lt;= #{expiredAt}
+        </if>
+    </update>
+
+    <select id="selectExpiredSuspendedMbrSns" resultType="long">
+        /* 정지 기간이 끝난 회원 번호 조회 : 영구 정지 제외 */
+        SELECT MBR_SN
+          FROM MBR
+         WHERE MBR_STTS_CD = #{suspendedSttsCd}
+           AND SUSPN_END_DT &lt;= #{expiredAt}
+    </select>
+
+    <resultMap id="adminSuspensionSummaryResultMap" type="com.nyangmeong.member.dto.AdminSuspensionSummary">
+        <id     column="MBR_SN"       property="mbrSn" />
+        <result column="MBR_NCNM"     property="mbrNcnm" />
+        <result column="SUSPN_DT"     property="suspnDt" />
+        <result column="SUSPN_END_DT" property="suspnEndDt" />
+        <result column="SUSPN_RSN"    property="suspnRsn" />
+        <result column="PRCR_NCNM"    property="prcrNcnm" />
+    </resultMap>
+
+    <select id="selectSuspensionList" resultMap="adminSuspensionSummaryResultMap">
+        /* 정지 회원 목록 조회 : 정지 일시·사유·처리 관리자는 최근 정지 이력 */
+        SELECT M.MBR_SN
+             , M.MBR_NCNM
+             , H.REG_DT AS SUSPN_DT
+             , M.SUSPN_END_DT
+             , H.CHG_RSN AS SUSPN_RSN
+             , P.MBR_NCNM AS PRCR_NCNM
+          FROM MBR M
+          LEFT JOIN MBR_STTS_HSTRY H
+            ON H.MBR_STTS_HSTRY_SN = (SELECT MAX(S.MBR_STTS_HSTRY_SN)
+                                        FROM MBR_STTS_HSTRY S
+                                       WHERE S.MBR_SN = M.MBR_SN
+                                         AND S.AFTR_STTS_CD = M.MBR_STTS_CD)
+          LEFT JOIN MBR P
+            ON P.MBR_SN = H.PRCS_MBR_SN
+         WHERE M.MBR_STTS_CD = #{suspendedSttsCd}
+        <if test="mbrNcnm != null">
+           AND M.MBR_NCNM LIKE CONCAT('%', #{mbrNcnm}, '%')
+        </if>
+        <if test="permanent != null and permanent">
+           AND M.SUSPN_END_DT IS NULL
+        </if>
+        <if test="permanent != null and !permanent">
+           AND M.SUSPN_END_DT IS NOT NULL
+        </if>
+         ORDER BY H.REG_DT DESC
+                , M.MBR_SN DESC
+    </select>
+
+    <resultMap id="adminWithdrawnMemberSummaryResultMap" type="com.nyangmeong.member.dto.AdminWithdrawnMemberSummary">
+        <id     column="MBR_SN"       property="mbrSn" />
+        <result column="MBR_NCNM"     property="mbrNcnm" />
+        <result column="ACNT_EML_ENC" property="acntEmlEnc" />
+        <result column="WHDWL_DT"     property="whdwlDt" />
+    </resultMap>
+
+    <select id="selectWithdrawnList" resultMap="adminWithdrawnMemberSummaryResultMap">
+        /* 관리자 탈퇴 회원 목록 조회 : 보관 기간 안의 회원만, 복구 가능 기준과 같다 */
+        SELECT MBR_SN
+             , MBR_NCNM
+             , ACNT_EML_ENC
+             , WHDWL_DT
+          FROM MBR
+         WHERE MBR_STTS_CD = #{withdrawnSttsCd}
+           AND WHDWL_DT IS NOT NULL
+           AND WHDWL_DT &gt; DATE_SUB(NOW(), INTERVAL #{keepDayCnt} DAY)
+         ORDER BY WHDWL_DT DESC
+                , MBR_SN DESC
+    </select>
+
+    <resultMap id="adminAccountSummaryResultMap" type="com.nyangmeong.member.dto.AdminAccountSummary">
+        <id     column="MBR_SN"       property="mbrSn" />
+        <result column="MBR_NCNM"     property="mbrNcnm" />
+        <result column="ACNT_EML_ENC" property="acntEmlEnc" />
+        <result column="APNT_DT"      property="apntDt" />
+    </resultMap>
+
+    <select id="selectAdminAccountList" resultMap="adminAccountSummaryResultMap">
+        /* 관리자 목록 조회 : 지정일시는 최근 지정 기록, 기록이 없으면 NULL 로 맨 뒤 */
+        SELECT M.MBR_SN
+             , M.MBR_NCNM
+             , M.ACNT_EML_ENC
+             , (SELECT MAX(L.REG_DT)
+                  FROM MNGR_TASK_LOG L
+                 WHERE L.TRGT_TBL_NM = #{trgtTblNm}
+                   AND L.TRGT_SN = M.MBR_SN
+                   AND L.TASK_SMRY_CN = #{taskSmryCn}) AS APNT_DT
+          FROM MBR M
+         WHERE M.MBR_AUTHRT_CD = #{adminAuthrtCd}
+           AND M.MBR_STTS_CD &lt;&gt; #{withdrawnSttsCd}
+         ORDER BY APNT_DT DESC
+                , M.MBR_SN DESC
+    </select>
+
+    <select id="selectNormalAdminSnsForUpdate" resultType="long">
+        /* 정상 관리자 번호 잠금 조회 : 마지막 관리자 검사용 */
+        SELECT MBR_SN
+          FROM MBR
+         WHERE MBR_AUTHRT_CD = #{adminAuthrtCd}
+           AND MBR_STTS_CD = #{normalSttsCd}
+           FOR UPDATE
+    </select>
+
+    <update id="updateAuthority">
+        /* 회원 권한 변경 */
+        UPDATE MBR
+           SET MBR_AUTHRT_CD = #{afterAuthrtCd}
+             , MDFR_ID = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE MBR_SN = #{mbrSn}
+           AND MBR_AUTHRT_CD = #{beforeAuthrtCd}
+        <if test="mbrSttsCd != null">
+           AND MBR_STTS_CD = #{mbrSttsCd}
+        </if>
+    </update>
+
+    <select id="countByStatus" resultType="int">
+        /* 상태별 회원 수 조회 */
+        SELECT COUNT(*)
+          FROM MBR
+         WHERE MBR_STTS_CD = #{mbrSttsCd}
     </select>
 </mapper>

@@ -57,7 +57,7 @@ class MemberJoinServiceTest {
             termsService, crypto, passwordEncoder, properties);
 
     private final MemberResponse memberResponse = new MemberResponse(EMAIL, "냥멍12345678", "01012345678", null,
-            JoinPath.EMAIL.getCode(), false, List.of());
+            JoinPath.EMAIL.getCode(), false, List.of(), null, null);
     private final Map<Long, Boolean> agreements = Map.of(1L, true, 4L, false);
 
     private static FieldCryptoService cryptoService() {

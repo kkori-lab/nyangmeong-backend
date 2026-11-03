@@ -39,8 +39,8 @@ com.nyangmeong
 └─ scheduler/              여러 도메인에 걸친 배치만
 
 src/main/resources/mapper/{도메인}/{이름}Mapper.xml   (공통 모듈은 mapper/global/)
-db/                        테이블 생성 기준 SQL (저장소 루트). 사람이 직접 실행한다.
-db/migration/              기존 DB 위에 차례로 실행하는 변경 SQL. 공용 DB에는 이것만 실행한다
+db/                        테이블 생성 기준 SQL 두 개 (저장소 루트). 테이블 변경도 이 두 파일을 고친다. 사람이 직접 실행한다.
+db/archive/vX.Y/           지난 버전 기준 SQL. 기존 DB 변경은 기준 파일 맨 위 "변경" 절의 SQL만 실행한다 (`docs/convention/shared-files.md`)
 ```
 
 도메인 안은 다섯 패키지로 통일한다. 하위 패키지, 깊이, 설정 클래스 위치는 `docs/convention/architecture.md`에 있다.

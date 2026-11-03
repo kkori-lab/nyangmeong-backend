@@ -129,6 +129,14 @@
              , #{cmptnYn} )
     </insert>
 
+    <update id="updateRoomTitle">
+        /* AI 대화방 제목 수정(본인 것만) */
+        UPDATE AI_CNVRS_ROOM
+           SET CNVRS_TTL_ENC = #{cnvrsTtlEnc}
+         WHERE AI_CNVRS_ROOM_SN = #{aiCnvrsRoomSn}
+           AND MBR_SN = #{mbrSn}
+    </update>
+
     <delete id="deleteRoom">
         /* AI 대화방 삭제(본인 것만, 메시지는 CASCADE) */
         DELETE FROM AI_CNVRS_ROOM

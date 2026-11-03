@@ -10,6 +10,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
+import com.nyangmeong.health.service.ObservationService;
 import com.nyangmeong.pet.service.CareMissionService;
 
 /**
@@ -20,12 +21,12 @@ class CareMissionJobTest {
     private static final LocalDate TODAY = LocalDate.of(2026, 10, 27);
 
     private final CareMissionService careMissionService = mock(CareMissionService.class);
-    private final ObservationFake observationFake = mock(ObservationFake.class);
-    private final CareMissionJob job = new CareMissionJob(careMissionService, observationFake);
+    private final ObservationService observationService = mock(ObservationService.class);
+    private final CareMissionJob job = new CareMissionJob(careMissionService, observationService);
 
     @Test
     void 전날_정산을_먼저_하고_관찰_중_반려동물을_넘겨_오늘_출제한다() {
-        when(observationFake.search(TODAY)).thenReturn(Set.of(10L));
+        when(observationService.searchObservingPetSns()).thenReturn(Set.of(10L));
 
         job.run(TODAY);
 

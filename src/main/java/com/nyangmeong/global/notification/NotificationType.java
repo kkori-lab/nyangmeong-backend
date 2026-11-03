@@ -11,6 +11,8 @@ public enum NotificationType {
     CARE_SCHEDULE("AIMC0008", NotificationTab.CARE),
     CARE_MATCH("AIMC0009", NotificationTab.COMMUNITY),
     COMMUNITY("AIMC0010", NotificationTab.COMMUNITY),
+    /** 신고 처리 결과 : 코드는 커뮤니티와 같고 댓글 알림 설정을 타지 않음 */
+    REPORT_RESULT("AIMC0010", NotificationTab.COMMUNITY),
     CO_PARENTING("AIMC0011", NotificationTab.INFO),
     LOST_EXPIRY("AIMC0012", NotificationTab.COMMUNITY),
     EXPENSE("AIMC0013", NotificationTab.CARE),
@@ -55,6 +57,7 @@ public enum NotificationType {
         return Arrays.stream(values())
                 .filter(type -> type.tab == tab)
                 .map(NotificationType::getCode)
+                .distinct()
                 .toList();
     }
 }

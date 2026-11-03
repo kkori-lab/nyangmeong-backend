@@ -9,6 +9,7 @@ import com.nyangmeong.notification.domain.InappNotification;
 import com.nyangmeong.notification.domain.NotificationReceiveSetting;
 import com.nyangmeong.notification.domain.NotificationRecipient;
 import com.nyangmeong.notification.domain.NotificationTemplate;
+import com.nyangmeong.notification.dto.AdminNotificationTemplateSummary;
 import com.nyangmeong.notification.dto.NotificationSummary;
 
 /**
@@ -34,6 +35,26 @@ public interface NotificationMapper {
             @Param("notiChnlCd") String notiChnlCd);
 
     /**
+     * 관리자 알림 템플릿 목록 조회
+     */
+    List<AdminNotificationTemplateSummary> selectTemplates(@Param("notiChnlCd") String notiChnlCd);
+
+    /**
+     * 번호로 알림 템플릿 조회
+     */
+    NotificationTemplate selectTemplateBySn(Long notiTmpltSn);
+
+    /**
+     * 알림 템플릿 등록
+     */
+    void insertTemplate(NotificationTemplate template);
+
+    /**
+     * 알림 템플릿 수정
+     */
+    int updateTemplate(NotificationTemplate template);
+
+    /**
      * 회원 알림 수신 설정 수정
      */
     int updateReceiveSetting(@Param("setting") NotificationReceiveSetting setting, @Param("actorId") String actorId);
@@ -42,6 +63,12 @@ public interface NotificationMapper {
      * 인앱 알림 등록
      */
     void insert(InappNotification notification);
+
+    /**
+     * 상태가 같고 앱 알림 채널을 켠 회원 전체에 인앱 알림 일괄 등록
+     */
+    int insertForNormalMembers(@Param("mbrSttsCd") String mbrSttsCd, @Param("notiTypeCd") String notiTypeCd,
+            @Param("notiTtl") String notiTtl, @Param("notiCn") String notiCn, @Param("mvmnPath") String mvmnPath);
 
     /**
      * 미읽음 알림 개수

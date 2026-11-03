@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * [파일 저장·읽기]
- * - 디스크(FileRoot) + ATCH_FILE 행, 확장자 jpg·jpeg·png·webp + 실제 형식, 크기 상한 SYS_STNG.FILE_MAX_SZ
+ * - 디스크(FileRoot) + ATCH_FILE 행, 확장자 jpg·jpeg·png·webp(검진 첨부만 pdf 추가) + 실제 형식, 크기 상한 SYS_STNG.FILE_MAX_SZ
  * - 공개 파일은 public/ 아래에 저장하고(storePublic) 로그인 없이 열린다. 나머지는 비공개이며 각 도메인 API 가 소유 검사 후 준다
  * - 트랜잭션 롤백 시 디스크 파일도 삭제
  */
@@ -55,12 +55,24 @@ public class FileStore {
         return store(file, actorId, true);
     }
 
+    /**
+     * 업로드 이미지·PDF 저장 (비공개)
+     * - 검진 첨부 전용 (REQ-NFR-003 : pdf는 검진 첨부 자료만 허용)
+     */
+    public Long storeDocument(MultipartFile file, String actorId) {
+        return store(file, actorId, false, true);
+    }
+
     private Long store(MultipartFile file, String actorId, boolean publicFile) {
+        return store(file, actorId, publicFile, false);
+    }
+
+    private Long store(MultipartFile file, String actorId, boolean publicFile, boolean isPdfAllowed) {
         if (file == null || file.isEmpty()) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
         FileExtension extension = FileExtension.ofFileName(file.getOriginalFilename())
-                .filter(FileExtension::isImage)
+                .filter(value -> isPdfAllowed || value.isImage())
                 .orElseThrow(() -> new CustomException(ErrorCode.FILE_TYPE_NOT_ALLOWED));
         if (file.getSize() > systemSettingService.get().getFileMaxSz()) {
             throw new CustomException(ErrorCode.FILE_TOO_LARGE);

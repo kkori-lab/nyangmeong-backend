@@ -1,5 +1,6 @@
 package com.nyangmeong.health.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -9,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.health.domain.CheckupStatus;
 import com.nyangmeong.health.domain.HealthCodeGroup;
 import com.nyangmeong.health.domain.Schedule;
 import com.nyangmeong.health.domain.ScheduleKind;
@@ -18,6 +20,7 @@ import com.nyangmeong.health.dto.CareScheduleResponse;
 import com.nyangmeong.health.dto.CareScheduleSearchCond;
 import com.nyangmeong.health.dto.CareScheduleSummary;
 import com.nyangmeong.health.dto.CareScheduleUpdateRequest;
+import com.nyangmeong.health.dto.HospitalScheduleSummary;
 import com.nyangmeong.health.mapper.CareScheduleMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -40,7 +43,16 @@ public class CareScheduleService {
     @Transactional(readOnly = true)
     public List<CareScheduleSummary> search(Long mbrSn, Long petSn, CareScheduleSearchCond cond) {
         petAuthorizer.checkCaregiver(mbrSn, petSn);
-        return careScheduleMapper.selectList(petSn, cond);
+        return careScheduleMapper.selectList(petSn, cond, CheckupStatus.COMPLETED.getCode());
+    }
+
+    /**
+     * 일정일의 병원 일정 목록 조회
+     * - 케어 일정 사전 알림 배치용 : 권한 검사 없음, 삭제된 일정·반려동물 제외 (FN-AIM-006-02)
+     */
+    @Transactional(readOnly = true)
+    public List<HospitalScheduleSummary> searchHospitalSchedules(LocalDate schdlYmd) {
+        return careScheduleMapper.selectHospitalSchedules(schdlYmd, ScheduleKind.HOSPITAL.getCode());
     }
 
     /**

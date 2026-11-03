@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 
 /**
  * [이메일 인증번호 발송 요청]
- * - POST /api/email-certifications, 지금은 회원가입 목적(USRC0010)만 받는다
+ * - POST /api/email-certifications, 회원가입(USRC0010)·비밀번호 찾기(USRC0011) 목적만 받는다
  */
 public record EmailCertificationCreateRequest(
         @NotBlank(message = "인증 목적을 보내 주세요.") String emlCertPrpsCd,

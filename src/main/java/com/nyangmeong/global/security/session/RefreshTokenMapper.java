@@ -36,4 +36,9 @@ public interface RefreshTokenMapper {
      * 해시로 세션 폐기
      */
     int updateDiscardByHash(String rfrshTknHash);
+
+    /**
+     * 회원의 살아 있는 세션 모두 폐기
+     */
+    int updateDiscardAllByMbrSn(Long mbrSn);
 }

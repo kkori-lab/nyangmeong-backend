@@ -22,6 +22,7 @@ public class Inquiry {
     private String inqryCn;
     private String ansCn;
     private LocalDateTime ansDt;
+    private String delYn;
     private LocalDateTime regDt;
     private LocalDateTime mdfcnDt;
 }
