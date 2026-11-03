@@ -414,6 +414,14 @@
            AND DEL_YN = 'N'
     </select>
 
+    <select id="selectPhoto" parameterType="long" resultMap="photoResultMap">
+        /* 캐릭터 사진 단건 조회 */
+        SELECT <include refid="photoColumns" />
+          FROM CHAR_PHOTO
+         WHERE CHAR_PHOTO_SN = #{charPhotoSn}
+           AND DEL_YN = 'N'
+    </select>
+
     <update id="updatePhotoHidden" parameterType="long">
         /* 캐릭터의 현재 표시 사진 해제 */
         UPDATE CHAR_PHOTO

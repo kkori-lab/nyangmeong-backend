@@ -167,6 +167,45 @@ class AdminInquiryServiceTest {
     }
 
     @Test
+    void 캐릭터_사진_번호가_있으면_그_사진을_접수_시점_캐릭터_이미지로_준다() {
+        Inquiry inquiry = characterInquiry(null);
+        inquiry.setCharPhotoSn(1018L);
+        when(inquiryMapper.selectAdminInquiry(INQ)).thenReturn(inquiry);
+        when(inquiryMapper.selectPhotos(INQ)).thenReturn(List.of(photo(4118L, 10)));
+        when(pixelCharacterService.getPhotoAtchFileSn(PIXEL_CHAR, 1018L)).thenReturn(2499L);
+
+        AdminInquiryResponse res = service.get(INQ);
+
+        assertThat(res.charImgAtchFileSn()).isEqualTo(2499L);
+    }
+
+    @Test
+    void 접수_시점_캐릭터_이미지는_문의_첨부가_아니어도_열린다() {
+        Inquiry inquiry = characterInquiry(null);
+        inquiry.setCharPhotoSn(1018L);
+        when(inquiryMapper.selectAdminInquiry(INQ)).thenReturn(inquiry);
+        when(inquiryMapper.selectPhotos(INQ)).thenReturn(List.of(photo(4118L, 10)));
+        when(pixelCharacterService.getPhotoAtchFileSn(PIXEL_CHAR, 1018L)).thenReturn(2499L);
+
+        service.getImage(INQ, 2499L);
+
+        verify(fileStore).load(2499L);
+    }
+
+    @Test
+    void 문의_첨부도_캐릭터_이미지도_아닌_파일은_FILE_NOT_FOUND() {
+        Inquiry inquiry = characterInquiry(null);
+        inquiry.setCharPhotoSn(1018L);
+        when(inquiryMapper.selectAdminInquiry(INQ)).thenReturn(inquiry);
+        when(inquiryMapper.selectPhotos(INQ)).thenReturn(List.of(photo(4118L, 10)));
+        when(pixelCharacterService.getPhotoAtchFileSn(PIXEL_CHAR, 1018L)).thenReturn(2499L);
+
+        assertThatThrownBy(() -> service.getImage(INQ, 5000L)).isInstanceOfSatisfying(CustomException.class,
+                e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.FILE_NOT_FOUND));
+        verify(fileStore, never()).load(anyLong());
+    }
+
+    @Test
     void 삭제된_문의의_첨부_이미지는_FILE_NOT_FOUND() {
         when(inquiryMapper.selectAdminInquiry(INQ)).thenReturn(inquiry(InquiryType.ETC, InquiryStatus.RECEIVED, "Y"));
 

@@ -142,6 +142,11 @@ public interface PixelCharacterMapper {
     CharacterPhoto selectCurrentPhoto(Long pixelCharSn);
 
     /**
+     * 캐릭터 사진 단건 조회
+     */
+    CharacterPhoto selectPhoto(Long charPhotoSn);
+
+    /**
      * 현재 표시 사진 해제
      */
     int updatePhotoHidden(Long pixelCharSn);

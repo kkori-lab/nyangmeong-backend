@@ -183,6 +183,21 @@ public class PixelCharacterService {
     }
 
     /**
+     * 캐릭터 사진의 첨부 파일 번호 조회 : 없거나 그 캐릭터의 사진이 아니면 null
+     */
+    @Transactional(readOnly = true)
+    public Long getPhotoAtchFileSn(Long pixelCharSn, Long charPhotoSn) {
+        if (pixelCharSn == null || charPhotoSn == null) {
+            return null;
+        }
+        CharacterPhoto photo = pixelCharacterMapper.selectPhoto(charPhotoSn);
+        if (photo == null || !pixelCharSn.equals(photo.getPixelCharSn())) {
+            return null;
+        }
+        return photo.getAtchFileSn();
+    }
+
+    /**
      * 캐릭터 오류 확인 종료
      */
     @Transactional

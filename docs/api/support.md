@@ -27,7 +27,7 @@
 | POST | /admin/notices/images | 공지 본문 이미지 올리기(multipart `image`, 이미지만 10MB, 공개 파일). 본문에는 `![](/api/files/public/{atchFileSn})` 한 줄로 넣는다(issues.md 고객센터 10, 2026-11-02 결정) | ADM-040-02 | LJS | - | AdminNoticeImageResponse |
 | GET | /admin/inquiries | 관리자 1:1 문의 목록. 접수 최신순 20건씩. `inqryTypeCd`(CSCG02)·`inqryCtgr`(DISPUTE 분쟁·ERROR 오류·ETC 기타)·`inqryPrcsSttsCd`(CSCG03)·`bgngYmd`~`endYmd`(접수일, 끝 날짜 포함)는 AND. `inclDelYn=true`면 회원이 삭제한 문의도 나온다. 내부 분류는 유형으로 정한다(건강기록·픽셀 캐릭터=오류, 커뮤니티·포인트·결제·가계부=분쟁, 나머지=기타). 없는 코드·시작일이 끝일 뒤면 400 INVALID_INPUT_VALUE. 일반 회원 403 ADMIN_ONLY | ADM-042-01·02 | LJS | AdminInquirySearchCond | PageResponse<AdminInquirySummary> |
 | GET | /admin/inquiries/{otoInqrySn} | 관리자 1:1 문의 상세(삭제 문의 포함, 상태 이력·첨부·답변·캐릭터 오류 처리 결과). 회원이 삭제한 문의는 첨부 목록이 비어 있다. 없으면 404 INQUIRY_NOT_FOUND | ADM-042-03·06·07·08 | LJS | - | AdminInquiryResponse |
-| GET | /admin/inquiries/{otoInqrySn}/images/{atchFileSn} | 관리자 1:1 문의 첨부 이미지(이미지 바이너리). 그 문의의 삭제되지 않은 첨부가 아니거나 삭제된 문의면 404 FILE_NOT_FOUND | ADM-042-03·07 | LJS | - | byte[] |
+| GET | /admin/inquiries/{otoInqrySn}/images/{atchFileSn} | 관리자 1:1 문의 첨부 이미지(이미지 바이너리). 그 문의의 삭제되지 않은 첨부나 접수 시점 캐릭터 이미지(`charImgAtchFileSn`)가 아니거나 삭제된 문의면 404 FILE_NOT_FOUND | ADM-042-03·07 | LJS | - | byte[] |
 | POST | /admin/inquiries/{otoInqrySn}/answer | 답변 등록(201, 감사 로그). 상태를 답변 완료로 바꾸고 답변 일시·처리 관리자를 남기며 작성자에게 1:1 문의 답변 인앱 알림(AIMC0030)을 보낸다. 이미 답변했으면 409 ALREADY_PROCESSED, 삭제된 문의는 409 INQUIRY_DELETED | ADM-042-04·06 | LJS | AdminInquiryAnswerRequest | AdminInquiryResponse |
 | PATCH | /admin/inquiries/{otoInqrySn}/answer | 답변 수정(감사 로그). 알림은 다시 보내지 않고 답변 일시·처리 관리자는 그대로다. 답변 전이면 400 INQUIRY_NOT_ANSWERED, 삭제된 문의는 409 INQUIRY_DELETED. 답변 삭제 API는 없다 | ADM-042-05·06 | LJS | AdminInquiryAnswerRequest | AdminInquiryResponse |
 | POST | /admin/inquiries/{otoInqrySn}/character-error | 캐릭터 오류 처리(감사 로그). CHRC0008 무료 재생성 / CHRC0009 원래 캐릭터 복원을 기록하고 캐릭터 쪽 처리를 실행한다. 회원 알림은 캐릭터 쪽이 보낸다(복원은 바로, 재생성은 생성 완료 때). 답변 상태는 바꾸지 않는다. 캐릭터 오류 문의가 아니거나 없는 결과 코드면 400 INVALID_INPUT_VALUE, 이미 처리했으면 409 ALREADY_PROCESSED, 삭제된 문의는 409 INQUIRY_DELETED, 캐릭터 생성 중이면 409 PIXEL_CHARACTER_CREATING | ADM-042-07 | LJS | AdminCharacterErrorRequest | AdminInquiryResponse |
@@ -80,7 +80,7 @@
 | pixelCharSn | Long | N | 캐릭터 오류 문의만 | OTO_INQRY.PIXEL_CHAR_SN, ADM-042-07 |
 | charErrPrcsRsltCd | String | N | 처리 전 null. 공통코드 CHRG04 | OTO_INQRY.CHAR_ERR_PRCS_RSLT_CD, ADM-042-07 |
 | charErrPrcsRsltCdNm | String | N | | COM_CD.COM_CD_NM |
-| charImgAtchFileSn | Long | N | 접수 시점 캐릭터 이미지(캐릭터 오류 문의의 첫 첨부). 이미지는 관리자 첨부 이미지 API | INQRY_ATCH_PHOTO.ATCH_FILE_SN, ADM-042-07 |
+| charImgAtchFileSn | Long | N | 접수 시점 캐릭터 이미지. 문의의 캐릭터 사진(`CHAR_PHOTO_SN`) 파일, 없으면 캐릭터 오류 문의의 정렬 순서 0 첨부. 삭제된 문의는 null. 이미지는 관리자 첨부 이미지 API | CHAR_PHOTO.ATCH_FILE_SN(OTO_INQRY.CHAR_PHOTO_SN), INQRY_ATCH_PHOTO.ATCH_FILE_SN, ADM-042-07 |
 | delYn | boolean | Y | true면 조회만 되고 답변 입력 칸을 숨긴다("회원이 삭제한 문의예요") | OTO_INQRY.DEL_YN, ADM-042-06 |
 | regDt | LocalDateTime | Y | 접수일 | OTO_INQRY.REG_DT |
 | imgs | List<InquiryImageSummary> | Y | 이미지는 `GET /api/admin/inquiries/{otoInqrySn}/images/{atchFileSn}`. 삭제된 문의는 빈 목록 | INQRY_ATCH_PHOTO, ADM-042-03 |

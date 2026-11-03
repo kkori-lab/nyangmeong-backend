@@ -266,7 +266,6 @@
 - 기다리는 것: `support` 협의 (KSJ). 캐릭터 오류 처리는 `pet` 캐릭터 service (LJS, SCR-MYP-010 `finishErrorCheck` 연결)
 - 완료 조건: 답변하면 작성자에게 알림이 가고 상태가 답변 완료가 된다. 답변 삭제 API는 없다
 - 완료 조건 결과: 검증 `확인 못 함 있음`(2026-11-03, 1회차, 연결 남음만), 사람 확인 2026-11-03. `/api/admin/inquiries` 6개, DB 변경 없음. 추가-1 `MapperXmlRuleTest` 예외 1줄
-- 연결 남음: FN-ADM-042-07 접수 시점 캐릭터 이미지 404 (아래 "접수 시점 캐릭터 이미지 연결" 절, LJS)
 - 연결 남음: FN-ADM-042-07 무료 재생성 (FN-MYP-010-23 계약 대기. 생성 흐름이 원본 사진을 Java에 남기지 않아 `finishErrorCheck(regenerate=true)`가 404 FILE_NOT_FOUND로 롤백된다. 복원만 실제 동작, LJS·ai)
 - 연결 남음: FN-ADM-042-08 (작성자 매칭 목록 API는 SCR-ADM-022, KSJ 협의. 프론트는 SCR-ADM-022로 넘김)
 
@@ -393,10 +392,21 @@
 - 결과: 끝(2026-11-02). 8개 모두 쿠키 인증(사람 결정), DB v0.12 (1), 시간 초과 배치 SYSC0029, 공개 생성 POST 삭제. 추가-1로 DB 기준 파일을 v0.12로 올렸다
 - 다음으로 넘김: FN-MYP-010-23 무료 재생성(계약 미정, SCR-ADM-042 전, LJS)
 
-## SCR-ADM-042 1:1 문의 · 접수 시점 캐릭터 이미지 연결 — 대기
+## SCR-ADM-042 1:1 문의 · 접수 시점 캐릭터 이미지 연결 — 끝
 - 기능: 명세 기능 ID 추가 없음. FN-ADM-042-07
 - 기다리는 것: 프론트 SCR-ADM-042(끝, 2026-11-03). 프론트는 `charImgAtchFileSn`으로 `GET /api/admin/inquiries/{otoInqrySn}/images/{atchFileSn}`을 부른다
 - 완료 조건: 캐릭터 오류 문의 상세의 `charImgAtchFileSn` 이미지가 200으로 열린다. 로컬 검증 때 문의 206·첨부 1483이 404 FILE_NOT_FOUND였다(같은 API로 문의 204 첨부는 200). 시드 픽셀 문의(82 등)는 첨부가 있는데 `charImgAtchFileSn`이 null이다. 둘 다 원인을 본다
+- 완료 조건 결과: 검증 통과(2026-11-03, 1회차), 사람 확인(공용 DB). 206·1483은 시드 이미지 파일이 없어서 난 404(코드 문제 아님). 82는 `CHAR_PHOTO_SN` 사진을 쓰도록 고쳐 2499가 나온다. DB 변경 없음
+
+## SCR-ADM-070 아이템 · 프론트 연결 API 계약 — 대기
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-070-01·02·03·04
+- 기다리는 것: 프론트 SCR-ADM-070(끝, 가짜 응답 `features/adminItem/api.js`)
+- 완료 조건: `GET /api/admin/items?itemRegnCd=`(판매 중지 포함, 부위·SORT_SEQ·번호순 `[{ itemSn, itemNm, itemRegnCd, itemRegnCdNm, needPnt, ntslYn, sortSeq, atchFileSn, 보유 회원 수 }]`), `GET /api/admin/items/{itemSn}/image`(판매 중지도 blob), `POST /api/admin/items`(multipart itemRegnCd·itemNm·needPnt·ntslYn·image, 201 `{ itemSn }`), `PATCH /api/admin/items/{itemSn}`(multipart, 보낸 칸만), `PUT /api/admin/items/order`(`{ itemRegnCd, itemSns }` 부위 안 순서)가 프론트 가짜와 같은 모양으로 동작한다. 보유 회원 수 필드 이름을 정해 프론트에 알린다(가짜는 `hldMbrCnt`)
+
+## SCR-ADM-070 아이템 · 신발 부위 제외 — 대기
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-070-01·02
+- 기다리는 것: 프론트 SCR-ADM-070 추가-1(관리자 화면은 부위 이름 "신발"을 걸러 숨김)
+- 완료 조건: 공통코드 MYPG01에서 신발이 빠져 상점·보관함·관리자 부위 목록에 나오지 않는다. 이미 등록된 신발 아이템과 회원 보유·착용 처리를 사람과 정한다
 
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
