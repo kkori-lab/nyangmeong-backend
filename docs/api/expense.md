@@ -16,7 +16,7 @@
 | PUT | /members/me/expense-limit | 월 지출 한도 저장(계정 전체 한 개). 처음 저장하면 한도 알림 수신을 켬 | MYP-030-13 | SJM | ExpenseLimitSaveRequest | ExpenseLimitResponse |
 | PATCH | /expenses/{expndSn} | 지출 수정. 내 지출만(아니면 404). 수정·삭제는 한도 알림을 보내지 않는다 | MYP-030-03·12 | SJM | ExpenseUpdateRequest | ExpenseResponse |
 | DELETE | /expenses | 지출 다중 삭제(개별 선택). `?expndSn=1&expndSn=2`, 1개 이상. 하나라도 없거나 남의 지출이면 모두 거절(404). 본문 없음(`docs/convention/api.md`) | MYP-030-19·21 | SJM | - | - |
-| POST | /expenses/bulk-delete | 지출 조건 전체 삭제([조회 결과 전체 선택]). 범위·필터에 맞는 전체 건. 전체 선택 뒤 일부 해제는 받지 않는다(화면이 개별 선택 삭제로 전환). 200, `data` 없음 | MYP-030-18·19·21 | SJM | ExpenseBulkDeleteRequest | - |
+| POST | /expenses/bulk-delete | 지출 조건 전체 삭제([조회 결과 전체 선택]). 범위·필터에 맞는 전체 건. 전체 선택 뒤 해제한 건은 `excludeExpndSn`으로 받아 빼고 지운다. 건수·제외 번호가 지금과 다르면 409 `EXPENSE_BULK_DELETE_CHANGED`. 200, `data` 없음 | MYP-030-18·19·21 | SJM | ExpenseBulkDeleteRequest | - |
 | DELETE | /expenses/{expndSn} | 지출 한 건 삭제 | MYP-030-03·15 | SJM | - | - |
 
 ## DTO
@@ -25,7 +25,8 @@
 쓰는 API: POST /expenses/bulk-delete (개별 선택 삭제는 `DELETE /expenses?expndSn=`)
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| expectedCnt | Integer | Y | 화면이 보여 준 삭제 건수(`GET /expenses/totals`). 서버가 센 건수와 다르면 400으로 거절해, 그 사이 바뀐 조건으로 지우지 않는다 | MYP-030-18·19 (issues 8번) |
+| expectedCnt | Integer | Y | 화면이 보여 준 삭제 건수(`GET /expenses/totals`). "조건에 맞는 건수 − 제외 수"를 보낸다. 서버가 센 값과 다르면 409로 거절해, 그 사이 바뀐 조건으로 지우지 않는다 | MYP-030-18·19 (issues 8번) |
+| excludeExpndSn | List<Long> | N | 전체 선택 뒤 개별 해제한 지출 번호(최대 1000개, 중복은 한 번으로 셈). 생략·빈 목록이면 제외 없음. 조건 밖·남의 지출·없는 번호·이미 삭제된 번호가 하나라도 있으면 구별하지 않고 409 | MYP-030-18·19·21 (issues 8번) |
 | startYmd | LocalDate | N | 삭제 범위 시작 월의 첫날. 종료보다 뒤면 서로 바꿔 적용. `endYmd`와 함께 생략하면 전체 기간 | MYP-030-17 |
 | endYmd | LocalDate | N | 삭제 범위 종료 월의 말일 | MYP-030-17 |
 | petSn | Long | N | 반려동물 필터. `petSn`·`common`을 모두 생략하면 전체 | EXPND.PET_SN, MYP-030-10·17 |

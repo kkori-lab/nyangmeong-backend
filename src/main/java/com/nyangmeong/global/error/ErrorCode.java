@@ -134,6 +134,7 @@ public enum ErrorCode {
     /** expense */
     EXPENSE_NOT_FOUND(HttpStatus.NOT_FOUND, "지출 내역을 찾을 수 없습니다."),
     EXPENSE_PET_REQUIRED(HttpStatus.BAD_REQUEST, "병원 카테고리는 반려동물을 선택해야 합니다."),
+    EXPENSE_BULK_DELETE_CHANGED(HttpStatus.CONFLICT, "그 사이 지출 내역이 바뀌었어요. 목록을 다시 불러온 뒤 삭제해 주세요."),
     EXPENSE_LIMIT_NOT_FOUND(HttpStatus.NOT_FOUND, "월 지출 한도가 설정되지 않았습니다."),
     /** 영수증 인식(docs/api/receipt.md). 도메인 확정 뒤 그 구획으로 이동 */
     RECEIPT_NOT_FOUND(HttpStatus.NOT_FOUND, "영수증을 찾을 수 없습니다."),
