@@ -2,12 +2,18 @@
 
 ## 지금 하는 것
 
-SCR-ADM-040 공지사항 — 끝 (2026-11-02). `/api/admin/notices` 6개(목록·상세·알림 대상 수·등록·수정·비노출·본문 이미지)를 `support`에 만들었다. 등록 때 알림 발송을 체크하면 이벤트 1건으로 정상 회원 중 앱 알림을 켠 회원 전체에 `INSERT … SELECT` 한 번으로 저장한다(추가-1, 191명 0.06초). DB v0.12 (2) `NTC_MTTR.NOTI_SNDNG_DT`·`NOTI_TRGT_CNT`
+SCR-ADM-042 1:1 문의 · 접수 시점 캐릭터 이미지 연결 — 끝 (2026-11-03). 관리자 상세 `charImgAtchFileSn`은 `OTO_INQRY.CHAR_PHOTO_SN`의 캐릭터 사진 파일을 먼저 쓰고(없으면 정렬 0 첨부), 관리자 첨부 이미지 API가 그 파일도 연다. 문의 206·첨부 1483의 404는 시드 이미지 파일이 없어서다(코드 문제 아님). DB 변경 없음
 
 ## 다음에 할 것
 
-- SCR-ADM-040 연결 남음: FN-ADM-040-01 (프론트 연결 관리자 공지 목록 `/admin/notices`, 프론트 저장소에서 /start), FN-ADM-040-02 (프론트 연결 공지 등록 `/admin/notices/new`와 본문 이미지 넣기, 프론트 저장소에서 /start), FN-ADM-040-03 (프론트 연결 알림 발송 체크와 "회원 N명에게 알림을 보내요" 모달, 프론트 저장소에서 /start), FN-ADM-040-04 (프론트 연결 공지 수정 `/admin/notices/:ntcMttrSn/edit`, 발송 칸 숨김, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
-- 공용 DB(PR): v0.12 (2) `NTC_MTTR` 두 컬럼은 공용 DB에 이미 있다(검증 2026-11-02). 병합 뒤 다시 실행하지 않는다(중복 컬럼 오류). PR 본문에 "DB 변경 있음, v0.12 (2) 공용 DB 적용 완료". 팀원 로컬 DB는 각자 실행
+- SCR-ADM-070 아이템(ai-47 요청, 2026-11-03): 굽기 계약을 같이 구현한다. ① `ITEM.BAKE_HINT`(varchar(300), 영어 한 문장)와 시드 26개(AI 저장소 `docs/design/item-bake-hints.json`, 신발 MYPC0006은 굽지 않음, `ENGINE_ITEM_KEY`는 더 쓰지 않음) ② `GET /internal/ai/characters/bake-items` 응답을 `[{itemSn, regnCd, bakeHint}]`로(판매 중이고 굽기 지시가 있는 아이템) ③ `GET /internal/ai/items/{itemSn}/bake-targets?page=`(0부터, 관리자 쿠키 USRC0005, `{pixelCharSns, last}`, 맨몸 시트가 있고 착용 시트·굽기 실패 표시가 없는 캐릭터) ④ 관리자 등록·수정에 `bakeHint`. 시트 내부 API 4개는 쿠키 인증만 받는다(사람 결정, 2026-11-03, ai-47에 회신함). ai-47이 "관리자 쿠키로 남의 캐릭터 시트 읽기·쓰기 허용"을 제안하면 권한을 넓히는 일이라 사람이 정한다. 백엔드 PR이 AI PR보다 먼저 병합돼야 한다. 구현이 끝나면 ai-47에 알린다
+- 시험 데이터 정리(사람): 로컬 DB 문의 202(회원 4, 캐릭터 601)는 local 프로필에서 회원 4로 `DELETE /api/inquiries/202`. 공용 DB에서 사람 확인으로 캐릭터 601 오류 문의를 접수했다면 `POST /api/admin/inquiries/{번호}/character-error`에 `{"charErrPrcsRsltCd":"CHRC0009"}`로 원래 캐릭터로 복원하고 문의를 지운다(ai-47의 시험 캐릭터)
+- SCR-ADM-042 연결 남음: FN-ADM-042-07 무료 재생성. 생성 흐름이 원본 사진(`FILC0006`)을 Java에 남기지 않아 관리자 [무료 재생성]은 404 FILE_NOT_FOUND로 롤백된다(복원만 실제 동작). FN-MYP-010-23 계약과 함께 정한다(LJS·ai)
+- SCR-ADM-042 연결 남음: FN-ADM-042-08 (작성자 매칭 목록 API는 SCR-ADM-022, KSJ 협의)
+- KSJ에게 알린다(PR 전): SCR-ADM-042를 LJS가 구현했다. `InquiryService`·`InquiryMapper` 기존 메서드는 그대로 두고 관리자 쿼리(`selectAdminList`·`selectAdminInquiry`·`selectNickname`·`selectStatusHistories`·`updateAnswerContent`·`updateCharErrResult`)를 더했다. `ErrorCode.INQUIRY_NOT_ANSWERED`·`INQUIRY_DELETED`, `MapperXmlRuleTest` 예외 1줄
+- SCR-ADM-041 연결 남음: FN-ADM-041-01 (프론트 연결 관리자 FAQ 목록 `/admin/faqs`, 프론트 저장소에서 /start), FN-ADM-041-02 (프론트 연결 등록·수정 모달, 프론트 저장소에서 /start), FN-ADM-041-03 (프론트 연결 목록·모달의 사용 토글, 프론트 저장소에서 /start), FN-ADM-041-04 (프론트 연결 카테고리 탭·모달 선택지, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
+- KSJ에게 알린다(PR 전): SCR-ADM-041을 LJS가 구현했다. 사용자 FAQ(`FaqController`·`FaqMapper.selectList`)는 그대로 두고 같은 Mapper에 관리자 쿼리(`selectAdminList`·`selectAdminFaq`·`insert`·`update`)와 `Faq` VO 등록자·수정자 필드, `ErrorCode.FAQ_NOT_FOUND`를 더했다
+- 공용 DB 정리(사람): 검증으로 생긴 FAQ 41번(비노출, "[검증] 4000자 답변 FAQ")과 그 감사 로그. 지우려면 `DELETE FROM MNGR_TASK_LOG WHERE TRGT_TBL_NM='FAQ' AND TRGT_SN=41; DELETE FROM FAQ WHERE FAQ_SN=41;`. 사람 확인으로 만든 FAQ도 같은 방식
 - 정하기(공용 DB 정리, 사람): 구현·확인 중 생긴 공지 31·32번과 `/notices/32` 알림 191건(최적화 전 방식으로 실제 회원에게 감)을 지울지 정한다. 지우면 `INAPP_NOTI`의 `MVMN_PATH='/notices/<번호>'`와 `NTC_MTTR` 행
 - ERDCloud(사람): `NTC_MTTR.NOTI_SNDNG_DT`(datetime NULL, 알림발송일시)·`NOTI_TRGT_CNT`(decimal(10,0) NULL, 알림대상수)를 추가한다
 - KSJ에게 알린다(PR 전): SCR-ADM-040을 LJS가 구현했다(`support`에 `AdminNoticeController`·`AdminNoticeService`·DTO 7개, `NoticeMapper` 관리자 쿼리, `Notice` VO 필드). 본문 이미지는 `![](/api/files/public/{atchFileSn})` 줄로 넣고 HTML은 저장하지 않는다(`docs/api/issues.md` 고객센터 10). 사용자 공지 상세가 이 줄을 이미지로 그려야 한다. 삭제는 `USE_YN='N'`
@@ -18,13 +24,11 @@ SCR-ADM-040 공지사항 — 끝 (2026-11-02). `/api/admin/notices` 6개(목록�
 - ERDCloud(사람): `PIXEL_CHAR.BODY_SHEET_FILE_SN`·`SHEET_SCALE`·`SHEET_ORIGIN_X`·`SHEET_ORIGIN_Y`, 새 테이블 `CHAR_ITEM_SHEET`, `ITEM.ENGINE_ITEM_KEY`를 추가한다
 - 병합 순서(ai-d1): 백엔드 PR 먼저, 그다음 AI 저장소 `LJS`(`b2f2e84`, 쿠키 전환) PR. Python이 먼저 들어가면 캐릭터 생성이 실패한다. 백엔드 PR 번호를 ai-d1 세션에 알린다
 - 정하기: 옛 흐름으로 만든 캐릭터(시드 포함)는 맨몸 시트가 없어 미리보기가 404 `PIXEL_CHARACTER_NOT_FOUND`이고, 결과 사진이 있어 다시 생성도 `PIXEL_CHARACTER_ALREADY_EXISTS`로 막힌다(ai-d1 확인, 2026-11-02). 시트를 채울지(재생성), 시드를 새 흐름으로 다시 만들지 정한다
-- 정하기(SCR-ADM-042 전): 무료 재생성(FN-MYP-010-23). 사진이 Java로 오지 않아 `finishErrorCheck(regenerate=true)`는 원본 사진이 없어 `FILE_NOT_FOUND`이고 Python에 재생성 API도 없다. 계약을 정한 뒤 `CharacterCreationWorker`·`CharacterGenerator`·`FakeCharacterGenerator`를 정리한다
 - 굽기 켜기 전(AI 저장소와 함께): 백그라운드 호출이 쿠키를 쓰므로 `access_token`(30분)이 생성·굽기 중에 만료되면 성공 보고·시트 저장이 401이다. 성공 보고를 잃은 작업은 10분 뒤 시간 초과로 실패하고 다시 요청할 수 있다
 - 시드(SCR-ADM-070): `ENGINE_ITEM_KEY`는 이름이 같은 14개만 넣었다. AI `items.json` 26개와 시드 24개(신발 `MYPC0006` 4개 포함)를 맞춘다. 교체된 착용 시트의 이전 `ATCH_FILE`은 연결이 끊긴 채 남는다
 - 테스트 부족: 시간 초과 조회(`PRCS_BGNG_DT < NOW() - INTERVAL 10 MINUTE`) 경계를 실제 DB에서 돌려 보지 않았다(매퍼 목)
 - 로컬 DB 정리(`nyangmeong_local`, 사람): 검증·확인으로 생긴 반려동물 5의 `PIXEL_CHAR` 601·`CHAR_CRT_JOB` 780·`ATCH_FILE` 4178과 결과 사진, 반려동물 10의 캐릭터 데이터. 반려동물 삭제 API나 `DEL_YN='Y'`로 지운다
 - 로컬 Python 서버(사람): 8000은 `--reload`로 띄운다. 14:29에 띄운 옛 프로세스가 가짜 저장소로 돌아 미리보기가 `PIXEL_CHARACTER_NOT_FOUND`였다
-- 공용 DB(PR): v0.11 (9, 처음 번호 7이 KSJ와 겹쳐 변경)는 사람이 PR 전에 공용 DB에 적용했다고 답했다. 병합 뒤 다시 실행하지 않는다. PR 본문에 "DB 변경 있음, v0.11 (9) 공용 DB 적용 완료"로 적는다. 로컬 `nyangmeong_local`에는 없다
 - 판단 필요(시드): 시드의 자동 블라인드 이력 18건은 사유가 `신고 누적으로 블라인드`라 `신고 누적`과 달라 자동 블라인드 탭에 나오지 않는다. 시드를 고칠지 탭 판별을 넓힐지 정한다. 이 코드 이전에 자동 삭제된 댓글도 나오지 않는다
 - ERDCloud(사람): `DCLR.DCLR_ACTN_CD` 신고조치공통코드(CMUG08)를 추가한다
 - KSJ에게 알린다(PR 전): SCR-ADM-030을 LJS가 구현했다(구현 계획 담당 KSJ, 저장소에 협의 기록 없음). `ReportService` 누적 계산에서 반려를 뺐고 자동 삭제 댓글에 `DCLR_STTS_HSTRY` 표시 행을 남긴다. 알림 `NotificationType.REPORT_RESULT`는 `COMMUNITY`와 코드 `AIMC0010`이 같다
@@ -98,7 +102,6 @@ SCR-ADM-040 공지사항 — 끝 (2026-11-02). `/api/admin/notices` 6개(목록�
 - SJM에게 확인: 가계부 모달의 영수증 저장을 `ExpenseService`가 직접 하는지. 영수증 쪽이 하라면 `receipt`(4층) 분리를 다시 검토한다(`docs/OPEN_ISSUES.md` 영수증 행)
 - SCR-AIM-006 연결 남음: health 병원 일정 조회(JAJ)가 나오면 `scheduler/HospitalScheduleFake`를, pet 연동 양육자 조회(SJM)가 나오면 `scheduler/CaregiverFake`를 그 service로. 그 뒤 FN-AIM-006-11·13 화면과 01·02·20 실제 조회를 공용 DB 병원 일정으로 확인한다 / SCR-AIM-006 연결 남음: 팀이 SMTP 계정을 정하면 `spring-boot-starter-mail`과 `MailSender` SMTP 구현. 그 전까지 메일은 로그만
 - SCR-MYP-011 연결 남음: 포인트 조회·차감(SJM, FN-MYP-020)이 나오면 `pet/service/PointFake`를 그 service로. 구매의 `idmptDmndId`를 포인트 원장에 넘긴다
-- SCR-MYP-010 연결 남음: FN-MYP-010-24 1:1 문의 작성(SCR-CSC-003, KSJ)이 `PixelCharacterService.receiveErrorInquiry(mbrSn, pixelCharSn, otoInqrySn)`를 부르고 결과 ATCH_FILE_SN을 첨부한다 / SCR-MYP-010 연결 남음: FN-MYP-010-23 관리자 확인 화면(SCR-ADM-042 1:1 문의 상세, LJS)이 `finishErrorCheck(pixelCharSn, regenerate)`를 부른다
 - FN-MYP-010-19: 캐릭터 생성 외부 API가 정해지면 `CharacterGenerator` 실제 구현과 베이스 캐릭터 선택 방식을 판단한다. 기본 캐릭터 이미지(`resources/character/default-*.png`)도 디자인 이미지로
 - SCR-COM-004 연결 남음: FN-COM-004-08 공동양육 초대 수락·거절(SJM) API가 나오면 알림 행 버튼과 연결하고 초대 알림 `mvmnPath` 형식을 SJM과 맞춘다
 - SCR-COM-002 연결 남음: `/auth/me`의 프로필 이미지 URL은 `FileStore`·파일 조회 API 뒤 연결. 지금은 `atchFileSn`만

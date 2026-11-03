@@ -134,6 +134,7 @@ public enum ErrorCode {
     /** expense */
     EXPENSE_NOT_FOUND(HttpStatus.NOT_FOUND, "지출 내역을 찾을 수 없습니다."),
     EXPENSE_PET_REQUIRED(HttpStatus.BAD_REQUEST, "병원 카테고리는 반려동물을 선택해야 합니다."),
+    EXPENSE_BULK_DELETE_CHANGED(HttpStatus.CONFLICT, "그 사이 지출 내역이 바뀌었어요. 목록을 다시 불러온 뒤 삭제해 주세요."),
     EXPENSE_LIMIT_NOT_FOUND(HttpStatus.NOT_FOUND, "월 지출 한도가 설정되지 않았습니다."),
     /** 영수증 인식(docs/api/receipt.md). 도메인 확정 뒤 그 구획으로 이동 */
     RECEIPT_NOT_FOUND(HttpStatus.NOT_FOUND, "영수증을 찾을 수 없습니다."),
@@ -180,10 +181,13 @@ public enum ErrorCode {
 
     /** support */
     NOTICE_NOT_FOUND(HttpStatus.NOT_FOUND, "공지사항을 찾을 수 없습니다."),
+    FAQ_NOT_FOUND(HttpStatus.NOT_FOUND, "FAQ를 찾을 수 없습니다."),
     INQUIRY_NOT_FOUND(HttpStatus.NOT_FOUND, "문의를 찾을 수 없습니다."),
     INQUIRY_NOT_EDITABLE(HttpStatus.BAD_REQUEST, "접수 상태의 문의만 수정할 수 있습니다."),
     INQUIRY_NOT_DELETABLE(HttpStatus.BAD_REQUEST, "접수 상태의 문의만 삭제할 수 있습니다."),
-    INQUIRY_ATTACHMENT_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "첨부 파일은 최대 10개까지 올릴 수 있습니다.");
+    INQUIRY_ATTACHMENT_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "첨부 파일은 최대 10개까지 올릴 수 있습니다."),
+    INQUIRY_NOT_ANSWERED(HttpStatus.BAD_REQUEST, "답변을 등록한 문의만 답변을 수정할 수 있습니다."),
+    INQUIRY_DELETED(HttpStatus.CONFLICT, "회원이 삭제한 문의예요.");
 
     private final HttpStatus status;
     private final String message;

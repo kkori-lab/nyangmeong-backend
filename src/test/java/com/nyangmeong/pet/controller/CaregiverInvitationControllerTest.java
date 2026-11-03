@@ -185,6 +185,21 @@ class CaregiverInvitationControllerTest {
 
     @Test
     @WithMockLoginMember
+    void 초대_상세의_반려동물_카드에_품종명과_직접_입력_품종이_따로_나온다() throws Exception {
+        CaregiverInvitationPetSummary pet = pet(100L, "뭉치");
+        pet.setVrtyNm("말티즈");
+        pet.setVrtyDrctInptNm("믹스 말티푸");
+        when(caregiverInvitationService.getInvitation(1L, 50L)).thenReturn(new CaregiverInvitationResponse(50L,
+                "김주인", PENDING, LocalDateTime.of(2026, 11, 5, 10, 0), "s***@example.com", true, List.of(pet)));
+
+        mockMvc.perform(get("/api/caregiver-invitations/50"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.pets[0].vrtyNm").value("말티즈"))
+                .andExpect(jsonPath("$.data.pets[0].vrtyDrctInptNm").value("믹스 말티푸"));
+    }
+
+    @Test
+    @WithMockLoginMember
     void 다른_계정의_초대_상세는_가린_이메일만_돌려준다() throws Exception {
         when(caregiverInvitationService.getInvitation(1L, 50L)).thenReturn(new CaregiverInvitationResponse(50L,
                 null, PENDING, LocalDateTime.of(2026, 11, 5, 10, 0), "s***@example.com", false, null));

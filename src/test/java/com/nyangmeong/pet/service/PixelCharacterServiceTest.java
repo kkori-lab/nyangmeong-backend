@@ -352,6 +352,26 @@ class PixelCharacterServiceTest {
     }
 
     @Test
+    void 캐릭터_사진의_첨부_파일_번호를_준다() {
+        CharacterPhoto photo = photo(2499L);
+        photo.setPixelCharSn(CHAR);
+        when(mapper.selectPhoto(1018L)).thenReturn(photo);
+
+        assertThat(service.getPhotoAtchFileSn(CHAR, 1018L)).isEqualTo(2499L);
+    }
+
+    @Test
+    void 다른_캐릭터의_사진이거나_없는_사진이면_첨부_파일_번호는_null() {
+        CharacterPhoto other = photo(2499L);
+        other.setPixelCharSn(99L);
+        when(mapper.selectPhoto(1018L)).thenReturn(other);
+
+        assertThat(service.getPhotoAtchFileSn(CHAR, 1018L)).isNull();
+        assertThat(service.getPhotoAtchFileSn(CHAR, 1019L)).isNull();
+        assertThat(service.getPhotoAtchFileSn(CHAR, null)).isNull();
+    }
+
+    @Test
     void 같은_결과에_두_번_접수하면_PIXEL_CHARACTER_INQUIRY_ALREADY_RECEIVED() {
         CharacterCreationJob job = job(CharacterJobStatus.COMPLETED);
         job.setOtoInqrySn(77L);

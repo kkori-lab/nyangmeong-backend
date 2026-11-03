@@ -1,10 +1,10 @@
 # SJM 핸드오프
 
 ## 지금 하는 것
-SCR-MYP-002 반려동물 프로필 목록 · 목록 응답에 중성화 여부·정상 체중 범위 추가 — 끝남. `GET /pets`의 `PetSummary`에 `nutrYn`·`minBdwg`·`maxBdwg` 추가(검증 1회차 `확인 못 함 있음`(연결 남음만), 사람 확인 통과)
+SCR-MYP-030 가계부 목록 · 일괄 삭제 제외 목록 추가·건수 불일치 409 — 끝남. `POST /expenses/bulk-delete`에 `excludeExpndSn`(최대 1000개) 추가, 건수 검사는 "조건 건수 − 제외 수", 불일치·잘못된 제외 번호·삭제 건수 불일치는 모두 409 `EXPENSE_BULK_DELETE_CHANGED`(검증 1회차 `확인 못 함 있음`(서버가 예전 빌드라 화면 확인 못 함), 새 빌드로 Postman 확인 통과, 사람 확인 통과 2026-11-03)
 
 ## 다음에 할 것
-- 사람 확인(SCR-MYP-002 목록 응답 보강): 통과 2026-11-02. Postman Runner 24건 통과·실패 0(mbrSn 1, 주양육 petSn 2·공동양육 petSn 14 상세 값이 목록과 같음)
+- 연결 남음(SCR-MYP-030, FN-MYP-030-18·19·21): 프론트 SCR-MYP-030 편집 모드에서 전체 선택 뒤 해제한 번호를 `excludeExpndSn`으로 보내고 `expectedCnt`를 "조건 건수 − 해제한 수"로 바꾸기. 409 `EXPENSE_BULK_DELETE_CHANGED`면 목록을 다시 불러오게 안내(프론트 저장소에서 /start)
 - 연결 남음(SCR-MYP-002 목록 응답 보강): 프론트 SCR-MYP-002 슬라이드의 "(중성화 완료)"·"정상 a~bkg"를 상세 조회 대신 `GET /pets`의 `nutrYn`·`minBdwg`·`maxBdwg`로 채우기(프론트 저장소에서 /start)
 - Postman 컬렉션: 3번 회원이 정지(`MEMBER_INACTIVE`)라 그 회원을 쓰는 변수(`mbrSnB`·`emailB`·`delCoMbrSn`·`delCoEmail`·`invReceiverMbrSn`·`infoOtherMbrSn`)가 있는 폴더는 403. 돌릴 때 정상 회원으로 바꾼다(이메일은 `GET /members/me`의 `acntEml`)
 - 연결 남음(SCR-MYP-005 추가-2): 프론트 5-1 초대 모달의 409 처리를 `data.linkedPets`("이미 ○○의 가족이에요")·`data.pendingPets`("이미 초대를 보냈어요 (MM-DD에 만료돼요)") 목록 기준으로 바꾸기(프론트 저장소에서 /start). 예전 단일 `data.petSn·petNm·invtnExpryDt`는 없어졌다

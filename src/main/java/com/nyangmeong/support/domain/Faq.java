@@ -18,4 +18,6 @@ public class Faq {
     private String useYn;
     private LocalDateTime regDt;
     private LocalDateTime mdfcnDt;
+    private String rgtrId;
+    private String mdfrId;
 }
