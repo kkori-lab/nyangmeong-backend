@@ -2,7 +2,7 @@
 
 ## 지금 하는 것
 
-SCR-ADM-022 펫돌봄 거래 · 프론트 연결 API 계약 — 끝 (2026-11-03). `GET /api/admin/care-matches?page=&size=20&rcrtSttsCd=` 정상 글만 최신순, `GET /api/admin/care-matches/{petPrtcRcrtSn}` 목록 행 + `mtchs[]`(매칭마다 조건 버전·상태 이력·완료 요청 회차와 사진 번호, 채팅 내용 없음, 블라인드 글도 열림). 같이 처리: `POST /api/receipts/{recptSn}/save-check` 저장완료 409. 추가-1: 시드 RGN에 전북 시군구 13건·행정동 243건(공용 DB 반영 확인됨). DB 구조 변경 없음
+SCR-MYP-031 영수증 업로드 · 가계부 출처 다시 열기 — 끝 (2026-11-03). `GET /api/receipts/{recptSn}`의 `petSn`을 가계부 출처(`AIMC0027`)만 생략 가능하게 했다(생략하면 응답 `petSn` null, 그 밖의 출처는 400 `INVALID_INPUT_VALUE`, 주면 돌봄 권한 검사). 영수증을 먼저 읽어 없는 영수증 + 남의 반려동물은 403이 아니라 404. DB 구조 변경 없음
 
 ## 다음에 할 것
 
@@ -14,7 +14,8 @@ SCR-ADM-022 펫돌봄 거래 · 프론트 연결 API 계약 — 끝 (2026-11-03)
 - 마일스톤 정리(사람): `milestones/LJS.md`의 `## SCR-ADM-021 실종제보 — 대기` 절(KSJ 협의 표기)은 같은 기능 ID를 이번 `· 프론트 연결 API 계약` 절로 끝냈다. 그 절과 `docs/admin/implementation-plan.md` 담당 표기를 사람이 맞춘다
 - 공용 DB 정리(사람): SCR-ADM-091 확인용 발송 이력 4건. `DELETE FROM NOTI_SNDNG_LOG WHERE RGTR_ID='ADM091TEST';`
 - SCR-ADM-091 연결 남음: FN-ADM-091-01 (프론트 연결 `features/adminNotificationLog/api.js` 목록, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트 가짜와 다른 점: 기간 파라미터가 `fromYmd`·`toYmd`가 아니라 `bgngYmd`·`endYmd`(종료일 그날 끝까지 포함)
-- 영수증 다시 열기(가계부 출처): `GET /api/receipts/{recptSn}`이 `petSn` 필수라(`ReceiptController`·`ReceiptService.get`의 양육 권한 검사) 가계부 출처(`AIMC0027`, `petSn` 없음) 영수증은 다시 열 수 없다. 업로드처럼 가계부 출처만 `petSn` 생략 가능하게 고친다(`/start`로 기획). 문의한 쪽(가계부 화면)에 고칠 때까지 다시 열기 없이 진행하라고 알린다
+- SCR-MYP-031 연결 남음: FN-AIM-013-06 가계부 출처 영수증 다시 열기 (프론트 연결 가계부 화면의 영수증 다시 열기, 화면 SJM, 프론트 저장소에서 /start). SJM에게 알린다: `GET /api/receipts/{recptSn}`을 `petSn` 없이 부르면 된다(응답 `petSn` null, `docs/api/receipt.md`). 프론트 저장소 마일스톤 절은 옆 폴더가 없어 넣지 못했다(아래 정리 항목)
+- 프론트 마일스톤(사람): 프론트 저장소 가계부 담당(SJM) 마일스톤 `## 제외` 앞에 `## SCR-MYP-031 영수증 업로드 · 가계부 출처 영수증 다시 열기 연결 — 대기` 절(기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-AIM-013-06·FN-MYP-031-03 / 기다리는 것: 백엔드 SCR-MYP-031 가계부 출처 다시 열기(LJS, 끝) / 완료 조건: 가계부 화면에서 올린 영수증을 `petSn` 없이 다시 열어 인식 결과 확인 모달이 뜬다)을 넣는다
 - 가계부 화면 쪽에 답한다: OCR이 날짜를 못 읽으면 `ckupYmd` null이 계약상 맞다(`docs/api/receipt.md`). 프론트가 오늘로 채우고 고칠 수 있게 한다(저장 때 미래 날짜 400). 라벨 없는 날짜("진료일" 표시 없음) 인식은 AI 저장소(ai-47)에 알린다
 - ai-47에 알린다: SCR-MYP-031 백엔드 PR 번호(AI PR kkori-lab/nyangmeong-ai#33보다 먼저 병합). 가계부 출처 원본 저장은 `petSn` 파트 없이, 다른 출처는 `petSn` 없으면 400 `INVALID_INPUT_VALUE`
 - SJM에게 알린다: 영수증 저장 경로(`ExpenseService.create(ExpenseCreateCommand)`) 미래 날짜 검사는 SJM이 넣는다(LJS 동의, 검진기록·처방약까지 롤백 OK). `docs/api/receipt.md` `POST /receipts/{recptSn}/save` 오류 목록의 `INVALID_INPUT_VALUE`(400)는 LJS가 이미 넣었다
