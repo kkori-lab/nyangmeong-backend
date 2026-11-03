@@ -2,10 +2,14 @@
 
 ## 지금 하는 것
 
-SCR-MYP-031 영수증 업로드 · 가계부 출처 OCR 내부 API — 끝 (2026-11-03). `POST /internal/ai/receipts`가 가계부 출처 `AIMC0027`을 `petSn` 없이 받는다(권한 검사 없음, 다른 출처는 `petSn` 없으면 400). `ReceiptOcrResponse`에 `expndPlcusNm`·`expndClsfCd`. 인식 판정은 출처별(가계부는 사용처·결제일·금액, 품목 0개 허용, 사용처만 읽히면 부분 인식). `receipt.md` 영수증 저장 오류에 미래 날짜 400(검사 코드는 SJM). DB 변경 없음
+SCR-ADM-091 발송 이력 — 끝 (2026-11-03). `GET /api/admin/notification-logs?page=&size=20&bgngYmd=&endYmd=&notiChnlCd=&notiTypeCd=&sndngRsltCd=` 최신순 페이지, 행 `{ notiSndngLogSn, mbrSn, mbrNcnm, notiTypeCd, notiChnlCd, sndngRsltCd, rtryNmtm, failRsn, sndngDt }`(본문 없음). 모르는 코드·기간 역전 400, 재발송 API 없음. DB 변경 없음
 
 ## 다음에 할 것
 
+- 공용 DB 정리(사람): SCR-ADM-091 확인용 발송 이력 4건. `DELETE FROM NOTI_SNDNG_LOG WHERE RGTR_ID='ADM091TEST';`
+- SCR-ADM-091 연결 남음: FN-ADM-091-01 (프론트 연결 `features/adminNotificationLog/api.js` 목록, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트 가짜와 다른 점: 기간 파라미터가 `fromYmd`·`toYmd`가 아니라 `bgngYmd`·`endYmd`(종료일 그날 끝까지 포함)
+- 영수증 다시 열기(가계부 출처): `GET /api/receipts/{recptSn}`이 `petSn` 필수라(`ReceiptController`·`ReceiptService.get`의 양육 권한 검사) 가계부 출처(`AIMC0027`, `petSn` 없음) 영수증은 다시 열 수 없다. 업로드처럼 가계부 출처만 `petSn` 생략 가능하게 고친다(`/start`로 기획). 문의한 쪽(가계부 화면)에 고칠 때까지 다시 열기 없이 진행하라고 알린다
+- 가계부 화면 쪽에 답한다: OCR이 날짜를 못 읽으면 `ckupYmd` null이 계약상 맞다(`docs/api/receipt.md`). 프론트가 오늘로 채우고 고칠 수 있게 한다(저장 때 미래 날짜 400). 라벨 없는 날짜("진료일" 표시 없음) 인식은 AI 저장소(ai-47)에 알린다
 - ai-47에 알린다: SCR-MYP-031 백엔드 PR 번호(AI PR kkori-lab/nyangmeong-ai#33보다 먼저 병합). 가계부 출처 원본 저장은 `petSn` 파트 없이, 다른 출처는 `petSn` 없으면 400 `INVALID_INPUT_VALUE`
 - SJM에게 알린다: 영수증 저장 경로(`ExpenseService.create(ExpenseCreateCommand)`) 미래 날짜 검사는 SJM이 넣는다(LJS 동의, 검진기록·처방약까지 롤백 OK). `docs/api/receipt.md` `POST /receipts/{recptSn}/save` 오류 목록의 `INVALID_INPUT_VALUE`(400)는 LJS가 이미 넣었다
 - 공용 DB 정리(사람): SCR-MYP-031 검증·사람 확인으로 생긴 회원 1의 가계부 출처 `RECPT` 501·502(ai-47)·505(검증, `ATCH_FILE` 4199)·508(사람 확인)과 원본 파일. 상태 이력(`RECPT_STTS_HSTRY`)도 같이 지운다
