@@ -42,6 +42,7 @@ import com.nyangmeong.health.dto.ReceiptCheckupSummary;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.health.mapper.CareScheduleMapper;
 import com.nyangmeong.health.mapper.CheckupMapper;
+import com.nyangmeong.pet.service.PointService;
 
 /**
  * [검사 - 검진기록]
@@ -62,7 +63,9 @@ class CheckupServiceTest {
     private final CheckupMapper checkupMapper = mock(CheckupMapper.class);
     private final CareScheduleMapper careScheduleMapper = mock(CareScheduleMapper.class);
     private final PetAuthorizer petAuthorizer = mock(PetAuthorizer.class);
-    private final CheckupService service = new CheckupService(checkupMapper, careScheduleMapper, petAuthorizer);
+    private final PointService pointService = mock(PointService.class);
+    private final CheckupService service = new CheckupService(checkupMapper, careScheduleMapper, petAuthorizer,
+            pointService);
 
     @BeforeEach
     void setUp() {
@@ -423,5 +426,37 @@ class CheckupServiceTest {
 
         assertThat(service.findNearestUnlinkedSchedule(PET, YMD)).contains(nearby);
         assertThat(service.findNearestUnlinkedSchedule(OTHER_PET, YMD)).isEmpty();
+    }
+
+    @Test
+    void 직접_등록하면_검진_포인트를_한_번_요청한다() {
+        service.create(MBR, PET, create(YMD, null));
+
+        verify(pointService).earnCheckupPoint(PET, YMD);
+    }
+
+    @Test
+    void 영수증_저장의_검진기록도_검진_포인트를_한_번_요청한다() {
+        service.createFromReceipt(MBR, PET, receiptCommand(null));
+
+        verify(pointService).earnCheckupPoint(PET, YMD);
+    }
+
+    @Test
+    void 등록이_실패하면_검진_포인트를_요청하지_않는다() {
+        doThrow(new CustomException(ErrorCode.FORBIDDEN)).when(petAuthorizer).checkCaregiver(MBR, OTHER_PET);
+
+        assertThatThrownBy(() -> service.create(MBR, OTHER_PET, create(YMD, null)))
+                .isInstanceOf(CustomException.class);
+        verify(pointService, never()).earnCheckupPoint(anyLong(), any());
+    }
+
+    @Test
+    void 수정은_검진_포인트를_요청하지_않는다() {
+        when(checkupMapper.selectDetail(CKUP, COMPLETED)).thenReturn(detail(PET, SCHDL, YMD));
+
+        service.update(MBR, PET, CKUP, new CheckupUpdateRequest(null, YMD.minusDays(1), null, null, null, null));
+
+        verify(pointService, never()).earnCheckupPoint(anyLong(), any());
     }
 }
