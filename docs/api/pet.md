@@ -217,6 +217,8 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 | petSn | Long | Y | | INVTN_TRGT_PET.PET_SN |
 | petNm | String | Y | | PET.PET_NM, MYP-005-03 |
 | petSeCd | String | Y | | PET.PET_SE_CD, MYP-005-05 |
+| vrtyNm | String | N | 목록에서 고른 품종명. 품종을 고르지 않았으면 null | PET.VRTY_SN → VRTY.VRTY_NM, MYP-005-05 |
+| vrtyDrctInptNm | String | N | 직접 입력한 품종명. 없으면 null. 둘 다 있으면 직접 입력을 먼저 보인다(합치지 않고 따로 내림) | PET.VRTY_DRCT_INPT_NM, MYP-005-05 |
 | invtnSttsCd | String | Y | 반려동물별 상태(PETG06). 일부 수락이면 고른 반려동물은 수락, 뺀 반려동물은 거절. 응답 전이면 초대 상태(만료 포함) | INVTN_TRGT_PET.ACPT_YN, JNT_BRUP_INVTN.INVTN_STTS_CD, MYP-005-03 |
 
 ### CaregiverSummary

@@ -1,19 +1,21 @@
 # SJM 핸드오프
 
 ## 지금 하는 것
-SCR-MYP-002 반려동물 삭제 · 공동양육 자동 해제 테스트 보강 — 끝남. `PetServiceTest`에 동시 해제 테스트 추가, `PetMapperXmlTest` 새로 만듦(검증 1회차 `통과`, 사람 확인 통과 2026-11-03). 운영 코드 변경 없음
+SCR-MYP-005 공동양육자 추가 · 수락 카드 품종 필드 추가 — 끝남. 초대 상세·보낸 초대 목록 `pets[]`에 `vrtyNm`·`vrtyDrctInptNm` 추가(검증 1회차 `통과`, 사람 확인 통과 2026-11-03)
 
-- FN-MYP-002-08 (테스트만, 운영 코드 변경 없음)
-  - 바꿀 파일: `src/test/java/com/nyangmeong/pet/service/PetServiceTest.java`(테스트 1개 추가), `src/test/java/com/nyangmeong/pet/mapper/PetMapperXmlTest.java`(새로 만듦, `health/mapper/HealthPetDeleteMapperXmlTest` 방식: XML을 DOM으로 읽어 공백을 접고 SQL 문장을 확인. DB에 붙지 않음)
-  - PetServiceTest `삭제_중_연동이_동시에_해제되면_그_공동양육자의_이력과_알림을_남기지_않는다`: `selectLinkedCoParentRels`가 60L(7번)·61L(8번)을 주고 `updateBrupRelUnlink(60L)`=0·`(61L)`=1이면 `insertLinkHistory`는 1번(8번, PETC0027), `events.publish`는 1번(8번)이다. 7번 회원에게는 이력(`BrupLinkSttsHstry.mbrSn`이 7L인 것)도 알림(`NotificationEvent.mbrSn`이 7L인 것)도 없음을 `never`/`noneMatch`로 확인한다(사람 요청 2026-11-03, 기획 승인 때). 반려동물 삭제와 `PetDeletedEvent` 발행은 그대로 일어난다
-  - PetMapperXmlTest `selectLinkedCoParentRels`: `FROM BRUP_REL`, `WHERE PET_SN = #{petSn}`, `BRUP_ROLE_CD = #{coParentRoleCd}`(주양육자 제외, 서비스가 CO_PARENT 코드를 넘기는 것은 기존 서비스 테스트가 확인), `USE_YN = 'Y'`(해제된 행 제외)
-  - PetMapperXmlTest `updateBrupRelUnlink`: `UPDATE BRUP_REL SET USE_YN = 'N'`, `RPRS_PET_YN = 'N'`, `MDFR_ID = #{actorId}`, `MDFCN_DT = NOW()`, `WHERE BRUP_REL_SN = #{brupRelSn} AND USE_YN = 'Y'`
-  - 완료 조건: `명령:` ./gradlew build -q 통과. `화면:` 없음(테스트 보강만, API 변경 없음)
-- 부를 API: 없음. 프론트 연결 없음
+- FN-MYP-005-05 (명세 기능 ID 추가 없음. 수락 카드 5-3에 품종 줄)
+  - 바꿀 파일:
+    - `src/main/java/com/nyangmeong/pet/dto/CaregiverInvitationPetSummary.java`: `vrtyNm`(VRTY.VRTY_NM, 목록에서 고른 품종)·`vrtyDrctInptNm`(PET.VRTY_DRCT_INPT_NM, 직접 입력) 필드 추가. 둘을 합치지 않고 따로 내린다(프론트가 직접입력 우선으로 이미 만들어 둠, `PetSummary`와 같은 모양)
+    - `src/main/resources/mapper/pet/CaregiverInvitationMapper.xml`: `invitationPetResultMap`에 `VRTY_NM`·`VRTY_DRCT_INPT_NM` 매핑. `selectSentList`·`selectInvitationPets`에 `V.VRTY_NM`, `P.VRTY_DRCT_INPT_NM` 컬럼과 `LEFT JOIN VRTY V ON V.VRTY_SN = P.VRTY_SN`(품종 미선택 반려동물도 빠지지 않게 LEFT. VRTY는 DEL_YN 없음, `USE_YN` 조건은 걸지 않음: 나중에 사용 중지된 품종도 이미 등록된 반려동물에는 이름이 보여야 함, `PetMapper.selectMyPets`와 같음)
+    - `docs/api/pet.md` `CaregiverInvitationPetSummary` 절에 두 행 추가(초안을 구현 전에 고침)
+    - 테스트: `src/test/java/com/nyangmeong/pet/mapper/CaregiverInvitationMapperXmlTest.java` 새로 만듦(`PetMapperXmlTest` 방식, DB에 붙지 않음): 두 select에 `V.VRTY_NM`·`P.VRTY_DRCT_INPT_NM`·`LEFT JOIN VRTY V ON V.VRTY_SN = P.VRTY_SN`이 있고, resultMap이 두 컬럼을 `vrtyNm`·`vrtyDrctInptNm`에 매핑한다. `CaregiverInvitationControllerTest`: 상세 조회 JSON의 `pets[0].vrtyNm`·`pets[0].vrtyDrctInptNm`이 나오고, 이메일 불일치·만료 응답에는 `pets`가 없다(이미 있는 검사가 있으면 그대로 둠)
+  - 부를 API: 없음(자기 API `GET /caregiver-invitations/{jntBrupInvtnSn}`·`GET /caregiver-invitations` 응답만 늘어남). 서비스 로직 변경 없음(`emailMatched`·만료 판단 그대로)
+  - 완료 조건: `명령:` ./gradlew build -q 통과. `화면:` Swagger/Postman `GET /api/caregiver-invitations/{jntBrupInvtnSn}`(대기·이메일 일치)의 `pets[]`에 `vrtyNm`·`vrtyDrctInptNm`(없으면 JSON에서 빠지거나 null), `GET /api/caregiver-invitations`의 `pets[]`도 같음. 다른 계정으로 같은 초대를 보면 `pets` 없음
+  - 프론트 연결: 없음(프론트 수락 카드는 이미 두 필드를 읽게 만들어 둠)
 - 새 의존성: 없음
 
 ## 다음에 할 것
-- 사람 확인(SCR-MYP-002 삭제 · 공동양육 자동 해제 테스트 보강): 통과 2026-11-03. `PetServiceTest` 44건·`PetMapperXmlTest` 2건 통과
+- 사람 확인(SCR-MYP-005 수락 카드 품종 필드): 통과 2026-11-03. 보낸 초대 목록 화면은 품종을 그리지 않지만 주양육자가 아는 값이라 필요 없다고 사람이 정함(프론트 연결 없음)
 - 연결 남음(SCR-MYP-002 목록 응답 보강): 프론트 SCR-MYP-002 슬라이드의 "(중성화 완료)"·"정상 a~bkg"를 상세 조회 대신 `GET /pets`의 `nutrYn`·`minBdwg`·`maxBdwg`로 채우기(프론트 저장소에서 /start)
 - Postman 컬렉션: 3번 회원이 정지(`MEMBER_INACTIVE`)라 그 회원을 쓰는 변수(`mbrSnB`·`emailB`·`delCoMbrSn`·`delCoEmail`·`invReceiverMbrSn`·`infoOtherMbrSn`)가 있는 폴더는 403. 돌릴 때 정상 회원으로 바꾼다(이메일은 `GET /members/me`의 `acntEml`)
 - 연결 남음(SCR-MYP-005 추가-2): 프론트 5-1 초대 모달의 409 처리를 `data.linkedPets`("이미 ○○의 가족이에요")·`data.pendingPets`("이미 초대를 보냈어요 (MM-DD에 만료돼요)") 목록 기준으로 바꾸기(프론트 저장소에서 /start). 예전 단일 `data.petSn·petNm·invtnExpryDt`는 없어졌다
