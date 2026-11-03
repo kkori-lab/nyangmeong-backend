@@ -78,6 +78,12 @@
 - 완료 조건: `POST /api/receipts/{recptSn}/save`가 실제 CKUP_RCD(영수증 연결·출처 영수증)·PRSC(`CARE_RFLT_YN='N'`)·병원 일정을 만들고, 저장 전 확인이 실제 가까운 미연결 병원 일정을 준다. `POST /api/receipts/{recptSn}/checkups`가 인식 실패 영수증을 저장완료로 바꾸고 영수증이 연결된 검진기록을 만든다. 같은 반려동물·날짜·금액의 병원 지출이 있으면 `save-check`의 `duplicateExpenses`에 나오고, `save` 뒤 가계부에 지출이 생긴다
 - 연결 남음: FN-HLT-002-31 (프론트 연결 검진기록 등록 모달을 영수증 실패 화면의 [직접 입력]으로 열었을 때 저장을 `POST /api/receipts/{recptSn}/checkups?petSn=`로, 프론트 저장소에서 /start)
 
+## SCR-HLT-002 건강 일지 · 영수증 저장 전 확인 저장완료 409 — 대기
+
+- 기능: 명세 기능 ID 추가 없음, FN-HLT-002-44·45(영수증 저장 전 확인·저장)에 걸침. `POST /api/receipts/{recptSn}/save-check`도 저장완료 영수증이면 `save`와 같은 409 `RECEIPT_ALREADY_SAVED`("이미 저장한 영수증입니다")를 준다. 지금은 200으로 중복·가까운 일정을 돌려준다
+- 기다리는 것: 프론트 SCR-HLT-002 건강 일지 · 영수증 일괄 저장 연결 (끝 2026-11-03, 프론트는 `save-check`·`save` 409를 같은 안내로 처리하고 [다시 시도하기]를 숨긴다)
+- 완료 조건: 저장완료 영수증으로 `save-check`를 부르면 409 `RECEIPT_ALREADY_SAVED`, 인식성공·부분인식 영수증은 지금처럼 200
+
 ## 제외
 - FN-HLT-002-33 등록 방법 선택: 화면만 있다(서버 동작 없음, 화면은 JAJ 프론트)
 - FN-HLT-002-34~45 영수증 인식 결과 확인 모달: API는 LJS (담당 표 HLT-002-34~46)
