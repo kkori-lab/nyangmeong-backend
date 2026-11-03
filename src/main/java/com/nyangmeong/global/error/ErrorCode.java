@@ -53,6 +53,8 @@ public enum ErrorCode {
     ADMIN_NOT_RELEASABLE(HttpStatus.CONFLICT, "본인과 마지막 남은 관리자는 해제할 수 없어요."),
     SNS_ONLY_MEMBER(HttpStatus.BAD_REQUEST, "SNS로 가입한 계정입니다. SNS 로그인을 이용해 주세요."),
     PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다."),
+    /** 로그인한 회원이 입력한 현재 비밀번호가 틀림 : 새 비밀번호·확인값 불일치(PASSWORD_MISMATCH)와 화면의 오류 위치가 달라 따로 둠 */
+    CURRENT_PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "현재 비밀번호가 일치하지 않습니다."),
     EMAIL_ALREADY_REGISTERED(HttpStatus.CONFLICT, "이미 가입된 이메일입니다. 기존에 가입한 방법으로 로그인해 주세요."),
     /** 탈퇴 후 보관 중인 이메일 : 새 회원을 만들지 않고 복구 흐름으로 안내 */
     MEMBER_RECOVERY_AVAILABLE(HttpStatus.CONFLICT, "탈퇴 후 보관 중인 계정입니다. 기존 정보 복구를 진행해 주세요."),

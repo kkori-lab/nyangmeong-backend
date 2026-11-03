@@ -46,6 +46,7 @@ import com.nyangmeong.global.security.handler.RestAuthenticationEntryPoint;
 import com.nyangmeong.global.security.jwt.JwtProperties;
 import com.nyangmeong.global.security.jwt.JwtTokenProvider;
 import com.nyangmeong.global.security.jwt.TokenCookies;
+import com.nyangmeong.global.security.session.LoginSessionManager;
 import com.nyangmeong.member.dto.MemberCreateRequest;
 import com.nyangmeong.member.dto.MemberJoinResult;
 import com.nyangmeong.member.dto.MemberNicknameAvailabilityResponse;
@@ -56,7 +57,10 @@ import com.nyangmeong.member.dto.MemberRecoveryInfoRequest;
 import com.nyangmeong.member.dto.MemberRecoveryResponse;
 import com.nyangmeong.member.dto.MemberResponse;
 import com.nyangmeong.member.dto.MemberUpdateRequest;
+import com.nyangmeong.member.dto.PasswordChangeRequest;
+import com.nyangmeong.member.dto.PasswordVerifyRequest;
 import com.nyangmeong.member.service.MemberJoinService;
+import com.nyangmeong.member.service.MemberPasswordService;
 import com.nyangmeong.member.service.MemberRecoveryService;
 import com.nyangmeong.member.service.MemberService;
 import com.nyangmeong.member.service.NicknameSetupTokenManager;
@@ -68,6 +72,7 @@ import jakarta.servlet.http.Cookie;
  * - 가입은 로그인 쿠키 없이 201 + 닉네임 설정 쿠키만 / 입력 오류는 서비스까지 가지 않는다
  * - 닉네임 설정은 로그인 회원 또는 닉네임 설정 쿠키만 / 둘 다 없으면 401
  * - 쿠키는 실제 NicknameSetupTokenManager 로 발급·검증한다
+ * - 비밀번호 확인·변경은 로그인 회원만 / 필수값·형식 오류는 서비스까지 가지 않고 / 변경 성공 시 요청한 기기에 새 세션을 준다
  */
 @WebMvcTest(controllers = MemberController.class)
 @Import({SecurityConfig.class, JwtTokenProvider.class, JwtProperties.class, TokenCookies.class,
@@ -96,6 +101,12 @@ class MemberControllerTest {
 
     @MockitoBean
     MemberRecoveryService memberRecoveryService;
+
+    @MockitoBean
+    MemberPasswordService memberPasswordService;
+
+    @MockitoBean
+    LoginSessionManager loginSessionManager;
 
     @MockitoBean
     AuthMemberMapper authMemberMapper;
@@ -444,5 +455,121 @@ class MemberControllerTest {
                 .andExpect(status().isUnauthorized());
 
         verify(memberService, never()).updateMember(any(), any());
+    }
+
+    private MockHttpServletRequestBuilder verifyPassword(String body) {
+        return post("/api/members/me/password-verification")
+                .header("X-Requested-With", "XMLHttpRequest")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body);
+    }
+
+    private MockHttpServletRequestBuilder changePassword(String body) {
+        return patch("/api/members/me/password")
+                .header("X-Requested-With", "XMLHttpRequest")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body);
+    }
+
+    @Test
+    @WithMockLoginMember(id = 5L)
+    void 비밀번호_확인은_통과하면_200이다() throws Exception {
+        mockMvc.perform(verifyPassword("{\"pswd\":\"oldpass12\"}"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<PasswordVerifyRequest> captor = ArgumentCaptor.forClass(PasswordVerifyRequest.class);
+        verify(memberPasswordService).verify(eq(5L), captor.capture());
+        assertThat(captor.getValue().pswd()).isEqualTo("oldpass12");
+    }
+
+    @Test
+    @WithMockLoginMember(id = 5L)
+    void 비밀번호_확인에서_현재_비밀번호가_틀리면_400이다() throws Exception {
+        org.mockito.Mockito.doThrow(new CustomException(ErrorCode.CURRENT_PASSWORD_MISMATCH))
+                .when(memberPasswordService).verify(eq(5L), any(PasswordVerifyRequest.class));
+
+        mockMvc.perform(verifyPassword("{\"pswd\":\"wrongpass1\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("CURRENT_PASSWORD_MISMATCH"));
+    }
+
+    @Test
+    @WithMockLoginMember(id = 5L)
+    void 비밀번호_확인은_비밀번호가_비면_400이고_서비스까지_가지_않는다() throws Exception {
+        mockMvc.perform(verifyPassword("{}")).andExpect(status().isBadRequest());
+        mockMvc.perform(verifyPassword("{\"pswd\":\"  \"}")).andExpect(status().isBadRequest());
+
+        verify(memberPasswordService, never()).verify(any(), any());
+    }
+
+    @Test
+    void 비밀번호_확인은_로그인하지_않으면_401이다() throws Exception {
+        mockMvc.perform(verifyPassword("{\"pswd\":\"oldpass12\"}"))
+                .andExpect(status().isUnauthorized());
+
+        verify(memberPasswordService, never()).verify(any(), any());
+    }
+
+    @Test
+    @WithMockLoginMember(id = 5L)
+    void 비밀번호_변경은_바꾼_뒤_요청한_기기에_새_세션을_준다() throws Exception {
+        mockMvc.perform(changePassword(
+                "{\"currentPswd\":\"oldpass12\",\"pswd\":\"newpass34\",\"pswdCnfrm\":\"newpass34\"}"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<PasswordChangeRequest> captor = ArgumentCaptor.forClass(PasswordChangeRequest.class);
+        org.mockito.InOrder order = org.mockito.Mockito.inOrder(memberPasswordService, loginSessionManager);
+        order.verify(memberPasswordService).change(eq(5L), captor.capture());
+        order.verify(loginSessionManager).issue(eq(5L), any());
+        assertThat(captor.getValue().currentPswd()).isEqualTo("oldpass12");
+        assertThat(captor.getValue().pswd()).isEqualTo("newpass34");
+    }
+
+    @Test
+    @WithMockLoginMember(id = 5L)
+    void 비밀번호_변경은_세_값_중_하나라도_비면_400이다() throws Exception {
+        mockMvc.perform(changePassword("{\"pswd\":\"newpass34\",\"pswdCnfrm\":\"newpass34\"}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(changePassword("{\"currentPswd\":\"oldpass12\",\"pswdCnfrm\":\"newpass34\"}"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(changePassword("{\"currentPswd\":\"oldpass12\",\"pswd\":\"newpass34\"}"))
+                .andExpect(status().isBadRequest());
+
+        verify(memberPasswordService, never()).change(any(), any());
+        verify(loginSessionManager, never()).issue(any(), any());
+    }
+
+    @Test
+    @WithMockLoginMember(id = 5L)
+    void 비밀번호_변경은_새_비밀번호_형식이_틀리면_400이다() throws Exception {
+        for (String weak : new String[] {"short1", "onlyletters", "12345678", "has space1a"}) {
+            mockMvc.perform(changePassword("{\"currentPswd\":\"oldpass12\",\"pswd\":\"" + weak
+                    + "\",\"pswdCnfrm\":\"" + weak + "\"}")).andExpect(status().isBadRequest());
+        }
+
+        verify(memberPasswordService, never()).change(any(), any());
+    }
+
+    @Test
+    @WithMockLoginMember(id = 5L)
+    void 비밀번호_변경이_거절되면_새_세션을_주지_않는다() throws Exception {
+        org.mockito.Mockito.doThrow(new CustomException(ErrorCode.CURRENT_PASSWORD_MISMATCH))
+                .when(memberPasswordService).change(eq(5L), any(PasswordChangeRequest.class));
+
+        mockMvc.perform(changePassword(
+                "{\"currentPswd\":\"wrongpass1\",\"pswd\":\"newpass34\",\"pswdCnfrm\":\"newpass34\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("CURRENT_PASSWORD_MISMATCH"));
+
+        verify(loginSessionManager, never()).issue(any(), any());
+    }
+
+    @Test
+    void 비밀번호_변경은_로그인하지_않으면_401이다() throws Exception {
+        mockMvc.perform(changePassword(
+                "{\"currentPswd\":\"oldpass12\",\"pswd\":\"newpass34\",\"pswdCnfrm\":\"newpass34\"}"))
+                .andExpect(status().isUnauthorized());
+
+        verify(memberPasswordService, never()).change(any(), any());
     }
 }
