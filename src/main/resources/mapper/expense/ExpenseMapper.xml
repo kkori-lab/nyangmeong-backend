@@ -161,6 +161,19 @@
         <include refid="searchCondition" />
     </select>
 
+    <select id="selectCountIn" resultType="int">
+        /* 조건에 맞는 내 지출 중 번호 목록에 든 건수 */
+        SELECT COUNT(*)
+          FROM EXPND E
+         WHERE E.MBR_SN = #{mbrSn}
+           AND E.DEL_YN = 'N'
+        <include refid="searchCondition" />
+           AND E.EXPND_SN IN
+        <foreach collection="expndSns" item="expndSn" open="(" separator="," close=")">
+            #{expndSn}
+        </foreach>
+    </select>
+
     <select id="selectSumAmt" resultType="long">
         /* 조건에 맞는 내 지출 합계 */
         SELECT COALESCE(SUM(E.EXPND_AMT), 0)
@@ -383,13 +396,19 @@
     </update>
 
     <update id="deleteByCond">
-        /* 조건에 맞는 내 지출 삭제 */
+        /* 조건에 맞는 내 지출 삭제(제외 번호는 남김) */
         UPDATE EXPND E
            SET E.DEL_YN = 'Y'
              , E.MDFCN_DT = NOW()
          WHERE E.MBR_SN = #{mbrSn}
            AND E.DEL_YN = 'N'
         <include refid="searchCondition" />
+        <if test="excludeExpndSns != null and !excludeExpndSns.isEmpty()">
+           AND E.EXPND_SN NOT IN
+            <foreach collection="excludeExpndSns" item="expndSn" open="(" separator="," close=")">
+                #{expndSn}
+            </foreach>
+        </if>
     </update>
 
     <update id="updateLimit">

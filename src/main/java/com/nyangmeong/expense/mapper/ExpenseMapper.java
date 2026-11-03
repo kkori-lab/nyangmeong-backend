@@ -64,6 +64,12 @@ public interface ExpenseMapper {
     int selectCount(@Param("mbrSn") Long mbrSn, @Param("cond") ExpenseSearchCond cond);
 
     /**
+     * 조건에 맞는 내 지출 중 번호 목록에 든 건수
+     */
+    int selectCountIn(@Param("mbrSn") Long mbrSn, @Param("cond") ExpenseSearchCond cond,
+            @Param("expndSns") List<Long> expndSns);
+
+    /**
      * 조건에 맞는 내 지출 합계
      */
     long selectSumAmt(@Param("mbrSn") Long mbrSn, @Param("cond") ExpenseSearchCond cond);
@@ -135,9 +141,10 @@ public interface ExpenseMapper {
     int deleteMine(@Param("mbrSn") Long mbrSn, @Param("expndSns") List<Long> expndSns);
 
     /**
-     * 조건에 맞는 내 지출 삭제 : 지운 건수
+     * 조건에 맞는 내 지출 삭제(제외 번호는 남김) : 지운 건수
      */
-    int deleteByCond(@Param("mbrSn") Long mbrSn, @Param("cond") ExpenseSearchCond cond);
+    int deleteByCond(@Param("mbrSn") Long mbrSn, @Param("cond") ExpenseSearchCond cond,
+            @Param("excludeExpndSns") List<Long> excludeExpndSns);
 
     /**
      * 월 지출 한도 저장 : 처음 저장이면 한도 알림 수신을 켬

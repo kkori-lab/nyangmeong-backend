@@ -3,6 +3,7 @@ package com.nyangmeong.expense.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -15,6 +16,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -248,5 +251,27 @@ class ExpenseControllerTest {
                 .content("{\"expectedCnt\":3,\"petSn\":10}").header("X-Requested-With", "XMLHttpRequest"))
                 .andExpect(status().isOk());
         verify(expenseService).bulkDelete(eq(1L), any());
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 조건_전체_삭제의_제외_번호_검증과_409_응답() throws Exception {
+        mockMvc.perform(post("/api/expenses/bulk-delete").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"expectedCnt\":3,\"excludeExpndSn\":[1,null]}")
+                .header("X-Requested-With", "XMLHttpRequest"))
+                .andExpect(status().isBadRequest());
+        String over = IntStream.rangeClosed(1, 1001).mapToObj(String::valueOf).collect(Collectors.joining(","));
+        mockMvc.perform(post("/api/expenses/bulk-delete").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"expectedCnt\":3,\"excludeExpndSn\":[" + over + "]}")
+                .header("X-Requested-With", "XMLHttpRequest"))
+                .andExpect(status().isBadRequest());
+        verify(expenseService, never()).bulkDelete(any(), any());
+
+        doThrow(new CustomException(ErrorCode.EXPENSE_BULK_DELETE_CHANGED)).when(expenseService)
+                .bulkDelete(eq(1L), any());
+        mockMvc.perform(post("/api/expenses/bulk-delete").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"expectedCnt\":2,\"excludeExpndSn\":[7]}")
+                .header("X-Requested-With", "XMLHttpRequest"))
+                .andExpect(status().isConflict());
     }
 }

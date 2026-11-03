@@ -502,30 +502,75 @@ class ExpenseServiceTest {
     }
 
     @Test
-    void 조건_삭제는_건수가_다르면_지우지_않는다() {
+    void 조건_삭제는_건수가_다르면_409로_지우지_않는다() {
         when(expenseMapper.selectCount(eq(MBR), any())).thenReturn(4);
 
         assertThatThrownBy(() -> service.bulkDelete(MBR,
-                new ExpenseBulkDeleteRequest(3, null, null, 10L, null, null)))
+                new ExpenseBulkDeleteRequest(3, null, null, 10L, null, null, null)))
                 .isInstanceOf(CustomException.class).extracting("errorCode")
-                .isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
-        verify(expenseMapper, never()).deleteByCond(any(), any());
+                .isEqualTo(ErrorCode.EXPENSE_BULK_DELETE_CHANGED);
+        verify(expenseMapper, never()).deleteByCond(any(), any(), any());
     }
 
     @Test
     void 조건_삭제는_여러_달_범위와_필터를_같은_조건으로_지운다() {
         when(expenseMapper.selectCount(eq(MBR), any())).thenReturn(3);
+        when(expenseMapper.deleteByCond(eq(MBR), any(), any())).thenReturn(3);
         LocalDate aug = LocalDate.of(2026, 8, 1);
         LocalDate oct = LocalDate.of(2026, 10, 31);
 
-        service.bulkDelete(MBR, new ExpenseBulkDeleteRequest(3, oct, aug, 10L, null, FOOD));
+        service.bulkDelete(MBR, new ExpenseBulkDeleteRequest(3, oct, aug, 10L, null, FOOD, null));
 
         ArgumentCaptor<ExpenseSearchCond> cond = ArgumentCaptor.forClass(ExpenseSearchCond.class);
-        verify(expenseMapper).deleteByCond(eq(MBR), cond.capture());
+        verify(expenseMapper).deleteByCond(eq(MBR), cond.capture(), eq(List.of()));
         assertThat(cond.getValue().getStartYmd()).isEqualTo(aug);
         assertThat(cond.getValue().getEndYmd()).isEqualTo(oct);
         assertThat(cond.getValue().getPetSn()).isEqualTo(10L);
         assertThat(cond.getValue().getExpndClsfCd()).isEqualTo(FOOD);
+    }
+
+    @Test
+    void 조건_삭제는_제외_수를_뺀_건수로_비교하고_제외_목록을_넘긴다() {
+        when(expenseMapper.selectCountIn(eq(MBR), any(), eq(List.of(5L, 6L)))).thenReturn(2);
+        when(expenseMapper.selectCount(eq(MBR), any())).thenReturn(5);
+        when(expenseMapper.deleteByCond(eq(MBR), any(), eq(List.of(5L, 6L)))).thenReturn(3);
+
+        service.bulkDelete(MBR, new ExpenseBulkDeleteRequest(3, null, null, null, null, null, List.of(5L, 6L)));
+
+        verify(expenseMapper).deleteByCond(eq(MBR), any(), eq(List.of(5L, 6L)));
+    }
+
+    @Test
+    void 제외_번호가_조건_밖이거나_남의_것이면_409로_지우지_않는다() {
+        when(expenseMapper.selectCountIn(eq(MBR), any(), eq(List.of(5L, 6L)))).thenReturn(1);
+
+        assertThatThrownBy(() -> service.bulkDelete(MBR,
+                new ExpenseBulkDeleteRequest(3, null, null, null, null, null, List.of(5L, 6L))))
+                .isInstanceOf(CustomException.class).extracting("errorCode")
+                .isEqualTo(ErrorCode.EXPENSE_BULK_DELETE_CHANGED);
+        verify(expenseMapper, never()).deleteByCond(any(), any(), any());
+    }
+
+    @Test
+    void 중복된_제외_번호는_한_번으로_센다() {
+        when(expenseMapper.selectCountIn(eq(MBR), any(), eq(List.of(5L)))).thenReturn(1);
+        when(expenseMapper.selectCount(eq(MBR), any())).thenReturn(4);
+        when(expenseMapper.deleteByCond(eq(MBR), any(), eq(List.of(5L)))).thenReturn(3);
+
+        service.bulkDelete(MBR, new ExpenseBulkDeleteRequest(3, null, null, null, null, null, List.of(5L, 5L)));
+
+        verify(expenseMapper).deleteByCond(eq(MBR), any(), eq(List.of(5L)));
+    }
+
+    @Test
+    void 지운_건수가_기대값과_다르면_409로_던져_되돌린다() {
+        when(expenseMapper.selectCount(eq(MBR), any())).thenReturn(3);
+        when(expenseMapper.deleteByCond(eq(MBR), any(), any())).thenReturn(2);
+
+        assertThatThrownBy(() -> service.bulkDelete(MBR,
+                new ExpenseBulkDeleteRequest(3, null, null, null, null, null, null)))
+                .isInstanceOf(CustomException.class).extracting("errorCode")
+                .isEqualTo(ErrorCode.EXPENSE_BULK_DELETE_CHANGED);
     }
 
     @Test
