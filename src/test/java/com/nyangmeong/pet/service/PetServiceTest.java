@@ -512,6 +512,31 @@ class PetServiceTest {
     }
 
     @Test
+    void 삭제_중_연동이_동시에_해제되면_그_공동양육자의_이력과_알림을_남기지_않는다() {
+        when(mapper.updatePetDelete(PET, "1")).thenReturn(1);
+        when(mapper.selectLinkedCoParentRels(PET, CO_PARENT))
+                .thenReturn(List.of(target(60L, 7L, CO_PARENT), target(61L, 8L, CO_PARENT)));
+        when(mapper.updateBrupRelUnlink(60L, "1")).thenReturn(0);
+        when(mapper.updateBrupRelUnlink(61L, "1")).thenReturn(1);
+
+        service.deletePet(MBR, PET);
+
+        ArgumentCaptor<BrupLinkSttsHstry> history = ArgumentCaptor.forClass(BrupLinkSttsHstry.class);
+        verify(mapper, times(1)).insertLinkHistory(history.capture());
+        assertThat(history.getValue().getMbrSn()).isEqualTo(8L);
+        assertThat(history.getValue().getBrupRelSn()).isEqualTo(61L);
+        assertThat(history.getValue().getLinkChgTypeCd()).isEqualTo("PETC0027");
+        assertThat(history.getAllValues()).noneMatch(h -> Long.valueOf(7L).equals(h.getMbrSn()));
+
+        ArgumentCaptor<NotificationEvent> event = ArgumentCaptor.forClass(NotificationEvent.class);
+        verify(events, times(1)).publish(event.capture());
+        assertThat(event.getValue().mbrSn()).isEqualTo(8L);
+        assertThat(event.getAllValues()).noneMatch(e -> Long.valueOf(7L).equals(e.mbrSn()));
+
+        verify(domainEvents).publishEvent(new PetDeletedEvent(PET));
+    }
+
+    @Test
     void 삭제는_가계부를_뺀_pet_안의_기록을_지우고_위층에_삭제_이벤트를_발행한다() {
         when(mapper.updatePetDelete(PET, "1")).thenReturn(1);
         when(mapper.selectLinkedCoParentRels(PET, CO_PARENT)).thenReturn(List.of());
