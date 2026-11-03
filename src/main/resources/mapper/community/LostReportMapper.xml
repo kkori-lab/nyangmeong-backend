@@ -30,6 +30,7 @@
                extends="lostReportResultMap">
         <result column="MBR_SN"      property="mbrSn" />
         <result column="MBR_NCNM"    property="mbrNcnm" />
+        <result column="MBR_ATCH_FILE_SN" property="mbrAtchFileSn" />
         <result column="PST_STTS_CD" property="pstSttsCd" />
         <result column="PST_TTL"     property="pstTtl" />
         <result column="PST_CN"      property="pstCn" />
@@ -197,6 +198,7 @@
         SELECT <include refid="lostReportColumns" />
              , P.MBR_SN
              , M.MBR_NCNM
+             , M.ATCH_FILE_SN AS MBR_ATCH_FILE_SN
              , P.PST_STTS_CD
              , P.PST_TTL
              , P.PST_CN

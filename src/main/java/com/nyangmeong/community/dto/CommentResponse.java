@@ -14,10 +14,12 @@ public record CommentResponse(
         String cmntCn,
         Long mbrSn,
         String mbrNcnm,
+        Long mbrAtchFileSn,
         LocalDateTime regDt) {
 
-    public static CommentResponse from(Comment comment, String mbrNcnm) {
+    public static CommentResponse from(Comment comment, PostAuthor author) {
         return new CommentResponse(comment.getCmntSn(), comment.getPstSn(), comment.getPrntCmntSn(),
-                comment.getCmntCn(), comment.getMbrSn(), mbrNcnm, comment.getRegDt());
+                comment.getCmntCn(), comment.getMbrSn(), author.getMbrNcnm(), author.getMbrAtchFileSn(),
+                comment.getRegDt());
     }
 }

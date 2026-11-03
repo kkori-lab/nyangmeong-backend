@@ -134,6 +134,33 @@
              , NOW() )
     </insert>
 
+    <insert id="insertForNormalMembers">
+        /* 앱 알림 일괄 등록 : 상태가 같고 앱 알림 채널을 켠 회원 전체 (공지) */
+        INSERT INTO INAPP_NOTI
+             ( MBR_SN
+             , NOTI_TYPE_CD
+             , NOTI_TTL
+             , NOTI_CN
+             , MVMN_PATH
+             , AUTO_HIDE_DT
+             , REG_DT
+             , MDFCN_DT )
+        SELECT M.MBR_SN
+             , #{notiTypeCd}
+             , #{notiTtl}
+             , #{notiCn}
+             , #{mvmnPath}
+             , DATE_ADD(NOW(), INTERVAL COALESCE((SELECT NOTI_HIDE_CRTR_DAY_CNT
+                                                    FROM SYS_STNG
+                                                   ORDER BY SYS_STNG_SN
+                                                   LIMIT 1), 7) DAY)
+             , NOW()
+             , NOW()
+          FROM MBR M
+         WHERE M.MBR_STTS_CD = #{mbrSttsCd}
+           AND M.INAPP_NOTI_RCPTN_YN = 'Y'
+    </insert>
+
     <select id="countUnread" parameterType="long" resultType="long">
         /* 안 읽은 알림 수 조회 */
         SELECT COUNT(*)

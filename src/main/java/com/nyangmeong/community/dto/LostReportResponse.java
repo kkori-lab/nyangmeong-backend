@@ -21,6 +21,7 @@ public record LostReportResponse(
         LocalDateTime dscvSwtcDt,
         Long mbrSn,
         String mbrNcnm,
+        Long mbrAtchFileSn,
         LocalDateTime regDt,
         String pstCn,
         String petSeCd,
@@ -51,7 +52,7 @@ public record LostReportResponse(
         String vrtyNm = detail.getVrtySn() != null ? detail.getVrtyNm() : detail.getVrtyDrctInptNm();
         return new LostReportResponse(detail.getLostTpofSn(), detail.getPstSn(), detail.getPstTtl(),
                 detail.getLostTpofSttsCd(), detail.getDscvSwtcDt(), detail.getMbrSn(), detail.getMbrNcnm(),
-                detail.getPstRegDt(),
+                detail.getMbrAtchFileSn(), detail.getPstRegDt(),
                 detail.getPstCn(), detail.getPetSeCd(), detail.getPetNm(), detail.getVrtySn(), vrtyNm,
                 detail.getColrNm(), detail.getChrcCn(), detail.getLastWtnsDt(), detail.getRgnSn(),
                 detail.getRgnNm(), detail.getWtnsPlcNm(), detail.getWtnsPlcLat(), detail.getWtnsPlcLot(), cnpl,
@@ -64,7 +65,7 @@ public record LostReportResponse(
      */
     public static LostReportResponse closed(LostReportDetail detail) {
         return new LostReportResponse(detail.getLostTpofSn(), detail.getPstSn(), detail.getPstTtl(),
-                detail.getLostTpofSttsCd(), detail.getDscvSwtcDt(), null, null, null, null, null, null, null, null,
+                detail.getLostTpofSttsCd(), detail.getDscvSwtcDt(), null, null, null, null, null, null, null, null, null,
                 null, null, null, null, null, null, null, null, null, null, null, null, null, false, false);
     }
 }

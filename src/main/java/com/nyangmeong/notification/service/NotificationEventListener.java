@@ -7,6 +7,7 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.nyangmeong.global.notification.CareScheduleAlarmEvent;
+import com.nyangmeong.global.notification.NoticeNotificationEvent;
 import com.nyangmeong.global.notification.NotificationEvent;
 
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,19 @@ public class NotificationEventListener {
             notificationService.create(event);
         } catch (RuntimeException e) {
             log.error("[Notification] 저장 실패 mbrSn={} type={}", event.mbrSn(), event.type(), e);
+        }
+    }
+
+    /**
+     * 공지 전체 알림 이벤트 수신
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void handle(NoticeNotificationEvent event) {
+        try {
+            notificationService.createNotice(event);
+        } catch (RuntimeException e) {
+            log.error("[Notification] 공지 알림 저장 실패 mvmnPath={}", event.mvmnPath(), e);
         }
     }
 
