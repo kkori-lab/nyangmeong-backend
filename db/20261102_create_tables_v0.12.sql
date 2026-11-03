@@ -1,7 +1,7 @@
 -- =====================================================================
 -- 냥멍케어 MySQL DDL v0.12  |  MySQL 8.0.16+ / InnoDB / utf8mb4_0900_ai_ci
 -- 대상: DBeaver (전체 선택 후 스크립트 실행 Alt+X, 또는 스키마 우클릭 → Tools → Execute script)
--- 원천: DDL v0.11(db/archive/v0.11/) 위에 아래 "v0.11 → v0.12 변경"을 더한 것 (92 테이블 / 977 컬럼 / 관계 FK 151)
+-- 원천: DDL v0.11(db/archive/v0.11/) 위에 아래 "v0.11 → v0.12 변경"을 더한 것 (93 테이블 / 984 컬럼 / 관계 FK 151)
 --       UK·INDEX·CHECK·생성열·공통코드 FK 는 v0.8 그대로 유지
 -- 구성: [1] DROP  [2] CREATE(PK·UK·INDEX·CHECK·생성열)  [3] 관계 FK 151  [4] 공통코드 FK
 -- 주의: 전체 DROP 후 재생성합니다. 기존 데이터가 있으면 먼저 백업하세요. 공용 DB에는 실행하지 않습니다.
@@ -85,6 +85,19 @@
 --   UPDATE `ITEM` SET `BAKE_HINT`='a colorful Korean hanbok jacket with rainbow striped sleeves' WHERE `ITEM_NM`='꼬까 한복';
 --   UPDATE `ITEM` SET `BAKE_HINT`='a brown dog hoodie with small round bear ears on the hood' WHERE `ITEM_NM`='곰돌이 후드티';
 --   ALTER TABLE `ITEM` DROP COLUMN `ENGINE_ITEM_KEY`;
+-- v0.12 (4) 오늘의 한마디 후보 문구 (2026-11-03, LJS, 근거: 관리자_기능명세서 FN-ADM-023-04·05, 구현 계획 결정 11·B-2). 선정 결과는 CMNTY_AI_CMTRY에 일자별로 저장한다. 삭제 API가 없어 DEL_YN 없음. 공통코드는 20261102_insert_base_data_v0.12.sql의 v0.12 (4)를 이어서 실행한다
+--   SET NAMES utf8mb4;
+--   CREATE TABLE `TODAY_PHRS` (
+--     `TODAY_PHRS_SN` bigint NOT NULL AUTO_INCREMENT COMMENT '오늘의한마디일련번호',
+--     `PHRS_CN` varchar(200) NOT NULL COMMENT '문구내용',
+--     `USE_YN` char(1) NOT NULL DEFAULT 'Y' COMMENT '사용여부',
+--     `REG_DT` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
+--     `MDFCN_DT` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+--     `RGTR_ID` varchar(20) NOT NULL DEFAULT 'SYSTEM' COMMENT '등록자ID',
+--     `MDFR_ID` varchar(20) NOT NULL DEFAULT 'SYSTEM' COMMENT '수정자ID',
+--     PRIMARY KEY (`TODAY_PHRS_SN`),
+--     CONSTRAINT `CK_TODAY_PHRS_USE_YN` CHECK (`USE_YN` IN ('Y','N'))
+--   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='오늘의한마디후보';
 -- =====================================================================
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -109,6 +122,7 @@ DROP TABLE IF EXISTS `CKUP_RCD`;
 DROP TABLE IF EXISTS `SCHDL`;
 DROP TABLE IF EXISTS `PET_PRTC_MTCH_STTS_HSTRY`;
 DROP TABLE IF EXISTS `CMNTY_AI_CMTRY`;
+DROP TABLE IF EXISTS `TODAY_PHRS`;
 DROP TABLE IF EXISTS `AI_CNVRS_MSG`;
 DROP TABLE IF EXISTS `AI_CNVRS_ROOM`;
 DROP TABLE IF EXISTS `INQRY_ATCH_PHOTO`;
@@ -1561,6 +1575,18 @@ CREATE TABLE `CMNTY_AI_CMTRY` (
   KEY `IDX_CMNTY_AI_CMTRY_1` (`CMTRY_SRC_CD`),
   CONSTRAINT `CK_CMNTY_AI_CMTRY_USE_YN` CHECK (`USE_YN` IN ('Y','N'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='커뮤니티AI코멘트';
+
+CREATE TABLE `TODAY_PHRS` (
+  `TODAY_PHRS_SN` bigint NOT NULL AUTO_INCREMENT COMMENT '오늘의한마디일련번호',
+  `PHRS_CN` varchar(200) NOT NULL COMMENT '문구내용',
+  `USE_YN` char(1) NOT NULL DEFAULT 'Y' COMMENT '사용여부',
+  `REG_DT` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
+  `MDFCN_DT` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+  `RGTR_ID` varchar(20) NOT NULL DEFAULT 'SYSTEM' COMMENT '등록자ID',
+  `MDFR_ID` varchar(20) NOT NULL DEFAULT 'SYSTEM' COMMENT '수정자ID',
+  PRIMARY KEY (`TODAY_PHRS_SN`),
+  CONSTRAINT `CK_TODAY_PHRS_USE_YN` CHECK (`USE_YN` IN ('Y','N'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='오늘의한마디후보';
 
 CREATE TABLE `PET_PRTC_MTCH_STTS_HSTRY` (
   `PET_PRTC_MTCH_STTS_HSTRY_SN` bigint NOT NULL AUTO_INCREMENT COMMENT '펫돌봄매칭상태이력일련번호',

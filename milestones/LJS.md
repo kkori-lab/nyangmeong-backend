@@ -453,10 +453,14 @@
 - 연결 남음: FN-ADM-022-01·02 (프론트 연결 `features/adminCommunity/api.js` 펫돌봄 목록·매칭 상세 모달, 프론트 저장소에서 /start)
 - 연결 남음: FN-ADM-022-02 완료 사진 보기 (완료 사진 업로드가 아직 없어 저장 경로 미정, `/api/files/public/{atchFileSn}`은 `public/` 경로만 열어 지금 시드 사진은 404, KSJ와 정한다)
 
-## SCR-ADM-023 노출 콘텐츠 · 프론트 연결 API 계약 — 대기
+## SCR-ADM-023 노출 콘텐츠 · 프론트 연결 API 계약 — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-023-01·02·03·04·05·06
 - 기다리는 것: 프론트 SCR-ADM-023(끝, 가짜 응답 `features/adminCommunity/api.js` 노출 콘텐츠 절)
 - 완료 조건: `GET /api/admin/community/exposure/health-tips`(노출 자리 순서 3건 `[{ pstSn, pstTtl, hlthInfoExpsrSeq }]`, 지정 글은 `hlthInfoExpsrSeq` 값, 자동 선정은 null), `PUT …/health-tips/{pstSn}` `{ hlthInfoExpsrSeq }`(같은 순서의 기존 지정·같은 글의 다른 순서 지정은 풀림), `DELETE …/health-tips/{pstSn}`, 지정 글이 삭제·블라인드되면 지정을 풀고 자동 선정 글로 채움(결정 10). 오늘의 한마디 후보 문구 테이블과 `GET …/phrases`(`{ todayPhrs: { todayPhrsSn, phrsCn } | null, content: [{ todayPhrsSn, phrsCn, useYn }] }`)·`POST …/phrases` `{ phrsCn, useYn }` → `{ todayPhrsSn }`·`PATCH …/phrases/{todayPhrsSn}` `{ phrsCn, useYn }`, 매일 00:00 사용 중 문구 1건 무작위 선택(결정 11). `GET …/commentaries?page=&size=20`(최근 일자순 `{ content: [{ cmntyAiCmtrySn, cmtryCrtrYmd, cmtryCn, useYn }], page, size, totalElements, totalPages, hasNext }`)·`PATCH …/commentaries/{cmntyAiCmtrySn}` `{ useYn }`. `useYn`은 true/false. 후보 문구 필드 이름(프론트 가정 `todayPhrsSn`·`phrsCn`)과 글자 수(가정 200자)를 정해 프론트에 알린다
+- 완료 조건 결과: 검증 `통과`(2026-11-03, 2회차. 1회차는 공용 DB에 `TODAY_PHRS` 미반영으로 FN-ADM-023-04·05 확인 못 함 → 사람이 v0.12 (4) SQL 실행 뒤 재검증), 사람 확인 2026-11-03. 위 `## SCR-ADM-023 노출 콘텐츠 — 대기` 절의 FN-ADM-023-01~06도 이 절로 끝냈다(절 정리는 사람). 정한 것: 후보 문구 새 테이블 `TODAY_PHRS`(물리명 초안, DB v0.12 (4)), 배치 SYSC0030 매일 00:00 → `CMNTY_AI_CMTRY` 출처 AIMC0029, 건강 키워드는 `KWRD_DICT` 뉴스 분류 건강(CMUC0018) 행 재사용, 사용자 `GET /api/posts/health-tips`도 지정 + 자동 선정. 필드 이름은 프론트 가정 그대로 `todayPhrsSn`·`phrsCn`(200자). 추가-1: `AdminBatchServiceTest` 기대 목록에 SYSC0030
+- 연결 남음: FN-ADM-023-01·02 (프론트 연결 `features/adminCommunity/api.js` 노출 콘텐츠 절 건강팁 표·지정 모달·[지정 해제], 프론트 저장소에서 /start)
+- 연결 남음: FN-ADM-023-04 (프론트 연결 `features/adminCommunity/api.js` 오늘의 한마디 탭, 프론트 저장소에서 /start)
+- 연결 남음: FN-ADM-023-06 (프론트 연결 `features/adminCommunity/api.js` AI 코멘트 탭, 프론트 저장소에서 /start)
 
 ## SCR-ADM-050 펫뉴스 · 프론트 연결 API 계약 — 대기
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-050-01·02·03·05

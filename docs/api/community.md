@@ -19,7 +19,7 @@
 | GET | /news | 펫뉴스 목록(쿼리 `newsClsfCd`·`keyword`·`page`·`size`, 최신순 10건, 상세 하단 최신 5건은 `size=5`) | CMU-003-01~04 | KSJ | - | Page<NewsSummary> |
 | GET | /news/{newsSn} | 펫뉴스 상세 | CMU-003-04 | KSJ | - | NewsResponse |
 | GET | /posts | 펫이야기 목록(게시판·정렬·키워드, 인기글 배지, 10건). 상세 하단 최신 5건도 사용 | CMU-001-01~04·08·10 | KSJ | - | Page<PostSummary> |
-| GET | /posts/health-tips | 오늘의 건강팁(관리자 선정 3건) | CMU-001-07 | KSJ | - | List<PostSummary> |
+| GET | /posts/health-tips | 오늘의 건강팁 최대 3건. 관리자 지정 글은 지정 자리에, 빈 자리는 자동 선정 글(규칙은 `GET /admin/community/exposure/health-tips`) | CMU-001-07 | KSJ | - | List<PostSummary> |
 | GET | /posts/popular-photo | 인기 포토(7일 → 30일 → 전체 순 대체) | CMU-001-06 | KSJ | - | PostResponse |
 | GET | /posts/{pstSn} | 게시글 상세(조회수 동일 사용자 1일 1회 증가) | CMU-001-10 | KSJ | - | PostResponse |
 | GET | /posts/{pstSn}/comments | 댓글·대댓글 목록(삭제 댓글 대체 문구) | CMU-001-11, CMU-002-07 | KSJ | - | List<CommentSummary> |
@@ -57,6 +57,14 @@
 | GET | /admin/lost-reports/{lostTpofSn} | 관리자 실종제보 상세. 실종·만료는 본문·사진·만료 기준일, 찾았어요는 제목·상태·처리 시각만(결정 13). 조회수는 올리지 않는다. 없거나 정상 글이 아니면 404 LOST_REPORT_NOT_FOUND | ADM-021-02 | LJS | - | AdminLostReportResponse |
 | GET | /admin/care-matches | 관리자 펫돌봄 모집글 목록. 정상 게시글만(블라인드·삭제 글은 `/admin/posts`), 최신순 20건씩. 모르는 상태 코드 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-022-01 | LJS | AdminCareMatchSearchCond | PageResponse<AdminCareMatchSummary> |
 | GET | /admin/care-matches/{petPrtcRcrtSn} | 관리자 펫돌봄 매칭 상세(분쟁 대응, 1:1 문의의 `?rcrtSn=`도 이 번호). 모집글 정보 + 매칭 목록(최신순, 매칭마다 합의 조건 버전·상태 이력·완료 요청 회차와 사진·보호자 확인 결과). 블라인드 글도 열고, 없거나 삭제 글이면 404 CARE_RECRUITMENT_NOT_FOUND. 채팅 메시지·채팅방 번호는 주지 않는다(ADM-022-03, 결정 14·26) | ADM-022-02·03 | LJS | - | AdminCareMatchResponse |
+| GET | /admin/community/exposure/health-tips | 관리자 오늘의 건강팁 현황. 노출 자리 순서 최대 3건. 지정 글(정상 펫정보, 자리 1~3)은 그 자리에, 빈 자리는 자동 선정 글(지정 안 된 정상 펫정보 글 중 제목·본문에 건강 키워드가 든 글, 좋아요순·최신순)로 앞에서부터 채운다. 건강 키워드는 `KWRD_DICT` 뉴스 분류(AIMC0039)의 건강(CMUC0018) 행(SCR-ADM-050에서 편집). 일반 회원 403 ADMIN_ONLY | ADM-023-01·03 | LJS | - | List<AdminHealthTipResponse> |
+| PUT | /admin/community/exposure/health-tips/{pstSn} | 건강팁 지정(감사 로그). 같은 자리의 기존 지정은 풀리고, 다른 자리에 지정된 글이면 옮긴다. 글 검색은 `GET /admin/posts?bbsCd=CMUC0001`. 자리가 1~3이 아니거나 펫정보 글이 아니면 400 INVALID_INPUT_VALUE, 없거나 정상 글이 아니면 404 POST_NOT_FOUND | ADM-023-02 | LJS | AdminHealthTipAssignRequest | - |
+| DELETE | /admin/community/exposure/health-tips/{pstSn} | 건강팁 지정 해제(감사 로그). 지정 안 된 글 409 ALREADY_PROCESSED, 없는 글 404 POST_NOT_FOUND. 지정 글이 삭제·블라인드되면 지정은 자동으로 풀린다(ADM-023-03, 복구해도 돌아오지 않음) | ADM-023-02·03 | LJS | - | - |
+| GET | /admin/community/exposure/phrases | 오늘의 한마디 후보 문구 목록(사용 안 함 포함, 등록순)과 오늘 노출 문구 | ADM-023-04·05 | LJS | - | AdminTodayPhraseListResponse |
+| POST | /admin/community/exposure/phrases | 오늘의 한마디 후보 문구 등록(201, 감사 로그). 문구는 앞뒤 공백을 지운 뒤 1~200자, 아니면 400 INVALID_INPUT_VALUE | ADM-023-04 | LJS | AdminTodayPhraseCreateRequest | AdminTodayPhraseCreateResponse |
+| PATCH | /admin/community/exposure/phrases/{todayPhrsSn} | 오늘의 한마디 후보 문구 수정(보낸 칸만, 감사 로그). 둘 다 없거나 문구가 비거나 200자 초과면 400 INVALID_INPUT_VALUE, 없는 번호 404 TODAY_PHRASE_NOT_FOUND. 매일 00:00 배치(SYSC0030)가 사용 중 후보 1건을 무작위로 골라 그날 `CMNTY_AI_CMTRY`(출처 AIMC0029)에 저장한다. 그날 행이 있거나 후보가 없으면 저장하지 않는다(사용자 화면은 운영 설정 기본 문구) | ADM-023-04·05 | LJS | AdminTodayPhraseUpdateRequest | - |
+| GET | /admin/community/exposure/commentaries | 관리자 AI 코멘트 목록. 사용 안 함 포함, 최근 일자순 20건씩 | ADM-023-06 | LJS | PageQuery | PageResponse<AdminCommentarySummary> |
+| PATCH | /admin/community/exposure/commentaries/{cmntyAiCmtrySn} | AI 코멘트 사용 여부 변경(감사 로그). 끄면 사용자 `GET /community-ai-commentaries`는 운영 설정 기본 문구. 없는 번호 404 AI_COMMENTARY_NOT_FOUND | ADM-023-06 | LJS | AdminCommentaryUseRequest | - |
 | GET | /admin/comments | 관리자 댓글 목록. 최신순 20건씩, 삭제된 댓글도 원문 표시. `q`는 작성자 닉네임 부분 일치 | ADM-020-06 | LJS | AdminCommentSearchCond | PageResponse<AdminCommentSummary> |
 | POST | /admin/comments/{cmntSn}/deletion | 관리자 댓글 삭제. 사유는 감사 로그에 남긴다(`CMNT`에 사유 컬럼 없음). DELETE 본문 금지라 POST. 이미 삭제면 409 ALREADY_PROCESSED, 없는 댓글 404 COMMENT_NOT_FOUND | ADM-020-06 | LJS | AdminCommentDeleteRequest | - |
 | GET | /admin/reports | 관리자 신고 목록. 최신순 20건씩, 같은 대상 신고 수 포함. 코드가 틀리거나 기간이 뒤집히면 400 INVALID_INPUT_VALUE | ADM-030-01·02 | LJS | AdminReportSearchCond | PageResponse<AdminReportSummary> |
@@ -94,6 +102,79 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | status | String | N | 게시글 상태 코드(CMUG02) | PST.PST_STTS_CD, ADM-020-02 |
 | bgngYmd | LocalDate | N | 작성 시작일 | PST.REG_DT, ADM-020-02 |
 | endYmd | LocalDate | N | 작성 종료일 | PST.REG_DT, ADM-020-02 |
+
+### AdminHealthTipResponse
+쓰는 API: GET /admin/community/exposure/health-tips
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| pstSn | Long | Y | 게시글 번호 | PST.PST_SN |
+| pstTtl | String | Y | 제목 | PST.PST_TTL |
+| hlthInfoExpsrSeq | Integer | N | 관리자 지정 자리(1~3). 자동 선정 글은 null | PST.HLTH_INFO_EXPSR_SEQ, ADM-023-01 |
+
+### AdminHealthTipAssignRequest
+쓰는 API: PUT /admin/community/exposure/health-tips/{pstSn}
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| hlthInfoExpsrSeq | Integer | Y | 노출 자리 1~3 | PST.HLTH_INFO_EXPSR_SEQ, ADM-023-02 |
+
+### AdminTodayPhraseListResponse
+쓰는 API: GET /admin/community/exposure/phrases
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| todayPhrs | Object | N | 오늘 노출 문구 `{ todayPhrsSn, phrsCn }`. 오늘 선택된(사용 중) 문구가 없으면 null. 같은 문구의 후보가 없으면(수정됨) `todayPhrsSn` null | CMNTY_AI_CMTRY, ADM-023-05 |
+| content | List<AdminTodayPhraseSummary> | Y | 후보 문구 전체, 등록순 | TODAY_PHRS |
+
+### AdminTodayPhraseSummary
+쓰는 API: GET /admin/community/exposure/phrases
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| todayPhrsSn | Long | Y | 후보 문구 번호 | TODAY_PHRS.TODAY_PHRS_SN |
+| phrsCn | String | Y | 문구(200자 이하) | TODAY_PHRS.PHRS_CN |
+| useYn | Boolean | Y | 사용 여부. 사용 중인 문구만 매일 선택 대상 | TODAY_PHRS.USE_YN |
+
+### AdminTodayPhraseCreateRequest
+쓰는 API: POST /admin/community/exposure/phrases
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| phrsCn | String | Y | 문구. 앞뒤 공백을 지운 뒤 1~200자 | TODAY_PHRS.PHRS_CN, ADM-023-04 |
+| useYn | Boolean | Y | 사용 여부 | TODAY_PHRS.USE_YN |
+
+### AdminTodayPhraseCreateResponse
+쓰는 API: POST /admin/community/exposure/phrases
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| todayPhrsSn | Long | Y | 등록한 후보 문구 번호 | TODAY_PHRS.TODAY_PHRS_SN |
+
+### AdminTodayPhraseUpdateRequest
+쓰는 API: PATCH /admin/community/exposure/phrases/{todayPhrsSn}
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| phrsCn | String | N | 문구. 보내면 앞뒤 공백을 지운 뒤 1~200자 | TODAY_PHRS.PHRS_CN |
+| useYn | Boolean | N | 사용 여부. 둘 다 없으면 400 | TODAY_PHRS.USE_YN |
+
+### AdminCommentarySummary
+쓰는 API: GET /admin/community/exposure/commentaries
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| cmntyAiCmtrySn | Long | Y | 코멘트 번호 | CMNTY_AI_CMTRY.CMNTY_AI_CMTRY_SN |
+| cmtryCrtrYmd | LocalDate | Y | 기준 일자 | CMNTY_AI_CMTRY.CMTRY_CRTR_YMD |
+| cmtryCn | String | Y | 코멘트 내용 | CMNTY_AI_CMTRY.CMTRY_CN |
+| useYn | Boolean | Y | 사용 여부. 끄면 그날은 운영 설정 기본 문구 | CMNTY_AI_CMTRY.USE_YN, ADM-023-06 |
+
+### AdminCommentaryUseRequest
+쓰는 API: PATCH /admin/community/exposure/commentaries/{cmntyAiCmtrySn}
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| useYn | Boolean | Y | 사용 여부 | CMNTY_AI_CMTRY.USE_YN |
 
 ### AdminLostReportSearchCond
 쓰는 API: GET /admin/lost-reports

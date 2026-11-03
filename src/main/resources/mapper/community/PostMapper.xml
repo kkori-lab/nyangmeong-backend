@@ -134,6 +134,79 @@
          LIMIT 3
     </select>
 
+    <resultMap id="healthTipDesignationResultMap" type="com.nyangmeong.community.dto.HealthTipDesignation">
+        <id     column="PST_SN"              property="pstSn" />
+        <result column="HLTH_INFO_EXPSR_SEQ" property="hlthInfoExpsrSeq" />
+    </resultMap>
+
+    <select id="selectHealthTipDesignations" resultMap="healthTipDesignationResultMap">
+        /* 건강팁 지정 자리 조회 : 노출 자리 1~3만 */
+        SELECT P.PST_SN
+             , P.HLTH_INFO_EXPSR_SEQ
+          FROM PST P
+         WHERE P.PST_STTS_CD = #{pstSttsCd}
+           AND P.BBS_CD = #{bbsCd}
+           AND P.HLTH_INFO_EXPSR_SEQ BETWEEN 1 AND 3
+         ORDER BY P.HLTH_INFO_EXPSR_SEQ, P.PST_SN
+    </select>
+
+    <select id="selectHealthKeywords" resultType="string">
+        /* 건강팁 자동 선정 키워드 : 뉴스 분류 사전(AIMC0039)의 건강(CMUC0018) 행, 쉼표로 이어진 문자열 */
+        SELECT K.KWRD_CN
+          FROM KWRD_DICT K
+         WHERE K.DICT_USG_CD = 'AIMC0039'
+           AND K.MPNG_CD = 'CMUC0018'
+           AND K.USE_YN = 'Y'
+           AND K.DEL_YN = 'N'
+         ORDER BY K.SORT_SEQ ASC, K.KWRD_DICT_SN ASC
+    </select>
+
+    <select id="selectAutoHealthTips" resultMap="postSummaryResultMap">
+        /* 건강팁 자동 선정 : 지정 안 된 글 중 제목·본문에 건강 키워드가 든 글, 좋아요순 */
+        SELECT <include refid="summaryColumns" />
+          FROM PST P
+          JOIN MBR M
+            ON M.MBR_SN = P.MBR_SN
+         WHERE P.PST_STTS_CD = #{pstSttsCd}
+           AND P.BBS_CD = #{bbsCd}
+           AND P.HLTH_INFO_EXPSR_SEQ IS NULL
+           AND (
+        <foreach collection="keywords" item="kw" separator=" OR ">
+                P.PST_TTL LIKE CONCAT('%', #{kw}, '%') OR P.PST_CN LIKE CONCAT('%', #{kw}, '%')
+        </foreach>
+               )
+         ORDER BY P.RCMDTN_CNT DESC, P.REG_DT DESC, P.PST_SN DESC
+         LIMIT #{limit}
+    </select>
+
+    <update id="clearHealthTipSeqBySeq">
+        /* 같은 노출 자리의 기존 지정 해제 : 노출 지정은 글 수정이 아니라 수정일시를 그대로 둠 */
+        UPDATE PST
+           SET HLTH_INFO_EXPSR_SEQ = NULL
+             , MDFCN_DT = MDFCN_DT
+         WHERE HLTH_INFO_EXPSR_SEQ = #{hlthInfoExpsrSeq}
+           AND PST_SN &lt;&gt; #{pstSn}
+    </update>
+
+    <update id="updateHealthTipSeq">
+        /* 건강팁 지정 : 정상 펫정보 글만 */
+        UPDATE PST
+           SET HLTH_INFO_EXPSR_SEQ = #{hlthInfoExpsrSeq}
+             , MDFCN_DT = MDFCN_DT
+         WHERE PST_SN = #{pstSn}
+           AND PST_STTS_CD = #{pstSttsCd}
+           AND BBS_CD = #{bbsCd}
+    </update>
+
+    <update id="clearHealthTipSeq">
+        /* 건강팁 지정 해제 */
+        UPDATE PST
+           SET HLTH_INFO_EXPSR_SEQ = NULL
+             , MDFCN_DT = MDFCN_DT
+         WHERE PST_SN = #{pstSn}
+           AND HLTH_INFO_EXPSR_SEQ IS NOT NULL
+    </update>
+
     <select id="selectPopularPhoto" resultMap="postResultMap">
         SELECT <include refid="postColumns" />
           FROM PST P
@@ -288,6 +361,8 @@
            SET PST_STTS_CD = #{afterCd}
              , MDFR_ID = #{actorId}
              , MDFCN_DT = NOW()
+             /* 정상(CMUC0003)이 아닌 상태로 바뀌면 건강팁 지정을 푼다 (FN-ADM-023-03) */
+             , HLTH_INFO_EXPSR_SEQ = CASE WHEN #{afterCd} = 'CMUC0003' THEN HLTH_INFO_EXPSR_SEQ ELSE NULL END
          WHERE PST_SN = #{pstSn}
            AND PST_STTS_CD = #{beforeCd}
     </update>
