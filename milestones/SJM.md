@@ -126,6 +126,12 @@
 - 기다리는 것: 프론트 SCR-MYP-030 (프론트 저장소, 끝남. 사람 확인 중 발견)
 - 완료 조건: `db/seed/20261028_seed_data.sql`의 `EXPND`에서 병원(`MYPC0012`) + 공용(`PET_SN` NULL) 176행(처음 발견한 `EXPND_SN=406`, 회원 1, 2026-10-05, 42,000원 포함)의 `PET_SN`을 채워 그런 행이 없게 한다. 회원마다 사용 중·삭제 안 된 반려동물을 `PET_SN` 순으로 세워 지출일(같으면 `EXPND_SN`) 순으로 돌아가며 배정한다. 공용 DB 반영 SQL은 사람이 DBeaver로 직접 실행한다. 서버 등록·수정은 이미 `EXPENSE_PET_REQUIRED`로 막고 있어 코드 수정은 없다
 
+## SCR-MYP-031 가계부 등록/수정 · 영수증 저장 경로 미래 날짜 검증 — 끝
+
+- 기능: 명세 기능 ID 추가 없음. FN-MYP-031-05·FN-AIM-009-10과 걸친다
+- 기다리는 것: 없음(영수증 저장은 이미 `ExpenseService.create(ExpenseCreateCommand)`를 부른다)
+- 완료 조건: `ExpenseService.create(ExpenseCreateCommand)`가 `expndYmd`가 오늘(KST)보다 뒤면 400(`INVALID_INPUT_VALUE`)을 던지고, 영수증 저장 전체가 롤백된다
+
 ## 제외
 
 - FN-MYP-001-02·05: 화면만 있다(더보기 펼침, 0마리 안내)
