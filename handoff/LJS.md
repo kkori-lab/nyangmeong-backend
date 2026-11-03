@@ -2,12 +2,13 @@
 
 ## 지금 하는 것
 
-SCR-ADM-040 공지사항 — 끝 (2026-11-02). `/api/admin/notices` 6개(목록·상세·알림 대상 수·등록·수정·비노출·본문 이미지)를 `support`에 만들었다. 등록 때 알림 발송을 체크하면 이벤트 1건으로 정상 회원 중 앱 알림을 켠 회원 전체에 `INSERT … SELECT` 한 번으로 저장한다(추가-1, 191명 0.06초). DB v0.12 (2) `NTC_MTTR.NOTI_SNDNG_DT`·`NOTI_TRGT_CNT`
+SCR-ADM-041 FAQ — 끝 (2026-11-03). `/api/admin/faqs` 4개(목록·상세·등록·수정)를 `support`에 만들었다. 비노출은 `PATCH`의 `useYn=false`이고 삭제 API는 없다. 카테고리는 기존 `GET /api/common-codes?prntComCd=CSCG01`. DB 변경 없음
 
 ## 다음에 할 것
 
-- SCR-ADM-040 연결 남음: FN-ADM-040-01 (프론트 연결 관리자 공지 목록 `/admin/notices`, 프론트 저장소에서 /start), FN-ADM-040-02 (프론트 연결 공지 등록 `/admin/notices/new`와 본문 이미지 넣기, 프론트 저장소에서 /start), FN-ADM-040-03 (프론트 연결 알림 발송 체크와 "회원 N명에게 알림을 보내요" 모달, 프론트 저장소에서 /start), FN-ADM-040-04 (프론트 연결 공지 수정 `/admin/notices/:ntcMttrSn/edit`, 발송 칸 숨김, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
-- 공용 DB(PR): v0.12 (2) `NTC_MTTR` 두 컬럼은 공용 DB에 이미 있다(검증 2026-11-02). 병합 뒤 다시 실행하지 않는다(중복 컬럼 오류). PR 본문에 "DB 변경 있음, v0.12 (2) 공용 DB 적용 완료". 팀원 로컬 DB는 각자 실행
+- SCR-ADM-041 연결 남음: FN-ADM-041-01 (프론트 연결 관리자 FAQ 목록 `/admin/faqs`, 프론트 저장소에서 /start), FN-ADM-041-02 (프론트 연결 등록·수정 모달, 프론트 저장소에서 /start), FN-ADM-041-03 (프론트 연결 목록·모달의 사용 토글, 프론트 저장소에서 /start), FN-ADM-041-04 (프론트 연결 카테고리 탭·모달 선택지, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
+- KSJ에게 알린다(PR 전): SCR-ADM-041을 LJS가 구현했다. 사용자 FAQ(`FaqController`·`FaqMapper.selectList`)는 그대로 두고 같은 Mapper에 관리자 쿼리(`selectAdminList`·`selectAdminFaq`·`insert`·`update`)와 `Faq` VO 등록자·수정자 필드, `ErrorCode.FAQ_NOT_FOUND`를 더했다
+- 공용 DB 정리(사람): 검증으로 생긴 FAQ 41번(비노출, "[검증] 4000자 답변 FAQ")과 그 감사 로그. 지우려면 `DELETE FROM MNGR_TASK_LOG WHERE TRGT_TBL_NM='FAQ' AND TRGT_SN=41; DELETE FROM FAQ WHERE FAQ_SN=41;`. 사람 확인으로 만든 FAQ도 같은 방식
 - 정하기(공용 DB 정리, 사람): 구현·확인 중 생긴 공지 31·32번과 `/notices/32` 알림 191건(최적화 전 방식으로 실제 회원에게 감)을 지울지 정한다. 지우면 `INAPP_NOTI`의 `MVMN_PATH='/notices/<번호>'`와 `NTC_MTTR` 행
 - ERDCloud(사람): `NTC_MTTR.NOTI_SNDNG_DT`(datetime NULL, 알림발송일시)·`NOTI_TRGT_CNT`(decimal(10,0) NULL, 알림대상수)를 추가한다
 - KSJ에게 알린다(PR 전): SCR-ADM-040을 LJS가 구현했다(`support`에 `AdminNoticeController`·`AdminNoticeService`·DTO 7개, `NoticeMapper` 관리자 쿼리, `Notice` VO 필드). 본문 이미지는 `![](/api/files/public/{atchFileSn})` 줄로 넣고 HTML은 저장하지 않는다(`docs/api/issues.md` 고객센터 10). 사용자 공지 상세가 이 줄을 이미지로 그려야 한다. 삭제는 `USE_YN='N'`
@@ -24,7 +25,6 @@ SCR-ADM-040 공지사항 — 끝 (2026-11-02). `/api/admin/notices` 6개(목록�
 - 테스트 부족: 시간 초과 조회(`PRCS_BGNG_DT < NOW() - INTERVAL 10 MINUTE`) 경계를 실제 DB에서 돌려 보지 않았다(매퍼 목)
 - 로컬 DB 정리(`nyangmeong_local`, 사람): 검증·확인으로 생긴 반려동물 5의 `PIXEL_CHAR` 601·`CHAR_CRT_JOB` 780·`ATCH_FILE` 4178과 결과 사진, 반려동물 10의 캐릭터 데이터. 반려동물 삭제 API나 `DEL_YN='Y'`로 지운다
 - 로컬 Python 서버(사람): 8000은 `--reload`로 띄운다. 14:29에 띄운 옛 프로세스가 가짜 저장소로 돌아 미리보기가 `PIXEL_CHARACTER_NOT_FOUND`였다
-- 공용 DB(PR): v0.11 (9, 처음 번호 7이 KSJ와 겹쳐 변경)는 사람이 PR 전에 공용 DB에 적용했다고 답했다. 병합 뒤 다시 실행하지 않는다. PR 본문에 "DB 변경 있음, v0.11 (9) 공용 DB 적용 완료"로 적는다. 로컬 `nyangmeong_local`에는 없다
 - 판단 필요(시드): 시드의 자동 블라인드 이력 18건은 사유가 `신고 누적으로 블라인드`라 `신고 누적`과 달라 자동 블라인드 탭에 나오지 않는다. 시드를 고칠지 탭 판별을 넓힐지 정한다. 이 코드 이전에 자동 삭제된 댓글도 나오지 않는다
 - ERDCloud(사람): `DCLR.DCLR_ACTN_CD` 신고조치공통코드(CMUG08)를 추가한다
 - KSJ에게 알린다(PR 전): SCR-ADM-030을 LJS가 구현했다(구현 계획 담당 KSJ, 저장소에 협의 기록 없음). `ReportService` 누적 계산에서 반려를 뺐고 자동 삭제 댓글에 `DCLR_STTS_HSTRY` 표시 행을 남긴다. 알림 `NotificationType.REPORT_RESULT`는 `COMMUNITY`와 코드 `AIMC0010`이 같다

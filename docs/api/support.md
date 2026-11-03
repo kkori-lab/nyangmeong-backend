@@ -15,6 +15,10 @@
 | POST | /inquiries | 1:1 문의 작성(multipart, 캐릭터 오류 문의 연동 포함, 접수 상태) | CSC-003-06·08~11, MYP-010-12·24 (기능 분배 3.1절 21·24번) | KSJ | InquiryCreateRequest | InquiryResponse |
 | DELETE | /inquiries/{otoInqrySn} | 1:1 문의 삭제(본인, 접수 상태만, 캐릭터 오류 문의 제외, DEL_YN) | 명세 없음(프론트 요청) | KSJ | - | - |
 | PATCH | /inquiries/{otoInqrySn} | 1:1 문의 수정(multipart, 접수 상태에서만) | CSC-003-15 | KSJ | InquiryUpdateRequest | InquiryResponse |
+| GET | /admin/faqs | 관리자 FAQ 목록. 비노출 포함, 정렬 순서 다음 번호 오름차순, 20건씩. `faqClsfCd`(CSCG01)와 `keyword`(질문·답변 부분 일치)는 AND. 없는 카테고리 코드는 400 INVALID_INPUT_VALUE. 카테고리 탭은 `GET /common-codes?prntComCd=CSCG01`. 일반 회원 403 ADMIN_ONLY | ADM-041-01·04 | LJS | AdminFaqSearchCond | PageResponse<AdminFaqSummary> |
+| GET | /admin/faqs/{faqSn} | 관리자 FAQ 상세(수정 모달, 사용 여부 무관). 없으면 404 FAQ_NOT_FOUND | ADM-041-02 | LJS | - | AdminFaqResponse |
+| POST | /admin/faqs | FAQ 등록(201, 감사 로그). 정렬 순서는 중복 허용, 다른 FAQ를 밀지 않는다. 없는 카테고리 코드는 400 INVALID_INPUT_VALUE | ADM-041-02·04 | LJS | AdminFaqCreateRequest | AdminFaqResponse |
+| PATCH | /admin/faqs/{faqSn} | FAQ 수정·비노출(감사 로그, 보낸 값만 바꾼다). 삭제 API는 없고 `useYn=false`로 비노출하면 `GET /faqs`에서 빠진다. 없으면 404 FAQ_NOT_FOUND | ADM-041-02·03 | LJS | AdminFaqUpdateRequest | AdminFaqResponse |
 | GET | /admin/notices | 관리자 공지 목록. 비노출 포함, 고정 먼저 그다음 등록일 최신순, 20건씩. `keyword`는 제목 부분 일치. 일반 회원 403 ADMIN_ONLY | ADM-040-01·05 | LJS | AdminNoticeSearchCond | PageResponse<AdminNoticeSummary> |
 | GET | /admin/notices/{ntcMttrSn} | 관리자 공지 상세(수정 화면, 사용 여부 무관). 없으면 404 NOTICE_NOT_FOUND | ADM-040-04 | LJS | - | AdminNoticeResponse |
 | GET | /admin/notices/notification-target-count | 공지 알림 대상 수(정상 회원 수). 발송 확인 모달 "회원 N명에게 알림을 보내요" | ADM-040-03 | LJS | - | AdminNoticeTargetCountResponse |
@@ -23,6 +27,58 @@
 | POST | /admin/notices/images | 공지 본문 이미지 올리기(multipart `image`, 이미지만 10MB, 공개 파일). 본문에는 `![](/api/files/public/{atchFileSn})` 한 줄로 넣는다(issues.md 고객센터 10, 2026-11-02 결정) | ADM-040-02 | LJS | - | AdminNoticeImageResponse |
 
 ## DTO
+
+### AdminFaqCreateRequest
+쓰는 API: POST /admin/faqs
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| faqClsfCd | String | Y | 공통코드 CSCG01 하위 코드, 없는 코드는 400 | FAQ.FAQ_CLSF_CD, ADM-041-02·04 |
+| qstnTtl | String | Y | 공백 불가, 200자 이하 | FAQ.QSTN_TTL, ADM-041-02 |
+| ansCn | String | Y | 공백 불가, 4,000자 이하 | FAQ.ANS_CN, ADM-041-02 |
+| sortSeq | Integer | Y | 0 이상, 중복 허용 | FAQ.SORT_SEQ, ADM-041-02 |
+| useYn | Boolean | Y | false면 비노출 | FAQ.USE_YN, ADM-041-02·03 |
+
+### AdminFaqResponse
+쓰는 API: GET /admin/faqs/{faqSn}, POST /admin/faqs, PATCH /admin/faqs/{faqSn}
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| faqSn | Long | Y | | FAQ.FAQ_SN |
+| faqClsfCd | String | Y | | FAQ.FAQ_CLSF_CD |
+| qstnTtl | String | Y | | FAQ.QSTN_TTL |
+| ansCn | String | Y | | FAQ.ANS_CN |
+| sortSeq | Integer | Y | | FAQ.SORT_SEQ |
+| useYn | boolean | Y | | FAQ.USE_YN |
+| regDt | LocalDateTime | Y | | 공통 감사 컬럼 REG_DT |
+| mdfcnDt | LocalDateTime | Y | | 공통 감사 컬럼 MDFCN_DT |
+
+### AdminFaqSearchCond
+쓰는 API: GET /admin/faqs
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| faqClsfCd | String | N | CSCG01 하위 코드, 없거나 공백이면 전체 | FAQ.FAQ_CLSF_CD, ADM-041-01·04 |
+| keyword | String | N | 질문·답변 부분 일치, 없거나 공백이면 전체 | ADM-041-01 |
+
+### AdminFaqSummary
+쓰는 API: GET /admin/faqs
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| faqSn | Long | Y | | FAQ.FAQ_SN |
+| faqClsfCd | String | Y | | FAQ.FAQ_CLSF_CD, ADM-041-01 |
+| faqClsfCdNm | String | Y | 카테고리 이름 | COM_CD.COM_CD_NM, ADM-041-01 |
+| qstnTtl | String | Y | | FAQ.QSTN_TTL, ADM-041-01 |
+| sortSeq | Integer | Y | | FAQ.SORT_SEQ, ADM-041-01 |
+| useYn | boolean | Y | | FAQ.USE_YN, ADM-041-01 |
+| mdfcnDt | LocalDateTime | Y | 수정일 | 공통 감사 컬럼 MDFCN_DT |
+
+### AdminFaqUpdateRequest
+쓰는 API: PATCH /admin/faqs/{faqSn}
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| faqClsfCd | String | N | 보내면 CSCG01 하위 코드 | FAQ.FAQ_CLSF_CD, ADM-041-02 |
+| qstnTtl | String | N | 보내면 공백 불가, 200자 이하 | FAQ.QSTN_TTL, ADM-041-02 |
+| ansCn | String | N | 보내면 공백 불가, 4,000자 이하 | FAQ.ANS_CN, ADM-041-02 |
+| sortSeq | Integer | N | 보내면 0 이상 | FAQ.SORT_SEQ, ADM-041-02 |
+| useYn | Boolean | N | false면 비노출(삭제 대신) | FAQ.USE_YN, ADM-041-03 |
 
 ### AdminNoticeCreateRequest
 쓰는 API: POST /admin/notices
