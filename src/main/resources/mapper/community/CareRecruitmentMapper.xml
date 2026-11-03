@@ -247,6 +247,63 @@
                 , S.PRTC_SHP_CD
     </select>
 
+    <resultMap id="adminCareMatchSummaryResultMap" type="com.nyangmeong.community.dto.AdminCareMatchSummary">
+        <id     column="PET_PRTC_RCRT_SN" property="petPrtcRcrtSn" />
+        <result column="PST_SN"           property="pstSn" />
+        <result column="PST_TTL"          property="pstTtl" />
+        <result column="RCRT_STTS_CD"     property="rcrtSttsCd" />
+        <result column="MBR_SN"           property="mbrSn" />
+        <result column="MBR_NCNM"         property="mbrNcnm" />
+        <result column="CST_AMT"          property="cstAmt" />
+        <result column="CST_UNIT_CD"      property="cstUnitCd" />
+        <result column="REG_DT"           property="regDt" />
+    </resultMap>
+
+    <resultMap id="adminCareMatchResponseResultMap" type="com.nyangmeong.community.dto.AdminCareMatchResponse">
+        <id     column="PET_PRTC_RCRT_SN" property="petPrtcRcrtSn" />
+        <result column="PST_SN"           property="pstSn" />
+        <result column="PST_TTL"          property="pstTtl" />
+        <result column="RCRT_STTS_CD"     property="rcrtSttsCd" />
+        <result column="MBR_SN"           property="mbrSn" />
+        <result column="MBR_NCNM"         property="mbrNcnm" />
+        <result column="CST_AMT"          property="cstAmt" />
+        <result column="CST_UNIT_CD"      property="cstUnitCd" />
+        <result column="REG_DT"           property="regDt" />
+    </resultMap>
+
+    <sql id="adminCareMatchColumns">
+               R.PET_PRTC_RCRT_SN
+             , R.PST_SN
+             , P.PST_TTL
+             , R.RCRT_STTS_CD
+             , P.MBR_SN
+             , M.MBR_NCNM
+             , R.CST_AMT
+             , R.CST_UNIT_CD
+             , P.REG_DT
+          FROM PET_PRTC_RCRT R
+          JOIN PST P
+            ON P.PST_SN = R.PST_SN
+          LEFT JOIN MBR M
+            ON M.MBR_SN = P.MBR_SN
+    </sql>
+
+    <select id="selectAdminList" resultMap="adminCareMatchSummaryResultMap">
+        SELECT <include refid="adminCareMatchColumns" />
+         WHERE P.PST_STTS_CD = #{pstSttsCd}
+        <if test="rcrtSttsCd != null">
+           AND R.RCRT_STTS_CD = #{rcrtSttsCd}
+        </if>
+         ORDER BY P.REG_DT DESC
+                , R.PET_PRTC_RCRT_SN DESC
+    </select>
+
+    <select id="selectAdminDetail" resultMap="adminCareMatchResponseResultMap">
+        SELECT <include refid="adminCareMatchColumns" />
+         WHERE R.PET_PRTC_RCRT_SN = #{petPrtcRcrtSn}
+           AND P.PST_STTS_CD <![CDATA[<>]]> #{deletedCd}
+    </select>
+
     <insert id="insertRecruitment" parameterType="com.nyangmeong.community.domain.CareRecruitment"
             useGeneratedKeys="true" keyProperty="petPrtcRcrtSn" keyColumn="PET_PRTC_RCRT_SN">
         INSERT INTO PET_PRTC_RCRT

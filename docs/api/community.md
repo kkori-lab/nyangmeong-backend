@@ -55,6 +55,8 @@
 | POST | /admin/posts/{pstSn}/restore | 블라인드 복구(상태 이력, 감사 로그). 신고 누적 자동 블라인드 포함. 블라인드 글이 아니면 409 ALREADY_PROCESSED, 없는 글 404 POST_NOT_FOUND | ADM-020-05 | LJS | AdminPostStatusChangeRequest | - |
 | GET | /admin/lost-reports | 관리자 실종제보 목록. 정상 게시글만(블라인드·삭제 글은 `/admin/posts`), 최신순 20건씩. 만료 기준 일시가 지난 실종 글은 만료(CMUC0008)로 내리고 필터도 같은 기준. 찾았어요 행은 `expryCrtrDt` null. 강제 만료·기간 조정 API는 없다(ADM-021-03, 결정 12). 모르는 상태 코드 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-021-01·03 | LJS | AdminLostReportSearchCond | PageResponse<AdminLostReportSummary> |
 | GET | /admin/lost-reports/{lostTpofSn} | 관리자 실종제보 상세. 실종·만료는 본문·사진·만료 기준일, 찾았어요는 제목·상태·처리 시각만(결정 13). 조회수는 올리지 않는다. 없거나 정상 글이 아니면 404 LOST_REPORT_NOT_FOUND | ADM-021-02 | LJS | - | AdminLostReportResponse |
+| GET | /admin/care-matches | 관리자 펫돌봄 모집글 목록. 정상 게시글만(블라인드·삭제 글은 `/admin/posts`), 최신순 20건씩. 모르는 상태 코드 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-022-01 | LJS | AdminCareMatchSearchCond | PageResponse<AdminCareMatchSummary> |
+| GET | /admin/care-matches/{petPrtcRcrtSn} | 관리자 펫돌봄 매칭 상세(분쟁 대응, 1:1 문의의 `?rcrtSn=`도 이 번호). 모집글 정보 + 매칭 목록(최신순, 매칭마다 합의 조건 버전·상태 이력·완료 요청 회차와 사진·보호자 확인 결과). 블라인드 글도 열고, 없거나 삭제 글이면 404 CARE_RECRUITMENT_NOT_FOUND. 채팅 메시지·채팅방 번호는 주지 않는다(ADM-022-03, 결정 14·26) | ADM-022-02·03 | LJS | - | AdminCareMatchResponse |
 | GET | /admin/comments | 관리자 댓글 목록. 최신순 20건씩, 삭제된 댓글도 원문 표시. `q`는 작성자 닉네임 부분 일치 | ADM-020-06 | LJS | AdminCommentSearchCond | PageResponse<AdminCommentSummary> |
 | POST | /admin/comments/{cmntSn}/deletion | 관리자 댓글 삭제. 사유는 감사 로그에 남긴다(`CMNT`에 사유 컬럼 없음). DELETE 본문 금지라 POST. 이미 삭제면 409 ALREADY_PROCESSED, 없는 댓글 404 COMMENT_NOT_FOUND | ADM-020-06 | LJS | AdminCommentDeleteRequest | - |
 | GET | /admin/reports | 관리자 신고 목록. 최신순 20건씩, 같은 대상 신고 수 포함. 코드가 틀리거나 기간이 뒤집히면 400 INVALID_INPUT_VALUE | ADM-030-01·02 | LJS | AdminReportSearchCond | PageResponse<AdminReportSummary> |
@@ -132,6 +134,52 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | pstCn | String | N | 본문 | PST.PST_CN |
 | expryCrtrDt | LocalDateTime | N | 만료 기준 일시 | LOST_TPOF.EXPRY_CRTR_DT |
 | imgs | List<PostImageSummary> | N | 사진 `[{ atchFileSn, sortSeq }]` | PST_IMG |
+
+### AdminCareMatchSearchCond
+쓰는 API: GET /admin/care-matches
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| rcrtSttsCd | String | N | 모집 상태 코드(PCAC0001 모집중·PCAC0002 매칭완료·PCAC0003 거래완료). 없으면 전체 | PET_PRTC_RCRT.RCRT_STTS_CD, ADM-022-01 |
+
+### AdminCareMatchSummary
+쓰는 API: GET /admin/care-matches
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| petPrtcRcrtSn | Long | Y | 펫돌봄 모집 번호(상세 조회 키) | PET_PRTC_RCRT.PET_PRTC_RCRT_SN |
+| pstSn | Long | Y | 게시글 번호 | PET_PRTC_RCRT.PST_SN |
+| pstTtl | String | Y | 제목 | PST.PST_TTL |
+| rcrtSttsCd | String | Y | 모집 상태 코드(PCAG01) | PET_PRTC_RCRT.RCRT_STTS_CD |
+| mbrSn | Long | Y | 작성자(보호자) 회원 번호 | PST.MBR_SN |
+| mbrNcnm | String | N | 작성자 닉네임 | MBR.MBR_NCNM |
+| cstAmt | BigDecimal | Y | 비용 금액 | PET_PRTC_RCRT.CST_AMT |
+| cstUnitCd | String | Y | 비용 단위 코드(PCAC0004 시급·PCAC0005 건당) | PET_PRTC_RCRT.CST_UNIT_CD |
+| regDt | LocalDateTime | Y | 작성 일시 | PST.REG_DT |
+
+### AdminCareMatchResponse
+쓰는 API: GET /admin/care-matches/{petPrtcRcrtSn}
+
+`AdminCareMatchSummary`의 필드 전부 + `mtchs`. 채팅방 번호·채팅 메시지는 없다.
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| mtchs | List<Match> | Y | 매칭 목록(최신순). 없으면 빈 배열. 화면은 매칭이 여럿이면 탭으로 나눈다 | PET_PRTC_MTCH |
+
+`Match`
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| petPrtcMtchSn | Long | Y | 매칭 번호 | PET_PRTC_MTCH.PET_PRTC_MTCH_SN |
+| ctptMbrSn | Long | Y | 돌봄 제공자(채팅 상대방) 회원 번호 | OTO_CHAT_ROOM.CTPT_MBR_SN |
+| ctptNcnm | String | N | 돌봄 제공자 닉네임 | MBR.MBR_NCNM |
+| mtchDlngSttsCd | String | Y | 매칭 거래 상태 코드(PCAG05: PCAC0012 수락 대기·0013 매칭 완료·0014 확인 대기·0015 수령 대기·0016 거래 완료·0017 요청 취소·0018 무응답 종료) | PET_PRTC_MTCH.MTCH_DLNG_STTS_CD |
+| rcvYn | Boolean | N | 비용 수령 여부(아직 없으면 null) | PET_PRTC_MTCH.RCV_YN |
+| rcvIdntyDt | LocalDateTime | N | 수령 확인 일시 | PET_PRTC_MTCH.RCV_IDNTY_DT |
+| regDt | LocalDateTime | Y | 매칭 요청 일시 | PET_PRTC_MTCH.REG_DT |
+| cndVers | List<ConditionVersion> | Y | 합의 조건 버전(버전 내림차순) `{ cndVerNo, cstUnitCd, acrdCstAmt, acrdPrtcCn, acrdPrtcBgngDt, acrdPrtcEndDt, regDt }` | MTCH_CND_VER |
+| sttsHstry | List<StatusHistory> | Y | 상태 이력(오래된 순) `{ bfrSttsCd, aftrSttsCd, cndVerNo, chgRsn, regDt }`. `cndVerNo`는 그때 기준 조건 버전(없으면 null) | PET_PRTC_MTCH_STTS_HSTRY |
+| cmptnDmnds | List<CompletionRequest> | Y | 돌봄 완료 요청 회차(회차 순) `{ dmndCycl, cmptnCn, spclMttrCn, prtcEndDt, prtcrIdntyRsltCd, prtcrIdntyDt, splmntDmndRsn, regDt, imgs[{ atchFileSn, sortSeq }] }`. 보호자 확인 결과 PCAG06(PCAC0019 완료 확인·PCAC0020 보완 요청, 아직이면 null) | PRTC_CMPTN_DMND_CYCL, PRTC_CMPTN_PHOTO |
 
 ### AdminReportSearchCond
 쓰는 API: GET /admin/reports

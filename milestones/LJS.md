@@ -445,15 +445,23 @@
 - 기다리는 것: AI PR kkori-lab/nyangmeong-ai#33(ai-47, 이 백엔드 PR이 먼저 병합)
 - 완료 조건: `POST /internal/ai/receipts`가 `ocrDmndSrcCd=AIMC0027`을 `petSn` 없이 받아 RECPT 출처 `AIMC0027`로 저장하고, 결과 보고의 `expndPlcusNm`·`expndClsfCd`가 `OCR_RSPNS_JSON`에 남으며, 가계부 출처는 사용처·결제일·금액으로 완전 인식을 판정한다. `docs/api/receipt.md` 영수증 저장 오류 목록에 미래 날짜 400(검사 코드는 SJM)이 있다
 
-## SCR-ADM-022 펫돌봄 거래 · 프론트 연결 API 계약 — 대기
+## SCR-ADM-022 펫돌봄 거래 · 프론트 연결 API 계약 — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-022-01·02·03
 - 기다리는 것: 프론트 SCR-ADM-022(끝, 가짜 응답 `features/adminCommunity/api.js`). 담당은 LJS(위 SCR-ADM-022 절의 KSJ 협의 표기는 사람이 맞춘다)
 - 완료 조건: `GET /api/admin/care-matches?page=&size=20&rcrtSttsCd=`(최신순, `{ content, page, size, totalElements, totalPages, hasNext }`, content 행 `{ petPrtcRcrtSn, pstSn, pstTtl, rcrtSttsCd, mbrSn, mbrNcnm, cstAmt, cstUnitCd, regDt }`, 상태는 PCAC0001 모집중·PCAC0002 매칭완료·PCAC0003 거래완료, 비용 단위 PCAC0004·PCAC0005), `GET /api/admin/care-matches/{petPrtcRcrtSn}`(목록 행 + `mtchs[]`, 매칭마다 `{ petPrtcMtchSn, ctptMbrSn, ctptNcnm, mtchDlngSttsCd, agreVerNo, agreDt, agreCn, sttsHstry[{ bfrSttsCd, aftrSttsCd, chgRsn, regDt }], cmplReqDt, cmplImgs[{ atchFileSn }], ownerCfmtnRsltCd, ownerCfmtnDt }`, 매칭이 없으면 빈 배열, 채팅 메시지 없음(결정 14·26))가 프론트 가짜와 같은 모양으로 동작한다. 가정 이름(`ctptNcnm`·`agreVerNo`·`agreDt`·`agreCn`·`cmplReqDt`·`cmplImgs`·`ownerCfmtnRsltCd`·`ownerCfmtnDt`)과 매칭 거래 상태 코드(가짜 `REQUESTED`·`MATCHED`·`DONE_REQ`·`COMPLETE`·`CANCELED`)·보호자 확인 결과 코드(가짜 `CONFIRMED`·`REJECTED`)를 정해 프론트에 알린다
+- 완료 조건 결과: 검증 `통과`(2026-11-03, 2회차는 추가-1 포함 재검증), 사람 확인 2026-11-03. 정한 것: 조건 버전·완료 요청은 목록 `cndVers`·`cmptnDmnds`(가짜의 한 건짜리 `agreVerNo·agreDt·agreCn`·`cmplReqDt·cmplImgs·ownerCfmtnRsltCd·ownerCfmtnDt`와 다름), 상대방 `ctptMbrSn`·`ctptNcnm`, 매칭 거래 상태 PCAG05(PCAC0012~0018), 보호자 확인 결과 PCAG06(PCAC0019·0020). 상세는 블라인드 글도 연다. 같이 처리: `save-check` 저장완료 409(`milestones/JAJ.md` SCR-HLT-002 절, 상태는 JAJ가 바꾼다). 추가-1: 시드 RGN 전북 시군구 13건·행정동 243건
+- 연결 남음: FN-ADM-022-01·02 (프론트 연결 `features/adminCommunity/api.js` 펫돌봄 목록·매칭 상세 모달, 프론트 저장소에서 /start)
+- 연결 남음: FN-ADM-022-02 완료 사진 보기 (완료 사진 업로드가 아직 없어 저장 경로 미정, `/api/files/public/{atchFileSn}`은 `public/` 경로만 열어 지금 시드 사진은 404, KSJ와 정한다)
 
 ## SCR-ADM-023 노출 콘텐츠 · 프론트 연결 API 계약 — 대기
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-023-01·02·03·04·05·06
 - 기다리는 것: 프론트 SCR-ADM-023(끝, 가짜 응답 `features/adminCommunity/api.js` 노출 콘텐츠 절)
 - 완료 조건: `GET /api/admin/community/exposure/health-tips`(노출 자리 순서 3건 `[{ pstSn, pstTtl, hlthInfoExpsrSeq }]`, 지정 글은 `hlthInfoExpsrSeq` 값, 자동 선정은 null), `PUT …/health-tips/{pstSn}` `{ hlthInfoExpsrSeq }`(같은 순서의 기존 지정·같은 글의 다른 순서 지정은 풀림), `DELETE …/health-tips/{pstSn}`, 지정 글이 삭제·블라인드되면 지정을 풀고 자동 선정 글로 채움(결정 10). 오늘의 한마디 후보 문구 테이블과 `GET …/phrases`(`{ todayPhrs: { todayPhrsSn, phrsCn } | null, content: [{ todayPhrsSn, phrsCn, useYn }] }`)·`POST …/phrases` `{ phrsCn, useYn }` → `{ todayPhrsSn }`·`PATCH …/phrases/{todayPhrsSn}` `{ phrsCn, useYn }`, 매일 00:00 사용 중 문구 1건 무작위 선택(결정 11). `GET …/commentaries?page=&size=20`(최근 일자순 `{ content: [{ cmntyAiCmtrySn, cmtryCrtrYmd, cmtryCn, useYn }], page, size, totalElements, totalPages, hasNext }`)·`PATCH …/commentaries/{cmntyAiCmtrySn}` `{ useYn }`. `useYn`은 true/false. 후보 문구 필드 이름(프론트 가정 `todayPhrsSn`·`phrsCn`)과 글자 수(가정 200자)를 정해 프론트에 알린다
+
+## SCR-ADM-050 펫뉴스 · 프론트 연결 API 계약 — 대기
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-050-01·02·03·05
+- 기다리는 것: 프론트 SCR-ADM-050(끝, 가짜 응답 `features/adminNews/api.js`). FN-ADM-050-07 뉴스 수집 실행은 기존 `POST /api/admin/batches/SYSC0028/run`으로 이미 연결됨
+- 완료 조건: `GET /api/admin/news?newsSrcCd=&newsClsfCd=&page=&size=20`(최신순 `{ content, page, size, totalElements, totalPages, hasNext }`, content 행은 `News` 필드 `{ newsSn, atchFileSn, newsClsfCd, newsSrcCd, newsTtl, newsCn, srcPressNm, orgtxtPath, pblcnDt, useYn, regDt, mdfcnDt, thmbUrlPath }`, 숨긴 기사 포함), `POST /api/admin/news`(관리자 등록 `{ newsTtl, newsCn, newsClsfCd }` + 썸네일 파일 선택, 출처 CMUC0023, → `{ newsSn }`), `PATCH /api/admin/news/{newsSn}`(관리자 등록은 제목·요약·카테고리·썸네일, 수집 기사는 `useYn`·`newsClsfCd`), `GET /api/admin/news/keywords`(`[{ kwrdDictSn, mpngCd, kwrdCn, sortSeq }]`, KWRD_DICT `DICT_USG_CD` AIMC0039)·`POST` `{ mpngCd, kwrdCn }` → `{ kwrdDictSn }`(같은 카테고리 중복은 409)·`DELETE …/keywords/{kwrdDictSn}`. `useYn`은 true/false. 숨긴 수집 기사는 사용자 뉴스에서 빠진다. 글자 수(프론트 가정 제목 200·요약 1000·키워드 50)와 필드 이름을 정해 프론트에 알린다
 
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
