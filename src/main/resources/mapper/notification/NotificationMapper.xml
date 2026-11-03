@@ -89,6 +89,80 @@
            AND USE_YN = 'Y'
     </select>
 
+    <resultMap id="adminTemplateSummaryResultMap" type="com.nyangmeong.notification.dto.AdminNotificationTemplateSummary">
+        <id     column="NOTI_TMPLT_SN" property="notiTmpltSn" />
+        <result column="NOTI_TYPE_CD"  property="notiTypeCd" />
+        <result column="NOTI_CHNL_CD"  property="notiChnlCd" />
+        <result column="NOTI_TTL"      property="notiTtl" />
+        <result column="NOTI_CN"       property="notiCn" />
+        <result column="USE_YN"        property="useYn" />
+    </resultMap>
+
+    <select id="selectTemplates" resultMap="adminTemplateSummaryResultMap">
+        /* 관리자 알림 템플릿 목록 조회 */
+        SELECT NOTI_TMPLT_SN
+             , NOTI_TYPE_CD
+             , NOTI_CHNL_CD
+             , NOTI_TTL
+             , NOTI_CN
+             , CASE WHEN USE_YN = 'Y' THEN TRUE ELSE FALSE END AS USE_YN
+          FROM NOTI_TMPLT
+        <where>
+            <if test="notiChnlCd != null">
+                NOTI_CHNL_CD = #{notiChnlCd}
+            </if>
+        </where>
+         ORDER BY NOTI_TYPE_CD, NOTI_CHNL_CD
+    </select>
+
+    <select id="selectTemplateBySn" parameterType="long" resultMap="templateResultMap">
+        /* 번호로 알림 템플릿 조회 */
+        SELECT NOTI_TMPLT_SN
+             , NOTI_TYPE_CD
+             , NOTI_CHNL_CD
+             , NOTI_TTL
+             , NOTI_CN
+             , USE_YN
+          FROM NOTI_TMPLT
+         WHERE NOTI_TMPLT_SN = #{notiTmpltSn}
+    </select>
+
+    <insert id="insertTemplate" useGeneratedKeys="true" keyProperty="notiTmpltSn" keyColumn="NOTI_TMPLT_SN">
+        /* 알림 템플릿 등록 */
+        INSERT INTO NOTI_TMPLT (
+               NOTI_TYPE_CD
+             , NOTI_CHNL_CD
+             , NOTI_TTL
+             , NOTI_CN
+             , USE_YN
+             , REG_DT
+             , MDFCN_DT
+             , RGTR_ID
+             , MDFR_ID
+        ) VALUES (
+               #{notiTypeCd}
+             , #{notiChnlCd}
+             , #{notiTtl}
+             , #{notiCn}
+             , #{useYn}
+             , NOW()
+             , NOW()
+             , #{rgtrId}
+             , #{mdfrId}
+        )
+    </insert>
+
+    <update id="updateTemplate">
+        /* 알림 템플릿 수정 */
+        UPDATE NOTI_TMPLT
+           SET NOTI_TTL = #{notiTtl}
+             , NOTI_CN = #{notiCn}
+             , USE_YN = #{useYn}
+             , MDFR_ID = #{mdfrId}
+             , MDFCN_DT = NOW()
+         WHERE NOTI_TMPLT_SN = #{notiTmpltSn}
+    </update>
+
     <update id="updateReceiveSetting">
         /* 알림 수신 설정 저장 */
         UPDATE MBR
