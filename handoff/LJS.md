@@ -2,11 +2,15 @@
 
 ## 지금 하는 것
 
-SCR-ADM-042 1:1 문의 · 접수 시점 캐릭터 이미지 연결 — 끝 (2026-11-03). 관리자 상세 `charImgAtchFileSn`은 `OTO_INQRY.CHAR_PHOTO_SN`의 캐릭터 사진 파일을 먼저 쓰고(없으면 정렬 0 첨부), 관리자 첨부 이미지 API가 그 파일도 연다. 문의 206·첨부 1483의 404는 시드 이미지 파일이 없어서다(코드 문제 아님). DB 변경 없음
+SCR-ADM-070 아이템 — 끝 (2026-11-03). 관리자 아이템 목록·이미지·등록·수정·순서 API(`/api/admin/items`)와 굽기 계약(`bake-items` 응답 `{itemSn, regnCd, bakeHint}`, `/internal/ai/items/{itemSn}/bake-targets`). DB 변경 v0.12 (3): `ITEM.BAKE_HINT`, 시드에 없던 아이템 12개(같은 부위 시드 아이템 첨부파일 공유), 신발 4개만 지시 NULL, `ENGINE_ITEM_KEY` 삭제
 
 ## 다음에 할 것
 
-- SCR-ADM-070 아이템(ai-47 요청, 2026-11-03): 굽기 계약을 같이 구현한다. ① `ITEM.BAKE_HINT`(varchar(300), 영어 한 문장)와 시드 26개(AI 저장소 `docs/design/item-bake-hints.json`, 신발 MYPC0006은 굽지 않음, `ENGINE_ITEM_KEY`는 더 쓰지 않음) ② `GET /internal/ai/characters/bake-items` 응답을 `[{itemSn, regnCd, bakeHint}]`로(판매 중이고 굽기 지시가 있는 아이템) ③ `GET /internal/ai/items/{itemSn}/bake-targets?page=`(0부터, 관리자 쿠키 USRC0005, `{pixelCharSns, last}`, 맨몸 시트가 있고 착용 시트·굽기 실패 표시가 없는 캐릭터) ④ 관리자 등록·수정에 `bakeHint`. 시트 내부 API 4개는 쿠키 인증만 받는다(사람 결정, 2026-11-03, ai-47에 회신함). ai-47이 "관리자 쿠키로 남의 캐릭터 시트 읽기·쓰기 허용"을 제안하면 권한을 넓히는 일이라 사람이 정한다. 백엔드 PR이 AI PR보다 먼저 병합돼야 한다. 구현이 끝나면 ai-47에 알린다
+- ai-47에 알린다: 굽기 계약 구현 끝(SCR-ADM-070). `bake-items` 응답 `{itemSn, regnCd, bakeHint}`(판매 중이고 지시 있음 30개), `GET /internal/ai/items/{itemSn}/bake-targets?page=`(관리자 쿠키, 100개씩 `{pixelCharSns, last}`, 아니면 403 `ADMIN_ONLY`, 굽기 대상 아님 404). 굽기 지시가 바뀌면 그 아이템 착용 시트를 지워 다시 굽기 대상이 된다. 시드에만 있던 6개(빨간 리본·작은 왕관·털모자·줄무늬 티셔츠·꼬까 한복·곰돌이 후드티)의 지시 문장은 LJS 초안이라 검토를 부탁한다. 백엔드 PR이 AI PR보다 먼저 병합돼야 한다
+- 공용 DB(사람): v0.12 (3)은 DROP 줄을 뺀 나머지를 실행했다면(2026-11-03 사람 확인 때) PR 병합 뒤 `ALTER TABLE ITEM DROP COLUMN ENGINE_ITEM_KEY;`만 실행한다. 병합 전에 DROP하면 다른 브랜치 서버의 굽기 기능이 깨진다. 로컬 `nyangmeong_local`에도 v0.12 (3)을 실행한다
+- 공용 DB 정리(사람): SCR-ADM-070 사람 확인으로 만든 아이템(예: "확인용 가방")은 삭제 API가 없다. `DELETE FROM MNGR_TASK_LOG WHERE TRGT_TBL_NM='ITEM' AND TRGT_SN=<번호>; DELETE FROM ITEM WHERE ITEM_SN=<번호>;` 또는 판매 중지. 바꾼 순서·판매 여부·굽기 지시를 되돌린다
+- SCR-ADM-070 연결 남음: FN-ADM-070-01~04 (프론트 연결 `features/adminItem/api.js` 목록·등록·수정·순서 저장, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
+- 판단 필요(SCR-ADM-070): 순서 저장 400 `INVALID_INPUT_VALUE`는 어떤 번호가 빠졌는지 알려 주지 않는다(사람 확인 때 헷갈림). 메시지를 붙일지 정한다. 새 아이템 12개는 이미지가 빨간 리본·노란 우비와 같다(디자인 이미지가 오면 교체)
 - 시험 데이터 정리(사람): 로컬 DB 문의 202(회원 4, 캐릭터 601)는 local 프로필에서 회원 4로 `DELETE /api/inquiries/202`. 공용 DB에서 사람 확인으로 캐릭터 601 오류 문의를 접수했다면 `POST /api/admin/inquiries/{번호}/character-error`에 `{"charErrPrcsRsltCd":"CHRC0009"}`로 원래 캐릭터로 복원하고 문의를 지운다(ai-47의 시험 캐릭터)
 - SCR-ADM-042 연결 남음: FN-ADM-042-07 무료 재생성. 생성 흐름이 원본 사진(`FILC0006`)을 Java에 남기지 않아 관리자 [무료 재생성]은 404 FILE_NOT_FOUND로 롤백된다(복원만 실제 동작). FN-MYP-010-23 계약과 함께 정한다(LJS·ai)
 - SCR-ADM-042 연결 남음: FN-ADM-042-08 (작성자 매칭 목록 API는 SCR-ADM-022, KSJ 협의)
@@ -21,11 +25,10 @@ SCR-ADM-042 1:1 문의 · 접수 시점 캐릭터 이미지 연결 — 끝 (2026
 - 팀에 알린다(알림): 여러 회원에게 같은 알림을 보낼 때는 회원마다 `NotificationEvent`를 발행하지 않는다(커밋 뒤 회원마다 트랜잭션, 191명 46초). 공지는 `NoticeNotificationEvent` + `NotificationMapper.insertForNormalMembers` 한 번이다
 - 공용 DB(사람, PR 병합 직후): `db/20261102_create_tables_v0.12.sql` → `db/20261102_insert_base_data_v0.12.sql`의 v0.12 (1)을 실행한다(맨 앞 `SET NAMES utf8mb4;`). 실행 전에는 새 캐릭터 내부 API와 `PIXEL_CHAR` 조회가 `Unknown column`이다. 로컬 `nyangmeong_local`에는 사람이 실행했다
 - 팀에 알린다(PR): DB 기준 파일이 v0.12로 바뀌었다. v0.11 두 파일은 `db/archive/v0.11/`에 있고, 아직 병합 안 된 브랜치의 v0.11 변경 항목은 v0.12 파일의 변경 절로 옮겨야 한다. `handoff/KSJ.md`에 옛 v0.11 경로가 남아 있다(KSJ)
-- ERDCloud(사람): `PIXEL_CHAR.BODY_SHEET_FILE_SN`·`SHEET_SCALE`·`SHEET_ORIGIN_X`·`SHEET_ORIGIN_Y`, 새 테이블 `CHAR_ITEM_SHEET`, `ITEM.ENGINE_ITEM_KEY`를 추가한다
+- ERDCloud(사람): `PIXEL_CHAR.BODY_SHEET_FILE_SN`·`SHEET_SCALE`·`SHEET_ORIGIN_X`·`SHEET_ORIGIN_Y`, 새 테이블 `CHAR_ITEM_SHEET`, `ITEM.BAKE_HINT`(varchar(300) NULL, 굽기지시)를 추가한다. `ITEM.ENGINE_ITEM_KEY`는 넣지 않는다(v0.12 (3)에서 삭제)
 - 병합 순서(ai-d1): 백엔드 PR 먼저, 그다음 AI 저장소 `LJS`(`b2f2e84`, 쿠키 전환) PR. Python이 먼저 들어가면 캐릭터 생성이 실패한다. 백엔드 PR 번호를 ai-d1 세션에 알린다
 - 정하기: 옛 흐름으로 만든 캐릭터(시드 포함)는 맨몸 시트가 없어 미리보기가 404 `PIXEL_CHARACTER_NOT_FOUND`이고, 결과 사진이 있어 다시 생성도 `PIXEL_CHARACTER_ALREADY_EXISTS`로 막힌다(ai-d1 확인, 2026-11-02). 시트를 채울지(재생성), 시드를 새 흐름으로 다시 만들지 정한다
 - 굽기 켜기 전(AI 저장소와 함께): 백그라운드 호출이 쿠키를 쓰므로 `access_token`(30분)이 생성·굽기 중에 만료되면 성공 보고·시트 저장이 401이다. 성공 보고를 잃은 작업은 10분 뒤 시간 초과로 실패하고 다시 요청할 수 있다
-- 시드(SCR-ADM-070): `ENGINE_ITEM_KEY`는 이름이 같은 14개만 넣었다. AI `items.json` 26개와 시드 24개(신발 `MYPC0006` 4개 포함)를 맞춘다. 교체된 착용 시트의 이전 `ATCH_FILE`은 연결이 끊긴 채 남는다
 - 테스트 부족: 시간 초과 조회(`PRCS_BGNG_DT < NOW() - INTERVAL 10 MINUTE`) 경계를 실제 DB에서 돌려 보지 않았다(매퍼 목)
 - 로컬 DB 정리(`nyangmeong_local`, 사람): 검증·확인으로 생긴 반려동물 5의 `PIXEL_CHAR` 601·`CHAR_CRT_JOB` 780·`ATCH_FILE` 4178과 결과 사진, 반려동물 10의 캐릭터 데이터. 반려동물 삭제 API나 `DEL_YN='Y'`로 지운다
 - 로컬 Python 서버(사람): 8000은 `--reload`로 띄운다. 14:29에 띄운 옛 프로세스가 가짜 저장소로 돌아 미리보기가 `PIXEL_CHARACTER_NOT_FOUND`였다

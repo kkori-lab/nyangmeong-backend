@@ -6,12 +6,15 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.file.StoredFile;
 import com.nyangmeong.pet.domain.PixelCharacter;
+import com.nyangmeong.pet.dto.BakeTargetPageResponse;
 import com.nyangmeong.pet.dto.ItemPurchaseRequest;
 import com.nyangmeong.pet.dto.PixelCharacterResponse;
 import com.nyangmeong.pet.dto.ShopItemListResponse;
@@ -29,6 +32,8 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class ItemService {
+
+    private static final int BAKE_TARGET_PAGE_SIZE = 100;
 
     private final ItemMapper itemMapper;
     private final FileStore fileStore;
@@ -84,6 +89,26 @@ public class ItemService {
             throw new CustomException(ErrorCode.ITEM_ALREADY_HELD);
         }
         return pixelCharacterService.getPixelCharacter(mbrSn, pixelCharSn);
+    }
+
+    /**
+     * 아이템을 아직 안 구운 캐릭터 페이지 조회 (관리자만, page 0부터)
+     * - Python 전체 굽기가 마지막 페이지까지 읽는다 (FN-ADM-070-02)
+     */
+    @Transactional(readOnly = true)
+    public BakeTargetPageResponse searchBakeTargets(boolean admin, Long itemSn, int page) {
+        if (!admin) {
+            throw new CustomException(ErrorCode.ADMIN_ONLY);
+        }
+        if (page < 0) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        if (itemMapper.countBakeItem(itemSn) == 0) {
+            throw new CustomException(ErrorCode.ITEM_NOT_FOUND);
+        }
+        PageHelper.startPage(page + 1, BAKE_TARGET_PAGE_SIZE);
+        PageInfo<Long> rows = new PageInfo<>(pixelCharacterMapper.selectBakeTargets(itemSn));
+        return new BakeTargetPageResponse(rows.getList(), !rows.isHasNextPage());
     }
 
     /**

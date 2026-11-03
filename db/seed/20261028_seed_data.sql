@@ -364,21 +364,39 @@ INSERT INTO `ITEM` (`ITEM_SN`, `ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_
 /*!40000 ALTER TABLE `ITEM` ENABLE KEYS */;
 UNLOCK TABLES;
 
--- 굽기 대상 엔진 키 (이름이 같은 아이템만)
-UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='straw-hat' WHERE `ITEM_NM`='밀짚모자';
-UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='round-glasses' WHERE `ITEM_NM`='동그란 안경';
-UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='sunglasses' WHERE `ITEM_NM`='선글라스';
-UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='heart-glasses' WHERE `ITEM_NM`='하트 안경';
-UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='monocle' WHERE `ITEM_NM`='외알 안경';
-UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='bell-necklace' WHERE `ITEM_NM`='방울 목걸이';
-UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='check-scarf' WHERE `ITEM_NM`='체크 스카프';
-UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='bow-tie' WHERE `ITEM_NM`='나비넥타이';
-UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='pearl-necklace' WHERE `ITEM_NM`='진주 목걸이';
-UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='yellow-raincoat' WHERE `ITEM_NM`='노란 우비';
-UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='small-backpack' WHERE `ITEM_NM`='작은 배낭';
-UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='crossbody-bag' WHERE `ITEM_NM`='크로스백';
-UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='lunch-bag' WHERE `ITEM_NM`='도시락 가방';
-UPDATE `ITEM` SET `ENGINE_ITEM_KEY`='flower-basket' WHERE `ITEM_NM`='꽃바구니';
+-- 굽기 지시 (v0.12 (3)과 같다. 신발은 NULL, 시드에 없던 12개는 새로 넣는다)
+INSERT INTO `ITEM` (`ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `BAKE_HINT`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) SELECT `ATCH_FILE_SN`,'MYPC0001','빨간 비니',500,250,'Y','a red knitted beanie with a pompom',NOW(),NOW(),'SEED','SEED' FROM `ITEM` WHERE `ITEM_NM`='빨간 리본';
+INSERT INTO `ITEM` (`ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `BAKE_HINT`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) SELECT `ATCH_FILE_SN`,'MYPC0001','야구모자',500,260,'Y','a blue baseball cap with a pale gray front panel',NOW(),NOW(),'SEED','SEED' FROM `ITEM` WHERE `ITEM_NM`='빨간 리본';
+INSERT INTO `ITEM` (`ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `BAKE_HINT`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) SELECT `ATCH_FILE_SN`,'MYPC0001','버킷햇',500,270,'Y','a soft olive green bucket hat with a wide drooping brim',NOW(),NOW(),'SEED','SEED' FROM `ITEM` WHERE `ITEM_NM`='빨간 리본';
+INSERT INTO `ITEM` (`ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `BAKE_HINT`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) SELECT `ATCH_FILE_SN`,'MYPC0001','귀달이 모자',500,280,'Y','a brown warm hat with fur-lined ear flaps hanging down',NOW(),NOW(),'SEED','SEED' FROM `ITEM` WHERE `ITEM_NM`='빨간 리본';
+INSERT INTO `ITEM` (`ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `BAKE_HINT`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) SELECT `ATCH_FILE_SN`,'MYPC0001','분홍 버킷햇',500,290,'Y','a soft pink bucket hat with a wide drooping brim',NOW(),NOW(),'SEED','SEED' FROM `ITEM` WHERE `ITEM_NM`='빨간 리본';
+INSERT INTO `ITEM` (`ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `BAKE_HINT`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) SELECT `ATCH_FILE_SN`,'MYPC0001','초록 귀달이 모자',500,300,'Y','a green warm hat with fur-lined ear flaps hanging down',NOW(),NOW(),'SEED','SEED' FROM `ITEM` WHERE `ITEM_NM`='빨간 리본';
+INSERT INTO `ITEM` (`ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `BAKE_HINT`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) SELECT `ATCH_FILE_SN`,'MYPC0004','초록 스웨터',500,310,'Y','a green knitted dog sweater',NOW(),NOW(),'SEED','SEED' FROM `ITEM` WHERE `ITEM_NM`='노란 우비';
+INSERT INTO `ITEM` (`ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `BAKE_HINT`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) SELECT `ATCH_FILE_SN`,'MYPC0004','청재킷',500,320,'Y','an open blue denim jacket with a collar',NOW(),NOW(),'SEED','SEED' FROM `ITEM` WHERE `ITEM_NM`='노란 우비';
+INSERT INTO `ITEM` (`ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `BAKE_HINT`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) SELECT `ATCH_FILE_SN`,'MYPC0004','후드티',500,330,'Y','a plain gray pullover hoodie with the hood down',NOW(),NOW(),'SEED','SEED' FROM `ITEM` WHERE `ITEM_NM`='노란 우비';
+INSERT INTO `ITEM` (`ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `BAKE_HINT`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) SELECT `ATCH_FILE_SN`,'MYPC0004','패딩 조끼',500,340,'Y','a quilted red puffer vest with horizontal padded seams',NOW(),NOW(),'SEED','SEED' FROM `ITEM` WHERE `ITEM_NM`='노란 우비';
+INSERT INTO `ITEM` (`ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `BAKE_HINT`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) SELECT `ATCH_FILE_SN`,'MYPC0004','보라 청재킷',500,350,'Y','an open purple denim jacket with a collar',NOW(),NOW(),'SEED','SEED' FROM `ITEM` WHERE `ITEM_NM`='노란 우비';
+INSERT INTO `ITEM` (`ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `BAKE_HINT`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) SELECT `ATCH_FILE_SN`,'MYPC0004','청록 패딩 조끼',500,360,'Y','a quilted teal puffer vest with horizontal padded seams',NOW(),NOW(),'SEED','SEED' FROM `ITEM` WHERE `ITEM_NM`='노란 우비';
+UPDATE `ITEM` SET `BAKE_HINT`='a straw sun hat with a wide brim and a brown hat band' WHERE `ITEM_NM`='밀짚모자';
+UPDATE `ITEM` SET `BAKE_HINT`='round thin black glasses with clear lenses' WHERE `ITEM_NM`='동그란 안경';
+UPDATE `ITEM` SET `BAKE_HINT`='black sunglasses with dark lenses' WHERE `ITEM_NM`='선글라스';
+UPDATE `ITEM` SET `BAKE_HINT`='pink heart-shaped glasses' WHERE `ITEM_NM`='하트 안경';
+UPDATE `ITEM` SET `BAKE_HINT`='a round golden monocle with a thin chain' WHERE `ITEM_NM`='외알 안경';
+UPDATE `ITEM` SET `BAKE_HINT`='a red collar with one round golden bell at the front of its neck' WHERE `ITEM_NM`='방울 목걸이';
+UPDATE `ITEM` SET `BAKE_HINT`='a red and cream checked scarf wrapped around its neck' WHERE `ITEM_NM`='체크 스카프';
+UPDATE `ITEM` SET `BAKE_HINT`='a navy blue bow tie at the front of its neck' WHERE `ITEM_NM`='나비넥타이';
+UPDATE `ITEM` SET `BAKE_HINT`='a white pearl necklace of round beads around its neck' WHERE `ITEM_NM`='진주 목걸이';
+UPDATE `ITEM` SET `BAKE_HINT`='a bright yellow dog raincoat' WHERE `ITEM_NM`='노란 우비';
+UPDATE `ITEM` SET `BAKE_HINT`='a small red backpack with both shoulder straps clearly visible across the chest from the front' WHERE `ITEM_NM`='작은 배낭';
+UPDATE `ITEM` SET `BAKE_HINT`='a small brown crossbody bag resting on its side with the strap crossing the chest' WHERE `ITEM_NM`='크로스백';
+UPDATE `ITEM` SET `BAKE_HINT`='a small checked lunch bag hanging at the front of its chest from a strap around the neck' WHERE `ITEM_NM`='도시락 가방';
+UPDATE `ITEM` SET `BAKE_HINT`='a small woven basket of colorful flowers hanging at the front of its chest from a strap around the neck' WHERE `ITEM_NM`='꽃바구니';
+UPDATE `ITEM` SET `BAKE_HINT`='a red satin ribbon bow on top of its head' WHERE `ITEM_NM`='빨간 리본';
+UPDATE `ITEM` SET `BAKE_HINT`='a small shiny golden crown on top of its head' WHERE `ITEM_NM`='작은 왕관';
+UPDATE `ITEM` SET `BAKE_HINT`='a cream knitted wool hat with a folded brim' WHERE `ITEM_NM`='털모자';
+UPDATE `ITEM` SET `BAKE_HINT`='a navy and white horizontally striped dog t-shirt' WHERE `ITEM_NM`='줄무늬 티셔츠';
+UPDATE `ITEM` SET `BAKE_HINT`='a colorful Korean hanbok jacket with rainbow striped sleeves' WHERE `ITEM_NM`='꼬까 한복';
+UPDATE `ITEM` SET `BAKE_HINT`='a brown dog hoodie with small round bear ears on the hood' WHERE `ITEM_NM`='곰돌이 후드티';
 
 --
 -- Dumping data for table `JNT_BRUP_INVTN`
