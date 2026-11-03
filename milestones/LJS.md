@@ -475,6 +475,11 @@
 - 기다리는 것: 프론트 SCR-ADM-101(끝, 가짜 응답 `features/adminBreedRegion/api.js`). FN-ADM-101-02 지역 조회는 기존 공용 `GET /api/regions?upRgnSn=`로 이미 연결됨(프론트는 전북 `admdstCd` 5200000000 하위만 보임)
 - 완료 조건: `GET /api/admin/breeds?petSeCd=`(사용 안 함 포함, 정렬순 `[{ vrtySn, vrtyCd, vrtyNm, petSeCd, sortSeq, useYn }]`), `POST /api/admin/breeds` `{ petSeCd, vrtyNm, sortSeq, useYn }` → 품종 행(`vrtyCd`는 서버가 매김), `PATCH /api/admin/breeds/{vrtySn}` `{ vrtyNm, sortSeq, useYn }`(종·코드는 안 바꿈). 같은 종에 같은 이름(공백 무시)이면 409, 없는 품종 404. `useYn`은 true/false. 사용을 끈 품종은 공용 `GET /api/breeds`에서 빠진다. 이름 글자 수(프론트 가정 50)를 정해 프론트에 알린다
 
+## SCR-ADM-051 약관 · 프론트 연결 관리자 약관 API — 대기
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-051-01·02·03·04
+- 기다리는 것: 프론트 SCR-ADM-051(끝, 가짜 응답 `features/adminTerms/api.js`, 종류 키는 `features/adminTerms/termsKinds.js` 가정 값 SERVICE·PRIVACY·AGE·MARKETING·CARE_RULE·LOST_PRIVACY)
+- 완료 조건: `GET /api/admin/terms`(종류별 사용 중 버전 `[{ trmsSn, trmsFixIdntfKey, trmsVerId, trmsTtl, esntlAgreYn, useYn, regDt }]`), `GET /api/admin/terms/history?trmsFixIdntfKey=`(그 종류 모든 버전 최신순, 내용 제외), `GET /api/admin/terms/{trmsSn}`(내용 `trmsCn` 포함), `POST /api/admin/terms` `{ trmsFixIdntfKey, trmsVerId, trmsTtl, trmsCn, esntlAgreYn }` → 등록 행, 같은 종류 이전 버전 `useYn=N`, 같은 종류 같은 버전이면 409 `DUPLICATE_TRMS_VER`. 등록일 필드 이름(`regDt` 가정)과 종류 키 실제 값을 프론트에 알린다
+
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
 - FN-COM-002-11: 채팅 안 읽은 수 API는 KSJ(채팅, 마일스톤 담당 표 COM-009)
