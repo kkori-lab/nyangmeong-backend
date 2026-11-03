@@ -2,10 +2,14 @@
 
 ## 지금 하는 것
 
-SCR-ADM-041 FAQ — 끝 (2026-11-03). `/api/admin/faqs` 4개(목록·상세·등록·수정)를 `support`에 만들었다. 비노출은 `PATCH`의 `useYn=false`이고 삭제 API는 없다. 카테고리는 기존 `GET /api/common-codes?prntComCd=CSCG01`. DB 변경 없음
+SCR-ADM-042 1:1 문의 — 끝 (2026-11-03). `/api/admin/inquiries` 6개(목록·상세·첨부 이미지·답변 등록·답변 수정·캐릭터 오류 처리)를 `support`에 만들었다. 내부 분류는 `InquiryCategory`가 유형별로 고정, 삭제 문의는 조회만(첨부 빈 목록). DB 변경 없음. 추가-1 `MapperXmlRuleTest` 예외 1줄
 
 ## 다음에 할 것
 
+- SCR-ADM-042 연결 남음: FN-ADM-042-07 접수 시점 캐릭터 이미지 404 (마일스톤 "접수 시점 캐릭터 이미지 연결" 절, LJS)
+- SCR-ADM-042 연결 남음: FN-ADM-042-07 무료 재생성. 생성 흐름이 원본 사진(`FILC0006`)을 Java에 남기지 않아 관리자 [무료 재생성]은 404 FILE_NOT_FOUND로 롤백된다(복원만 실제 동작). FN-MYP-010-23 계약과 함께 정한다(LJS·ai)
+- SCR-ADM-042 연결 남음: FN-ADM-042-08 (작성자 매칭 목록 API는 SCR-ADM-022, KSJ 협의)
+- KSJ에게 알린다(PR 전): SCR-ADM-042를 LJS가 구현했다. `InquiryService`·`InquiryMapper` 기존 메서드는 그대로 두고 관리자 쿼리(`selectAdminList`·`selectAdminInquiry`·`selectNickname`·`selectStatusHistories`·`updateAnswerContent`·`updateCharErrResult`)를 더했다. `ErrorCode.INQUIRY_NOT_ANSWERED`·`INQUIRY_DELETED`, `MapperXmlRuleTest` 예외 1줄
 - SCR-ADM-041 연결 남음: FN-ADM-041-01 (프론트 연결 관리자 FAQ 목록 `/admin/faqs`, 프론트 저장소에서 /start), FN-ADM-041-02 (프론트 연결 등록·수정 모달, 프론트 저장소에서 /start), FN-ADM-041-03 (프론트 연결 목록·모달의 사용 토글, 프론트 저장소에서 /start), FN-ADM-041-04 (프론트 연결 카테고리 탭·모달 선택지, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
 - KSJ에게 알린다(PR 전): SCR-ADM-041을 LJS가 구현했다. 사용자 FAQ(`FaqController`·`FaqMapper.selectList`)는 그대로 두고 같은 Mapper에 관리자 쿼리(`selectAdminList`·`selectAdminFaq`·`insert`·`update`)와 `Faq` VO 등록자·수정자 필드, `ErrorCode.FAQ_NOT_FOUND`를 더했다
 - 공용 DB 정리(사람): 검증으로 생긴 FAQ 41번(비노출, "[검증] 4000자 답변 FAQ")과 그 감사 로그. 지우려면 `DELETE FROM MNGR_TASK_LOG WHERE TRGT_TBL_NM='FAQ' AND TRGT_SN=41; DELETE FROM FAQ WHERE FAQ_SN=41;`. 사람 확인으로 만든 FAQ도 같은 방식
@@ -19,7 +23,6 @@ SCR-ADM-041 FAQ — 끝 (2026-11-03). `/api/admin/faqs` 4개(목록·상세·등
 - ERDCloud(사람): `PIXEL_CHAR.BODY_SHEET_FILE_SN`·`SHEET_SCALE`·`SHEET_ORIGIN_X`·`SHEET_ORIGIN_Y`, 새 테이블 `CHAR_ITEM_SHEET`, `ITEM.ENGINE_ITEM_KEY`를 추가한다
 - 병합 순서(ai-d1): 백엔드 PR 먼저, 그다음 AI 저장소 `LJS`(`b2f2e84`, 쿠키 전환) PR. Python이 먼저 들어가면 캐릭터 생성이 실패한다. 백엔드 PR 번호를 ai-d1 세션에 알린다
 - 정하기: 옛 흐름으로 만든 캐릭터(시드 포함)는 맨몸 시트가 없어 미리보기가 404 `PIXEL_CHARACTER_NOT_FOUND`이고, 결과 사진이 있어 다시 생성도 `PIXEL_CHARACTER_ALREADY_EXISTS`로 막힌다(ai-d1 확인, 2026-11-02). 시트를 채울지(재생성), 시드를 새 흐름으로 다시 만들지 정한다
-- 정하기(SCR-ADM-042 전): 무료 재생성(FN-MYP-010-23). 사진이 Java로 오지 않아 `finishErrorCheck(regenerate=true)`는 원본 사진이 없어 `FILE_NOT_FOUND`이고 Python에 재생성 API도 없다. 계약을 정한 뒤 `CharacterCreationWorker`·`CharacterGenerator`·`FakeCharacterGenerator`를 정리한다
 - 굽기 켜기 전(AI 저장소와 함께): 백그라운드 호출이 쿠키를 쓰므로 `access_token`(30분)이 생성·굽기 중에 만료되면 성공 보고·시트 저장이 401이다. 성공 보고를 잃은 작업은 10분 뒤 시간 초과로 실패하고 다시 요청할 수 있다
 - 시드(SCR-ADM-070): `ENGINE_ITEM_KEY`는 이름이 같은 14개만 넣었다. AI `items.json` 26개와 시드 24개(신발 `MYPC0006` 4개 포함)를 맞춘다. 교체된 착용 시트의 이전 `ATCH_FILE`은 연결이 끊긴 채 남는다
 - 테스트 부족: 시간 초과 조회(`PRCS_BGNG_DT < NOW() - INTERVAL 10 MINUTE`) 경계를 실제 DB에서 돌려 보지 않았다(매퍼 목)
@@ -98,7 +101,6 @@ SCR-ADM-041 FAQ — 끝 (2026-11-03). `/api/admin/faqs` 4개(목록·상세·등
 - SJM에게 확인: 가계부 모달의 영수증 저장을 `ExpenseService`가 직접 하는지. 영수증 쪽이 하라면 `receipt`(4층) 분리를 다시 검토한다(`docs/OPEN_ISSUES.md` 영수증 행)
 - SCR-AIM-006 연결 남음: health 병원 일정 조회(JAJ)가 나오면 `scheduler/HospitalScheduleFake`를, pet 연동 양육자 조회(SJM)가 나오면 `scheduler/CaregiverFake`를 그 service로. 그 뒤 FN-AIM-006-11·13 화면과 01·02·20 실제 조회를 공용 DB 병원 일정으로 확인한다 / SCR-AIM-006 연결 남음: 팀이 SMTP 계정을 정하면 `spring-boot-starter-mail`과 `MailSender` SMTP 구현. 그 전까지 메일은 로그만
 - SCR-MYP-011 연결 남음: 포인트 조회·차감(SJM, FN-MYP-020)이 나오면 `pet/service/PointFake`를 그 service로. 구매의 `idmptDmndId`를 포인트 원장에 넘긴다
-- SCR-MYP-010 연결 남음: FN-MYP-010-24 1:1 문의 작성(SCR-CSC-003, KSJ)이 `PixelCharacterService.receiveErrorInquiry(mbrSn, pixelCharSn, otoInqrySn)`를 부르고 결과 ATCH_FILE_SN을 첨부한다 / SCR-MYP-010 연결 남음: FN-MYP-010-23 관리자 확인 화면(SCR-ADM-042 1:1 문의 상세, LJS)이 `finishErrorCheck(pixelCharSn, regenerate)`를 부른다
 - FN-MYP-010-19: 캐릭터 생성 외부 API가 정해지면 `CharacterGenerator` 실제 구현과 베이스 캐릭터 선택 방식을 판단한다. 기본 캐릭터 이미지(`resources/character/default-*.png`)도 디자인 이미지로
 - SCR-COM-004 연결 남음: FN-COM-004-08 공동양육 초대 수락·거절(SJM) API가 나오면 알림 행 버튼과 연결하고 초대 알림 `mvmnPath` 형식을 SJM과 맞춘다
 - SCR-COM-002 연결 남음: `/auth/me`의 프로필 이미지 URL은 `FileStore`·파일 조회 API 뒤 연결. 지금은 `atchFileSn`만

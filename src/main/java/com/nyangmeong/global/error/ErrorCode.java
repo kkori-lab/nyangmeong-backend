@@ -180,7 +180,9 @@ public enum ErrorCode {
     INQUIRY_NOT_FOUND(HttpStatus.NOT_FOUND, "문의를 찾을 수 없습니다."),
     INQUIRY_NOT_EDITABLE(HttpStatus.BAD_REQUEST, "접수 상태의 문의만 수정할 수 있습니다."),
     INQUIRY_NOT_DELETABLE(HttpStatus.BAD_REQUEST, "접수 상태의 문의만 삭제할 수 있습니다."),
-    INQUIRY_ATTACHMENT_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "첨부 파일은 최대 10개까지 올릴 수 있습니다.");
+    INQUIRY_ATTACHMENT_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "첨부 파일은 최대 10개까지 올릴 수 있습니다."),
+    INQUIRY_NOT_ANSWERED(HttpStatus.BAD_REQUEST, "답변을 등록한 문의만 답변을 수정할 수 있습니다."),
+    INQUIRY_DELETED(HttpStatus.CONFLICT, "회원이 삭제한 문의예요.");
 
     private final HttpStatus status;
     private final String message;

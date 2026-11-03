@@ -25,8 +25,93 @@
 | POST | /admin/notices | 공지 등록(201, 감사 로그). `notiSndngYn=true`면 정상 회원마다 공지 인앱 알림을 한 번 보내고 발송 시각·대상 수를 남긴다(앱 알림 채널을 끈 회원은 받지 않지만 대상 수에는 든다). `useYn=false`와 함께 보내면 400 INVALID_INPUT_VALUE | ADM-040-02·03·05 | LJS | AdminNoticeCreateRequest | AdminNoticeResponse |
 | PATCH | /admin/notices/{ntcMttrSn} | 공지 수정·비노출(감사 로그). 알림은 다시 보내지 않는다. 삭제 API는 없고 `useYn=false`로 비노출한다. 없으면 404 NOTICE_NOT_FOUND | ADM-040-04·05 | LJS | AdminNoticeUpdateRequest | AdminNoticeResponse |
 | POST | /admin/notices/images | 공지 본문 이미지 올리기(multipart `image`, 이미지만 10MB, 공개 파일). 본문에는 `![](/api/files/public/{atchFileSn})` 한 줄로 넣는다(issues.md 고객센터 10, 2026-11-02 결정) | ADM-040-02 | LJS | - | AdminNoticeImageResponse |
+| GET | /admin/inquiries | 관리자 1:1 문의 목록. 접수 최신순 20건씩. `inqryTypeCd`(CSCG02)·`inqryCtgr`(DISPUTE 분쟁·ERROR 오류·ETC 기타)·`inqryPrcsSttsCd`(CSCG03)·`bgngYmd`~`endYmd`(접수일, 끝 날짜 포함)는 AND. `inclDelYn=true`면 회원이 삭제한 문의도 나온다. 내부 분류는 유형으로 정한다(건강기록·픽셀 캐릭터=오류, 커뮤니티·포인트·결제·가계부=분쟁, 나머지=기타). 없는 코드·시작일이 끝일 뒤면 400 INVALID_INPUT_VALUE. 일반 회원 403 ADMIN_ONLY | ADM-042-01·02 | LJS | AdminInquirySearchCond | PageResponse<AdminInquirySummary> |
+| GET | /admin/inquiries/{otoInqrySn} | 관리자 1:1 문의 상세(삭제 문의 포함, 상태 이력·첨부·답변·캐릭터 오류 처리 결과). 회원이 삭제한 문의는 첨부 목록이 비어 있다. 없으면 404 INQUIRY_NOT_FOUND | ADM-042-03·06·07·08 | LJS | - | AdminInquiryResponse |
+| GET | /admin/inquiries/{otoInqrySn}/images/{atchFileSn} | 관리자 1:1 문의 첨부 이미지(이미지 바이너리). 그 문의의 삭제되지 않은 첨부가 아니거나 삭제된 문의면 404 FILE_NOT_FOUND | ADM-042-03·07 | LJS | - | byte[] |
+| POST | /admin/inquiries/{otoInqrySn}/answer | 답변 등록(201, 감사 로그). 상태를 답변 완료로 바꾸고 답변 일시·처리 관리자를 남기며 작성자에게 1:1 문의 답변 인앱 알림(AIMC0030)을 보낸다. 이미 답변했으면 409 ALREADY_PROCESSED, 삭제된 문의는 409 INQUIRY_DELETED | ADM-042-04·06 | LJS | AdminInquiryAnswerRequest | AdminInquiryResponse |
+| PATCH | /admin/inquiries/{otoInqrySn}/answer | 답변 수정(감사 로그). 알림은 다시 보내지 않고 답변 일시·처리 관리자는 그대로다. 답변 전이면 400 INQUIRY_NOT_ANSWERED, 삭제된 문의는 409 INQUIRY_DELETED. 답변 삭제 API는 없다 | ADM-042-05·06 | LJS | AdminInquiryAnswerRequest | AdminInquiryResponse |
+| POST | /admin/inquiries/{otoInqrySn}/character-error | 캐릭터 오류 처리(감사 로그). CHRC0008 무료 재생성 / CHRC0009 원래 캐릭터 복원을 기록하고 캐릭터 쪽 처리를 실행한다. 회원 알림은 캐릭터 쪽이 보낸다(복원은 바로, 재생성은 생성 완료 때). 답변 상태는 바꾸지 않는다. 캐릭터 오류 문의가 아니거나 없는 결과 코드면 400 INVALID_INPUT_VALUE, 이미 처리했으면 409 ALREADY_PROCESSED, 삭제된 문의는 409 INQUIRY_DELETED, 캐릭터 생성 중이면 409 PIXEL_CHARACTER_CREATING | ADM-042-07 | LJS | AdminCharacterErrorRequest | AdminInquiryResponse |
 
 ## DTO
+
+### AdminCharacterErrorRequest
+쓰는 API: POST /admin/inquiries/{otoInqrySn}/character-error
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| charErrPrcsRsltCd | String | Y | 공통코드 CHRG04. CHRC0008 무료 재생성, CHRC0009 원래 캐릭터 복원 | OTO_INQRY.CHAR_ERR_PRCS_RSLT_CD, ADM-042-07 |
+
+### AdminInquiryAnswerRequest
+쓰는 API: POST /admin/inquiries/{otoInqrySn}/answer, PATCH /admin/inquiries/{otoInqrySn}/answer
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| ansCn | String | Y | 공백 불가, 4,000자 이하 | OTO_INQRY.ANS_CN, ADM-042-04·05 |
+
+### AdminInquiryHistorySummary
+쓰는 API: GET /admin/inquiries/{otoInqrySn} (응답 `AdminInquiryResponse.hstrys`, 오래된 순)
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| bfrSttsCd | String | N | 접수 이력은 null. 공통코드 CSCG03 | OTO_INQRY_STTS_HSTRY.BFR_STTS_CD |
+| bfrSttsCdNm | String | N | | COM_CD.COM_CD_NM |
+| aftrSttsCd | String | Y | 공통코드 CSCG03 | OTO_INQRY_STTS_HSTRY.AFTR_STTS_CD |
+| aftrSttsCdNm | String | Y | | COM_CD.COM_CD_NM |
+| mbrSn | Long | N | 바꾼 회원(접수는 작성자, 답변은 관리자) | OTO_INQRY_STTS_HSTRY.MBR_SN |
+| mbrNcnm | String | N | | MBR.MBR_NCNM |
+| chgRsn | String | N | | OTO_INQRY_STTS_HSTRY.CHG_RSN |
+| regDt | LocalDateTime | Y | 바뀐 시각 | OTO_INQRY_STTS_HSTRY.REG_DT |
+
+### AdminInquiryResponse
+쓰는 API: GET /admin/inquiries/{otoInqrySn}, POST·PATCH /admin/inquiries/{otoInqrySn}/answer, POST /admin/inquiries/{otoInqrySn}/character-error
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| otoInqrySn | Long | Y | | OTO_INQRY.OTO_INQRY_SN |
+| inqryTypeCd | String | Y | 공통코드 CSCG02 | OTO_INQRY.INQRY_TYPE_CD |
+| inqryTypeCdNm | String | Y | | COM_CD.COM_CD_NM |
+| inqryCtgr | String | Y | 내부 분류 DISPUTE·ERROR·ETC. DISPUTE면 [작성자 매칭 목록](SCR-ADM-022)을 `mbrSn`으로 연다 | ADM-042-01·08 |
+| inqryPrcsSttsCd | String | Y | 공통코드 CSCG03 | OTO_INQRY.INQRY_PRCS_STTS_CD |
+| inqryPrcsSttsCdNm | String | Y | | COM_CD.COM_CD_NM |
+| inqryTtl | String | Y | | OTO_INQRY.INQRY_TTL |
+| inqryCn | String | Y | | OTO_INQRY.INQRY_CN |
+| mbrSn | Long | Y | 작성자. 회원 상세(SCR-ADM-011) 이동 | OTO_INQRY.MBR_SN, ADM-042-03 |
+| mbrNcnm | String | N | | MBR.MBR_NCNM |
+| prcsMbrSn | Long | N | 답변한 관리자, 답변 전 null | OTO_INQRY.PRCS_MBR_SN |
+| prcsMbrNcnm | String | N | | MBR.MBR_NCNM |
+| ansCn | String | N | 답변 전 null | OTO_INQRY.ANS_CN |
+| ansDt | LocalDateTime | N | 답변 전 null | OTO_INQRY.ANS_DT |
+| pixelCharSn | Long | N | 캐릭터 오류 문의만 | OTO_INQRY.PIXEL_CHAR_SN, ADM-042-07 |
+| charErrPrcsRsltCd | String | N | 처리 전 null. 공통코드 CHRG04 | OTO_INQRY.CHAR_ERR_PRCS_RSLT_CD, ADM-042-07 |
+| charErrPrcsRsltCdNm | String | N | | COM_CD.COM_CD_NM |
+| charImgAtchFileSn | Long | N | 접수 시점 캐릭터 이미지(캐릭터 오류 문의의 첫 첨부). 이미지는 관리자 첨부 이미지 API | INQRY_ATCH_PHOTO.ATCH_FILE_SN, ADM-042-07 |
+| delYn | boolean | Y | true면 조회만 되고 답변 입력 칸을 숨긴다("회원이 삭제한 문의예요") | OTO_INQRY.DEL_YN, ADM-042-06 |
+| regDt | LocalDateTime | Y | 접수일 | OTO_INQRY.REG_DT |
+| imgs | List<InquiryImageSummary> | Y | 이미지는 `GET /api/admin/inquiries/{otoInqrySn}/images/{atchFileSn}`. 삭제된 문의는 빈 목록 | INQRY_ATCH_PHOTO, ADM-042-03 |
+| hstrys | List<AdminInquiryHistorySummary> | Y | 상태 이력 | OTO_INQRY_STTS_HSTRY, ADM-042-03 |
+
+### AdminInquirySearchCond
+쓰는 API: GET /admin/inquiries
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| inqryTypeCd | String | N | CSCG02 하위 코드, 없거나 공백이면 전체 | OTO_INQRY.INQRY_TYPE_CD, ADM-042-02 |
+| inqryCtgr | String | N | DISPUTE·ERROR·ETC, 없거나 공백이면 전체 | ADM-042-02 |
+| inqryPrcsSttsCd | String | N | CSCG03 하위 코드(CSCC0012 미답변, CSCC0013 답변 완료) | OTO_INQRY.INQRY_PRCS_STTS_CD, ADM-042-02 |
+| bgngYmd | LocalDate | N | 접수일 시작 | OTO_INQRY.REG_DT, ADM-042-02 |
+| endYmd | LocalDate | N | 접수일 끝(그날 포함) | OTO_INQRY.REG_DT, ADM-042-02 |
+| inclDelYn | Boolean | N | true면 삭제 문의 포함, 기본 false | OTO_INQRY.DEL_YN, ADM-042-02 |
+
+### AdminInquirySummary
+쓰는 API: GET /admin/inquiries
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| otoInqrySn | Long | Y | | OTO_INQRY.OTO_INQRY_SN |
+| inqryTypeCd | String | Y | | OTO_INQRY.INQRY_TYPE_CD, ADM-042-01 |
+| inqryTypeCdNm | String | Y | | COM_CD.COM_CD_NM |
+| inqryCtgr | String | Y | DISPUTE·ERROR·ETC | ADM-042-01 |
+| inqryTtl | String | Y | | OTO_INQRY.INQRY_TTL, ADM-042-01 |
+| mbrSn | Long | Y | 작성자 | OTO_INQRY.MBR_SN |
+| mbrNcnm | String | N | | MBR.MBR_NCNM, ADM-042-01 |
+| inqryPrcsSttsCd | String | Y | CSCC0012는 화면에서 '미답변' | OTO_INQRY.INQRY_PRCS_STTS_CD, ADM-042-01 |
+| inqryPrcsSttsCdNm | String | Y | | COM_CD.COM_CD_NM |
+| regDt | LocalDateTime | Y | 접수일 | OTO_INQRY.REG_DT, ADM-042-01 |
+| delYn | boolean | Y | 회원이 삭제한 문의 | OTO_INQRY.DEL_YN, ADM-042-02 |
 
 ### AdminFaqCreateRequest
 쓰는 API: POST /admin/faqs

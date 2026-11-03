@@ -57,7 +57,9 @@ class MapperXmlRuleTest {
             "com.nyangmeong.community.mapper.ReportMapper.selectAdminList",
             "com.nyangmeong.community.mapper.ReportMapper.selectSameTargetList",
             "com.nyangmeong.community.mapper.ReportMapper.selectAutoBlindList",
-            "com.nyangmeong.community.mapper.ReportMapper.existsAutoTarget");
+            "com.nyangmeong.community.mapper.ReportMapper.existsAutoTarget",
+            /** 관리자 : 회원이 삭제한 1:1 문의도 조회만 (FN-ADM-042-06) */
+            "com.nyangmeong.support.mapper.InquiryMapper.selectAdminInquiry");
 
     private static final Pattern TABLE = Pattern.compile("\\b(?:FROM|JOIN)\\s+`?(\\w+)`?", Pattern.CASE_INSENSITIVE);
     private static final Pattern DEL_YN_CONDITION = Pattern.compile("DEL_YN`?\\s*=\\s*'N'", Pattern.CASE_INSENSITIVE);
