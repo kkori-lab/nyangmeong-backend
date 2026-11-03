@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nyangmeong.community.mapper.ChatRoomMapper">
+
+    <resultMap id="chatRoomResultMap" type="com.nyangmeong.community.domain.ChatRoom">
+        <id     column="OTO_CHAT_ROOM_SN"   property="otoChatRoomSn" />
+        <result column="PST_SN"             property="pstSn" />
+        <result column="CTPT_MBR_SN"        property="ctptMbrSn" />
+        <result column="CHAT_ROOM_STTS_CD"  property="chatRoomSttsCd" />
+        <result column="REG_DT"             property="regDt" />
+        <result column="MDFCN_DT"           property="mdfcnDt" />
+    </resultMap>
+
+    <resultMap id="chatRoomDetailResultMap" type="com.nyangmeong.community.domain.ChatRoomDetail"
+               extends="chatRoomResultMap">
+        <result column="PST_TTL"                property="pstTtl" />
+        <result column="OWNER_MBR_SN"           property="ownerMbrSn" />
+        <result column="OWNER_NCNM"             property="ownerNcnm" />
+        <result column="OWNER_ATCH_FILE_SN"     property="ownerAtchFileSn" />
+        <result column="APPLICANT_NCNM"         property="applicantNcnm" />
+        <result column="APPLICANT_ATCH_FILE_SN" property="applicantAtchFileSn" />
+        <result column="PET_PRTC_RCRT_SN"       property="petPrtcRcrtSn" />
+        <result column="RCRT_STTS_CD"           property="rcrtSttsCd" />
+        <result column="PET_PRTC_MTCH_SN"       property="petPrtcMtchSn" />
+        <result column="MTCH_DLNG_STTS_CD"      property="mtchDlngSttsCd" />
+    </resultMap>
+
+    <select id="selectByPstSnAndCtptMbrSn" resultMap="chatRoomResultMap">
+        SELECT C.OTO_CHAT_ROOM_SN
+             , C.PST_SN
+             , C.CTPT_MBR_SN
+             , C.CHAT_ROOM_STTS_CD
+             , C.REG_DT
+             , C.MDFCN_DT
+          FROM OTO_CHAT_ROOM C
+         WHERE C.PST_SN = #{pstSn}
+           AND C.CTPT_MBR_SN = #{ctptMbrSn}
+    </select>
+
+    <!-- REPEATABLE READ 의 스냅샷은 다른 트랜잭션이 막 커밋한 행을 못 보므로 잠금 읽기로 최신 값을 읽음 -->
+    <select id="selectByPstSnAndCtptMbrSnForShare" resultMap="chatRoomResultMap">
+        SELECT C.OTO_CHAT_ROOM_SN
+             , C.PST_SN
+             , C.CTPT_MBR_SN
+             , C.CHAT_ROOM_STTS_CD
+             , C.REG_DT
+             , C.MDFCN_DT
+          FROM OTO_CHAT_ROOM C
+         WHERE C.PST_SN = #{pstSn}
+           AND C.CTPT_MBR_SN = #{ctptMbrSn}
+           FOR SHARE
+    </select>
+
+    <sql id="chatRoomDetailSelect">
+        SELECT C.OTO_CHAT_ROOM_SN
+             , C.PST_SN
+             , C.CTPT_MBR_SN
+             , C.CHAT_ROOM_STTS_CD
+             , C.REG_DT
+             , C.MDFCN_DT
+             , P.PST_TTL
+             , P.MBR_SN AS OWNER_MBR_SN
+             , O.MBR_NCNM AS OWNER_NCNM
+             , O.ATCH_FILE_SN AS OWNER_ATCH_FILE_SN
+             , A.MBR_NCNM AS APPLICANT_NCNM
+             , A.ATCH_FILE_SN AS APPLICANT_ATCH_FILE_SN
+             , R.PET_PRTC_RCRT_SN
+             , R.RCRT_STTS_CD
+             , T.PET_PRTC_MTCH_SN
+             , T.MTCH_DLNG_STTS_CD
+          FROM OTO_CHAT_ROOM C
+          JOIN PST P
+            ON P.PST_SN = C.PST_SN
+          JOIN PET_PRTC_RCRT R
+            ON R.PST_SN = C.PST_SN
+          JOIN MBR O
+            ON O.MBR_SN = P.MBR_SN
+          JOIN MBR A
+            ON A.MBR_SN = C.CTPT_MBR_SN
+          LEFT JOIN PET_PRTC_MTCH T
+            ON T.OTO_CHAT_ROOM_SN = C.OTO_CHAT_ROOM_SN
+         WHERE C.OTO_CHAT_ROOM_SN = #{otoChatRoomSn}
+    </sql>
+
+    <select id="selectDetail" parameterType="long" resultMap="chatRoomDetailResultMap">
+        <include refid="chatRoomDetailSelect" />
+    </select>
+
+    <!-- 중복 키 뒤 경로 : 스냅샷에 없는 방이라 잠금 읽기로 최신 값을 읽음 -->
+    <select id="selectDetailForShare" parameterType="long" resultMap="chatRoomDetailResultMap">
+        <include refid="chatRoomDetailSelect" />
+           FOR SHARE
+    </select>
+
+    <insert id="insertRoom" parameterType="com.nyangmeong.community.domain.ChatRoom"
+            useGeneratedKeys="true" keyProperty="otoChatRoomSn" keyColumn="OTO_CHAT_ROOM_SN">
+        INSERT INTO OTO_CHAT_ROOM
+             ( PST_SN
+             , CTPT_MBR_SN
+             , CHAT_ROOM_STTS_CD
+             , REG_DT
+             , MDFCN_DT )
+        VALUES
+             ( #{pstSn}
+             , #{ctptMbrSn}
+             , #{chatRoomSttsCd}
+             , NOW()
+             , NOW() )
+    </insert>
+
+    <insert id="insertRoomStatusHistory" parameterType="com.nyangmeong.community.domain.ChatStatusHistory">
+        INSERT INTO OTO_CHAT_ROOM_STTS_HSTRY
+             ( OTO_CHAT_ROOM_SN
+             , MBR_SN
+             , BFR_STTS_CD
+             , AFTR_STTS_CD
+             , CHG_RSN
+             , REG_DT )
+        VALUES
+             ( #{refSn}
+             , #{mbrSn}
+             , #{bfrSttsCd}
+             , #{aftrSttsCd}
+             , #{chgRsn}
+             , NOW() )
+    </insert>
+
+    <insert id="insertParticipant" parameterType="com.nyangmeong.community.domain.ChatParticipant"
+            useGeneratedKeys="true" keyProperty="chatPrtpntSn" keyColumn="CHAT_PRTPNT_SN">
+        INSERT INTO CHAT_PRTPNT
+             ( OTO_CHAT_ROOM_SN
+             , MBR_SN
+             , PTCP_STTS_CD
+             , REG_DT
+             , MDFCN_DT )
+        VALUES
+             ( #{otoChatRoomSn}
+             , #{mbrSn}
+             , #{ptcpSttsCd}
+             , NOW()
+             , NOW() )
+    </insert>
+
+    <insert id="insertParticipantStatusHistory" parameterType="com.nyangmeong.community.domain.ChatStatusHistory">
+        INSERT INTO CHAT_PRTPNT_STTS_HSTRY
+             ( CHAT_PRTPNT_SN
+             , MBR_SN
+             , BFR_STTS_CD
+             , AFTR_STTS_CD
+             , CHG_RSN
+             , REG_DT )
+        VALUES
+             ( #{refSn}
+             , #{mbrSn}
+             , #{bfrSttsCd}
+             , #{aftrSttsCd}
+             , #{chgRsn}
+             , NOW() )
+    </insert>
+</mapper>

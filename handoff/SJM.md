@@ -1,9 +1,10 @@
 # SJM 핸드오프
 
 ## 지금 하는 것
-SCR-MYP-030 가계부 목록 · 일괄 삭제 제외 목록 추가·건수 불일치 409 — 끝남. `POST /expenses/bulk-delete`에 `excludeExpndSn`(최대 1000개) 추가, 건수 검사는 "조건 건수 − 제외 수", 불일치·잘못된 제외 번호·삭제 건수 불일치는 모두 409 `EXPENSE_BULK_DELETE_CHANGED`(검증 1회차 `확인 못 함 있음`(서버가 예전 빌드라 화면 확인 못 함), 새 빌드로 Postman 확인 통과, 사람 확인 통과 2026-11-03)
+SCR-MYP-031 가계부 등록/수정 · 등록·수정 미래 날짜 검증 — 끝남. `ExpenseService.validate()`(등록)와 `update()`(수정)에서 지출일이 오늘(KST)보다 뒤면 400 `INVALID_INPUT_VALUE`. 수정은 날짜를 안 보내면 검사하지 않는다(검증 1회차 통과, 사람 확인 통과 2026-11-03)
 
 ## 다음에 할 것
+- 연결 남음(SCR-MYP-031 미래 날짜 검증): 영수증 저장(`ReceiptSaveService`, LJS)이 `ExpenseFake` 대신 `ExpenseService.create`를 부르게 바뀌면 같은 미래 날짜 검사를 받는다(LJS)
 - 연결 남음(SCR-MYP-030, FN-MYP-030-18·19·21): 프론트 SCR-MYP-030 편집 모드에서 전체 선택 뒤 해제한 번호를 `excludeExpndSn`으로 보내고 `expectedCnt`를 "조건 건수 − 해제한 수"로 바꾸기. 409 `EXPENSE_BULK_DELETE_CHANGED`면 목록을 다시 불러오게 안내(프론트 저장소에서 /start)
 - 연결 남음(SCR-MYP-002 목록 응답 보강): 프론트 SCR-MYP-002 슬라이드의 "(중성화 완료)"·"정상 a~bkg"를 상세 조회 대신 `GET /pets`의 `nutrYn`·`minBdwg`·`maxBdwg`로 채우기(프론트 저장소에서 /start)
 - Postman 컬렉션: 3번 회원이 정지(`MEMBER_INACTIVE`)라 그 회원을 쓰는 변수(`mbrSnB`·`emailB`·`delCoMbrSn`·`delCoEmail`·`invReceiverMbrSn`·`infoOtherMbrSn`)가 있는 폴더는 403. 돌릴 때 정상 회원으로 바꾼다(이메일은 `GET /members/me`의 `acntEml`)
