@@ -6,6 +6,7 @@ SCR-HLT-002 건강 일지 · 영수증 검진기록 연결 — 끝남: 검증 `�
 
 ## 다음에 할 것
 
+- 알림: AIM 담당(LJS)에게 `POST /api/receipts/{recptSn}/save-check`도 저장완료 영수증이면 `save`와 같은 409 `RECEIPT_ALREADY_SAVED`를 주도록 요청한다(지금은 200으로 중복·가까운 일정을 준다). 프론트 영수증 일괄 저장은 두 API의 409를 같은 안내로 처리한다. JAJ 마일스톤에서는 뺐다(FN-HLT-002-34~45는 LJS, 2026-11-03)
 - 연결 남음: FN-HLT-002-31 (프론트 연결 검진기록 등록 모달을 영수증 실패 화면의 [직접 입력]으로 열었을 때 저장을 `POST /api/receipts/{recptSn}/checkups?petSn=`로, 프론트 저장소에서 /start — 마일스톤 "SCR-HLT-002 건강 일지 · 영수증 [직접 입력] 저장 연결"). 요청은 직접 등록 Body에 `idmptDmndId`를 더한다. 같은 요청 재전송은 409 `RECEIPT_ALREADY_SAVED`, 응답은 `CheckupResponse`(201)
 - 참고: 이번 확인 중 영수증 179(회원 48)를 원래 상태(AIMC0002·샘플 멱등 ID)로 되돌렸고, 상태 이력 1364행은 공용 DB에 남는다
 
