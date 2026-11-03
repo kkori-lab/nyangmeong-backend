@@ -108,6 +108,7 @@ public class ExpenseService {
     @Transactional
     public void create(ExpenseCreateCommand command) {
         petAuthorizer.checkCaregiver(command.mbrSn(), command.petSn());
+        checkNotFuture(command.expndYmd());
         Expense expense = new Expense();
         expense.setPetSn(command.petSn());
         expense.setMbrSn(command.mbrSn());

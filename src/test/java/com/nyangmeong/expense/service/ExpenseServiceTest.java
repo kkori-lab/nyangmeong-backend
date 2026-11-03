@@ -425,6 +425,14 @@ class ExpenseServiceTest {
     }
 
     @Test
+    void 영수증_저장의_병원_지출도_미래_날짜면_INVALID_INPUT_VALUE() {
+        assertThatThrownBy(() -> service.create(
+                new ExpenseCreateCommand(MBR, 10L, 3L, today.plusDays(1), 50_000L, "행복동물병원", null)))
+                .extracting("errorCode").isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+        verify(expenseMapper, never()).insert(any());
+    }
+
+    @Test
     void 오늘_날짜로_등록할_수_있다() {
         service.create(MBR, request(FOOD, DIRECT, null, today, line(10L, 1_000, "a")));
 
