@@ -1,10 +1,9 @@
 # SJM 핸드오프
 
 ## 지금 하는 것
-SCR-MYP-030 가계부 목록 · 시드 병원 공용 지출 행 수정 — 끝남. `db/seed/20261028_seed_data.sql`의 병원(`MYPC0012`) + 공용(`PET_SN` NULL) `EXPND` 176행에 `PET_SN`을 채웠다. 회원별 사용 중·삭제 안 된 반려동물을 `PET_SN` 순으로, 그 회원의 병원+공용 지출을 지출일(같으면 `EXPND_SN`) 순으로 세워 돌아가며 배정했다(회원 91명). 공용 DB `pawever`에는 같은 값의 UPDATE를 사람이 DBeaver로 직접 실행했다(전 176, 후 0, 영향 176행, LJS 확인, 2026-11-03). 그 UPDATE 파일은 커밋하지 않았다(검증 2회차 통과, 사람 확인 통과 2026-11-03)
+SCR-MYP-031 가계부 등록/수정 · 영수증 저장 경로 미래 날짜 검증 — 끝남. `ExpenseService.create(ExpenseCreateCommand)`(영수증 저장의 병원 지출)도 지출일이 오늘(KST)보다 뒤면 400 `INVALID_INPUT_VALUE`를 던지고, 영수증 저장 전체가 롤백된다. `docs/api/receipt.md`의 save 오류 목록에 같은 400을 더했다. 내일 날짜 요청으로 400을 확인했고 `RECPT` 503·`CKUP_RCD`·`EXPND`·`RECPT_STTS_HSTRY`가 그대로임을 사람이 확인했다(2026-11-03). 오늘 날짜 저장(201)은 공용 DB에 데이터가 생겨 하지 않았다. 400이 미래 날짜 검사 때문인지 요청 형식 검증 때문인지는 응답만으로 가르지 못했고 단위 테스트가 이 경로의 예외를 확인한다
 
 ## 다음에 할 것
-- 연결 남음(SCR-MYP-031 미래 날짜 검증): 영수증 저장(`ReceiptSaveService`, LJS)이 `ExpenseFake` 대신 `ExpenseService.create`를 부르게 바뀌면 같은 미래 날짜 검사를 받는다(LJS)
 - 연결 남음(SCR-MYP-030, FN-MYP-030-18·19·21): 프론트 SCR-MYP-030 편집 모드에서 전체 선택 뒤 해제한 번호를 `excludeExpndSn`으로 보내고 `expectedCnt`를 "조건 건수 − 해제한 수"로 바꾸기. 409 `EXPENSE_BULK_DELETE_CHANGED`면 목록을 다시 불러오게 안내(프론트 저장소에서 /start)
 - 연결 남음(SCR-MYP-002 목록 응답 보강): 프론트 SCR-MYP-002 슬라이드의 "(중성화 완료)"·"정상 a~bkg"를 상세 조회 대신 `GET /pets`의 `nutrYn`·`minBdwg`·`maxBdwg`로 채우기(프론트 저장소에서 /start)
 - Postman 컬렉션: 3번 회원이 정지(`MEMBER_INACTIVE`)라 그 회원을 쓰는 변수(`mbrSnB`·`emailB`·`delCoMbrSn`·`delCoEmail`·`invReceiverMbrSn`·`infoOtherMbrSn`)가 있는 폴더는 403. 돌릴 때 정상 회원으로 바꾼다(이메일은 `GET /members/me`의 `acntEml`)
