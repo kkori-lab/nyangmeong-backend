@@ -105,8 +105,9 @@ public class AdminInquiryService {
     @Transactional(readOnly = true)
     public StoredFile getImage(Long otoInqrySn, Long atchFileSn) {
         Inquiry inquiry = getOrThrow(otoInqrySn);
-        boolean attached = !isDeleted(inquiry) && inquiryMapper.selectPhotos(otoInqrySn).stream()
-                .anyMatch(photo -> photo.getAtchFileSn().equals(atchFileSn));
+        boolean attached = !isDeleted(inquiry) && (inquiryMapper.selectPhotos(otoInqrySn).stream()
+                .anyMatch(photo -> photo.getAtchFileSn().equals(atchFileSn))
+                || atchFileSn.equals(characterImage(inquiry)));
         if (!attached) {
             throw new CustomException(ErrorCode.FILE_NOT_FOUND);
         }
@@ -200,15 +201,7 @@ public class AdminInquiryService {
         Long otoInqrySn = inquiry.getOtoInqrySn();
         boolean deleted = isDeleted(inquiry);
         List<InquiryImageSummary> imgs = deleted ? List.of() : inquiryMapper.selectImageSummaries(otoInqrySn);
-        Long charImgAtchFileSn = null;
-        if (!deleted && inquiry.getPixelCharSn() != null) {
-            /** 접수 때 캐릭터 이미지가 정렬 순서 0 첨부로 붙음 (InquiryService.create) */
-            charImgAtchFileSn = inquiryMapper.selectPhotos(otoInqrySn).stream()
-                    .filter(photo -> photo.getSortSeq() != null && photo.getSortSeq() == CHARACTER_IMAGE_SORT_SEQ)
-                    .map(InquiryPhoto::getAtchFileSn)
-                    .findFirst()
-                    .orElse(null);
-        }
+        Long charImgAtchFileSn = deleted ? null : characterImage(inquiry);
         AdminInquiryResponse.Extra extra = new AdminInquiryResponse.Extra(
                 inquiryMapper.selectCodeName(inquiry.getInqryTypeCd()),
                 InquiryCategory.of(inquiry.getInqryTypeCd()).name(),
@@ -219,6 +212,27 @@ public class AdminInquiryService {
                         : inquiryMapper.selectCodeName(inquiry.getCharErrPrcsRsltCd()),
                 charImgAtchFileSn, imgs, inquiryMapper.selectStatusHistories(otoInqrySn));
         return AdminInquiryResponse.from(inquiry, extra);
+    }
+
+    /**
+     * 접수 시점 캐릭터 이미지 : 문의의 캐릭터 사진(CHAR_PHOTO_SN), 없으면 정렬 순서 0 첨부 (InquiryService.create)
+     */
+    private Long characterImage(Inquiry inquiry) {
+        if (inquiry.getPixelCharSn() == null) {
+            return null;
+        }
+        if (inquiry.getCharPhotoSn() != null) {
+            Long photoAtchFileSn = pixelCharacterService.getPhotoAtchFileSn(inquiry.getPixelCharSn(),
+                    inquiry.getCharPhotoSn());
+            if (photoAtchFileSn != null) {
+                return photoAtchFileSn;
+            }
+        }
+        return inquiryMapper.selectPhotos(inquiry.getOtoInqrySn()).stream()
+                .filter(photo -> photo.getSortSeq() != null && photo.getSortSeq() == CHARACTER_IMAGE_SORT_SEQ)
+                .map(InquiryPhoto::getAtchFileSn)
+                .findFirst()
+                .orElse(null);
     }
 
     private String blankToNull(String value) {

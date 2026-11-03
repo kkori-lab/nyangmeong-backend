@@ -2,11 +2,12 @@
 
 ## 지금 하는 것
 
-SCR-ADM-042 1:1 문의 — 끝 (2026-11-03). `/api/admin/inquiries` 6개(목록·상세·첨부 이미지·답변 등록·답변 수정·캐릭터 오류 처리)를 `support`에 만들었다. 내부 분류는 `InquiryCategory`가 유형별로 고정, 삭제 문의는 조회만(첨부 빈 목록). DB 변경 없음. 추가-1 `MapperXmlRuleTest` 예외 1줄
+SCR-ADM-042 1:1 문의 · 접수 시점 캐릭터 이미지 연결 — 끝 (2026-11-03). 관리자 상세 `charImgAtchFileSn`은 `OTO_INQRY.CHAR_PHOTO_SN`의 캐릭터 사진 파일을 먼저 쓰고(없으면 정렬 0 첨부), 관리자 첨부 이미지 API가 그 파일도 연다. 문의 206·첨부 1483의 404는 시드 이미지 파일이 없어서다(코드 문제 아님). DB 변경 없음
 
 ## 다음에 할 것
 
-- SCR-ADM-042 연결 남음: FN-ADM-042-07 접수 시점 캐릭터 이미지 404 (마일스톤 "접수 시점 캐릭터 이미지 연결" 절, LJS)
+- SCR-ADM-070 아이템(ai-47 요청, 2026-11-03): 굽기 계약을 같이 구현한다. ① `ITEM.BAKE_HINT`(varchar(300), 영어 한 문장)와 시드 26개(AI 저장소 `docs/design/item-bake-hints.json`, 신발 MYPC0006은 굽지 않음, `ENGINE_ITEM_KEY`는 더 쓰지 않음) ② `GET /internal/ai/characters/bake-items` 응답을 `[{itemSn, regnCd, bakeHint}]`로(판매 중이고 굽기 지시가 있는 아이템) ③ `GET /internal/ai/items/{itemSn}/bake-targets?page=`(0부터, 관리자 쿠키 USRC0005, `{pixelCharSns, last}`, 맨몸 시트가 있고 착용 시트·굽기 실패 표시가 없는 캐릭터) ④ 관리자 등록·수정에 `bakeHint`. 시트 내부 API 4개는 쿠키 인증만 받는다(사람 결정, 2026-11-03, ai-47에 회신함). ai-47이 "관리자 쿠키로 남의 캐릭터 시트 읽기·쓰기 허용"을 제안하면 권한을 넓히는 일이라 사람이 정한다. 백엔드 PR이 AI PR보다 먼저 병합돼야 한다. 구현이 끝나면 ai-47에 알린다
+- 시험 데이터 정리(사람): 로컬 DB 문의 202(회원 4, 캐릭터 601)는 local 프로필에서 회원 4로 `DELETE /api/inquiries/202`. 공용 DB에서 사람 확인으로 캐릭터 601 오류 문의를 접수했다면 `POST /api/admin/inquiries/{번호}/character-error`에 `{"charErrPrcsRsltCd":"CHRC0009"}`로 원래 캐릭터로 복원하고 문의를 지운다(ai-47의 시험 캐릭터)
 - SCR-ADM-042 연결 남음: FN-ADM-042-07 무료 재생성. 생성 흐름이 원본 사진(`FILC0006`)을 Java에 남기지 않아 관리자 [무료 재생성]은 404 FILE_NOT_FOUND로 롤백된다(복원만 실제 동작). FN-MYP-010-23 계약과 함께 정한다(LJS·ai)
 - SCR-ADM-042 연결 남음: FN-ADM-042-08 (작성자 매칭 목록 API는 SCR-ADM-022, KSJ 협의)
 - KSJ에게 알린다(PR 전): SCR-ADM-042를 LJS가 구현했다. `InquiryService`·`InquiryMapper` 기존 메서드는 그대로 두고 관리자 쿼리(`selectAdminList`·`selectAdminInquiry`·`selectNickname`·`selectStatusHistories`·`updateAnswerContent`·`updateCharErrResult`)를 더했다. `ErrorCode.INQUIRY_NOT_ANSWERED`·`INQUIRY_DELETED`, `MapperXmlRuleTest` 예외 1줄
