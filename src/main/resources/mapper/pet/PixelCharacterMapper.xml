@@ -525,6 +525,29 @@
            AND DEL_YN = 'N'
     </update>
 
+    <update id="updateItemSheetDeleteByItemSn" parameterType="long">
+        /* 아이템의 착용 시트 전부 삭제 */
+        UPDATE CHAR_ITEM_SHEET
+           SET DEL_YN = 'Y'
+             , MDFCN_DT = NOW()
+         WHERE ITEM_SN = #{itemSn}
+           AND DEL_YN = 'N'
+    </update>
+
+    <select id="selectBakeTargets" parameterType="long" resultType="long">
+        /* 아이템을 아직 안 구운 캐릭터 조회 */
+        SELECT P.PIXEL_CHAR_SN
+          FROM PIXEL_CHAR P
+         WHERE P.DEL_YN = 'N'
+           AND P.BODY_SHEET_FILE_SN IS NOT NULL
+           AND NOT EXISTS ( SELECT 1
+                              FROM CHAR_ITEM_SHEET S
+                             WHERE S.PIXEL_CHAR_SN = P.PIXEL_CHAR_SN
+                               AND S.ITEM_SN = #{itemSn}
+                               AND S.DEL_YN = 'N' )
+         ORDER BY P.PIXEL_CHAR_SN
+    </select>
+
     <select id="selectItemSheets" resultMap="itemSheetResultMap">
         /* 아이템별 착용 시트 조회 */
         SELECT CHAR_ITEM_SHEET_SN

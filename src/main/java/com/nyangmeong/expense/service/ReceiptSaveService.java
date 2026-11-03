@@ -10,8 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.nyangmeong.expense.domain.Receipt;
 import com.nyangmeong.expense.domain.ReceiptStatus;
-import com.nyangmeong.expense.dto.CheckupCreateCommand;
 import com.nyangmeong.expense.dto.ExpenseCreateCommand;
+import com.nyangmeong.expense.dto.ReceiptCheckupCreateRequest;
 import com.nyangmeong.expense.dto.ReceiptSaveCheckRequest;
 import com.nyangmeong.expense.dto.ReceiptSaveCheckResponse;
 import com.nyangmeong.expense.dto.ReceiptSaveDrugRequest;
@@ -22,29 +22,34 @@ import com.nyangmeong.expense.mapper.ReceiptMapper;
 import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.health.dto.CheckupResponse;
+import com.nyangmeong.health.dto.PrescriptionCreateRequest;
+import com.nyangmeong.health.dto.ReceiptCheckupCommand;
+import com.nyangmeong.health.service.CheckupService;
+import com.nyangmeong.health.service.PrescriptionService;
 
 import lombok.RequiredArgsConstructor;
 
 /**
  * [영수증 확인 후 저장]
  * - 반려동물별 검진기록·가계부를 한 트랜잭션으로 저장 (FN-AIM-009-24)
- * - 검진기록·일정은 health(JAJ), 지출은 expense 지출(SJM) : 둘 다 가짜로 먼저 연결
+ * - 검진기록·일정·처방약은 health(JAJ) service, 지출은 expense 지출(SJM) service 로 저장
+ * - 영수증 인식 실패 뒤 [직접 입력] 저장은 검진기록만 만들고 가계부에는 기록하지 않는다 (FN-HLT-002-31)
  * - 저장 내용은 요청 본문 값만 쓴다. OCR 결과를 회원 확인 없이 저장하지 않는다 (FN-AIM-009-08)
  */
 @Service
 @RequiredArgsConstructor
 public class ReceiptSaveService {
 
-    /** 가까운 예정 일정을 찾는 검진일 앞뒤 일수 (FN-HLT-002-46) */
-    static final int NEARBY_DAYS = 7;
     /** 처방약 케어리스트 반영 안 함 (FN-AIM-009-11) */
-    static final String CARE_RFLT_OFF = "N";
+    static final Boolean CARE_RFLT_OFF = Boolean.FALSE;
 
     private final ReceiptMapper receiptMapper;
     private final ReceiptService receiptService;
     private final PetAuthorizer petAuthorizer;
-    private final CheckupRecordFake checkupRecordFake;
-    private final ExpenseFake expenseFake;
+    private final CheckupService checkupService;
+    private final PrescriptionService prescriptionService;
+    private final ExpenseService expenseService;
 
     /**
      * 저장 결과 : created 가 false 면 같은 멱등 요청의 재전송
@@ -64,11 +69,12 @@ public class ReceiptSaveService {
         List<ReceiptSaveCheckResponse.NearbySchedule> nearby = new ArrayList<>();
         for (ReceiptSaveCheckRequest.Pet pet : req.pets()) {
             if (wantsExpense(pet.expenseYn(), pet.amt())) {
-                duplicates.addAll(expenseFake.findDuplicates(mbrSn, pet.petSn(), req.ckupYmd(), pet.amt()));
+                duplicates.addAll(expenseService.searchDuplicates(mbrSn, pet.petSn(), req.ckupYmd(), pet.amt()));
             }
-            if (!checkupRecordFake.existsHospitalSchedule(pet.petSn(), req.ckupYmd())) {
-                nearby.addAll(checkupRecordFake.findNearbyUnlinkedSchedules(pet.petSn(), req.ckupYmd(),
-                        NEARBY_DAYS));
+            if (!checkupService.existsHospitalSchedule(pet.petSn(), req.ckupYmd())) {
+                checkupService.findNearestUnlinkedSchedule(pet.petSn(), req.ckupYmd())
+                        .ifPresent(schedule -> nearby.add(new ReceiptSaveCheckResponse.NearbySchedule(pet.petSn(),
+                                schedule.getSchdlSn(), schedule.getSchdlDt(), schedule.getHsptlNm())));
             }
         }
         return new ReceiptSaveCheckResponse(duplicates, nearby);
@@ -83,7 +89,7 @@ public class ReceiptSaveService {
         ReceiptStatus before = ReceiptStatus.from(receipt.getOcrPrcsSttsCd());
 
         if (before == ReceiptStatus.SAVED && req.idmptDmndId().equals(receipt.getIdmptDmndId())) {
-            return new Saved(new ReceiptSaveResponse(recptSn, checkupRecordFake.findByReceipt(recptSn)), false);
+            return new Saved(new ReceiptSaveResponse(recptSn, findCheckupRecords(recptSn)), false);
         }
         Receipt usedBy = receiptMapper.selectByIdmptDmndId(req.idmptDmndId());
         if (usedBy != null && !recptSn.equals(usedBy.getRecptSn())) {
@@ -97,17 +103,45 @@ public class ReceiptSaveService {
 
         List<ReceiptSaveResponse.CheckupRecord> records = new ArrayList<>();
         for (ReceiptSavePetRequest pet : req.pets()) {
-            Long ckupRcdSn = checkupRecordFake.create(new CheckupCreateCommand(mbrSn, recptSn, pet.petSn(),
-                    req.hsptlNm(), req.ckupYmd(), pet.ckupTypeCd(), pet.ckupCn(), pet.ckupMemoCn(), pet.schdlSn(),
-                    CARE_RFLT_OFF, pet.drugsOrEmpty()));
-            records.add(new ReceiptSaveResponse.CheckupRecord(pet.petSn(), ckupRcdSn));
+            CheckupResponse checkup = checkupService.createFromReceipt(mbrSn, pet.petSn(),
+                    new ReceiptCheckupCommand(recptSn, req.ckupYmd(), req.hsptlNm(), pet.ckupTypeCd(), pet.ckupCn(),
+                            pet.ckupMemoCn(), pet.schdlSn()));
+            for (ReceiptSaveDrugRequest drug : pet.drugsOrEmpty()) {
+                prescriptionService.create(mbrSn, pet.petSn(), new PrescriptionCreateRequest(checkup.getCkupRcdSn(),
+                        drug.mdcnNm(), drug.mdcnBgngYmd(), drug.mdcnEndYmd(), drug.dayMdcnNmtm(), drug.prscSttsCd(),
+                        CARE_RFLT_OFF));
+            }
+            records.add(new ReceiptSaveResponse.CheckupRecord(pet.petSn(), checkup.getCkupRcdSn()));
             if (wantsExpense(pet.expenseYn(), pet.amt())) {
-                expenseFake.create(new ExpenseCreateCommand(mbrSn, pet.petSn(), recptSn, req.ckupYmd(), pet.amt(),
+                expenseService.create(new ExpenseCreateCommand(mbrSn, pet.petSn(), recptSn, req.ckupYmd(), pet.amt(),
                         req.expndPlcusNmOrNull(), null));
             }
         }
-        checkupRecordFake.remember(recptSn, records);
         return new Saved(new ReceiptSaveResponse(recptSn, records), true);
+    }
+
+    /**
+     * 영수증 인식 실패·일시 오류 뒤 [직접 입력] 저장 (FN-HLT-002-31)
+     * - 영수증을 저장완료로 바꾸고 검진기록에 이 영수증을 연결한다. 가계부에는 기록하지 않는다
+     */
+    @Transactional
+    public CheckupResponse createDirectCheckup(Long mbrSn, Long recptSn, Long petSn,
+            ReceiptCheckupCreateRequest req) {
+        Receipt usedBy = receiptMapper.selectByIdmptDmndId(req.idmptDmndId());
+        if (usedBy != null && !recptSn.equals(usedBy.getRecptSn())) {
+            throw new CustomException(ErrorCode.ALREADY_PROCESSED);
+        }
+        receiptService.markSavedByExpense(mbrSn, recptSn, req.idmptDmndId());
+        return checkupService.create(mbrSn, petSn, req.toCheckupCreateRequest(), recptSn);
+    }
+
+    /**
+     * 영수증으로 만든 검진기록 (같은 요청 재전송 응답)
+     */
+    private List<ReceiptSaveResponse.CheckupRecord> findCheckupRecords(Long recptSn) {
+        return checkupService.findReceiptCheckups(recptSn).stream()
+                .map(row -> new ReceiptSaveResponse.CheckupRecord(row.getPetSn(), row.getCkupRcdSn()))
+                .toList();
     }
 
     /**

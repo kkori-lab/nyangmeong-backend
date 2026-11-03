@@ -183,6 +183,16 @@ public interface PixelCharacterMapper {
     int updateItemSheetDelete(Long pixelCharSn);
 
     /**
+     * 아이템의 착용 시트 전부 삭제 (굽기 지시 변경 -> 다시 굽기 대상)
+     */
+    int updateItemSheetDeleteByItemSn(Long itemSn);
+
+    /**
+     * 아이템을 아직 안 구운 캐릭터 번호 조회 (맨몸 시트 있음, 착용 시트·굽기 실패 표시 없음)
+     */
+    List<Long> selectBakeTargets(Long itemSn);
+
+    /**
      * 아이템별 착용 시트 조회
      */
     List<CharacterItemSheet> selectItemSheets(@Param("pixelCharSn") Long pixelCharSn,
