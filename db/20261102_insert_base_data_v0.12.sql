@@ -1,7 +1,7 @@
 -- =====================================================================
 -- 냥멍케어 기준 데이터 v0.12 (2026-11-02)  |  공통코드 + 케어미션 마스터
 -- 대상 DDL : 20261102_create_tables_v0.12.sql  (테이블 COM_CD, CARE_MSN, AI_ROUT_MPNG, KWRD_DICT)
--- 범위     : [1] 공통코드 그룹 76개 전체 (309개 코드)  [2] 케어미션 마스터 21건  [3] AI 라우팅 매핑 45건  [4] 키워드 사전 23건
+-- 범위     : [1] 공통코드 그룹 76개 전체 (310개 코드)  [2] 케어미션 마스터 21건  [3] AI 라우팅 매핑 45건  [4] 키워드 사전 23건
 -- 원천     : 기준 데이터 v0.11(db/archive/v0.11/) 위에 아래 "v0.11 → v0.12 변경"을 더한 것
 --            새 코드는 기존 DB와 COM_CD_SN이 같도록 공용 DB에 실행한 순서대로 파일 끝에 둔다
 -- 채번 규칙: 그룹 = 도메인3자 + G + 2자리(ERD 그대로) / 코드 = 도메인3자 + C + 4자리
@@ -18,6 +18,9 @@
 -- v0.12 (3) 게시판 코드 우리동네 펫돌봄 (2026-11-03, KSJ, 근거: 커뮤니티_기능명세서 FN-CMU-004-11, 펫돌봄 게시글은 PST.BBS_CD가 이 코드). 20261102_create_tables_v0.12.sql에는 짝이 되는 항목이 없다
 --   SET NAMES utf8mb4;
 --   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='CMUG01') p),'CMUC0028','우리동네 펫돌봄','PET_PRTC_RCRT와 1:1인 게시글',40);
+-- v0.12 (4) 배치 구분 오늘의 한마디 선택 (2026-11-03, LJS, 근거: 관리자_기능명세서 FN-ADM-023-05). 20261102_create_tables_v0.12.sql의 v0.12 (4)를 실행한 다음에 실행한다
+--   SET NAMES utf8mb4;
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0030','오늘의 한마디 선택','community/TodayPhraseSelectJob',80);
 -- =====================================================================
 SET NAMES utf8mb4;
 START TRANSACTION;
@@ -528,6 +531,8 @@ INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0029','캐릭터 생성 시간 초과','pet/CharacterJobTimeoutJob',70);
 -- v0.12 추가: 게시판 우리동네 펫돌봄 (v0.12 (3))
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='CMUG01') p),'CMUC0028','우리동네 펫돌봄','PET_PRTC_RCRT와 1:1인 게시글',40);
+-- v0.12 추가: 배치 구분 오늘의 한마디 선택 (v0.12 (4))
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0030','오늘의 한마디 선택','community/TodayPhraseSelectJob',80);
 
 -- =====================================================================
 -- [2] 케어미션 마스터 (CARE_MSN) — 20261027_02_update_care_msn_and_ckup_pnt 의 최종 상태

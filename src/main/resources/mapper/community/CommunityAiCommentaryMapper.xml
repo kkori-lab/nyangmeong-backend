@@ -24,4 +24,43 @@
          WHERE CMTRY_CRTR_YMD = #{cmtryCrtrYmd}
            AND USE_YN = 'Y'
     </select>
+
+    <select id="selectAdminList" resultMap="commentaryResultMap">
+        /* 관리자 코멘트 목록 : 사용 안 함 포함, 최근 일자순 */
+        SELECT CMNTY_AI_CMTRY_SN
+             , CMTRY_SRC_CD
+             , CMTRY_CRTR_YMD
+             , CMTRY_CN
+             , USE_YN
+             , REG_DT
+             , MDFCN_DT
+          FROM CMNTY_AI_CMTRY
+         ORDER BY CMTRY_CRTR_YMD DESC, CMNTY_AI_CMTRY_SN DESC
+    </select>
+
+    <select id="selectById" parameterType="long" resultMap="commentaryResultMap">
+        /* 번호로 코멘트 조회 */
+        SELECT CMNTY_AI_CMTRY_SN
+             , CMTRY_SRC_CD
+             , CMTRY_CRTR_YMD
+             , CMTRY_CN
+             , USE_YN
+             , REG_DT
+             , MDFCN_DT
+          FROM CMNTY_AI_CMTRY
+         WHERE CMNTY_AI_CMTRY_SN = #{cmntyAiCmtrySn}
+    </select>
+
+    <update id="updateUseYn">
+        /* 사용 여부 변경 */
+        UPDATE CMNTY_AI_CMTRY
+           SET USE_YN = #{useYn}
+         WHERE CMNTY_AI_CMTRY_SN = #{cmntyAiCmtrySn}
+    </update>
+
+    <insert id="insertIgnore" parameterType="com.nyangmeong.community.domain.CommunityAiCommentary">
+        /* 일자별 코멘트 등록 : 기준일자 UK 가 겹치면 건너뜀 */
+        INSERT IGNORE INTO CMNTY_AI_CMTRY (CMTRY_SRC_CD, CMTRY_CRTR_YMD, CMTRY_CN)
+        VALUES (#{cmtrySrcCd}, #{cmtryCrtrYmd}, #{cmtryCn})
+    </insert>
 </mapper>

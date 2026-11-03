@@ -17,7 +17,8 @@ public enum BatchType {
     MEMBER_SUSPENSION_EXPIRY("SYSC0026", "회원 정지 만료 해제"),
     MEMBER_PURGE("SYSC0027", "탈퇴 회원 파기"),
     NEWS_COLLECT("SYSC0028", "뉴스 수집"),
-    CHARACTER_JOB_TIMEOUT("SYSC0029", "캐릭터 생성 시간 초과");
+    CHARACTER_JOB_TIMEOUT("SYSC0029", "캐릭터 생성 시간 초과"),
+    TODAY_PHRASE_SELECT("SYSC0030", "오늘의 한마디 선택");
 
     private final String code;
     private final String label;
