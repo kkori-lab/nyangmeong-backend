@@ -288,10 +288,13 @@
 - 연결 남음: FN-ADM-090-03 (pet 연동 양육자 조회로 `CaregiverFake` 교체 뒤 실제 발송에서 템플릿·기본 문구 확인, SJM)
 - 연결 남음: FN-ADM-090-01·02 (프론트 연결 `features/adminNotificationTemplate/api.js` 목록·등록·수정, 프론트 저장소에서 /start)
 
-## SCR-ADM-091 발송 이력 — 대기
+## SCR-ADM-091 발송 이력 — 끝
 - 기능: FN-ADM-091-01 발송 이력 조회, FN-ADM-091-02 재발송 없음
 - 기다리는 것: 없음
 - 완료 조건: 기간·채널·결과로 거른 이력과 실패 사유가 나온다
+- 결정: 기간 파라미터는 `bgngYmd`·`endYmd`(관리자 검색 조건과 통일, 종료일 그날 끝까지), 닉네임 `mbrNcnm`(`MBR` LEFT JOIN). 모르는 채널·유형·결과 코드와 기간 역전은 400 `INVALID_INPUT_VALUE`. 재발송 API 없음. "최근 24시간"은 날짜 단위 기간으로 프론트가 건다
+- 완료 조건 결과: 검증 `통과`(2026-11-03, 2회차. 1회차는 `NOTI_SNDNG_LOG` 0건이라 실제 행 확인 못 함 → 사람이 확인용 행 4건을 넣고 재검증), 사람 확인 2026-11-03
+- 연결 남음: FN-ADM-091-01 (프론트 연결 `features/adminNotificationLog/api.js` 목록, 프론트 저장소에서 /start)
 
 ## SCR-ADM-021 실종제보 — 대기
 - 기능: FN-ADM-021-01 실종제보 목록 조회, FN-ADM-021-02 실종제보 상세 조회, FN-ADM-021-03 기간 변경 없음
@@ -423,10 +426,12 @@
 - 기다리는 것: 프론트 SCR-ADM-090(끝, 가짜 응답 `features/adminNotificationTemplate/api.js`)
 - 완료 조건: `GET /api/admin/notification-templates?notiChnlCd=`(등록된 템플릿만 `[{ notiTmpltSn, notiTypeCd, notiChnlCd, notiTtl, notiCn, useYn }]`, 프론트가 AIMG02 × AIMG03 공통코드와 맞춰 행을 만든다), `POST /api/admin/notification-templates`(`{ notiTypeCd, notiChnlCd, notiTtl, notiCn, useYn }`, 201 `{ notiTmpltSn }`, 같은 유형·채널이면 409), `PATCH /api/admin/notification-templates/{notiTmpltSn}`(`{ notiTtl, notiCn, useYn }`)가 프론트 가짜와 같은 모양으로 동작한다. `useYn` 모양(가짜는 'Y'|'N')과 유형별 치환 변수 목록(지금 프론트는 케어 일정 기준 `{{닉네임}}`·`{{반려동물명}}`·`{{검진유형}}`·`{{병원명}}`·`{{일정일}}`·`{{시간}}`·`{{D-N}}`·`{{캘린더링크}}`를 모든 유형에 보임)을 정해 프론트에 알린다
 
-## SCR-ADM-091 발송 이력 · 프론트 연결 API 계약 — 대기
+## SCR-ADM-091 발송 이력 · 프론트 연결 API 계약 — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-091-01
 - 기다리는 것: 프론트 SCR-ADM-091(끝, 가짜 응답 `features/adminNotificationLog/api.js`)
 - 완료 조건: `GET /api/admin/notification-logs?page=&size=20&fromYmd=&toYmd=&notiChnlCd=&notiTypeCd=&sndngRsltCd=`(최신순, `{ content, page, size, totalElements, totalPages, hasNext }`, content 행은 NOTI_SNDNG_LOG 컬럼 그대로 `{ notiSndngLogSn, mbrSn, mbrNcnm, notiTypeCd, notiChnlCd, sndngRsltCd, rtryNmtm, failRsn, sndngDt }`, 알림 본문 없음)가 프론트 가짜와 같은 모양으로 동작한다. 기간 파라미터 이름(가짜 `fromYmd`·`toYmd`, 감사 로그는 `bgngYmd`·`endYmd`)과 수신 회원 닉네임 필드 이름(가짜 `mbrNcnm`)을 정해 프론트에 알린다
+- 완료 조건 결과: 위 `SCR-ADM-091 발송 이력` 절과 같이 끝(2026-11-03). 정한 것: 기간 `bgngYmd`·`endYmd`(가짜 `fromYmd`·`toYmd`와 다름), 닉네임 `mbrNcnm`(가짜와 같음)
+- 연결 남음: FN-ADM-091-01 (프론트 연결 `features/adminNotificationLog/api.js` 목록, 프론트 저장소에서 /start)
 
 ## SCR-ADM-021 실종제보 · 프론트 연결 API 계약 — 대기
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-021-01·02·03
@@ -442,6 +447,11 @@
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-022-01·02·03
 - 기다리는 것: 프론트 SCR-ADM-022(끝, 가짜 응답 `features/adminCommunity/api.js`). 담당은 LJS(위 SCR-ADM-022 절의 KSJ 협의 표기는 사람이 맞춘다)
 - 완료 조건: `GET /api/admin/care-matches?page=&size=20&rcrtSttsCd=`(최신순, `{ content, page, size, totalElements, totalPages, hasNext }`, content 행 `{ petPrtcRcrtSn, pstSn, pstTtl, rcrtSttsCd, mbrSn, mbrNcnm, cstAmt, cstUnitCd, regDt }`, 상태는 PCAC0001 모집중·PCAC0002 매칭완료·PCAC0003 거래완료, 비용 단위 PCAC0004·PCAC0005), `GET /api/admin/care-matches/{petPrtcRcrtSn}`(목록 행 + `mtchs[]`, 매칭마다 `{ petPrtcMtchSn, ctptMbrSn, ctptNcnm, mtchDlngSttsCd, agreVerNo, agreDt, agreCn, sttsHstry[{ bfrSttsCd, aftrSttsCd, chgRsn, regDt }], cmplReqDt, cmplImgs[{ atchFileSn }], ownerCfmtnRsltCd, ownerCfmtnDt }`, 매칭이 없으면 빈 배열, 채팅 메시지 없음(결정 14·26))가 프론트 가짜와 같은 모양으로 동작한다. 가정 이름(`ctptNcnm`·`agreVerNo`·`agreDt`·`agreCn`·`cmplReqDt`·`cmplImgs`·`ownerCfmtnRsltCd`·`ownerCfmtnDt`)과 매칭 거래 상태 코드(가짜 `REQUESTED`·`MATCHED`·`DONE_REQ`·`COMPLETE`·`CANCELED`)·보호자 확인 결과 코드(가짜 `CONFIRMED`·`REJECTED`)를 정해 프론트에 알린다
+
+## SCR-ADM-023 노출 콘텐츠 · 프론트 연결 API 계약 — 대기
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-023-01·02·03·04·05·06
+- 기다리는 것: 프론트 SCR-ADM-023(끝, 가짜 응답 `features/adminCommunity/api.js` 노출 콘텐츠 절)
+- 완료 조건: `GET /api/admin/community/exposure/health-tips`(노출 자리 순서 3건 `[{ pstSn, pstTtl, hlthInfoExpsrSeq }]`, 지정 글은 `hlthInfoExpsrSeq` 값, 자동 선정은 null), `PUT …/health-tips/{pstSn}` `{ hlthInfoExpsrSeq }`(같은 순서의 기존 지정·같은 글의 다른 순서 지정은 풀림), `DELETE …/health-tips/{pstSn}`, 지정 글이 삭제·블라인드되면 지정을 풀고 자동 선정 글로 채움(결정 10). 오늘의 한마디 후보 문구 테이블과 `GET …/phrases`(`{ todayPhrs: { todayPhrsSn, phrsCn } | null, content: [{ todayPhrsSn, phrsCn, useYn }] }`)·`POST …/phrases` `{ phrsCn, useYn }` → `{ todayPhrsSn }`·`PATCH …/phrases/{todayPhrsSn}` `{ phrsCn, useYn }`, 매일 00:00 사용 중 문구 1건 무작위 선택(결정 11). `GET …/commentaries?page=&size=20`(최근 일자순 `{ content: [{ cmntyAiCmtrySn, cmtryCrtrYmd, cmtryCn, useYn }], page, size, totalElements, totalPages, hasNext }`)·`PATCH …/commentaries/{cmntyAiCmtrySn}` `{ useYn }`. `useYn`은 true/false. 후보 문구 필드 이름(프론트 가정 `todayPhrsSn`·`phrsCn`)과 글자 수(가정 200자)를 정해 프론트에 알린다
 
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)

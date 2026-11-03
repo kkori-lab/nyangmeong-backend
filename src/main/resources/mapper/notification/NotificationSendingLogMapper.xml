@@ -46,4 +46,52 @@
              , MDFCN_DT = NOW()
          WHERE NOTI_SNDNG_LOG_SN = #{notiSndngLogSn}
     </update>
+    <resultMap id="adminNotificationLogSummaryResultMap" type="com.nyangmeong.notification.dto.AdminNotificationLogSummary">
+        <id     column="NOTI_SNDNG_LOG_SN" property="notiSndngLogSn" />
+        <result column="MBR_SN"            property="mbrSn" />
+        <result column="MBR_NCNM"          property="mbrNcnm" />
+        <result column="NOTI_TYPE_CD"      property="notiTypeCd" />
+        <result column="NOTI_CHNL_CD"      property="notiChnlCd" />
+        <result column="SNDNG_RSLT_CD"     property="sndngRsltCd" />
+        <result column="RTRY_NMTM"         property="rtryNmtm" />
+        <result column="FAIL_RSN"          property="failRsn" />
+        <result column="SNDNG_DT"          property="sndngDt" />
+    </resultMap>
+
+    <select id="selectAdminList" parameterType="com.nyangmeong.notification.dto.AdminNotificationLogSearchCond"
+            resultMap="adminNotificationLogSummaryResultMap">
+        /* 관리자 알림 발송 이력 목록 조회 : 탈퇴 회원 행도 포함 */
+        SELECT L.NOTI_SNDNG_LOG_SN
+             , L.MBR_SN
+             , M.MBR_NCNM
+             , L.NOTI_TYPE_CD
+             , L.NOTI_CHNL_CD
+             , L.SNDNG_RSLT_CD
+             , L.RTRY_NMTM
+             , L.FAIL_RSN
+             , L.SNDNG_DT
+          FROM NOTI_SNDNG_LOG L
+          LEFT JOIN MBR M
+            ON M.MBR_SN = L.MBR_SN
+        <where>
+            <if test="bgngYmd != null">
+                AND L.SNDNG_DT &gt;= #{bgngYmd}
+            </if>
+            <if test="endYmd != null">
+                AND L.SNDNG_DT &lt; DATE_ADD(#{endYmd}, INTERVAL 1 DAY)
+            </if>
+            <if test="notiChnlCd != null and notiChnlCd.trim() != ''">
+                AND L.NOTI_CHNL_CD = #{notiChnlCd}
+            </if>
+            <if test="notiTypeCd != null and notiTypeCd.trim() != ''">
+                AND L.NOTI_TYPE_CD = #{notiTypeCd}
+            </if>
+            <if test="sndngRsltCd != null and sndngRsltCd.trim() != ''">
+                AND L.SNDNG_RSLT_CD = #{sndngRsltCd}
+            </if>
+        </where>
+         ORDER BY L.SNDNG_DT DESC
+                , L.NOTI_SNDNG_LOG_SN DESC
+    </select>
+
 </mapper>
