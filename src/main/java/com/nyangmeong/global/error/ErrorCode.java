@@ -132,6 +132,9 @@ public enum ErrorCode {
 
     /** notification */
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다."),
+    NOTIFICATION_TEMPLATE_NOT_FOUND(HttpStatus.NOT_FOUND, "알림 템플릿을 찾을 수 없습니다."),
+    NOTIFICATION_TEMPLATE_DUPLICATED(HttpStatus.CONFLICT, "같은 알림 유형과 채널의 템플릿이 이미 있습니다."),
+    NOTIFICATION_TEMPLATE_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "템플릿을 쓸 수 없는 알림 유형입니다. 기본 문구로 보냅니다."),
 
     /** expense */
     EXPENSE_NOT_FOUND(HttpStatus.NOT_FOUND, "지출 내역을 찾을 수 없습니다."),

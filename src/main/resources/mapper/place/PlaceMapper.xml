@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nyangmeong.place.mapper.PlaceMapper">
+
+    <resultMap id="placeSummaryResultMap" type="com.nyangmeong.place.dto.PlaceSummary">
+        <id     column="PLC_SN"         property="plcSn" />
+        <result column="PLC_CLSF_CD"    property="plcClsfCd" />
+        <result column="PLC_CLSF_CD_NM" property="plcClsfCdNm" />
+        <result column="PLC_CONM"       property="plcConm" />
+        <result column="PLC_ADDR"       property="plcAddr" />
+        <result column="RPRS_TELNO"     property="rprsTelno" />
+        <result column="PLC_LAT"        property="plcLat" />
+        <result column="PLC_LOT"        property="plcLot" />
+        <result column="KAKAO_PLC_ID"   property="kakaoPlcId" />
+        <result column="KAKAO_URL_PATH" property="kakaoUrlPath" />
+        <result column="PLC_BKMK_SN"    property="plcBkmkSn" />
+    </resultMap>
+
+    <insert id="upsertKakaoPlaces">
+        /* 카카오 검색 결과 저장 : 카테고리·사용 여부는 기존 값 유지, 수정일시는 값이 바뀔 때만 자동 갱신 */
+        INSERT INTO PLC (PLC_CLSF_CD, PLC_SRC_CD, PLC_CONM, PLC_ADDR, RPRS_TELNO, KAKAO_PLC_ID, KAKAO_URL_PATH, PLC_LAT, PLC_LOT, USE_YN, REG_DT, MDFCN_DT, RGTR_ID, MDFR_ID)
+        VALUES
+        <foreach collection="places" item="place" separator=",">
+            (#{place.plcClsfCd}, #{place.plcSrcCd}, #{place.plcConm}, #{place.plcAddr}, #{place.rprsTelno}, #{place.kakaoPlcId}, #{place.kakaoUrlPath}, #{place.plcLat}, #{place.plcLot}, 'Y', NOW(), NOW(), 'SYSTEM', 'SYSTEM')
+        </foreach>
+        ON DUPLICATE KEY UPDATE PLC_CONM       = VALUES(PLC_CONM)
+                              , PLC_ADDR       = VALUES(PLC_ADDR)
+                              , RPRS_TELNO     = VALUES(RPRS_TELNO)
+                              , KAKAO_URL_PATH = VALUES(KAKAO_URL_PATH)
+                              , PLC_LAT        = VALUES(PLC_LAT)
+                              , PLC_LOT        = VALUES(PLC_LOT)
+    </insert>
+
+    <select id="selectByKakaoPlcIds" resultMap="placeSummaryResultMap">
+        /* 카카오장소ID 목록으로 장소 조회 */
+        SELECT P.PLC_SN
+             , P.PLC_CLSF_CD
+             , C.COM_CD_NM AS PLC_CLSF_CD_NM
+             , P.PLC_CONM
+             , P.PLC_ADDR
+             , P.RPRS_TELNO
+             , P.PLC_LAT
+             , P.PLC_LOT
+             , P.KAKAO_PLC_ID
+             , P.KAKAO_URL_PATH
+             , B.PLC_BKMK_SN
+          FROM PLC P
+          LEFT JOIN COM_CD C
+            ON C.COM_CD = P.PLC_CLSF_CD
+           AND C.COM_CD_PRNT_SN IS NOT NULL
+          LEFT JOIN PLC_BKMK B
+            ON B.PLC_SN = P.PLC_SN
+           AND B.MBR_SN = #{mbrSn}
+           AND B.USE_YN = 'Y'
+         WHERE P.USE_YN = 'Y'
+           AND P.KAKAO_PLC_ID IN
+        <foreach collection="kakaoPlcIds" item="kakaoPlcId" open="(" separator="," close=")">
+            #{kakaoPlcId}
+        </foreach>
+    </select>
+
+    <select id="existsUsablePlace" resultType="boolean">
+        /* 사용 중인 장소 존재 여부 */
+        SELECT EXISTS (SELECT 1
+                         FROM PLC P
+                        WHERE P.PLC_SN = #{plcSn}
+                          AND P.USE_YN = 'Y')
+    </select>
+
+</mapper>

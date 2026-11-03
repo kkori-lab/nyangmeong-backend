@@ -6,12 +6,21 @@
 
 | 메서드 | 경로 | 설명 | 기능 ID | 담당 | 요청 DTO | 응답 DTO |
 | --- | --- | --- | --- | --- | --- | --- |
-| GET | /place-bookmarks | 내 장소 즐겨찾기 목록(`?plcClsfCd=`) | HOS-001-17·29·32 | YAY | - | List<PlaceBookmarkSummary> |
-| GET | /places | 장소 검색(카테고리·키워드·지도 범위·정렬, 거리는 검색 시점 지도 중앙 기준). 커뮤니티 지도 선택도 사용 | HOS-001-03~07·16·19·20·30, PLC-001-01, PLC-002-01, PLC-003-01, PLC-004-01, CMU-002-11, CMU-004-10, CMU-005-05 | YAY | - | Page<PlaceSummary> |
+| GET | /place-bookmarks | 내 장소 즐겨찾기 목록(`?plcClsfCd=` 필수, 저장 최신순, 페이지 없음) | HOS-001-17·26·29·32 | YAY | - | List<PlaceBookmarkSummary> |
+| GET | /places | 장소 검색(카테고리·키워드·지도 범위·정렬, 거리는 검색 시점 지도 중앙 기준). 쪽 크기 15 고정, 카카오 제한으로 최대 3쪽(45건). 커뮤니티 지도 선택도 사용 | HOS-001-03~07·16·19·20·30, PLC-001-01, PLC-002-01, PLC-003-01, PLC-004-01, CMU-002-11, CMU-004-10, CMU-005-05 | YAY | PlaceSearchCond | Page<PlaceSummary> |
 | POST | /place-bookmarks | 장소 즐겨찾기 저장 | HOS-001-09·23 | YAY | PlaceBookmarkCreateRequest | PlaceBookmarkResponse |
 | DELETE | /place-bookmarks/{plcBkmkSn} | 장소 즐겨찾기 해제 | HOS-001-09·23 | YAY | - | - |
 
 ## DTO
+
+### PlaceSearchCond
+쓰는 API: GET /places (쿼리). 정렬·쪽은 공통 `PageQuery`의 `sort`(`RECOMMEND` 기본·`DISTANCE`·`NAME`)·`page`를 쓰고 `size`는 무시한다(15 고정).
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| plcClsfCd | String | Y | 공통코드 PLCG01. 「전체」 탭은 미정이라 받지 않는다(issues 12) | PLC.PLC_CLSF_CD, HOS-001-01 |
+| keyword | String | N | 100자 이하. 지역·상호명·키워드 하나의 입력창 | HOS-001-03·04 |
+| swLat·swLot·neLat·neLot | BigDecimal | Y | 검색 범위(지도 영역)의 남서·북동 모서리. 최초 진입은 전주시 대표 영역을 보낸다 | HOS-001-05·16·19 |
+| cntrLat·cntrLot | BigDecimal | Y | 거리 기준. 검색·재검색을 실행한 시점의 지도 중앙 | HOS-001-04·16 |
 
 ### PlaceBookmarkCreateRequest
 쓰는 API: POST /place-bookmarks
@@ -56,5 +65,5 @@
 | plcLot | BigDecimal | Y | 초안 그대로 | PLC.PLC_LOT |
 | kakaoPlcId | String | N | 초안 그대로 | PLC.KAKAO_PLC_ID |
 | kakaoUrlPath | String | N | 초안 그대로 | PLC.KAKAO_URL_PATH |
-| distance | Integer | N | 초안 그대로. 마지막 검색 실행 시점의 지도 중앙 기준. 단위는 명세 없음(issues 15) | HOS-001-07 |
+| distance | Integer | N | 마지막 검색 실행 시점의 지도 중앙 기준, 단위는 미터(서버가 계산, issues 15 결정) | HOS-001-07 |
 | plcBkmkSn | Long | N | 초안 그대로. 내가 즐겨찾기한 업체면 값 | PLC_BKMK.PLC_BKMK_SN (HOS-001-20 즐겨찾기 핀) |

@@ -279,10 +279,14 @@
 - 연결 남음: FN-ADM-070-03 (프론트 연결 수정 모달·판매 토글 `updateAdminItem`, 프론트 저장소에서 /start)
 - 연결 남음: FN-ADM-070-04 (프론트 연결 순서 편집 저장 `saveAdminItemOrder`, 프론트 저장소에서 /start)
 
-## SCR-ADM-090 알림 템플릿 — 대기
+## SCR-ADM-090 알림 템플릿 — 끝
 - 기능: FN-ADM-090-01 템플릿 목록 조회, FN-ADM-090-02 템플릿 등록·수정, FN-ADM-090-03 기본 문구 사용
-- 기다리는 것: 없음
+- 기다리는 것: pet 연동 양육자 조회 (SJM). 그 전까지 `scheduler/CaregiverFake`가 빈 목록이라 케어 일정 알림이 실제로 나가지 않아 FN-ADM-090-03을 실제 앱에서 확인할 수 없다(테스트로만 확인)
 - 완료 조건: 수정한 템플릿이 다음 발송부터 쓰이고, 템플릿이 없으면 기본 문구로 보낸다
+- 결정: 템플릿 등록은 발송 코드가 템플릿을 읽는 케어 일정(AIMC0008)만, 다른 유형은 400 `NOTIFICATION_TEMPLATE_NOT_SUPPORTED`(기본 문구). 치환 변수는 `NotificationTemplateType`에 한 곳, 모르는 `{{…}}`는 400. `useYn`은 true/false(dto.md)
+- 완료 조건 결과: 검증 `확인 못 함 있음`(2026-11-03, 1회차 실패(FN-ADM-090-03 실제 확인 불가) 뒤 루프 버리고 기다리는 것 기록, 재검증 1회차, 연결 남음만), 사람 확인 2026-11-03
+- 연결 남음: FN-ADM-090-03 (pet 연동 양육자 조회로 `CaregiverFake` 교체 뒤 실제 발송에서 템플릿·기본 문구 확인, SJM)
+- 연결 남음: FN-ADM-090-01·02 (프론트 연결 `features/adminNotificationTemplate/api.js` 목록·등록·수정, 프론트 저장소에서 /start)
 
 ## SCR-ADM-091 발송 이력 — 대기
 - 기능: FN-ADM-091-01 발송 이력 조회, FN-ADM-091-02 재발송 없음
@@ -414,7 +418,7 @@
 - 기다리는 것: 프론트 SCR-ADM-070 추가-1(관리자 화면은 부위 이름 "신발"을 걸러 숨김)
 - 완료 조건: 공통코드 MYPG01에서 신발이 빠져 상점·보관함·관리자 부위 목록에 나오지 않는다. 이미 등록된 신발 아이템과 회원 보유·착용 처리를 사람과 정한다
 
-## SCR-ADM-090 알림 템플릿 · 프론트 연결 API 계약 — 대기
+## SCR-ADM-090 알림 템플릿 · 프론트 연결 API 계약 — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-090-01·02·03
 - 기다리는 것: 프론트 SCR-ADM-090(끝, 가짜 응답 `features/adminNotificationTemplate/api.js`)
 - 완료 조건: `GET /api/admin/notification-templates?notiChnlCd=`(등록된 템플릿만 `[{ notiTmpltSn, notiTypeCd, notiChnlCd, notiTtl, notiCn, useYn }]`, 프론트가 AIMG02 × AIMG03 공통코드와 맞춰 행을 만든다), `POST /api/admin/notification-templates`(`{ notiTypeCd, notiChnlCd, notiTtl, notiCn, useYn }`, 201 `{ notiTmpltSn }`, 같은 유형·채널이면 409), `PATCH /api/admin/notification-templates/{notiTmpltSn}`(`{ notiTtl, notiCn, useYn }`)가 프론트 가짜와 같은 모양으로 동작한다. `useYn` 모양(가짜는 'Y'|'N')과 유형별 치환 변수 목록(지금 프론트는 케어 일정 기준 `{{닉네임}}`·`{{반려동물명}}`·`{{검진유형}}`·`{{병원명}}`·`{{일정일}}`·`{{시간}}`·`{{D-N}}`·`{{캘린더링크}}`를 모든 유형에 보임)을 정해 프론트에 알린다
