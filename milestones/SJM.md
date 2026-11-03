@@ -105,11 +105,13 @@
 - 기다리는 것: 프론트 SCR-MYP-005 수락 카드 (프론트 저장소, 끝남. 응답에 `vrtyNm`·`vrtyDrctInptNm`이 있으면 직접입력 우선으로 품종 줄을 보이게 만들어 뒀다)
 - 완료 조건: `GET /api/caregiver-invitations/{jntBrupInvtnSn}`의 `pets[]`(`CaregiverInvitationPetSummary`)에 `vrtyNm`·`vrtyDrctInptNm`이 들어 있다. 보낸 초대 목록(`CaregiverInvitationSummary.pets`)도 같은 타입이므로 함께 나온다. 이메일 불일치·만료 응답에는 `pets`를 계속 내리지 않는다
 
-## SCR-MYP-030 가계부 목록 · 일괄 삭제 제외 목록 추가·건수 불일치 409 — 대기
+## SCR-MYP-030 가계부 목록 · 일괄 삭제 제외 목록 추가·건수 불일치 409 — 끝
 
 - 기능: 명세 기능 ID 추가 없음. FN-MYP-030-18·19·21과 걸친다
 - 기다리는 것: 프론트 SCR-MYP-030 전체 내역 (프론트 저장소, 끝남. 사람 결정 B안: 조회 결과 전체 선택 뒤 개별 해제한 건만 제외하고 지운다. 프론트는 이 API가 나온 뒤에 해제한 번호를 보내도록 바꾼다)
 - 완료 조건: `POST /api/expenses/bulk-delete`가 제외 번호 목록 `excludeExpndSn`을 받고, 건수 검사 기대값 `expectedCnt`를 "조건에 맞는 건수 − 제외 수"로 비교하며, 불일치면 지금의 400(`INVALID_INPUT_VALUE`)이 아닌 409로 응답한다. 제외 번호는 조건 밖이거나 남의 지출이어도 무시하지 않고 거절 규칙을 정한다
+- 결과: 잘못된 제외 번호(조건 밖·남의 지출·없는 번호·삭제된 번호)는 구별하지 않고 모두 409 `EXPENSE_BULK_DELETE_CHANGED`. 검사 뒤 삭제 건수가 기대값과 다르면 409로 롤백한다. 제외 번호는 최대 1000개
+- 연결 남음: FN-MYP-030-18·19·21 (프론트 연결 SCR-MYP-030 전체 선택 뒤 해제한 번호를 `excludeExpndSn`으로 보내기·409 처리, 프론트 저장소에서 /start)
 
 ## SCR-MYP-031 가계부 등록/수정 · 등록·수정 미래 날짜 검증 — 대기
 

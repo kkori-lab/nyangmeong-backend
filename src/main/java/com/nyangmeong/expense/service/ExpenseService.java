@@ -212,15 +212,25 @@ public class ExpenseService {
 
     /**
      * 조건 전체 삭제 (FN-MYP-030-18·19·21)
-     * - 화면이 보여 준 건수와 다르면 그 사이 바뀐 것이므로 지우지 않음
+     * - 전체 선택 뒤 해제한 번호(excludeExpndSn)는 빼고 지움
+     * - 제외 번호가 조건 밖·남의 지출·없는 번호·삭제된 번호면 구별하지 않고 409
+     * - 화면이 보여 준 건수(조건 건수 − 제외 수)와 다르면 그 사이 바뀐 것이므로 409
      */
     @Transactional
     public void bulkDelete(Long mbrSn, ExpenseBulkDeleteRequest req) {
         ExpenseSearchCond cond = ExpenseQueryService.normalize(req.toCond());
-        if (expenseMapper.selectCount(mbrSn, cond) != req.expectedCnt()) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        List<Long> excludes = req.excludeExpndSn() == null ? List.of()
+                : req.excludeExpndSn().stream().filter(Objects::nonNull).distinct().toList();
+        if (!excludes.isEmpty() && expenseMapper.selectCountIn(mbrSn, cond, excludes) != excludes.size()) {
+            throw new CustomException(ErrorCode.EXPENSE_BULK_DELETE_CHANGED);
         }
-        expenseMapper.deleteByCond(mbrSn, cond);
+        if (expenseMapper.selectCount(mbrSn, cond) - excludes.size() != req.expectedCnt()) {
+            throw new CustomException(ErrorCode.EXPENSE_BULK_DELETE_CHANGED);
+        }
+        /** 검사와 삭제 사이에 바뀌었으면 롤백 */
+        if (expenseMapper.deleteByCond(mbrSn, cond, excludes) != req.expectedCnt()) {
+            throw new CustomException(ErrorCode.EXPENSE_BULK_DELETE_CHANGED);
+        }
     }
 
     /**
