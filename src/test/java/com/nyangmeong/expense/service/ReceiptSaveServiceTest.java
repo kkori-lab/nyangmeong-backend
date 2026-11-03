@@ -314,6 +314,30 @@ class ReceiptSaveServiceTest {
         verify(checkupService, never()).findNearestUnlinkedSchedule(anyLong(), any());
     }
 
+    @Test
+    void 저장완료_영수증의_저장_전_확인은_이미_저장_409() {
+        when(mapper.selectOwned(3L, 1L)).thenReturn(receipt(ReceiptStatus.SAVED, "req-1"));
+
+        assertThatThrownBy(() -> service.check(1L, 3L, new ReceiptSaveCheckRequest(YMD,
+                List.of(new ReceiptSaveCheckRequest.Pet(10L, 30_000L, true)))))
+                .isInstanceOfSatisfying(CustomException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.RECEIPT_ALREADY_SAVED));
+        verify(expenseService, never()).searchDuplicates(anyLong(), anyLong(), any(), any());
+        verify(checkupService, never()).findNearestUnlinkedSchedule(anyLong(), any());
+    }
+
+    @Test
+    void 부분인식_영수증의_저장_전_확인은_결과를_돌려준다() {
+        when(mapper.selectOwned(3L, 1L)).thenReturn(receipt(ReceiptStatus.PARTIAL, null));
+        when(checkupService.existsHospitalSchedule(10L, YMD)).thenReturn(true);
+
+        ReceiptSaveCheckResponse result = service.check(1L, 3L, new ReceiptSaveCheckRequest(YMD,
+                List.of(new ReceiptSaveCheckRequest.Pet(10L, 30_000L, false))));
+
+        assertThat(result.duplicateExpenses()).isEmpty();
+        assertThat(result.nearbySchedules()).isEmpty();
+    }
+
     private ReceiptCheckupCreateRequest directRequest() {
         return new ReceiptCheckupCreateRequest("req-1", YMD, "냥멍동물병원", "HLTC0002", "진찰", null, null);
     }

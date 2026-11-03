@@ -62,7 +62,11 @@ public class ReceiptSaveService {
      */
     @Transactional(readOnly = true)
     public ReceiptSaveCheckResponse check(Long mbrSn, Long recptSn, ReceiptSaveCheckRequest req) {
-        getOwned(mbrSn, recptSn);
+        Receipt receipt = getOwned(mbrSn, recptSn);
+        /** 저장완료 영수증은 저장과 같은 409 (다른 상태는 지금처럼 확인 결과를 준다) */
+        if (ReceiptStatus.from(receipt.getOcrPrcsSttsCd()) == ReceiptStatus.SAVED) {
+            throw new CustomException(ErrorCode.RECEIPT_ALREADY_SAVED);
+        }
         checkPets(mbrSn, req.pets().stream().map(ReceiptSaveCheckRequest.Pet::petSn).toList());
 
         List<ReceiptSaveCheckResponse.DuplicateExpense> duplicates = new ArrayList<>();
