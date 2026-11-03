@@ -2,14 +2,17 @@
 
 ## 지금 하는 것
 
-SCR-ADM-090 알림 템플릿 — 끝 (2026-11-03). 관리자 알림 템플릿 목록·등록·수정 API(`/api/admin/notification-templates`). 등록은 케어 일정(AIMC0008)만(다른 유형 400 `NOTIFICATION_TEMPLATE_NOT_SUPPORTED`, 기본 문구), 치환 변수는 `NotificationTemplateType` 한 곳, 모르는 `{{…}}` 400, `useYn` true/false. DB 변경 없음
+SCR-MYP-031 영수증 업로드 · 가계부 출처 OCR 내부 API — 끝 (2026-11-03). `POST /internal/ai/receipts`가 가계부 출처 `AIMC0027`을 `petSn` 없이 받는다(권한 검사 없음, 다른 출처는 `petSn` 없으면 400). `ReceiptOcrResponse`에 `expndPlcusNm`·`expndClsfCd`. 인식 판정은 출처별(가계부는 사용처·결제일·금액, 품목 0개 허용, 사용처만 읽히면 부분 인식). `receipt.md` 영수증 저장 오류에 미래 날짜 400(검사 코드는 SJM). DB 변경 없음
 
 ## 다음에 할 것
 
-- SCR-ADM-090 연결 남음: FN-ADM-090-03 (pet 연동 양육자 조회(SJM)로 `scheduler/CaregiverFake`를 바꾼 뒤, 실제 케어 일정 알림에 등록한 템플릿이 쓰이고 `useYn=false`면 기본 문구인지 확인)
+- ai-47에 알린다: SCR-MYP-031 백엔드 PR 번호(AI PR kkori-lab/nyangmeong-ai#33보다 먼저 병합). 가계부 출처 원본 저장은 `petSn` 파트 없이, 다른 출처는 `petSn` 없으면 400 `INVALID_INPUT_VALUE`
+- SJM에게 알린다: 영수증 저장 경로(`ExpenseService.create(ExpenseCreateCommand)`) 미래 날짜 검사는 SJM이 넣는다(LJS 동의, 검진기록·처방약까지 롤백 OK). `docs/api/receipt.md` `POST /receipts/{recptSn}/save` 오류 목록의 `INVALID_INPUT_VALUE`(400)는 LJS가 이미 넣었다
+- 공용 DB 정리(사람): SCR-MYP-031 검증·사람 확인으로 생긴 회원 1의 가계부 출처 `RECPT` 501·502(ai-47)·505(검증, `ATCH_FILE` 4199)·508(사람 확인)과 원본 파일. 상태 이력(`RECPT_STTS_HSTRY`)도 같이 지운다
+- SCR-ADM-090 연결 남음: FN-ADM-090-03 (SJM이 만든 `PetService.searchCaregiverMbrSns(petSn)`로 `scheduler/CaregiverFake`를 바꾼 뒤(2026-11-03 메서드 있음 확인), 실제 케어 일정 알림에 등록한 템플릿이 쓰이고 `useYn=false`면 기본 문구인지 확인)
 - SCR-ADM-090 연결 남음: FN-ADM-090-01·02 (프론트 연결 `features/adminNotificationTemplate/api.js` 목록·등록·수정, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트 가짜와 다른 점: `useYn`이 `'Y'|'N'`이 아니라 true/false, 케어 일정 외 유형은 등록 400(화면은 "기본 문구"만)
 - 공용 DB 정리(사람): SCR-ADM-090 사람 확인으로 만든 템플릿은 삭제 API가 없다. `DELETE FROM NOTI_TMPLT WHERE NOTI_TMPLT_SN=<번호>;`(관리자 작업 로그 `TRGT_TBL_NM='NOTI_TMPLT'`는 남거나 같이 지운다)
-- 정리(판단 필요): 핸드오프가 60줄을 넘는다(약 120줄). 대부분 알림·사람 할 일이라 끝났는지 코드로 판단할 수 없어 남겼다. 끝난 알림·정리 항목을 사람이 지운다
+- 정리(판단 필요): 핸드오프가 60줄을 넘는다(122줄. 2026-11-03 공용 DB에 반영된 것을 확인한 v0.12 (1)·v0.11 (5) 실행 항목 2건은 지웠다). 대부분 알림·사람 할 일이라 끝났는지 코드로 판단할 수 없어 남겼다. 끝난 알림·정리 항목을 사람이 지운다
 - ai-47에 알린다: 굽기 계약 구현 끝(SCR-ADM-070). `bake-items` 응답 `{itemSn, regnCd, bakeHint}`(판매 중이고 지시 있음 30개), `GET /internal/ai/items/{itemSn}/bake-targets?page=`(관리자 쿠키, 100개씩 `{pixelCharSns, last}`, 아니면 403 `ADMIN_ONLY`, 굽기 대상 아님 404). 굽기 지시가 바뀌면 그 아이템 착용 시트를 지워 다시 굽기 대상이 된다. 시드에만 있던 6개(빨간 리본·작은 왕관·털모자·줄무늬 티셔츠·꼬까 한복·곰돌이 후드티)의 지시 문장은 LJS 초안이라 검토를 부탁한다. 백엔드 PR이 AI PR보다 먼저 병합돼야 한다
 - 공용 DB 정리(사람): SCR-ADM-070 사람 확인으로 만든 아이템(예: "확인용 가방")은 삭제 API가 없다. `DELETE FROM MNGR_TASK_LOG WHERE TRGT_TBL_NM='ITEM' AND TRGT_SN=<번호>; DELETE FROM ITEM WHERE ITEM_SN=<번호>;` 또는 판매 중지. 바꾼 순서·판매 여부·굽기 지시를 되돌린다
 - SCR-ADM-070 연결 남음: FN-ADM-070-01~04 (프론트 연결 `features/adminItem/api.js` 목록·등록·수정·순서 저장, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
@@ -27,7 +30,6 @@ SCR-ADM-090 알림 템플릿 — 끝 (2026-11-03). 관리자 알림 템플릿 �
 - KSJ에게 알린다(PR 전): SCR-ADM-040을 LJS가 구현했다(`support`에 `AdminNoticeController`·`AdminNoticeService`·DTO 7개, `NoticeMapper` 관리자 쿼리, `Notice` VO 필드). 본문 이미지는 `![](/api/files/public/{atchFileSn})` 줄로 넣고 HTML은 저장하지 않는다(`docs/api/issues.md` 고객센터 10). 사용자 공지 상세가 이 줄을 이미지로 그려야 한다. 삭제는 `USE_YN='N'`
 - YAY에게 알린다(PR 전): `MemberService.countNormalMembers()`·`MemberMapper.countByStatus` 추가(공지 알림 대상 수)
 - 팀에 알린다(알림): 여러 회원에게 같은 알림을 보낼 때는 회원마다 `NotificationEvent`를 발행하지 않는다(커밋 뒤 회원마다 트랜잭션, 191명 46초). 공지는 `NoticeNotificationEvent` + `NotificationMapper.insertForNormalMembers` 한 번이다
-- 공용 DB(사람, PR 병합 직후): `db/20261102_create_tables_v0.12.sql` → `db/20261102_insert_base_data_v0.12.sql`의 v0.12 (1)을 실행한다(맨 앞 `SET NAMES utf8mb4;`). 실행 전에는 새 캐릭터 내부 API와 `PIXEL_CHAR` 조회가 `Unknown column`이다. 로컬 `nyangmeong_local`에는 사람이 실행했다
 - 팀에 알린다(PR): DB 기준 파일이 v0.12로 바뀌었다. v0.11 두 파일은 `db/archive/v0.11/`에 있고, 아직 병합 안 된 브랜치의 v0.11 변경 항목은 v0.12 파일의 변경 절로 옮겨야 한다. `handoff/KSJ.md`에 옛 v0.11 경로가 남아 있다(KSJ)
 - ERDCloud(사람): `PIXEL_CHAR.BODY_SHEET_FILE_SN`·`SHEET_SCALE`·`SHEET_ORIGIN_X`·`SHEET_ORIGIN_Y`, 새 테이블 `CHAR_ITEM_SHEET`, `ITEM.BAKE_HINT`(varchar(300) NULL, 굽기지시)를 추가한다. `ITEM.ENGINE_ITEM_KEY`는 넣지 않는다(v0.12 (3)에서 삭제)
 - 병합 순서(ai-d1): 백엔드 PR 먼저, 그다음 AI 저장소 `LJS`(`b2f2e84`, 쿠키 전환) PR. Python이 먼저 들어가면 캐릭터 생성이 실패한다. 백엔드 PR 번호를 ai-d1 세션에 알린다
@@ -52,7 +54,6 @@ SCR-ADM-090 알림 템플릿 — 끝 (2026-11-03). 관리자 알림 템플릿 �
 - SCR-ADM-113 연결 남음: FN-ADM-113-02 (프론트 연결 관리자 계정 화면 SCR-ADM-113 목록과 지정 모달, 프론트 저장소에서 /start), FN-ADM-113-03 (프론트 연결 해제 버튼과 확인 모달, 본인·마지막 비활성, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
 - PR 전 확인(사람): YAY에게 SCR-ADM-113을 알린다. `AdminMemberController` 클래스 경로를 `/api/admin`으로 내렸고(기존 URL 그대로) `MemberAuthorityService`를 넣었다. 마일스톤의 협의가 저장소에 기록되지 않았다
 - 판단 필요(SCR-ADM-113): 지정 기록이 없는 기존 관리자는 `apntDt`가 null이다. `MBR_AUTHRT_CD`에 인덱스가 없어 해제 트랜잭션 동안 `MBR`의 많은 행이 잠길 수 있다(부하 상황 확인 안 함)
-- 공용 DB(사람, PR 병합 전): `db/archive/v0.11/20261030_insert_base_data_v0.11.sql`의 v0.11 (5)를 실행한다. 없으면 03:30 배치 이력이 `BTCH_SE_CD` 외래키에 걸린다. 공용 DB의 보관 기간 지난 탈퇴 회원은 첫 실행에서 되돌릴 수 없이 파기된다
 - PR 전 확인(사람): YAY에게 `member`에 넣은 것을 알린다. `MemberPurgeJob`·`MemberPurgeService`, 탈퇴 회원 목록, `MemberSuspensionService`, 관리자 목록 조회. 파기 뒤 같은 이메일은 새 가입이 되고 복구는 `MEMBER_NOT_FOUND`다. 저장소에 협의 기록 없음
 - 탈퇴 파기 남은 범위: 채팅 원문(REQ-NFR-002, 채팅 구현 뒤 KSJ와 `scheduler`로 묶는다), 프로필 파일 실물(`FileStore`에 삭제 없음, 지금은 연결만 끊는다), 게시물·댓글·포인트·반려동물·건강기록(정책 미확정, `docs/api/issues.md` 8번)
 - KSJ에게 알린다: 게시글·댓글 작성자 '탈퇴한 회원' 표시가 없어 파기 회원은 `탈퇴회원#<번호>`로 보인다. 쿼리에서 탈퇴 상태로 표시를 바꾼다

@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import com.nyangmeong.expense.domain.ReceiptSource;
 import com.nyangmeong.expense.domain.ReceiptStatus;
 import com.nyangmeong.global.external.ReceiptOcrResponse;
 import com.nyangmeong.global.external.ReceiptOcrResponse.Drug;
@@ -57,5 +58,65 @@ class ReceiptOcrConverterTest {
         assertThat(ReceiptOcrConverter.parseDailyCount("1일2회")).isEqualTo(2);
         assertThat(ReceiptOcrConverter.parseDailyCount("용법 미상")).isNull();
         assertThat(ReceiptOcrConverter.parseDailyCount(null)).isNull();
+    }
+
+    private ReceiptOcrResponse shop(String expndPlcusNm, LocalDate ymd, Long amt, List<Section> sections) {
+        return new ReceiptOcrResponse(null, ymd, amt, null, sections, expndPlcusNm, "MYPC0013");
+    }
+
+    @Test
+    void 가계부_출처는_사용처_결제일_금액이면_품목이_없어도_인식_성공() {
+        ReceiptOcrResponse noItems = shop("펫월드", TODAY, 32_000L, List.of());
+        ReceiptOcrResponse emptySection = shop("펫월드", TODAY, 32_000L,
+                List.of(section(null, null, List.of(), List.of())));
+        ReceiptOcrResponse withItems = shop("펫월드", TODAY, 32_000L,
+                List.of(section(null, 32_000L, List.of(new Line("사료", 32_000L)), List.of())));
+
+        assertThat(ReceiptOcrConverter.classify(noItems, ReceiptSource.EXPENSE)).isEqualTo(ReceiptStatus.RECOGNIZED);
+        assertThat(ReceiptOcrConverter.classify(emptySection, ReceiptSource.EXPENSE))
+                .isEqualTo(ReceiptStatus.RECOGNIZED);
+        assertThat(ReceiptOcrConverter.classify(withItems, ReceiptSource.EXPENSE))
+                .isEqualTo(ReceiptStatus.RECOGNIZED);
+    }
+
+    @Test
+    void 가계부_출처는_사용처_결제일_금액_중_하나가_없거나_품목명이_없으면_부분_인식() {
+        ReceiptOcrResponse noPlace = shop(null, TODAY, 32_000L, List.of());
+        ReceiptOcrResponse noDate = shop("펫월드", null, 32_000L, List.of());
+        ReceiptOcrResponse noAmt = shop("펫월드", TODAY, null, List.of());
+        ReceiptOcrResponse noItemNm = shop("펫월드", TODAY, 32_000L,
+                List.of(section(null, 32_000L, List.of(new Line(null, 32_000L)), List.of())));
+        ReceiptOcrResponse hospitalOnly = new ReceiptOcrResponse("냥멍동물병원", TODAY, 32_000L, null, List.of(),
+                null, null);
+
+        for (ReceiptOcrResponse ocr : List.of(noPlace, noDate, noAmt, noItemNm, hospitalOnly)) {
+            assertThat(ReceiptOcrConverter.classify(ocr, ReceiptSource.EXPENSE)).isEqualTo(ReceiptStatus.PARTIAL);
+        }
+    }
+
+    @Test
+    void 사용처만_읽힌_영수증은_인식_실패가_아니라_부분_인식() {
+        ReceiptOcrResponse placeOnly = shop("펫월드", null, null, List.of());
+
+        assertThat(ReceiptOcrConverter.classify(placeOnly, ReceiptSource.EXPENSE)).isEqualTo(ReceiptStatus.PARTIAL);
+        assertThat(ReceiptOcrConverter.classify(placeOnly, ReceiptSource.HEALTH)).isEqualTo(ReceiptStatus.PARTIAL);
+        assertThat(ReceiptOcrConverter.classify(placeOnly, ReceiptSource.CHAT)).isEqualTo(ReceiptStatus.PARTIAL);
+    }
+
+    @Test
+    void 건강_일지와_대화창_출처는_병원명과_품목_기준_그대로() {
+        ReceiptOcrResponse shopFull = shop("펫월드", TODAY, 32_000L,
+                List.of(section(null, 32_000L, List.of(new Line("사료", 32_000L)), List.of())));
+        ReceiptOcrResponse hospitalNoItems = new ReceiptOcrResponse("냥멍동물병원", TODAY, 32_000L, null, List.of(),
+                "냥멍동물병원", null);
+        Section full = section("미르", 32_000L, List.of(new Line("진찰료", 32_000L)), List.of());
+        ReceiptOcrResponse hospitalFull = new ReceiptOcrResponse("냥멍동물병원", TODAY, 32_000L, null,
+                List.of(full), "냥멍동물병원", "MYPC0012");
+
+        for (ReceiptSource source : List.of(ReceiptSource.HEALTH, ReceiptSource.CHAT)) {
+            assertThat(ReceiptOcrConverter.classify(shopFull, source)).isEqualTo(ReceiptStatus.PARTIAL);
+            assertThat(ReceiptOcrConverter.classify(hospitalNoItems, source)).isEqualTo(ReceiptStatus.PARTIAL);
+            assertThat(ReceiptOcrConverter.classify(hospitalFull, source)).isEqualTo(ReceiptStatus.RECOGNIZED);
+        }
     }
 }
