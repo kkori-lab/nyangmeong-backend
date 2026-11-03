@@ -99,6 +99,8 @@ public enum ErrorCode {
     ITEM_ALREADY_HELD(HttpStatus.CONFLICT, "이미 보유한 아이템입니다."),
     ITEM_NOT_HELD(HttpStatus.BAD_REQUEST, "보유하지 않은 아이템은 착용할 수 없습니다."),
     ITEM_SLOT_DUPLICATED(HttpStatus.BAD_REQUEST, "같은 부위에는 아이템을 하나만 착용할 수 있습니다."),
+    ITEM_NAME_DUPLICATED(HttpStatus.CONFLICT, "같은 이름의 아이템이 있습니다."),
+    ITEM_REGION_LOCKED(HttpStatus.CONFLICT, "보유한 회원이 있는 아이템은 부위를 바꿀 수 없습니다."),
     POINT_NOT_ENOUGH(HttpStatus.BAD_REQUEST, "포인트가 부족합니다."),
 
     /** health */
