@@ -13,8 +13,8 @@
 | POST | /receipts/{recptSn}/save-check | 저장 전 확인. 가계부 중복 후보와 검진일 앞뒤 7일의 미연결 병원 일정. 저장하지 않는다 | AIM-009-22·23, HLT-002-46 | LJS | ReceiptSaveCheckRequest | ReceiptSaveCheckResponse |
 | POST | /receipts/{recptSn}/save | 확인 후 저장. 반려동물별 검진기록·병원 일정 연결/생성·처방약·가계부 지출을 한 트랜잭션으로, 영수증 상태 저장완료. 처음 201, 같은 `idmptDmndId` 재전송은 200과 같은 응답. 오류: `RECEIPT_NOT_SAVABLE`·`RECEIPT_ALREADY_SAVED`·`RECEIPT_ALREADY_CANCELED`·`RECEIPT_ANALYZING`·`ALREADY_PROCESSED`(409), `RECEIPT_NOT_FOUND`(404), `INVALID_INPUT_VALUE`(400, 가계부 지출을 만드는 반려동물이 있고 `ckupYmd`가 오늘(KST)보다 뒤) | AIM-009-07~11·24·26·27, AIM-010-06, HLT-002-31·35·37~41·45 | LJS | ReceiptSaveRequest | ReceiptSaveResponse |
 | POST | /receipts/{recptSn}/checkups?petSn= | 영수증 인식 실패·일시 오류 뒤 [직접 입력] 검진기록 등록. 영수증 상태 저장완료(인식성공·부분인식·미인식·일시오류에서), 검진기록에 이 영수증 연결(출처 직접 입력), 가계부 없음. 일정 연결은 직접 등록과 같다. 201. 오류: `RECEIPT_ALREADY_SAVED`·`RECEIPT_ALREADY_CANCELED`·`RECEIPT_ANALYZING`·`ALREADY_PROCESSED`(409), `RECEIPT_NOT_FOUND`(404) | HLT-002-31 | JAJ | ReceiptCheckupCreateRequest | CheckupResponse(`docs/api/health.md`) |
-| POST | /internal/ai/receipts | Python AI 서버가 분석 전에 원본을 저장한다(2026-10-29 결정 (나): React → Python `POST /ai/receipts`가 분석 중심). multipart, 확장자·파일 시그니처 검증, 쿠키 회원·`X-Requested-With`. 원본 파일(ATCH_FILE)과 RECPT(상태 분석중, 출처)를 만들고 201 `recptSn`. 분석이 실패해도 원본은 남는다. 오류: `FILE_TYPE_NOT_ALLOWED`·`FILE_TOO_LARGE`·`INVALID_INPUT_VALUE`(400), `PET_ACCESS_DENIED`(양육하지 않는 반려동물) | AIM-008-09, AIM-010-06, AIM-013-08 | LJS | ReceiptOriginalRequest | ReceiptOriginalResponse |
-| POST | /internal/ai/receipts/{recptSn}/result | Python AI 서버가 분석 결과·상태를 보고한다. 분석중인 본인 영수증만. `RECOGNIZED`는 Java가 OCR 응답으로 인식 성공·부분 인식·인식 실패를 나누고, `TIMEOUT`·`API_ERROR`는 일시 오류로 두고 사유를 상태 이력에 남긴다. 200. 오류: `INVALID_INPUT_VALUE`(400, `ocrRslt` 없음·`RECOGNIZED`인데 `ocr` 없음), `BAD_REQUEST`(400, `ocrRslt` 허용값 밖), `RECEIPT_NOT_FOUND`(404), `RECEIPT_ALREADY_CANCELED`·`RECEIPT_ALREADY_SAVED`·`ALREADY_PROCESSED`(409, 분석중이 아님) | AIM-010-01, AIM-013-04 | LJS | ReceiptReportRequest | ReceiptReportResponse |
+| POST | /internal/ai/receipts | Python AI 서버가 분석 전에 원본을 저장한다(2026-10-29 결정 (나): React → Python `POST /ai/receipts`가 분석 중심). multipart, 확장자·파일 시그니처 검증, 쿠키 회원·`X-Requested-With`. 원본 파일(ATCH_FILE)과 RECPT(상태 분석중, 출처)를 만들고 201 `recptSn`. 분석이 실패해도 원본은 남는다. 오류: `FILE_TYPE_NOT_ALLOWED`·`FILE_TOO_LARGE`·`INVALID_INPUT_VALUE`(400), `PET_ACCESS_DENIED`(양육하지 않는 반려동물, 가계부 출처는 검사하지 않음) | AIM-008-09, AIM-010-06, AIM-013-08, MYP-031-03 | LJS | ReceiptOriginalRequest | ReceiptOriginalResponse |
+| POST | /internal/ai/receipts/{recptSn}/result | Python AI 서버가 분석 결과·상태를 보고한다. 분석중인 본인 영수증만. `RECOGNIZED`는 Java가 OCR 응답과 영수증 출처로 인식 성공·부분 인식·인식 실패를 나누고(병원명·사용처·날짜·금액·품목·약품이 모두 없으면 인식 실패. 인식 성공은 가계부 출처면 사용처·결제일·금액이 있고 품목명·약품이 빠짐없음(품목 0개 허용), 그 밖의 출처면 병원명·검진일·금액과 품목 1개 이상·품목명·약품이 빠짐없음, 나머지는 부분 인식), `TIMEOUT`·`API_ERROR`는 일시 오류로 두고 사유를 상태 이력에 남긴다. 200. 오류: `INVALID_INPUT_VALUE`(400, `ocrRslt` 없음·`RECOGNIZED`인데 `ocr` 없음), `BAD_REQUEST`(400, `ocrRslt` 허용값 밖), `RECEIPT_NOT_FOUND`(404), `RECEIPT_ALREADY_CANCELED`·`RECEIPT_ALREADY_SAVED`·`ALREADY_PROCESSED`(409, 분석중이 아님) | AIM-010-01, AIM-013-04 | LJS | ReceiptReportRequest | ReceiptReportResponse |
 
 ## DTO
 
@@ -33,8 +33,8 @@
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | file | MultipartFile | Y | jpg·jpeg·png·webp, 1건당 10MB 이하, 확장자·실제 형식 이중 검증. PDF 불가 | RECPT.ATCH_FILE_SN (AIM-008-05) |
-| petSn | Long | Y | 쿠키 회원이 양육하는 반려동물 | PET.PET_SN, AIM-008-03 |
-| ocrDmndSrcCd | String | Y | 요청 출처 AIMG07. `AIMC0026` 건강 일지·`AIMC0031` AI 대화창만, 그 밖은 400 `INVALID_INPUT_VALUE`. Python의 `ocrRqstSrcCd` 값을 이 이름으로 보낸다 | RECPT.OCR_DMND_SRC_CD, AIM-013-04 |
+| petSn | Long | N | 쿠키 회원이 양육하는 반려동물. 가계부 출처(`AIMC0027`)만 생략 가능(반려동물은 확인 모달에서 고르고 권한 검사 없음), 그 밖의 출처에서 없으면 400 `INVALID_INPUT_VALUE` | PET.PET_SN, AIM-008-03, MYP-031-03 |
+| ocrDmndSrcCd | String | Y | 요청 출처 AIMG07. `AIMC0026` 건강 일지·`AIMC0027` 가계부·`AIMC0031` AI 대화창만, 그 밖은 400 `INVALID_INPUT_VALUE`. Python의 `ocrRqstSrcCd` 값을 이 이름으로 보낸다 | RECPT.OCR_DMND_SRC_CD, AIM-013-04, MYP-031-03 |
 
 ### ReceiptOriginalResponse
 쓰는 API: POST /internal/ai/receipts
@@ -54,10 +54,12 @@ Java `global/external/ReceiptOcrResponse`, ai 저장소 `docs/api/internal.md` R
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | hsptlNm | String | N | 병원명 | AIM-009-02 |
-| ckupYmd | LocalDate | N | 검진일 | AIM-009-02 |
+| ckupYmd | LocalDate | N | 검진일. 가계부 출처에서는 결제일 | AIM-009-02 |
 | recptAmt | Long | N | 영수증 최종 결제 금액 | AIM-009-02 |
 | btmDscntAmt | Long | N | 하단 할인 | AIM-009-20 |
 | sections | List | Y | 반려동물 구역. `sectionNm`·`sbttlAmt`·`dscntAmt`·`items`·`drugs`, 0건이면 빈 목록 | AIM-009-16 |
+| expndPlcusNm | String | N | 사용처(영수증 상호), 앞 80자. 모든 출처에서 채운다. 가계부 출처의 인식 판정 기준 | EXPND.EXPND_PLCUS_NM, MYP-031-03 |
+| expndClsfCd | String | N | 추정 지출 카테고리 MYPG05(`MYPC0012`~`MYPC0018`), 불확실하면 null | EXPND.EXPND_CLSF_CD, MYP-031-03 |
 
 ### ReceiptReportResponse
 쓰는 API: POST /internal/ai/receipts/{recptSn}/result

@@ -56,7 +56,7 @@ public class ReceiptAnalyzer {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
         ReceiptStatus status = switch (result) {
-            case RECOGNIZED -> ReceiptOcrConverter.classify(ocr);
+            case RECOGNIZED -> ReceiptOcrConverter.classify(ocr, receiptService.getSource(mbrSn, recptSn));
             case UNRECOGNIZED -> ReceiptStatus.NOT_RECOGNIZED;
             case TIMEOUT, API_ERROR -> ReceiptStatus.TEMPORARY_ERROR;
             case CANCELED -> ReceiptStatus.CANCELED;

@@ -22,4 +22,16 @@ public enum ReceiptSource {
     public boolean is(String code) {
         return this.code.equals(code);
     }
+
+    /**
+     * 코드로 출처 조회 : 없거나 모르는 코드는 건강 일지 (출처를 주지 않은 업로드의 기본값)
+     */
+    public static ReceiptSource from(String code) {
+        for (ReceiptSource source : values()) {
+            if (source.is(code)) {
+                return source;
+            }
+        }
+        return HEALTH;
+    }
 }
