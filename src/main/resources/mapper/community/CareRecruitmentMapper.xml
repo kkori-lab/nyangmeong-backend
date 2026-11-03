@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nyangmeong.community.mapper.CareRecruitmentMapper">
+
+    <resultMap id="careRecruitmentResultMap" type="com.nyangmeong.community.domain.CareRecruitment">
+        <id     column="PET_PRTC_RCRT_SN"        property="petPrtcRcrtSn" />
+        <result column="PST_SN"                  property="pstSn" />
+        <result column="RGN_SN"                  property="rgnSn" />
+        <result column="RCRT_STTS_CD"            property="rcrtSttsCd" />
+        <result column="CST_UNIT_CD"             property="cstUnitCd" />
+        <result column="CST_AMT"                 property="cstAmt" />
+        <result column="RLS_RGN_NM"              property="rlsRgnNm" />
+        <result column="PRTC_PLC_DADDR_ENC"      property="prtcPlcDaddrEnc" />
+        <result column="PRTC_BGNG_DT"            property="prtcBgngDt" />
+        <result column="PRTC_END_DT"             property="prtcEndDt" />
+        <result column="SCHDL_CNSLTN_PSBLTY_YN"  property="schdlCnsltnPsbltyYn" />
+        <result column="UTZTN_RUL_AGRE_YN"       property="utztnRulAgreYn" />
+        <result column="REG_DT"                  property="regDt" />
+        <result column="MDFCN_DT"                property="mdfcnDt" />
+        <result column="PRTC_PLC_LAT"            property="prtcPlcLat" />
+        <result column="PRTC_PLC_LOT"            property="prtcPlcLot" />
+        <result column="CFMTN_PET_PRTC_MTCH_SN"  property="cfmtnPetPrtcMtchSn" />
+    </resultMap>
+
+    <resultMap id="careRecruitmentDetailResultMap" type="com.nyangmeong.community.domain.CareRecruitmentDetail"
+               extends="careRecruitmentResultMap">
+        <result column="MBR_SN"           property="mbrSn" />
+        <result column="MBR_NCNM"         property="mbrNcnm" />
+        <result column="MBR_ATCH_FILE_SN" property="mbrAtchFileSn" />
+        <result column="PST_STTS_CD"      property="pstSttsCd" />
+        <result column="PST_TTL"          property="pstTtl" />
+        <result column="PST_CN"           property="pstCn" />
+        <result column="INQ_CNT"          property="inqCnt" />
+        <result column="RCMDTN_CNT"       property="rcmdtnCnt" />
+        <result column="PST_REG_DT"       property="pstRegDt" />
+        <result column="APLCNT_CNT"       property="aplcntCnt" />
+    </resultMap>
+
+    <resultMap id="careRecruitmentSummaryResultMap" type="com.nyangmeong.community.dto.CareRecruitmentSummary">
+        <id     column="PET_PRTC_RCRT_SN"        property="petPrtcRcrtSn" />
+        <result column="PST_SN"                  property="pstSn" />
+        <result column="PST_TTL"                 property="pstTtl" />
+        <result column="PST_CN"                  property="pstCn" />
+        <result column="THUMBNAIL_ATCH_FILE_SN"  property="thumbnailAtchFileSn" />
+        <result column="MBR_NCNM"                property="mbrNcnm" />
+        <result column="MBR_ATCH_FILE_SN"        property="mbrAtchFileSn" />
+        <result column="RLS_RGN_NM"              property="rlsRgnNm" />
+        <result column="CST_UNIT_CD"             property="cstUnitCd" />
+        <result column="CST_AMT"                 property="cstAmt" />
+        <result column="APLCNT_CNT"              property="aplcntCnt" />
+        <result column="RCRT_STTS_CD"            property="rcrtSttsCd" />
+        <result column="PRTC_BGNG_DT"            property="prtcBgngDt" />
+        <result column="PRTC_END_DT"             property="prtcEndDt" />
+        <result column="SCHDL_CNSLTN_PSBLTY_YN"  property="schdlCnsltnPsbltyYn" />
+        <result column="REG_DT"                  property="regDt" />
+        <result column="OWNER_YN"                property="owner" />
+    </resultMap>
+
+    <resultMap id="careRecruitmentPetResultMap" type="com.nyangmeong.community.domain.CareRecruitmentPet">
+        <id     column="RCRT_PET_KND_SN"   property="rcrtPetKndSn" />
+        <result column="PET_PRTC_RCRT_SN"  property="petPrtcRcrtSn" />
+        <result column="PET_SE_CD"         property="petSeCd" />
+        <result column="PET_BDWG"          property="petBdwg" />
+        <result column="VRTY_SN"           property="vrtySn" />
+        <result column="VRTY_DRCT_INPT_NM" property="vrtyDrctInptNm" />
+        <result column="REG_DT"            property="regDt" />
+        <result column="VRTY_NM"           property="vrtyNm" />
+    </resultMap>
+
+    <resultMap id="careRecruitmentShapeResultMap" type="com.nyangmeong.community.domain.CareRecruitmentShape">
+        <id     column="RCRT_PRTC_SHP_SN"  property="rcrtPrtcShpSn" />
+        <result column="PET_PRTC_RCRT_SN"  property="petPrtcRcrtSn" />
+        <result column="PRTC_SHP_CD"       property="prtcShpCd" />
+        <result column="REG_DT"            property="regDt" />
+    </resultMap>
+
+    <sql id="careRecruitmentColumns">
+          R.PET_PRTC_RCRT_SN
+        , R.PST_SN
+        , R.RGN_SN
+        , R.RCRT_STTS_CD
+        , R.CST_UNIT_CD
+        , R.CST_AMT
+        , R.RLS_RGN_NM
+        , R.PRTC_PLC_DADDR_ENC
+        , R.PRTC_BGNG_DT
+        , R.PRTC_END_DT
+        , R.SCHDL_CNSLTN_PSBLTY_YN
+        , R.UTZTN_RUL_AGRE_YN
+        , R.REG_DT
+        , R.MDFCN_DT
+        , R.PRTC_PLC_LAT
+        , R.PRTC_PLC_LOT
+        , R.CFMTN_PET_PRTC_MTCH_SN
+    </sql>
+
+    <!-- 첫 메시지를 보낸 뒤에야 지원으로 센다 (채팅 = 지원) -->
+    <sql id="applicantCount">
+        (SELECT COUNT(*)
+           FROM OTO_CHAT_ROOM C
+          WHERE C.PST_SN = R.PST_SN
+            AND EXISTS (SELECT 1
+                          FROM CHAT_MSG G
+                         WHERE G.OTO_CHAT_ROOM_SN = C.OTO_CHAT_ROOM_SN))
+    </sql>
+
+    <sql id="careRecruitmentDetailSelect">
+        SELECT <include refid="careRecruitmentColumns" />
+             , P.MBR_SN
+             , M.MBR_NCNM
+             , M.ATCH_FILE_SN AS MBR_ATCH_FILE_SN
+             , P.PST_STTS_CD
+             , P.PST_TTL
+             , P.PST_CN
+             , P.INQ_CNT
+             , P.RCMDTN_CNT
+             , P.REG_DT AS PST_REG_DT
+             , <include refid="applicantCount" /> AS APLCNT_CNT
+          FROM PET_PRTC_RCRT R
+          JOIN PST P
+            ON P.PST_SN = R.PST_SN
+          JOIN MBR M
+            ON M.MBR_SN = P.MBR_SN
+    </sql>
+
+    <select id="selectList" resultMap="careRecruitmentSummaryResultMap">
+        SELECT R.PET_PRTC_RCRT_SN
+             , R.PST_SN
+             , P.PST_TTL
+             , P.PST_CN
+             , (SELECT I.ATCH_FILE_SN
+                  FROM PST_IMG I
+                 WHERE I.PST_SN = R.PST_SN
+                   AND I.DEL_YN = 'N'
+                 ORDER BY I.SORT_SEQ, I.PST_IMG_SN
+                 LIMIT 1) AS THUMBNAIL_ATCH_FILE_SN
+             , M.MBR_NCNM
+             , M.ATCH_FILE_SN AS MBR_ATCH_FILE_SN
+             , R.RLS_RGN_NM
+             , R.CST_UNIT_CD
+             , R.CST_AMT
+             , <include refid="applicantCount" /> AS APLCNT_CNT
+             , R.RCRT_STTS_CD
+             , R.PRTC_BGNG_DT
+             , R.PRTC_END_DT
+             , (R.SCHDL_CNSLTN_PSBLTY_YN = 'Y') AS SCHDL_CNSLTN_PSBLTY_YN
+             , P.REG_DT
+             , (P.MBR_SN = #{mbrSn}) AS OWNER_YN
+          FROM PET_PRTC_RCRT R
+          JOIN PST P
+            ON P.PST_SN = R.PST_SN
+          JOIN MBR M
+            ON M.MBR_SN = P.MBR_SN
+         WHERE P.PST_STTS_CD = #{pstSttsCd}
+        <if test="rcrtSttsCd != null">
+           AND R.RCRT_STTS_CD = #{rcrtSttsCd}
+        </if>
+        <if test="mineYn">
+           AND P.MBR_SN = #{mbrSn}
+        </if>
+        <if test="rgnSn != null">
+           AND R.RGN_SN IN (WITH RECURSIVE T AS (SELECT RGN_SN
+                                                   FROM RGN
+                                                  WHERE RGN_SN = #{rgnSn}
+                                                  UNION ALL
+                                                 SELECT C.RGN_SN
+                                                   FROM RGN C
+                                                   JOIN T
+                                                     ON C.UP_RGN_SN = T.RGN_SN)
+                            SELECT RGN_SN
+                              FROM T)
+        </if>
+        <if test="bgngDt != null or endDt != null">
+           AND R.PRTC_BGNG_DT IS NOT NULL
+           AND R.PRTC_END_DT IS NOT NULL
+        </if>
+        <if test="bgngDt != null">
+           AND R.PRTC_END_DT >= #{bgngDt}
+        </if>
+        <if test="endDt != null">
+           AND R.PRTC_BGNG_DT <![CDATA[<]]> #{endDt}
+        </if>
+        <if test="petSeCd != null">
+           AND EXISTS (SELECT 1
+                         FROM RCRT_PET_KND K
+                        WHERE K.PET_PRTC_RCRT_SN = R.PET_PRTC_RCRT_SN
+                          AND K.PET_SE_CD = #{petSeCd})
+        </if>
+        <if test="sizeFilter">
+           AND EXISTS (SELECT 1
+                         FROM RCRT_PET_KND K
+                        WHERE K.PET_PRTC_RCRT_SN = R.PET_PRTC_RCRT_SN
+                          AND K.PET_SE_CD = #{dogCd}
+                          AND K.PET_BDWG >= #{minBdwg}
+            <if test="maxBdwg != null">
+                          AND K.PET_BDWG <![CDATA[<]]> #{maxBdwg}
+            </if>
+                       )
+        </if>
+         ORDER BY P.REG_DT DESC
+                , R.PET_PRTC_RCRT_SN DESC
+    </select>
+
+    <select id="selectDetail" resultMap="careRecruitmentDetailResultMap">
+        <include refid="careRecruitmentDetailSelect" />
+         WHERE R.PET_PRTC_RCRT_SN = #{petPrtcRcrtSn}
+           AND P.PST_STTS_CD = #{pstSttsCd}
+    </select>
+
+    <select id="selectDetailByPstSn" resultMap="careRecruitmentDetailResultMap">
+        <include refid="careRecruitmentDetailSelect" />
+         WHERE R.PST_SN = #{pstSn}
+           AND P.PST_STTS_CD = #{pstSttsCd}
+    </select>
+
+    <select id="selectPets" resultMap="careRecruitmentPetResultMap">
+        SELECT K.RCRT_PET_KND_SN
+             , K.PET_PRTC_RCRT_SN
+             , K.PET_SE_CD
+             , K.PET_BDWG
+             , K.VRTY_SN
+             , K.VRTY_DRCT_INPT_NM
+             , K.REG_DT
+             , V.VRTY_NM
+          FROM RCRT_PET_KND K
+          LEFT JOIN VRTY V
+            ON V.VRTY_SN = K.VRTY_SN
+         WHERE K.PET_PRTC_RCRT_SN IN
+        <foreach collection="petPrtcRcrtSns" item="sn" open="(" separator="," close=")">
+               #{sn}
+        </foreach>
+         ORDER BY K.PET_PRTC_RCRT_SN
+                , K.RCRT_PET_KND_SN
+    </select>
+
+    <select id="selectShapes" resultMap="careRecruitmentShapeResultMap">
+        SELECT S.RCRT_PRTC_SHP_SN
+             , S.PET_PRTC_RCRT_SN
+             , S.PRTC_SHP_CD
+             , S.REG_DT
+          FROM RCRT_PRTC_SHP S
+         WHERE S.PET_PRTC_RCRT_SN IN
+        <foreach collection="petPrtcRcrtSns" item="sn" open="(" separator="," close=")">
+               #{sn}
+        </foreach>
+         ORDER BY S.PET_PRTC_RCRT_SN
+                , S.PRTC_SHP_CD
+    </select>
+
+    <insert id="insertRecruitment" parameterType="com.nyangmeong.community.domain.CareRecruitment"
+            useGeneratedKeys="true" keyProperty="petPrtcRcrtSn" keyColumn="PET_PRTC_RCRT_SN">
+        INSERT INTO PET_PRTC_RCRT
+             ( PST_SN
+             , RGN_SN
+             , RCRT_STTS_CD
+             , CST_UNIT_CD
+             , CST_AMT
+             , RLS_RGN_NM
+             , PRTC_PLC_DADDR_ENC
+             , PRTC_BGNG_DT
+             , PRTC_END_DT
+             , SCHDL_CNSLTN_PSBLTY_YN
+             , UTZTN_RUL_AGRE_YN
+             , PRTC_PLC_LAT
+             , PRTC_PLC_LOT
+             , REG_DT
+             , MDFCN_DT )
+        VALUES
+             ( #{pstSn}
+             , #{rgnSn}
+             , #{rcrtSttsCd}
+             , #{cstUnitCd}
+             , #{cstAmt}
+             , #{rlsRgnNm}
+             , #{prtcPlcDaddrEnc}
+             , #{prtcBgngDt}
+             , #{prtcEndDt}
+             , #{schdlCnsltnPsbltyYn}
+             , #{utztnRulAgreYn}
+             , #{prtcPlcLat}
+             , #{prtcPlcLot}
+             , NOW()
+             , NOW() )
+    </insert>
+
+    <insert id="insertPet" parameterType="com.nyangmeong.community.domain.CareRecruitmentPet"
+            useGeneratedKeys="true" keyProperty="rcrtPetKndSn" keyColumn="RCRT_PET_KND_SN">
+        INSERT INTO RCRT_PET_KND
+             ( PET_PRTC_RCRT_SN
+             , PET_SE_CD
+             , PET_BDWG
+             , VRTY_SN
+             , VRTY_DRCT_INPT_NM
+             , REG_DT )
+        VALUES
+             ( #{petPrtcRcrtSn}
+             , #{petSeCd}
+             , #{petBdwg}
+             , #{vrtySn}
+             , #{vrtyDrctInptNm}
+             , NOW() )
+    </insert>
+
+    <insert id="insertShape" parameterType="com.nyangmeong.community.domain.CareRecruitmentShape"
+            useGeneratedKeys="true" keyProperty="rcrtPrtcShpSn" keyColumn="RCRT_PRTC_SHP_SN">
+        INSERT INTO RCRT_PRTC_SHP
+             ( PET_PRTC_RCRT_SN
+             , PRTC_SHP_CD
+             , REG_DT )
+        VALUES
+             ( #{petPrtcRcrtSn}
+             , #{prtcShpCd}
+             , NOW() )
+    </insert>
+
+    <insert id="insertStatusHistory" parameterType="com.nyangmeong.community.domain.CareRecruitmentStatusHistory"
+            useGeneratedKeys="true" keyProperty="petPrtcRcrtSttsHstrySn" keyColumn="PET_PRTC_RCRT_STTS_HSTRY_SN">
+        INSERT INTO PET_PRTC_RCRT_STTS_HSTRY
+             ( PET_PRTC_RCRT_SN
+             , MBR_SN
+             , BFR_STTS_CD
+             , AFTR_STTS_CD
+             , CHG_RSN
+             , REG_DT )
+        VALUES
+             ( #{petPrtcRcrtSn}
+             , #{mbrSn}
+             , #{bfrSttsCd}
+             , #{aftrSttsCd}
+             , #{chgRsn}
+             , NOW() )
+    </insert>
+
+    <!-- 상태·동의 여부·확정 매칭은 바꾸지 않음 -->
+    <update id="updateRecruitment">
+        UPDATE PET_PRTC_RCRT
+           SET RGN_SN = #{recruitment.rgnSn}
+             , CST_UNIT_CD = #{recruitment.cstUnitCd}
+             , CST_AMT = #{recruitment.cstAmt}
+             , RLS_RGN_NM = #{recruitment.rlsRgnNm}
+             , PRTC_PLC_DADDR_ENC = #{recruitment.prtcPlcDaddrEnc}
+             , PRTC_BGNG_DT = #{recruitment.prtcBgngDt}
+             , PRTC_END_DT = #{recruitment.prtcEndDt}
+             , SCHDL_CNSLTN_PSBLTY_YN = #{recruitment.schdlCnsltnPsbltyYn}
+             , PRTC_PLC_LAT = #{recruitment.prtcPlcLat}
+             , PRTC_PLC_LOT = #{recruitment.prtcPlcLot}
+             , MDFCN_DT = NOW()
+         WHERE PET_PRTC_RCRT_SN = #{recruitment.petPrtcRcrtSn}
+           AND RCRT_STTS_CD = #{recruitingCd}
+    </update>
+
+    <delete id="deletePets">
+        DELETE FROM RCRT_PET_KND
+         WHERE PET_PRTC_RCRT_SN = #{petPrtcRcrtSn}
+    </delete>
+
+    <delete id="deleteShapes">
+        DELETE FROM RCRT_PRTC_SHP
+         WHERE PET_PRTC_RCRT_SN = #{petPrtcRcrtSn}
+    </delete>
+</mapper>

@@ -15,6 +15,9 @@
 -- v0.12 (1) 배치 구분 캐릭터 생성 시간 초과 (2026-11-02, LJS, 근거: 마이페이지_기능명세서 FN-MYP-010-12). 20261102_create_tables_v0.12.sql의 v0.12 (1)을 실행한 다음에 실행한다
 --   SET NAMES utf8mb4;
 --   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0029','캐릭터 생성 시간 초과','pet/CharacterJobTimeoutJob',70);
+-- v0.12 (3) 게시판 코드 우리동네 펫돌봄 (2026-11-03, KSJ, 근거: 커뮤니티_기능명세서 FN-CMU-004-11, 펫돌봄 게시글은 PST.BBS_CD가 이 코드). 20261102_create_tables_v0.12.sql에는 짝이 되는 항목이 없다
+--   SET NAMES utf8mb4;
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='CMUG01') p),'CMUC0028','우리동네 펫돌봄','PET_PRTC_RCRT와 1:1인 게시글',40);
 -- =====================================================================
 SET NAMES utf8mb4;
 START TRANSACTION;
@@ -523,6 +526,8 @@ INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='CMUG08') p),'CMUC0027','작성자 정지','회원 제재와 같은 규칙',30);
 -- v0.12 추가: 배치 구분 (v0.12 (1))
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0029','캐릭터 생성 시간 초과','pet/CharacterJobTimeoutJob',70);
+-- v0.12 추가: 게시판 우리동네 펫돌봄 (v0.12 (3))
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='CMUG01') p),'CMUC0028','우리동네 펫돌봄','PET_PRTC_RCRT와 1:1인 게시글',40);
 
 -- =====================================================================
 -- [2] 케어미션 마스터 (CARE_MSN) — 20261027_02_update_care_msn_and_ckup_pnt 의 최종 상태
