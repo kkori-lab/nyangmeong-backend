@@ -2,18 +2,25 @@
 
 ## 지금 하는 것
 
-SCR-CMU-001 펫이야기 · 작성자 프로필 사진 — 끝남 (승인 2026-11-02 16:53, 시작 2026-11-02 16:33, 검증 통과 1회차, 사람 확인 2026-11-02)
-기준: 명세 기능 ID 추가 없음(사람 요청 2026-10-30·11-02). 걸치는 기능 FN-CMU-001-01·04·06·10·11, FN-CMU-002-05·07. DB·`ErrorCode`·요청 DTO 변경 없음
-- 작성자 닉네임(`mbrNcnm`)을 주는 사용자 응답(`PostSummary`·`PostResponse`·`CommentSummary`·`CommentResponse`·`LostReportResponse`)에 `Long mbrAtchFileSn`(`MBR.ATCH_FILE_SN`)을 `mbrNcnm` 뒤에 넣었다. 사진이 없을 때만 null이고, 삭제된 댓글과 찾았어요로 닫힌 실종 응답도 null이다
-- 결정(사람 2026-11-02, 「추천대로」): 정지·탈퇴 회원도 닉네임처럼 상태와 무관하게 사진을 그대로 준다. 가림 기준은 탈퇴 시 게시물·댓글 처리(`docs/api/issues.md` 95번, 미확정) 확정 때 닉네임과 함께 정한다. 탈퇴 30일 뒤에는 `MemberPurgeJob`이 프로필 파일 연결을 비워 null이 된다
-- 새 `PostMapper.selectAuthor(mbrSn)`·`PostAuthor`로 게시글·댓글 등록 응답을 채운다. 관리자 응답은 `selectMbrNcnm` 그대로. 테스트는 `PostMapperSqlTest` 하나에 SQL 검사 5개를 모았다(기획은 클래스 3개였고 사람이 받아들임)
-- 알려 둔 것: `selectAuthor`가 null이면 `PostResponse.from`·`CommentResponse.from`에서 NPE가 난다. 글쓴이 회원 행은 항상 있어 지금은 문제 없음
-이번에 하지 않은 것: 정지·탈퇴 회원의 닉네임·사진 가리기, 관리자 게시글·댓글 응답, 실종 목록 작성자, 펫돌봄(SCR-CMU-004 완료 조건에 이미 있음)
+SCR-CMU-004 우리동네 펫돌봄 — 끝남 (승인 2026-11-03 09:46, 시작 2026-11-03 09:33, 검증 통과 1회차(새 루프), 사람 확인 2026-11-03)
+기준: 커뮤니티 기능명세서·화면설계서 v0.8(20261101). 걸치는 기능 FN-CMU-004-01·02·04·05·06~11·13, FN-COM-009-02. 제외 FN-CMU-004-12 좋아요·신고(기존 `/posts/{pstSn}/likes`·`/reports`가 펫돌봄 글에도 동작)
+- API: `GET·POST /care-recruitments`, `GET·PATCH·DELETE /care-recruitments/{petPrtcRcrtSn}`(등록·수정은 multipart), `POST /chat-rooms`(새 방 201, 기존 방 200). 목록·상세는 `mbrNcnm`과 `mbrAtchFileSn`을 준다
+- 결정: 강아지 크기는 컬럼 추가 없이 대표 체중(5·15·30kg, 고양이 0)으로 저장하고 `petSizeCd`로 주고받는다(`issues.md` 커뮤니티 11번). 「채팅 n명」은 메시지가 1건 이상 오간 방만 센다. 수정은 모집중인 글만, 삭제는 상태 무관. 블라인드·삭제 글에는 새 채팅방을 만들지 않고 기존 방은 계속 연다. 신고 누적 처리는 펫이야기와 같다
+- DB: 게시판 코드 `CMUC0028`(우리동네 펫돌봄)을 기준 SQL 본문과 변경 절 v0.12 (3)에 추가했고 공용 DB에 실행했다(`COM_CD_SN` 391)
+- 1회차 검증이 `ErrorCode` 이름이 기획과 달라 실패해 사람이 루프를 버리고 새 루프로 통과했다. 기존 `CARE_WAGE_BELOW_MINIMUM`·`CHAT_SELF_NOT_ALLOWED`·`CARE_RECRUITMENT_CLOSED`는 새 코드와 뜻이 겹치나 쓰지 않는다
+- 알려 둔 것: 중복 키 뒤 방을 다시 읽을 때 `FOR SHARE`를 쓴다. 단위 테스트는 mock이라 실제 격리 수준 동작은 로컬 MySQL에서 동시 요청으로 따로 봐야 한다
+이번에 하지 않은 것: FN-CMU-004-12(위), 메시지·채팅 목록·매칭(SCR-CMU-005)
 새 의존성: 없음
 
+### 추가 요청
+| 추가-1 | `ChatRoomMapper`(java·XML), `ChatRoomService`, `ChatRoomServiceTest`, `CareRecruitmentMapperSqlTest` | 명령: `./gradlew build -q` 통과. 중복 키 뒤 다시 조회는 `FOR SHARE` 잠금 읽기라 상대 트랜잭션이 커밋한 방을 읽고, 그래도 없으면 NPE 대신 `CustomException`을 던진다 | 요청 2026-11-03 10:21 "동시 채팅 요청에서 중복 키 뒤 다시 조회가 방을 못 보는 문제를 이번에 고침" |
+
 ## 다음에 할 것
+- 연결 남음: FN-CMU-004-10 주소 찾기·장소 선택 (글쓰기 장소 모달에서 YAY의 `GET /places` 결과 좌표를 등록 요청에 넣음, 프론트 저장소에서 /start)
+- 연결 남음: SCR-CMU-004 리스트·상세·글쓰기·[채팅하기] 버튼 (프론트 연결, 지역 필터는 `GET /regions`, 프론트 저장소에서 /start)
+- 사람이 할 일: PR 본문에 "DB 변경 있음, `db/20261102_insert_base_data_v0.12.sql` 변경 절 v0.12 (3)"와 공용 DB 실행 완료 댓글(2026-11-03, `COM_CD_SN` 391). 확인용 글 `pstSn` 1003(공용 DB)과 채팅방 행은 정리했다
 - 확인 남음: 공용 DB 시드에서 회원 1의 사진 25는 공개 주소가 404일 수 있다(시드 이미지 묶음 문제). 응답에 번호가 오면 백엔드는 맞다
-- 다음 작업: SCR-CMU-002 실종센터 · 전북 밖 좌표 거절(`/start CMU-002 전북`). 우선순위 낮음. 그 뒤 SCR-CMU-004·005 펫돌봄은 장소 검색(YAY)을 기다린다
+- 다음 작업: SCR-CMU-002 실종센터 · 전북 밖 좌표 거절(`/start CMU-002 전북`). 우선순위 낮음. 그 뒤 SCR-CMU-005 펫돌봄 채팅(메시지·채팅 목록·매칭, 장소 검색은 YAY `GET /places`)
 - 이번 작업 메모: 상세 응답 `mbrSn` 추가로 프론트 `CommentSection`의 `authorSn={post.mbrSn}`에 값이 들어가 글쓴이 댓글에 「작성자」 배지가 붙는다. 프론트 변경 없음
 - SCR-CMU-003 주제 무관 기사 거르기(PR #104 병합): 제외 키워드는 `KWRD_DICT` `AIMC0040` 분류별 4행, 공용 DB 실행 완료. 키워드를 늘릴 때는 수집 로그의 `주제 무관 건너뜀`을 보고 정상 기사가 걸리는지 먼저 본다. 쌓인 무관 기사는 2026-11-02 확인에서 0건이라 정리할 것 없음
 - 사람이 할 일(공용 DB, 일회성이라 `db/`에 넣지 않음): 시드와 확인용으로 쌓인 기존 뉴스를 지우고 새 중복 판정으로 다시 수집한다(사람 결정 2026-11-02). 대상은 외부 언론사(`CMUC0022`) 143건만이다. 관리자 등록(`CMUC0023`) 시드 14건은 프론트의 「관리자 등록」 배지·원문보기 미노출 확인용으로 남긴다(사람 결정 2026-11-02). 지운 뒤 로컬에서 `app.news.batch-enabled=true` 또는 `POST /api/admin/batches/SYSC0028/run`을 한 번 돌려 로그의 `중복 건너뜀 K건`과 `GET /api/news`를 확인하고, 팀에 공용 DB를 비웠다고 알린다

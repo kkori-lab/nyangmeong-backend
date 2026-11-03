@@ -30,8 +30,8 @@
 | POST | /care-matches/{petPrtcMtchSn}/confirm-completion | 보호자 돌봄 완료 확정 | CMU-005-09 | KSJ | - | - |
 | POST | /care-matches/{petPrtcMtchSn}/confirm-receipt | 제공자 비용 수령 확인(양측 충족 시 거래 완료) | CMU-005-10 | KSJ | CareMatchReceiptConfirmRequest | - |
 | POST | /care-matches/{petPrtcMtchSn}/request-supplement | 보호자 보완 요청(사유, 확인 대기 유지) | CMU-005-09 | KSJ | CareMatchSupplementRequest | - |
-| POST | /care-recruitments | 펫돌봄 모집 등록(반려동물·돌봄 형태·일정·비용 최저시급 검증·장소·사진·동의) | CMU-004-06~11·13 | KSJ | CareRecruitmentCreateRequest | CareRecruitmentResponse |
-| POST | /chat-rooms | 게시글·보호자·지원자 조합 채팅방 생성 또는 기존 방 반환 | CMU-004-05, CMU-005-01 | KSJ | ChatRoomCreateRequest | ChatRoomResponse |
+| POST | /care-recruitments | 펫돌봄 모집 등록(multipart/form-data. 반려동물·돌봄 형태·일정·비용 최저시급 검증·장소·사진·동의) | CMU-004-06~11·13 | KSJ | CareRecruitmentCreateRequest | CareRecruitmentResponse |
+| POST | /chat-rooms | 게시글·보호자·지원자 조합 채팅방 생성 또는 기존 방 반환(새 방 201, 기존 방 200) | CMU-004-05, CMU-005-01 | KSJ | ChatRoomCreateRequest | ChatRoomResponse |
 | POST | /chat-rooms/{otoChatRoomSn}/messages | 메시지 전송(텍스트·사진·주소 공유, 멱등 요청 ID). 처음은 201, 같은 `idmptDmndId` 재전송은 200과 같은 응답. 저장 뒤 참여자에게 실시간으로 보낸다(아래 "실시간") | CMU-004-05, CMU-005-04·05, COM-009 | KSJ | ChatMessageCreateRequest | ChatMessageResponse |
 | POST | /chat-rooms/{otoChatRoomSn}/read | 활성 대화창에 표시된 메시지까지 읽음 처리 | CMU-005-03, COM-009 | KSJ | ChatRoomReadRequest | - |
 | POST | /lost-reports | 실종 제보 등록(게시글+제보, 품종 마스터/직접입력, 목격 좌표, 개인정보 동의) | CMU-002-10·13 | KSJ | LostReportCreateRequest | LostReportResponse |
@@ -43,7 +43,7 @@
 | POST | /posts/{pstSn}/comments | 댓글·대댓글(1depth) 등록 | CMU-001-11, CMU-002-07 | KSJ | CommentCreateRequest | CommentResponse |
 | POST | /posts/{pstSn}/likes | 좋아요 등록. 멱등: 이미 누른 상태여도 200과 현재 좋아요 수(`UK_PST_RCMDTN_1`로 중복 행을 막는다) | CMU-001-09, CMU-002-08, CMU-004-12 | KSJ | - | PostLikeResponse |
 | POST | /reports | 게시글·댓글 신고(사유·상세, 중복 신고 제한, 누적 처리) | CMU-001-13, CMU-002-12, CMU-004-12 | KSJ | ReportCreateRequest | ReportResponse |
-| PATCH | /care-recruitments/{petPrtcRcrtSn} | 펫돌봄 모집 수정(작성자) | CMU-004-11 | KSJ | CareRecruitmentUpdateRequest | CareRecruitmentResponse |
+| PATCH | /care-recruitments/{petPrtcRcrtSn} | 펫돌봄 모집 수정(작성자, 모집중만, multipart/form-data) | CMU-004-11 | KSJ | CareRecruitmentUpdateRequest | CareRecruitmentResponse |
 | PATCH | /posts/{pstSn} | 게시글 수정(작성자) | CMU-001-15 | KSJ | PostUpdateRequest | PostResponse |
 | DELETE | /care-recruitments/{petPrtcRcrtSn} | 펫돌봄 모집 삭제(작성자, 매칭·채팅 기록 유지) | CMU-004-11 | KSJ | - | - |
 | DELETE | /posts/{pstSn} | 게시글 삭제(작성자) | CMU-001-15 | KSJ | - | - |
@@ -358,7 +358,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | splmntDmndRsn | String | Y | 최대 1000자. 가장 최근 완료 요청 회차에 기록 | PRTC_CMPTN_DMND_CYCL.SPLMNT_DMND_RSN, CMU-005-09 |
 
 ### CareRecruitmentCreateRequest
-쓰는 API: POST /care-recruitments
+쓰는 API: POST /care-recruitments (multipart/form-data. 반려동물은 `pets[0].petSeCd`처럼 인덱스 필드로 보낸다)
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | pets | List<CareRecruitmentPetRequestItem> | Y | 1개 이상. 강아지·고양이 동시 선택 허용 | RCRT_PET_KND, CMU-004-06 |
@@ -368,14 +368,13 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | schdlCnsltnPsbltyYn | Boolean | Y | true면 일정 미정 등록 허용, 입력한 일정은 희망 일정 | PET_PRTC_RCRT.SCHDL_CNSLTN_PSBLTY_YN, CMU-004-07 |
 | cstUnitCd | String | Y | 공통코드 PCAG02(시급·건당) | PET_PRTC_RCRT.CST_UNIT_CD, CMU-004-08 |
 | cstAmt | Integer | Y | 원 단위 양의 정수. 시급이면 최저시급(설정값) 이상. 건당은 비교하지 않는다 | PET_PRTC_RCRT.CST_AMT, SYS_STNG.LOWST_HRWG_AMT, CMU-004-08 |
-| rgnSn | Long | Y | | PET_PRTC_RCRT.RGN_SN, CMU-004-10 |
-| rlsRgnNm | String | Y | 공개 동네명. 최대 100자 | PET_PRTC_RCRT.RLS_RGN_NM, CMU-004-10 |
+| rlsRgnNm | String | Y | 공개 동네명. 최대 100자. 돌봄 지역(`rgnSn`)은 받지 않고 좌표로 서버가 계산하며 전북 밖이면 `CARE_REGION_NOT_ALLOWED`(400) | PET_PRTC_RCRT.RLS_RGN_NM, CMU-004-10 |
 | prtcPlcDaddr | String | Y | 상세 주소. 공개 응답에 넣지 않는다 | PET_PRTC_RCRT.PRTC_PLC_DADDR_ENC, CMU-004-10 |
 | prtcPlcLat | BigDecimal | Y | 정확 좌표. 공개 응답에 넣지 않는다 | PET_PRTC_RCRT.PRTC_PLC_LAT, CMU-004-10 |
 | prtcPlcLot | BigDecimal | Y | 정확 좌표. 공개 응답에 넣지 않는다 | PET_PRTC_RCRT.PRTC_PLC_LOT, CMU-004-10 |
-| pstTtl | String | Y | 최대 200자, 공백만 입력 불가 | PST.PST_TTL, CMU-004-09·11 |
-| pstCn | String | Y | 최대 4000자, 공백만 입력 불가 | PST.PST_CN, CMU-004-09·11 |
-| atchFileSns | List<Long> | N | 최대 10장, 장당 10MB, 확장자 검증 | PST_IMG.ATCH_FILE_SN, CMU-004-09 |
+| pstTtl | String | Y | 최대 50자, 공백만 입력 불가(명세 기준) | PST.PST_TTL, CMU-004-09·11 |
+| pstCn | String | Y | 최대 2,000자, 공백만 입력 불가(명세 기준) | PST.PST_CN, CMU-004-09·11 |
+| images | List<MultipartFile> | N | 최대 10장, 장당 10MB, JPG·PNG·WEBP | PST_IMG.ATCH_FILE_SN, CMU-004-09 |
 | utztnRulAgreYn | Boolean | Y | 이용수칙·정보 공개 동의. true여야 등록(issues 11) | PET_PRTC_RCRT.UTZTN_RUL_AGRE_YN, CMU-004-11 |
 
 #### CareRecruitmentPetRequestItem (요청 record, 쓰는 DTO: CareRecruitmentCreateRequest, CareRecruitmentUpdateRequest)
@@ -383,8 +382,10 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | --- | --- | --- | --- | --- |
 | petSeCd | String | Y | 공통코드 PETG01(강아지·고양이) | RCRT_PET_KND.PET_SE_CD, CMU-004-06 |
 | vrtySn | Long | N | `vrtySn`·`vrtyDrctInptNm` 중 하나 필수. 해당 구분의 품종 마스터여야 한다 | RCRT_PET_KND.VRTY_SN, CMU-004-13 |
-| vrtyDrctInptNm | String | N | '기타' 선택 시 직접 입력. 최대 100자. 마스터에 등록하지 않는다 | RCRT_PET_KND.VRTY_DRCT_INPT_NM, CMU-004-13 |
-| petBdwg | BigDecimal | N | 강아지면 필수. 화면은 소형(10kg 미만)·중형(10~25kg 미만)·대형(25kg 이상) 선택(저장 방식 issues 11) | RCRT_PET_KND.PET_BDWG, CMU-004-06 |
+| vrtyDrctInptNm | String | N | '기타' 선택 시 직접 입력. 최대 20자(화면설계서). 마스터에 등록하지 않는다 | RCRT_PET_KND.VRTY_DRCT_INPT_NM, CMU-004-13 |
+| petSizeCd | String | N | 강아지면 필수. SMALL(10kg 미만)·MEDIUM(10~25kg 미만)·LARGE(25kg 이상). 고양이는 무시. 컬럼 추가 없이 대표 체중(5·15·30kg, 고양이 0)으로 저장한다(issues 11) | RCRT_PET_KND.PET_BDWG, CMU-004-06 |
+
+같은 `petSeCd`를 두 번 보낼 수 없다.
 
 ### CareRecruitmentResponse
 쓰는 API: GET /care-recruitments/{petPrtcRcrtSn}; PATCH /care-recruitments/{petPrtcRcrtSn}; POST /care-recruitments
@@ -396,7 +397,9 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | pstCn | String | Y | | PST.PST_CN, CMU-004-04 |
 | mbrSn | Long | Y | 작성자 | PST.MBR_SN, CMU-004-04 |
 | mbrNcnm | String | Y | 작성자 | MBR.MBR_NCNM, CMU-004-04 |
+| mbrAtchFileSn | Long | N | 작성자 프로필 사진. 없으면 null | MBR.ATCH_FILE_SN, CMU-004-04 |
 | regDt | LocalDateTime | Y | 작성일 | 공통 감사 컬럼 REG_DT, CMU-004-04 |
+| inqCnt | Integer | Y | 조회수. 같은 회원은 하루 한 번 | PST.INQ_CNT, CMU-004-04 |
 | rcrtSttsCd | String | Y | 공통코드 PCAG01(모집중·매칭완료·거래완료) | PET_PRTC_RCRT.RCRT_STTS_CD, CMU-004-04 |
 | pets | List<CareRecruitmentPetItem> | Y | | RCRT_PET_KND, CMU-004-04 |
 | prtcShpCds | List<String> | Y | 공통코드 PCAG03 | RCRT_PRTC_SHP.PRTC_SHP_CD, CMU-004-04 |
@@ -409,6 +412,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | rlsRgnNm | String | Y | 대략적인 장소. 상세 주소·정확 좌표는 넣지 않는다 | PET_PRTC_RCRT.RLS_RGN_NM, CMU-004-10 |
 | imgs | List<ImageItem> | Y | 없으면 빈 목록 | PST_IMG, CMU-004-04 |
 | rcmdtnCnt | Integer | Y | | PST.RCMDTN_CNT, CMU-004-12 |
+| aplcntCnt | Integer | N | 「지금 n명과 채팅 중」. 메시지가 1건 이상 오간 채팅방 수. 작성자에게만 주고 그 밖에는 null | OTO_CHAT_ROOM.PST_SN, CMU-004-05 |
 | liked | Boolean | Y | 내가 좋아요했는지 | PST_RCMDTN.USE_YN, CMU-004-12 |
 | owner | Boolean | Y | 작성자 본인인지(수정·삭제 버튼) | PST.MBR_SN, CMU-004-11 |
 
@@ -418,7 +422,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | petSeCd | String | Y | 공통코드 PETG01 | RCRT_PET_KND.PET_SE_CD |
 | vrtySn | Long | N | | RCRT_PET_KND.VRTY_SN |
 | vrtyNm | String | Y | `vrtySn`이 있으면 마스터 품종명, 없으면 직접입력명 | VRTY.VRTY_NM, RCRT_PET_KND.VRTY_DRCT_INPT_NM, CMU-004-13 |
-| petBdwg | BigDecimal | N | 강아지 크기 기준 | RCRT_PET_KND.PET_BDWG, CMU-004-06 |
+| petSizeCd | String | N | 강아지면 SMALL·MEDIUM·LARGE, 고양이는 null | RCRT_PET_KND.PET_BDWG, CMU-004-06 |
 
 ### CareRecruitmentSummary
 쓰는 API: GET /care-recruitments
@@ -430,14 +434,23 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | pstCn | String | Y | 설명 2행 말줄임 | PST.PST_CN, CMU-004-01 |
 | thumbnailAtchFileSn | Long | N | 첫 번째 사진. 없으면 null | PST_IMG.ATCH_FILE_SN, CMU-004-01 |
 | mbrNcnm | String | Y | 작성자 | MBR.MBR_NCNM, CMU-004-01 |
+| mbrAtchFileSn | Long | N | 작성자 프로필 사진. 없으면 null | MBR.ATCH_FILE_SN, CMU-004-01 |
 | rlsRgnNm | String | Y | 지역 | PET_PRTC_RCRT.RLS_RGN_NM, CMU-004-01 |
 | cstUnitCd | String | Y | 공통코드 PCAG02 | PET_PRTC_RCRT.CST_UNIT_CD, CMU-004-01 |
 | cstAmt | Integer | Y | 보수 | PET_PRTC_RCRT.CST_AMT, CMU-004-01 |
-| aplcntCnt | Integer | Y | 지원자 수(이 게시글의 채팅방 수) | OTO_CHAT_ROOM.PST_SN, CMU-004-01 |
+| aplcntCnt | Integer | Y | 「채팅 n명」. 메시지가 1건 이상 오간 이 게시글의 채팅방 수 | OTO_CHAT_ROOM.PST_SN, CMU-004-01 |
 | rcrtSttsCd | String | Y | 상태 배지. 공통코드 PCAG01 | PET_PRTC_RCRT.RCRT_STTS_CD, CMU-004-01 |
+| pets | List<CareRecruitmentPetItem> | Y | 반려동물 배지(구분·크기) | RCRT_PET_KND, CMU-004-01 |
+| prtcShpCds | List<String> | Y | 돌봄 형태 배지. 공통코드 PCAG03 | RCRT_PRTC_SHP.PRTC_SHP_CD, CMU-004-01 |
+| prtcBgngDt | LocalDateTime | N | 일정. 일정 협의면 null일 수 있다 | PET_PRTC_RCRT.PRTC_BGNG_DT, CMU-004-01 |
+| prtcEndDt | LocalDateTime | N | | PET_PRTC_RCRT.PRTC_END_DT, CMU-004-01 |
+| schdlCnsltnPsbltyYn | Boolean | Y | 일정 협의 가능 | PET_PRTC_RCRT.SCHDL_CNSLTN_PSBLTY_YN, CMU-004-01 |
+| regDt | LocalDateTime | Y | 경과 시간 표시 | PST.REG_DT, CMU-004-01 |
+| owner | Boolean | Y | 내 글 배지 | PST.MBR_SN, CMU-004-01 |
 
+목록 검색 조건(`CareRecruitmentSearchCond`, 쿼리): `rcrtSttsCd`(없으면 전체, `PCAC0001`이면 모집중), `mineYn`, `rgnSn`(하위 지역 포함), `prtcBgngDe`~`prtcEndDe`(일정이 기간과 겹치는 글, 일정 없는 글은 제외), `petSeCd`, `petSizeCd`(고양이만 고르면 무시). 모두 AND, 10건 최신순.
 ### CareRecruitmentUpdateRequest
-쓰는 API: PATCH /care-recruitments/{petPrtcRcrtSn}
+쓰는 API: PATCH /care-recruitments/{petPrtcRcrtSn} (multipart/form-data, 모집중인 글만. 아니면 `CARE_RECRUITMENT_NOT_EDITABLE` 400)
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | pets | List<CareRecruitmentPetRequestItem> | N | 보내면 1개 이상. 목록 교체 방식(issues 2) | RCRT_PET_KND, CMU-004-06·11 |
@@ -447,14 +460,14 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | schdlCnsltnPsbltyYn | Boolean | N | | PET_PRTC_RCRT.SCHDL_CNSLTN_PSBLTY_YN, CMU-004-07 |
 | cstUnitCd | String | N | 공통코드 PCAG02 | PET_PRTC_RCRT.CST_UNIT_CD, CMU-004-08 |
 | cstAmt | Integer | N | 원 단위 양의 정수. 시급이면 최저시급 이상 | PET_PRTC_RCRT.CST_AMT, CMU-004-08 |
-| rgnSn | Long | N | | PET_PRTC_RCRT.RGN_SN, CMU-004-10 |
 | rlsRgnNm | String | N | 최대 100자 | PET_PRTC_RCRT.RLS_RGN_NM, CMU-004-10 |
 | prtcPlcDaddr | String | N | | PET_PRTC_RCRT.PRTC_PLC_DADDR_ENC, CMU-004-10 |
-| prtcPlcLat | BigDecimal | N | | PET_PRTC_RCRT.PRTC_PLC_LAT, CMU-004-10 |
+| prtcPlcLat | BigDecimal | N | `prtcPlcLot`과 함께 보내며 보내면 돌봄 지역을 다시 계산한다(전북 밖이면 400) | PET_PRTC_RCRT.PRTC_PLC_LAT, CMU-004-10 |
 | prtcPlcLot | BigDecimal | N | | PET_PRTC_RCRT.PRTC_PLC_LOT, CMU-004-10 |
-| pstTtl | String | N | 최대 200자, 공백만 입력 불가 | PST.PST_TTL, CMU-004-09·11 |
-| pstCn | String | N | 최대 4000자, 공백만 입력 불가 | PST.PST_CN, CMU-004-09·11 |
-| atchFileSns | List<Long> | N | 최대 10장, 장당 10MB. 목록 교체 방식 | PST_IMG.ATCH_FILE_SN, CMU-004-09 |
+| pstTtl | String | N | 최대 50자, 공백만 입력 불가 | PST.PST_TTL, CMU-004-09·11 |
+| pstCn | String | N | 최대 2,000자, 공백만 입력 불가 | PST.PST_CN, CMU-004-09·11 |
+| keepAtchFileSns | List<Long> | N | 보내면 그 목록에 없는 기존 사진은 삭제, 보내지 않으면 기존 사진 유지 | PST_IMG.ATCH_FILE_SN, CMU-004-09 |
+| images | List<MultipartFile> | N | 새로 올리는 사진. 남은 사진과 합쳐 최대 10장 | PST_IMG.ATCH_FILE_SN, CMU-004-09 |
 
 ### ChatMessageCreateRequest
 쓰는 API: POST /chat-rooms/{otoChatRoomSn}/messages
@@ -524,9 +537,10 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | ctptMbrSn | Long | Y | 상대 회원 | OTO_CHAT_ROOM.CTPT_MBR_SN |
 | ctptMbrNcnm | String | Y | | MBR.MBR_NCNM, CMU-005-04 |
 | ctptProfileAtchFileSn | Long | N | 상대 메시지 왼쪽 프로필 | MBR.ATCH_FILE_SN, CMU-005-04 |
-| myRole | String | Y | 이 방에서 내 역할(보호자/제공자, 값 미정). 실행 버튼 결정 | CMU-005-11 |
+| myRole | String | Y | 이 방에서 내 역할. `GUARDIAN`(게시글 작성자) 또는 `SITTER`(지원자). 실행 버튼 결정 | CMU-005-11 |
 | petPrtcMtchSn | Long | N | 이 방의 매칭. 요청 전이면 null | PET_PRTC_MTCH.PET_PRTC_MTCH_SN, CMU-005-11 |
 | mtchDlngSttsCd | String | N | 매칭 진행 상태. 공통코드 PCAG05 | PET_PRTC_MTCH.MTCH_DLNG_STTS_CD, CMU-005-11 |
+| created | boolean | Y | 이번 요청으로 방을 새로 만들었는지. `POST /chat-rooms`는 새 방 201, 기존 방 200 | OTO_CHAT_ROOM, CMU-004-05 |
 
 ### ChatRoomSummary
 쓰는 API: GET /chat-rooms
