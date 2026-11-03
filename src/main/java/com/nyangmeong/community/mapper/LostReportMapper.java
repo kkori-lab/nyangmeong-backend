@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 import com.nyangmeong.community.domain.LostReport;
 import com.nyangmeong.community.domain.LostReportDetail;
 import com.nyangmeong.community.domain.LostReportStatusHistory;
+import com.nyangmeong.community.dto.AdminLostReportSummary;
 import com.nyangmeong.community.dto.LostReportSummary;
 
 /**
@@ -25,6 +26,13 @@ public interface LostReportMapper {
             @Param("keyword") String keyword, @Param("pstSttsCd") String pstSttsCd,
             @Param("missingCd") String missingCd, @Param("foundCd") String foundCd,
             @Param("expiredCd") String expiredCd, @Param("mineYn") boolean mineYn);
+
+    /**
+     * 관리자 목록 조회 (최신순, 만료는 계산한 상태, 찾았어요는 만료 기준 일시 null)
+     */
+    List<AdminLostReportSummary> selectAdminList(@Param("lostTpofSttsCd") String lostTpofSttsCd,
+            @Param("pstSttsCd") String pstSttsCd, @Param("missingCd") String missingCd,
+            @Param("foundCd") String foundCd, @Param("expiredCd") String expiredCd);
 
     /**
      * 상세 조회 (게시글 상태 조건)

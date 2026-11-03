@@ -2,10 +2,12 @@
 
 ## 지금 하는 것
 
-SCR-ADM-091 발송 이력 — 끝 (2026-11-03). `GET /api/admin/notification-logs?page=&size=20&bgngYmd=&endYmd=&notiChnlCd=&notiTypeCd=&sndngRsltCd=` 최신순 페이지, 행 `{ notiSndngLogSn, mbrSn, mbrNcnm, notiTypeCd, notiChnlCd, sndngRsltCd, rtryNmtm, failRsn, sndngDt }`(본문 없음). 모르는 코드·기간 역전 400, 재발송 API 없음. DB 변경 없음
+SCR-ADM-021 실종제보 · 프론트 연결 API 계약 — 끝 (2026-11-03). `GET /api/admin/lost-reports?page=&size=20&lostTpofSttsCd=` 정상 글만 최신순, 행 `{ lostTpofSn, pstSn, pstTtl, lostTpofSttsCd, mbrSn, mbrNcnm, expryCrtrDt, regDt }`(기간 지난 실종은 만료, 찾았어요는 `expryCrtrDt` null), `GET /api/admin/lost-reports/{lostTpofSn}`(찾았어요는 제목·상태·처리 시각만, 연락처·반려동물 정보 없음, 조회수 안 올림). 강제 만료·기간 조정 API 없음. DB 변경 없음
 
 ## 다음에 할 것
 
+- SCR-ADM-021 연결 남음: FN-ADM-021-01·02 (프론트 연결 `features/adminCommunity/api.js` 실종제보 목록·상세 모달, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트에 알릴 것: 필드 이름은 가짜와 같은 `mbrNcnm`·`expryCrtrDt`, 블라인드·삭제 글은 목록에 안 나옴, 상세에 연락처·반려동물 정보 없음
+- 마일스톤 정리(사람): `milestones/LJS.md`의 `## SCR-ADM-021 실종제보 — 대기` 절(KSJ 협의 표기)은 같은 기능 ID를 이번 `· 프론트 연결 API 계약` 절로 끝냈다. 그 절과 `docs/admin/implementation-plan.md` 담당 표기를 사람이 맞춘다
 - 공용 DB 정리(사람): SCR-ADM-091 확인용 발송 이력 4건. `DELETE FROM NOTI_SNDNG_LOG WHERE RGTR_ID='ADM091TEST';`
 - SCR-ADM-091 연결 남음: FN-ADM-091-01 (프론트 연결 `features/adminNotificationLog/api.js` 목록, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트 가짜와 다른 점: 기간 파라미터가 `fromYmd`·`toYmd`가 아니라 `bgngYmd`·`endYmd`(종료일 그날 끝까지 포함)
 - 영수증 다시 열기(가계부 출처): `GET /api/receipts/{recptSn}`이 `petSn` 필수라(`ReceiptController`·`ReceiptService.get`의 양육 권한 검사) 가계부 출처(`AIMC0027`, `petSn` 없음) 영수증은 다시 열 수 없다. 업로드처럼 가계부 출처만 `petSn` 생략 가능하게 고친다(`/start`로 기획). 문의한 쪽(가계부 화면)에 고칠 때까지 다시 열기 없이 진행하라고 알린다

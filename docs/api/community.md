@@ -53,6 +53,8 @@
 | GET | /admin/posts/{pstSn} | 관리자 게시글 상세(상태 무관). 댓글 목록은 `GET /admin/comments?pstSn=`. 없는 글 404 POST_NOT_FOUND | ADM-020-03 | LJS | - | AdminPostDetailResponse |
 | POST | /admin/posts/{pstSn}/blind | 게시글 블라인드(상태 이력, 감사 로그). 정상 글이 아니면 409 ALREADY_PROCESSED, 없는 글 404 POST_NOT_FOUND | ADM-020-04 | LJS | AdminPostStatusChangeRequest | - |
 | POST | /admin/posts/{pstSn}/restore | 블라인드 복구(상태 이력, 감사 로그). 신고 누적 자동 블라인드 포함. 블라인드 글이 아니면 409 ALREADY_PROCESSED, 없는 글 404 POST_NOT_FOUND | ADM-020-05 | LJS | AdminPostStatusChangeRequest | - |
+| GET | /admin/lost-reports | 관리자 실종제보 목록. 정상 게시글만(블라인드·삭제 글은 `/admin/posts`), 최신순 20건씩. 만료 기준 일시가 지난 실종 글은 만료(CMUC0008)로 내리고 필터도 같은 기준. 찾았어요 행은 `expryCrtrDt` null. 강제 만료·기간 조정 API는 없다(ADM-021-03, 결정 12). 모르는 상태 코드 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-021-01·03 | LJS | AdminLostReportSearchCond | PageResponse<AdminLostReportSummary> |
+| GET | /admin/lost-reports/{lostTpofSn} | 관리자 실종제보 상세. 실종·만료는 본문·사진·만료 기준일, 찾았어요는 제목·상태·처리 시각만(결정 13). 조회수는 올리지 않는다. 없거나 정상 글이 아니면 404 LOST_REPORT_NOT_FOUND | ADM-021-02 | LJS | - | AdminLostReportResponse |
 | GET | /admin/comments | 관리자 댓글 목록. 최신순 20건씩, 삭제된 댓글도 원문 표시. `q`는 작성자 닉네임 부분 일치 | ADM-020-06 | LJS | AdminCommentSearchCond | PageResponse<AdminCommentSummary> |
 | POST | /admin/comments/{cmntSn}/deletion | 관리자 댓글 삭제. 사유는 감사 로그에 남긴다(`CMNT`에 사유 컬럼 없음). DELETE 본문 금지라 POST. 이미 삭제면 409 ALREADY_PROCESSED, 없는 댓글 404 COMMENT_NOT_FOUND | ADM-020-06 | LJS | AdminCommentDeleteRequest | - |
 | GET | /admin/reports | 관리자 신고 목록. 최신순 20건씩, 같은 대상 신고 수 포함. 코드가 틀리거나 기간이 뒤집히면 400 INVALID_INPUT_VALUE | ADM-030-01·02 | LJS | AdminReportSearchCond | PageResponse<AdminReportSummary> |
@@ -90,6 +92,46 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | status | String | N | 게시글 상태 코드(CMUG02) | PST.PST_STTS_CD, ADM-020-02 |
 | bgngYmd | LocalDate | N | 작성 시작일 | PST.REG_DT, ADM-020-02 |
 | endYmd | LocalDate | N | 작성 종료일 | PST.REG_DT, ADM-020-02 |
+
+### AdminLostReportSearchCond
+쓰는 API: GET /admin/lost-reports
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| lostTpofSttsCd | String | N | 실종제보 상태 코드(CMUC0006 실종·CMUC0007 찾았어요·CMUC0008 만료). 없으면 전체. 만료는 기간 지난 실종 포함, 실종은 기간 안의 글만 | LOST_TPOF.LOST_TPOF_STTS_CD, ADM-021-01 |
+
+### AdminLostReportSummary
+쓰는 API: GET /admin/lost-reports
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| lostTpofSn | Long | Y | 실종제보 번호 | LOST_TPOF.LOST_TPOF_SN |
+| pstSn | Long | Y | 게시글 번호(게시글·댓글 화면 이동) | LOST_TPOF.PST_SN |
+| pstTtl | String | Y | 제목 | PST.PST_TTL |
+| lostTpofSttsCd | String | Y | 상태 코드(계산한 만료 포함) | LOST_TPOF.LOST_TPOF_STTS_CD |
+| mbrSn | Long | Y | 작성자 회원 번호 | PST.MBR_SN |
+| mbrNcnm | String | Y | 작성자 닉네임 | MBR.MBR_NCNM |
+| expryCrtrDt | LocalDateTime | N | 만료 기준 일시. 찾았어요는 null | LOST_TPOF.EXPRY_CRTR_DT |
+| regDt | LocalDateTime | Y | 작성 일시 | PST.REG_DT |
+
+### AdminLostReportResponse
+쓰는 API: GET /admin/lost-reports/{lostTpofSn}
+
+찾았어요 글은 `lostTpofSn`·`pstSn`·`pstTtl`·`lostTpofSttsCd`·`dscvSwtcDt`만 있고 나머지는 null. 연락처·반려동물 정보는 없다.
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| lostTpofSn | Long | Y | 실종제보 번호 | LOST_TPOF.LOST_TPOF_SN |
+| pstSn | Long | Y | 게시글 번호 | LOST_TPOF.PST_SN |
+| pstTtl | String | Y | 제목 | PST.PST_TTL |
+| lostTpofSttsCd | String | Y | 상태 코드(계산한 만료 포함) | LOST_TPOF.LOST_TPOF_STTS_CD |
+| dscvSwtcDt | LocalDateTime | N | 찾았어요 처리 시각 | LOST_TPOF.DSCV_SWTC_DT |
+| mbrSn | Long | N | 작성자 회원 번호 | PST.MBR_SN |
+| mbrNcnm | String | N | 작성자 닉네임 | MBR.MBR_NCNM |
+| regDt | LocalDateTime | N | 작성 일시 | PST.REG_DT |
+| pstCn | String | N | 본문 | PST.PST_CN |
+| expryCrtrDt | LocalDateTime | N | 만료 기준 일시 | LOST_TPOF.EXPRY_CRTR_DT |
+| imgs | List<PostImageSummary> | N | 사진 `[{ atchFileSn, sortSeq }]` | PST_IMG |
 
 ### AdminReportSearchCond
 쓰는 API: GET /admin/reports
