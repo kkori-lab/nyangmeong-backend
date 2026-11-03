@@ -63,11 +63,17 @@ public class ReceiptService {
 
     /**
      * 회원 영수증 조회 : 결과 다시 열기 (FN-AIM-013-06)
+     * - 가계부 출처만 반려동물 생략 가능 (업로드와 같은 규칙, FN-MYP-031-03)
      */
     @Transactional(readOnly = true)
     public Receipt get(Long mbrSn, Long recptSn, Long petSn) {
-        petAuthorizer.checkCaregiver(mbrSn, petSn);
-        return getOwned(mbrSn, recptSn);
+        Receipt receipt = getOwned(mbrSn, recptSn);
+        if (petSn != null) {
+            petAuthorizer.checkCaregiver(mbrSn, petSn);
+        } else if (ReceiptSource.from(receipt.getOcrDmndSrcCd()) != ReceiptSource.EXPENSE) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return receipt;
     }
 
     /**
