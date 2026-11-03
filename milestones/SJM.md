@@ -113,11 +113,12 @@
 - 결과: 잘못된 제외 번호(조건 밖·남의 지출·없는 번호·삭제된 번호)는 구별하지 않고 모두 409 `EXPENSE_BULK_DELETE_CHANGED`. 검사 뒤 삭제 건수가 기대값과 다르면 409로 롤백한다. 제외 번호는 최대 1000개
 - 연결 남음: FN-MYP-030-18·19·21 (프론트 연결 SCR-MYP-030 전체 선택 뒤 해제한 번호를 `excludeExpndSn`으로 보내기·409 처리, 프론트 저장소에서 /start)
 
-## SCR-MYP-031 가계부 등록/수정 · 등록·수정 미래 날짜 검증 — 대기
+## SCR-MYP-031 가계부 등록/수정 · 등록·수정 미래 날짜 검증 — 끝
 
 - 기능: 명세 기능 ID 추가 없음. FN-MYP-031-02와 걸친다
 - 기다리는 것: 프론트 SCR-MYP-030 (프론트 저장소, 끝남. 사람 결정 2026-11-02: 오늘(KST)까지만 허용. 프론트 폼과 달력은 이미 막았다)
 - 완료 조건: `POST /api/expenses`(`ExpenseService.validate`)와 `PATCH /api/expenses/{expndSn}`(`update`)에서 `EXPND_YMD`가 오늘(KST)보다 뒤면 400(`INVALID_INPUT_VALUE`)이다
+- 연결 남음: 영수증 저장 `ExpenseFake` → `ExpenseService.create` 연결 때 같은 미래 날짜 검사를 받는다 (LJS)
 
 ## SCR-MYP-030 가계부 목록 · 시드 병원 공용 지출 행 수정 — 대기
 
