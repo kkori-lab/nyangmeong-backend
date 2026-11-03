@@ -3,6 +3,7 @@ package com.nyangmeong.support.domain;
 /**
  * [FAQ 카테고리 코드]
  * - CSCG01 (FAQ.FAQ_CLSF_CD)
+ * - 카테고리는 db 기준 파일 SQL 로 바꾼다. 코드를 바꾸면 이 enum 도 같이 고친다 (FN-ADM-041-04)
  */
 public enum FaqCategory {
     USAGE("CSCC0001"),
