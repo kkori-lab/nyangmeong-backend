@@ -3,7 +3,6 @@ package com.nyangmeong.expense.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -16,14 +15,15 @@ import static org.mockito.Mockito.when;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.nyangmeong.expense.domain.Receipt;
 import com.nyangmeong.expense.domain.ReceiptStatus;
-import com.nyangmeong.expense.dto.CheckupCreateCommand;
 import com.nyangmeong.expense.dto.ExpenseCreateCommand;
+import com.nyangmeong.expense.dto.ReceiptCheckupCreateRequest;
 import com.nyangmeong.expense.dto.ReceiptSaveCheckRequest;
 import com.nyangmeong.expense.dto.ReceiptSaveCheckResponse;
 import com.nyangmeong.expense.dto.ReceiptSaveDrugRequest;
@@ -34,6 +34,14 @@ import com.nyangmeong.expense.mapper.ReceiptMapper;
 import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.health.dto.CheckupCreateRequest;
+import com.nyangmeong.health.dto.CheckupResponse;
+import com.nyangmeong.health.dto.NearbyScheduleSummary;
+import com.nyangmeong.health.dto.PrescriptionCreateRequest;
+import com.nyangmeong.health.dto.ReceiptCheckupCommand;
+import com.nyangmeong.health.dto.ReceiptCheckupSummary;
+import com.nyangmeong.health.service.CheckupService;
+import com.nyangmeong.health.service.PrescriptionService;
 
 /**
  * [검사 - 영수증 확인 후 저장·저장 전 확인]
@@ -45,10 +53,17 @@ class ReceiptSaveServiceTest {
     private final ReceiptMapper mapper = mock(ReceiptMapper.class);
     private final ReceiptService receiptService = mock(ReceiptService.class);
     private final PetAuthorizer petAuthorizer = mock(PetAuthorizer.class);
-    private final CheckupRecordFake checkupFake = mock(CheckupRecordFake.class);
-    private final ExpenseFake expenseFake = mock(ExpenseFake.class);
+    private final CheckupService checkupService = mock(CheckupService.class);
+    private final PrescriptionService prescriptionService = mock(PrescriptionService.class);
+    private final ExpenseService expenseService = mock(ExpenseService.class);
     private final ReceiptSaveService service = new ReceiptSaveService(mapper, receiptService, petAuthorizer,
-            checkupFake, expenseFake);
+            checkupService, prescriptionService, expenseService);
+
+    private CheckupResponse checkup(Long ckupRcdSn) {
+        CheckupResponse response = new CheckupResponse();
+        response.setCkupRcdSn(ckupRcdSn);
+        return response;
+    }
 
     private Receipt receipt(ReceiptStatus status, String idmptDmndId) {
         Receipt receipt = new Receipt();
@@ -73,7 +88,7 @@ class ReceiptSaveServiceTest {
 
     private void owned(ReceiptStatus status) {
         when(mapper.selectOwned(3L, 1L)).thenReturn(receipt(status, null));
-        when(checkupFake.create(any())).thenReturn(501L, 502L);
+        when(checkupService.createFromReceipt(anyLong(), anyLong(), any())).thenReturn(checkup(501L), checkup(502L));
     }
 
     @Test
@@ -86,9 +101,8 @@ class ReceiptSaveServiceTest {
         assertThat(saved.created()).isTrue();
         assertThat(saved.response().ckupRcds()).containsExactly(
                 new ReceiptSaveResponse.CheckupRecord(10L, 501L), new ReceiptSaveResponse.CheckupRecord(11L, 502L));
-        verify(checkupFake, times(2)).create(any());
+        verify(checkupService, times(2)).createFromReceipt(anyLong(), anyLong(), any());
         verify(receiptService).markSaved(1L, 3L, ReceiptStatus.RECOGNIZED, "req-1");
-        verify(checkupFake).remember(eq(3L), any());
     }
 
     @Test
@@ -106,23 +120,26 @@ class ReceiptSaveServiceTest {
 
         service.save(1L, 3L, request(pet(10L, 30_000L, false, List.of(drug))));
 
-        ArgumentCaptor<CheckupCreateCommand> captor = ArgumentCaptor.forClass(CheckupCreateCommand.class);
-        verify(checkupFake).create(captor.capture());
-        assertThat(captor.getValue().careRfltYn()).isEqualTo("N");
-        assertThat(captor.getValue().drugs()).containsExactly(drug);
+        ArgumentCaptor<ReceiptCheckupCommand> captor = ArgumentCaptor.forClass(ReceiptCheckupCommand.class);
+        verify(checkupService).createFromReceipt(eq(1L), eq(10L), captor.capture());
+        assertThat(captor.getValue().recptSn()).isEqualTo(3L);
         assertThat(captor.getValue().hsptlNm()).isEqualTo("냥멍동물병원");
+        assertThat(captor.getValue().ckupYmd()).isEqualTo(YMD);
+        verify(prescriptionService).create(1L, 10L,
+                new PrescriptionCreateRequest(501L, "항생제", YMD, YMD.plusDays(5), 2, "HLTC0010", false));
     }
 
     @Test
     void 가계부는_체크하고_금액이_1원_이상인_탭만_기록한다() {
         when(mapper.selectOwned(3L, 1L)).thenReturn(receipt(ReceiptStatus.RECOGNIZED, null));
-        when(checkupFake.create(any())).thenReturn(501L, 502L, 503L);
+        when(checkupService.createFromReceipt(anyLong(), anyLong(), any())).thenReturn(checkup(501L), checkup(502L),
+                checkup(503L));
 
         service.save(1L, 3L, request(pet(10L, 30_000L, true, null), pet(11L, 0L, true, null),
                 pet(12L, 5_000L, false, null)));
 
         ArgumentCaptor<ExpenseCreateCommand> captor = ArgumentCaptor.forClass(ExpenseCreateCommand.class);
-        verify(expenseFake, times(1)).create(captor.capture());
+        verify(expenseService, times(1)).create(captor.capture());
         assertThat(captor.getValue().petSn()).isEqualTo(10L);
         assertThat(captor.getValue().expndAmt()).isEqualTo(30_000L);
         assertThat(captor.getValue().expndYmd()).isEqualTo(YMD);
@@ -138,7 +155,7 @@ class ReceiptSaveServiceTest {
         service.save(1L, 3L, requestWithPlace("  ", pet(10L, 30_000L, true, null)));
 
         ArgumentCaptor<ExpenseCreateCommand> captor = ArgumentCaptor.forClass(ExpenseCreateCommand.class);
-        verify(expenseFake).create(captor.capture());
+        verify(expenseService).create(captor.capture());
         assertThat(captor.getValue().expndPlcusNm()).isNull();
         assertThat(captor.getValue().dtlMttr()).isNull();
     }
@@ -150,32 +167,31 @@ class ReceiptSaveServiceTest {
         service.save(1L, 3L, requestWithPlace("행복동물병원 본점", pet(10L, 30_000L, true, null)));
 
         ArgumentCaptor<ExpenseCreateCommand> captor = ArgumentCaptor.forClass(ExpenseCreateCommand.class);
-        verify(expenseFake).create(captor.capture());
+        verify(expenseService).create(captor.capture());
         assertThat(captor.getValue().expndPlcusNm()).isEqualTo("행복동물병원 본점");
     }
 
     @Test
     void 지출_생성이_실패하면_상태_변경_뒤에_예외가_번져_롤백된다() {
         owned(ReceiptStatus.RECOGNIZED);
-        doThrow(new IllegalStateException("지출 실패")).when(expenseFake).create(any());
+        doThrow(new IllegalStateException("지출 실패")).when(expenseService).create(any(ExpenseCreateCommand.class));
 
         assertThatThrownBy(() -> service.save(1L, 3L, request(pet(10L, 30_000L, true, null))))
                 .isInstanceOf(IllegalStateException.class);
-        verify(checkupFake, never()).remember(anyLong(), any());
+        verify(receiptService).markSaved(1L, 3L, ReceiptStatus.RECOGNIZED, "req-1");
     }
 
     @Test
     void 같은_멱등_ID로_다시_보내면_새로_만들지_않고_같은_결과를_돌려준다() {
         when(mapper.selectOwned(3L, 1L)).thenReturn(receipt(ReceiptStatus.SAVED, "req-1"));
-        List<ReceiptSaveResponse.CheckupRecord> saved = List.of(new ReceiptSaveResponse.CheckupRecord(10L, 501L));
-        when(checkupFake.findByReceipt(3L)).thenReturn(saved);
+        when(checkupService.findReceiptCheckups(3L)).thenReturn(List.of(new ReceiptCheckupSummary(10L, 501L)));
 
         ReceiptSaveService.Saved result = service.save(1L, 3L, request(pet(10L, 30_000L, true, null)));
 
         assertThat(result.created()).isFalse();
-        assertThat(result.response().ckupRcds()).isEqualTo(saved);
-        verify(checkupFake, never()).create(any());
-        verify(expenseFake, never()).create(any());
+        assertThat(result.response().ckupRcds()).containsExactly(new ReceiptSaveResponse.CheckupRecord(10L, 501L));
+        verify(checkupService, never()).createFromReceipt(anyLong(), anyLong(), any());
+        verify(expenseService, never()).create(any(ExpenseCreateCommand.class));
         verify(receiptService, never()).markSaved(anyLong(), anyLong(), any(), any());
     }
 
@@ -198,7 +214,7 @@ class ReceiptSaveServiceTest {
         assertThatThrownBy(() -> service.save(1L, 3L, request(pet(10L, null, false, null))))
                 .isInstanceOfSatisfying(CustomException.class,
                         e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.ALREADY_PROCESSED));
-        verify(checkupFake, never()).create(any());
+        verify(checkupService, never()).createFromReceipt(anyLong(), anyLong(), any());
     }
 
     @Test
@@ -242,7 +258,7 @@ class ReceiptSaveServiceTest {
         assertThatThrownBy(() -> service.save(1L, 3L,
                 request(pet(10L, null, false, null), pet(11L, null, false, null))))
                 .isInstanceOf(CustomException.class);
-        verify(checkupFake, never()).create(any());
+        verify(checkupService, never()).createFromReceipt(anyLong(), anyLong(), any());
         verify(receiptService, never()).markSaved(anyLong(), anyLong(), any(), any());
     }
 
@@ -270,29 +286,84 @@ class ReceiptSaveServiceTest {
                 YMD, 30_000L, null, "냥멍동물병원");
         ReceiptSaveCheckResponse.NearbySchedule nearby = new ReceiptSaveCheckResponse.NearbySchedule(10L, 8L,
                 LocalDateTime.of(2026, 10, 23, 10, 0), "냥멍동물병원");
-        when(expenseFake.findDuplicates(1L, 10L, YMD, 30_000L)).thenReturn(List.of(duplicate));
-        when(checkupFake.existsHospitalSchedule(10L, YMD)).thenReturn(false);
-        when(checkupFake.findNearbyUnlinkedSchedules(eq(10L), eq(YMD), anyInt())).thenReturn(List.of(nearby));
+        when(expenseService.searchDuplicates(1L, 10L, YMD, 30_000L)).thenReturn(List.of(duplicate));
+        when(checkupService.existsHospitalSchedule(10L, YMD)).thenReturn(false);
+        when(checkupService.findNearestUnlinkedSchedule(10L, YMD)).thenReturn(Optional.of(
+                new NearbyScheduleSummary(8L, LocalDateTime.of(2026, 10, 23, 10, 0), "냥멍동물병원")));
+        when(checkupService.existsHospitalSchedule(11L, YMD)).thenReturn(true);
 
         ReceiptSaveCheckResponse result = service.check(1L, 3L, new ReceiptSaveCheckRequest(YMD, List.of(
                 new ReceiptSaveCheckRequest.Pet(10L, 30_000L, true),
                 new ReceiptSaveCheckRequest.Pet(11L, 5_000L, false))));
 
         assertThat(result.duplicateExpenses()).containsExactly(duplicate);
-        assertThat(result.nearbySchedules()).contains(nearby);
-        verify(expenseFake, never()).findDuplicates(eq(1L), eq(11L), any(), any());
-        verify(checkupFake, never()).create(any());
+        assertThat(result.nearbySchedules()).containsExactly(nearby);
+        verify(expenseService, never()).searchDuplicates(eq(1L), eq(11L), any(), any());
+        verify(checkupService, never()).createFromReceipt(anyLong(), anyLong(), any());
     }
 
     @Test
     void 같은_날_병원_일정이_있으면_가까운_일정을_찾지_않는다() {
         when(mapper.selectOwned(3L, 1L)).thenReturn(receipt(ReceiptStatus.RECOGNIZED, null));
-        when(checkupFake.existsHospitalSchedule(10L, YMD)).thenReturn(true);
+        when(checkupService.existsHospitalSchedule(10L, YMD)).thenReturn(true);
 
         ReceiptSaveCheckResponse result = service.check(1L, 3L, new ReceiptSaveCheckRequest(YMD,
                 List.of(new ReceiptSaveCheckRequest.Pet(10L, 30_000L, false))));
 
         assertThat(result.nearbySchedules()).isEmpty();
-        verify(checkupFake, never()).findNearbyUnlinkedSchedules(anyLong(), any(), anyInt());
+        verify(checkupService, never()).findNearestUnlinkedSchedule(anyLong(), any());
+    }
+
+    private ReceiptCheckupCreateRequest directRequest() {
+        return new ReceiptCheckupCreateRequest("req-1", YMD, "냥멍동물병원", "HLTC0002", "진찰", null, null);
+    }
+
+    @Test
+    void 인식_실패_뒤_직접_입력은_영수증을_저장완료로_바꾸고_검진기록에_연결한다() {
+        when(checkupService.create(eq(1L), eq(10L), any(CheckupCreateRequest.class), eq(3L)))
+                .thenReturn(checkup(601L));
+
+        CheckupResponse result = service.createDirectCheckup(1L, 3L, 10L, directRequest());
+
+        assertThat(result.getCkupRcdSn()).isEqualTo(601L);
+        verify(receiptService).markSavedByExpense(1L, 3L, "req-1");
+        verify(checkupService).create(1L, 10L,
+                new CheckupCreateRequest(YMD, "냥멍동물병원", "HLTC0002", "진찰", null, null), 3L);
+        verify(expenseService, never()).create(any(ExpenseCreateCommand.class));
+        verify(prescriptionService, never()).create(anyLong(), anyLong(), any());
+    }
+
+    @Test
+    void 직접_입력_저장은_이미_저장된_영수증이면_409로_막고_검진기록을_만들지_않는다() {
+        doThrow(new CustomException(ErrorCode.RECEIPT_ALREADY_SAVED)).when(receiptService)
+                .markSavedByExpense(1L, 3L, "req-1");
+
+        assertThatThrownBy(() -> service.createDirectCheckup(1L, 3L, 10L, directRequest()))
+                .isInstanceOfSatisfying(CustomException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.RECEIPT_ALREADY_SAVED));
+        verify(checkupService, never()).create(anyLong(), anyLong(), any(), any());
+    }
+
+    @Test
+    void 직접_입력_저장은_남의_영수증이면_404다() {
+        doThrow(new CustomException(ErrorCode.RECEIPT_NOT_FOUND)).when(receiptService)
+                .markSavedByExpense(1L, 3L, "req-1");
+
+        assertThatThrownBy(() -> service.createDirectCheckup(1L, 3L, 10L, directRequest()))
+                .isInstanceOfSatisfying(CustomException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.RECEIPT_NOT_FOUND));
+        verify(checkupService, never()).create(anyLong(), anyLong(), any(), any());
+    }
+
+    @Test
+    void 직접_입력_저장은_다른_영수증이_쓴_멱등_ID면_이미_처리된_요청_409다() {
+        Receipt other = receipt(ReceiptStatus.SAVED, "req-1");
+        other.setRecptSn(99L);
+        when(mapper.selectByIdmptDmndId("req-1")).thenReturn(other);
+
+        assertThatThrownBy(() -> service.createDirectCheckup(1L, 3L, 10L, directRequest()))
+                .isInstanceOfSatisfying(CustomException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.ALREADY_PROCESSED));
+        verify(receiptService, never()).markSavedByExpense(anyLong(), anyLong(), any());
     }
 }

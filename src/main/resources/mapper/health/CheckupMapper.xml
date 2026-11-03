@@ -91,6 +91,54 @@
          LIMIT 1
     </select>
 
+    <resultMap id="nearbyScheduleResultMap" type="com.nyangmeong.health.dto.NearbyScheduleSummary">
+        <id     column="SCHDL_SN" property="schdlSn" />
+        <result column="SCHDL_DT" property="schdlDt" />
+        <result column="HSPTL_NM" property="hsptlNm" />
+    </resultMap>
+
+    <resultMap id="receiptCheckupResultMap" type="com.nyangmeong.health.dto.ReceiptCheckupSummary">
+        <id     column="CKUP_RCD_SN" property="ckupRcdSn" />
+        <result column="PET_SN"      property="petSn" />
+    </resultMap>
+
+    <select id="selectNearestUnlinkedHospitalSchedule" resultMap="nearbyScheduleResultMap">
+        /* 검진일 앞뒤 N일 안의 검진기록 미연결 병원 일정 중 가장 가까운 1건 */
+        SELECT S.SCHDL_SN
+             , S.SCHDL_DT
+             , S.HSPTL_NM
+          FROM SCHDL S
+         WHERE S.PET_SN = #{petSn}
+           AND S.SCHDL_KND_CD = #{hospitalCd}
+           AND S.DEL_YN = 'N'
+           AND S.SCHDL_DT &gt;= DATE_SUB(#{ymd}, INTERVAL #{days} DAY)
+           AND S.SCHDL_DT &lt; DATE_ADD(#{ymd}, INTERVAL #{days} + 1 DAY)
+           AND NOT EXISTS (
+               SELECT 1
+                 FROM CKUP_RCD C
+                WHERE C.SCHDL_SN = S.SCHDL_SN
+                  AND C.CKUP_RCD_STTS_CD = #{completedCd}
+                  AND C.DEL_YN = 'N'
+               )
+         ORDER BY ABS(DATEDIFF(S.SCHDL_DT, #{ymd}))
+                , S.SCHDL_SN
+         LIMIT 1
+    </select>
+
+    <select id="selectReceiptCheckups" resultMap="receiptCheckupResultMap">
+        /* 영수증으로 만든 완료 상태 검진기록 목록 */
+        SELECT S.PET_SN
+             , C.CKUP_RCD_SN
+          FROM CKUP_RCD C
+         INNER JOIN SCHDL S
+            ON S.SCHDL_SN = C.SCHDL_SN
+           AND S.DEL_YN = 'N'
+         WHERE C.RECPT_SN = #{recptSn}
+           AND C.CKUP_RCD_STTS_CD = #{completedCd}
+           AND C.DEL_YN = 'N'
+         ORDER BY C.CKUP_RCD_SN
+    </select>
+
     <select id="existsLinkedCheckup" resultType="boolean">
         /* 일정에 연결된 완료 상태 검진기록 존재 여부 */
         SELECT EXISTS (

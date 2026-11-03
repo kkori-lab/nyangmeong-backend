@@ -286,7 +286,7 @@
 | schdlSn | Long | N | [옮겨 연결하기]를 고른 경우만. 같은 반려동물·검진기록 미연결 병원 일정, 검진일 앞뒤 7일. 일정 날짜를 검진일로 옮기고 연결 | CKUP_RCD.SCHDL_SN, HLT-002-46 |
 
 ### CheckupResponse
-쓰는 API: GET /pets/{petSn}/checkups/{ckupRcdSn}; PATCH /pets/{petSn}/checkups/{ckupRcdSn}; POST /pets/{petSn}/checkups; POST /receipts/{recptSn}/checkups (expense? API도 이 DTO를 씀)
+쓰는 API: GET /pets/{petSn}/checkups/{ckupRcdSn}; PATCH /pets/{petSn}/checkups/{ckupRcdSn}; POST /pets/{petSn}/checkups; POST /receipts/{recptSn}/checkups?petSn= (`docs/api/receipt.md`, 영수증 [직접 입력])
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | ckupRcdSn | Long | Y | | CKUP_RCD.CKUP_RCD_SN |
