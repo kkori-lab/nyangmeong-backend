@@ -99,7 +99,7 @@
   - PetMapperXmlTest(새로 만듦, 다른 도메인의 \*MapperXmlTest 방식): selectLinkedCoParentRels가 그 반려동물의 USE_YN='Y' 공동양육자만 고르고(주양육자·해제된 행 제외), updateBrupRelUnlink가 USE_YN='Y' 행만 해제하고 RPRS_PET_YN도 'N'으로 바꾼다
 - 비고: 구현은 끝남. 이력 유형은 FORCED_UNLINKED가 아니라 PET_DELETED(PETC0027)
 
-## SCR-MYP-005 공동양육자 추가 · 수락 카드 품종 필드 추가 — 대기
+## SCR-MYP-005 공동양육자 추가 · 수락 카드 품종 필드 추가 — 끝
 
 - 기능: 명세 기능 ID 추가 없음. FN-MYP-005-05와 걸친다
 - 기다리는 것: 프론트 SCR-MYP-005 수락 카드 (프론트 저장소, 끝남. 응답에 `vrtyNm`·`vrtyDrctInptNm`이 있으면 직접입력 우선으로 품종 줄을 보이게 만들어 뒀다)

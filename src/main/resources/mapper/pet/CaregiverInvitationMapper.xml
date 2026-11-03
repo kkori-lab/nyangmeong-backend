@@ -21,6 +21,8 @@
         <id     column="PET_SN"            property="petSn" />
         <result column="PET_NM"            property="petNm" />
         <result column="PET_SE_CD"         property="petSeCd" />
+        <result column="VRTY_NM"           property="vrtyNm" />
+        <result column="VRTY_DRCT_INPT_NM" property="vrtyDrctInptNm" />
         <result column="PET_INVTN_STTS_CD" property="invtnSttsCd" />
     </resultMap>
 
@@ -77,6 +79,8 @@
              , P.PET_SN
              , P.PET_NM
              , P.PET_SE_CD
+             , V.VRTY_NM
+             , P.VRTY_DRCT_INPT_NM
              , <include refid="effectivePetStatus" /> AS PET_INVTN_STTS_CD
           FROM JNT_BRUP_INVTN I
           JOIN INVTN_TRGT_PET T
@@ -85,6 +89,8 @@
           JOIN PET P
             ON P.PET_SN = T.PET_SN
            AND P.DEL_YN = 'N'
+          LEFT JOIN VRTY V
+            ON V.VRTY_SN = P.VRTY_SN
           LEFT JOIN MBR M
             ON M.MBR_SN = I.RCVR_MBR_SN
          WHERE I.SNDR_MBR_SN = #{sndrMbrSn}
@@ -98,6 +104,8 @@
         SELECT P.PET_SN
              , P.PET_NM
              , P.PET_SE_CD
+             , V.VRTY_NM
+             , P.VRTY_DRCT_INPT_NM
              , <include refid="effectivePetStatus" /> AS PET_INVTN_STTS_CD
           FROM INVTN_TRGT_PET T
           JOIN JNT_BRUP_INVTN I
@@ -105,6 +113,8 @@
           JOIN PET P
             ON P.PET_SN = T.PET_SN
            AND P.DEL_YN = 'N'
+          LEFT JOIN VRTY V
+            ON V.VRTY_SN = P.VRTY_SN
          WHERE T.JNT_BRUP_INVTN_SN = #{jntBrupInvtnSn}
            AND T.DEL_YN = 'N'
          ORDER BY T.INVTN_TRGT_PET_SN
