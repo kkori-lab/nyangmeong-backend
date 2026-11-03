@@ -463,6 +463,18 @@
 - 기다리는 것: 프론트 SCR-ADM-050(끝, 가짜 응답 `features/adminNews/api.js`). FN-ADM-050-07 뉴스 수집 실행은 기존 `POST /api/admin/batches/SYSC0028/run`으로 이미 연결됨
 - 완료 조건: `GET /api/admin/news?newsSrcCd=&newsClsfCd=&page=&size=20`(최신순 `{ content, page, size, totalElements, totalPages, hasNext }`, content 행은 `News` 필드 `{ newsSn, atchFileSn, newsClsfCd, newsSrcCd, newsTtl, newsCn, srcPressNm, orgtxtPath, pblcnDt, useYn, regDt, mdfcnDt, thmbUrlPath }`, 숨긴 기사 포함), `POST /api/admin/news`(관리자 등록 `{ newsTtl, newsCn, newsClsfCd }` + 썸네일 파일 선택, 출처 CMUC0023, → `{ newsSn }`), `PATCH /api/admin/news/{newsSn}`(관리자 등록은 제목·요약·카테고리·썸네일, 수집 기사는 `useYn`·`newsClsfCd`), `GET /api/admin/news/keywords`(`[{ kwrdDictSn, mpngCd, kwrdCn, sortSeq }]`, KWRD_DICT `DICT_USG_CD` AIMC0039)·`POST` `{ mpngCd, kwrdCn }` → `{ kwrdDictSn }`(같은 카테고리 중복은 409)·`DELETE …/keywords/{kwrdDictSn}`. `useYn`은 true/false. 숨긴 수집 기사는 사용자 뉴스에서 빠진다. 글자 수(프론트 가정 제목 200·요약 1000·키워드 50)와 필드 이름을 정해 프론트에 알린다
 
+## SCR-MYP-031 영수증 업로드 · 가계부 출처 다시 열기 — 끝
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-AIM-013-06(결과 다시 열기), FN-MYP-031-03(가계부 출처, 화면 SJM)
+- 기다리는 것: 없음
+- 완료 조건: `GET /api/receipts/{recptSn}`이 가계부 출처(`AIMC0027`) 영수증은 `petSn` 없이 200(응답 `petSn` null)을 돌려주고, 그 밖의 출처는 `petSn`이 없으면 400 `INVALID_INPUT_VALUE`다
+- 완료 조건 결과: 검증 `통과`(2026-11-03, 잠금을 버린 뒤 1회차. 처음 1회차는 권한 검사를 영수증 조회보다 먼저 해 없는 영수증 + 남의 반려동물이 403이라 실패), 사람 확인 2026-11-03. 바뀐 것: 없는 영수증 + 남의 반려동물은 404 `RECEIPT_NOT_FOUND`
+- 연결 남음: FN-AIM-013-06 (프론트 연결 가계부 화면의 영수증 다시 열기, 화면 SJM, 프론트 저장소에서 /start)
+
+## SCR-ADM-101 품종·지역 · 프론트 연결 품종 관리 API — 대기
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-101-01
+- 기다리는 것: 프론트 SCR-ADM-101(끝, 가짜 응답 `features/adminBreedRegion/api.js`). FN-ADM-101-02 지역 조회는 기존 공용 `GET /api/regions?upRgnSn=`로 이미 연결됨(프론트는 전북 `admdstCd` 5200000000 하위만 보임)
+- 완료 조건: `GET /api/admin/breeds?petSeCd=`(사용 안 함 포함, 정렬순 `[{ vrtySn, vrtyCd, vrtyNm, petSeCd, sortSeq, useYn }]`), `POST /api/admin/breeds` `{ petSeCd, vrtyNm, sortSeq, useYn }` → 품종 행(`vrtyCd`는 서버가 매김), `PATCH /api/admin/breeds/{vrtySn}` `{ vrtyNm, sortSeq, useYn }`(종·코드는 안 바꿈). 같은 종에 같은 이름(공백 무시)이면 409, 없는 품종 404. `useYn`은 true/false. 사용을 끈 품종은 공용 `GET /api/breeds`에서 빠진다. 이름 글자 수(프론트 가정 50)를 정해 프론트에 알린다
+
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
 - FN-COM-002-11: 채팅 안 읽은 수 API는 KSJ(채팅, 마일스톤 담당 표 COM-009)

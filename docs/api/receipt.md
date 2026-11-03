@@ -8,7 +8,7 @@
 
 | 메서드 | 경로 | 설명 | 기능 ID | 담당 | 요청 DTO | 응답 DTO |
 | --- | --- | --- | --- | --- | --- | --- |
-| GET | /receipts/{recptSn}?petSn= | 분석 결과 다시 열기(대화창 [확인 후 저장] → 본창 인식 결과 확인 모달). 모양은 Python `POST /ai/receipts` 응답 `{recptSn, ocr}`에 `petSn`·상태를 더한 것이다. `ocr`은 저장된 OCR 응답 그대로(가공 없음)이고 인식 성공·부분 인식·저장 완료일 때만, 그 밖은 null. 일시 오류는 `failRsn`. `petSn`은 진입 반려동물(돌봄 권한 검사)이고 요청값을 그대로 돌려준다. 올린 회원 본인만 조회한다(공동양육자 불가). 오류: `RECEIPT_NOT_FOUND`(404, 남의·없는 영수증) | AIM-013-06 | LJS | - | ReceiptResultResponse |
+| GET | /receipts/{recptSn}?petSn= | 분석 결과 다시 열기(대화창 [확인 후 저장] → 본창 인식 결과 확인 모달). 모양은 Python `POST /ai/receipts` 응답 `{recptSn, ocr}`에 `petSn`·상태를 더한 것이다. `ocr`은 저장된 OCR 응답 그대로(가공 없음)이고 인식 성공·부분 인식·저장 완료일 때만, 그 밖은 null. 일시 오류는 `failRsn`. `petSn`은 진입 반려동물(주면 돌봄 권한 검사)이고 요청값을 그대로 돌려준다. 가계부 출처(`AIMC0027`)만 생략 가능하고 생략하면 응답 `petSn`은 null, 그 밖의 출처에서 없으면 400 `INVALID_INPUT_VALUE`(업로드와 같은 규칙). 올린 회원 본인만 조회한다(공동양육자 불가). 오류: `INVALID_INPUT_VALUE`(400, 가계부 아닌 출처에 `petSn` 없음), `RECEIPT_NOT_FOUND`(404, 남의·없는 영수증) | AIM-013-06 | LJS | - | ReceiptResultResponse |
 | GET | /receipts/{recptSn}/image | 영수증 원본 이미지. 남의·없는 영수증은 404 `RECEIPT_NOT_FOUND` | AIM-009-01 | LJS | - | 이미지 파일 |
 | POST | /receipts/{recptSn}/save-check | 저장 전 확인. 가계부 중복 후보와 검진일 앞뒤 7일의 미연결 병원 일정. 저장하지 않는다. 오류: `RECEIPT_ALREADY_SAVED`(409, 저장완료 영수증. `save`와 같은 안내), `RECEIPT_NOT_FOUND`(404) | AIM-009-22·23, HLT-002-46 | LJS | ReceiptSaveCheckRequest | ReceiptSaveCheckResponse |
 | POST | /receipts/{recptSn}/save | 확인 후 저장. 반려동물별 검진기록·병원 일정 연결/생성·처방약·가계부 지출을 한 트랜잭션으로, 영수증 상태 저장완료. 처음 201, 같은 `idmptDmndId` 재전송은 200과 같은 응답. 오류: `RECEIPT_NOT_SAVABLE`·`RECEIPT_ALREADY_SAVED`·`RECEIPT_ALREADY_CANCELED`·`RECEIPT_ANALYZING`·`ALREADY_PROCESSED`(409), `RECEIPT_NOT_FOUND`(404), `INVALID_INPUT_VALUE`(400, 가계부 지출을 만드는 반려동물이 있고 `ckupYmd`가 오늘(KST)보다 뒤) | AIM-009-07~11·24·26·27, AIM-010-06, HLT-002-31·35·37~41·45 | LJS | ReceiptSaveRequest | ReceiptSaveResponse |
@@ -23,7 +23,7 @@
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | recptSn | Long | Y | | RECPT.RECPT_SN |
-| petSn | Long | Y | 요청한 진입 반려동물 그대로 | PET.PET_SN, AIM-013-06 |
+| petSn | Long | N | 요청한 진입 반려동물 그대로. 가계부 출처(`AIMC0027`)를 `petSn` 없이 열면 null | PET.PET_SN, AIM-013-06, MYP-031-03 |
 | ocrPrcsSttsCd | String | Y | AIMG01 | RECPT.OCR_PRCS_STTS_CD |
 | failRsn | String | N | 일시 오류 사유 `TIMEOUT`·`API_ERROR`, 그 밖은 null | RECPT_STTS_HSTRY.CHG_RSN, AIM-010-07 |
 | ocr | ReceiptOcrResponse | N | 저장된 OCR 응답 그대로. 인식 성공·부분 인식·저장 완료만, 그 밖은 null. 모양은 아래 ReceiptOcrResponse | RECPT.OCR_RSPNS_JSON |

@@ -36,7 +36,7 @@ public class ReceiptController {
     @Operation(summary = "영수증 분석 결과 다시 열기")
     @GetMapping("/{recptSn}")
     public ResponseEntity<ApiResponse<ReceiptResultResponse>> get(@AuthenticationPrincipal LoginMember me,
-            @PathVariable Long recptSn, @RequestParam Long petSn) {
+            @PathVariable Long recptSn, @RequestParam(required = false) Long petSn) {
         return ResponseEntity.ok(ApiResponse.success(receiptAnalyzer.getResult(me.id(), recptSn, petSn)));
     }
 
