@@ -433,10 +433,12 @@
 - 완료 조건 결과: 위 `SCR-ADM-091 발송 이력` 절과 같이 끝(2026-11-03). 정한 것: 기간 `bgngYmd`·`endYmd`(가짜 `fromYmd`·`toYmd`와 다름), 닉네임 `mbrNcnm`(가짜와 같음)
 - 연결 남음: FN-ADM-091-01 (프론트 연결 `features/adminNotificationLog/api.js` 목록, 프론트 저장소에서 /start)
 
-## SCR-ADM-021 실종제보 · 프론트 연결 API 계약 — 대기
+## SCR-ADM-021 실종제보 · 프론트 연결 API 계약 — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-021-01·02·03
 - 기다리는 것: 프론트 SCR-ADM-021(끝, 가짜 응답 `features/adminCommunity/api.js`). 담당은 LJS(사람 2026-11-03 "관리자 화면이라 둘 다 함". 위 SCR-ADM-021 절의 KSJ 협의 표기와 `docs/admin/implementation-plan.md` 담당 표기는 사람이 맞춘다)
 - 완료 조건: `GET /api/admin/lost-reports?page=&size=20&lostTpofSttsCd=`(최신순, `{ content, page, size, totalElements, totalPages, hasNext }`, content 행 `{ lostTpofSn, pstSn, pstTtl, lostTpofSttsCd, mbrSn, mbrNcnm, expryCrtrDt, regDt }`, 상태는 CMUC0006 실종·CMUC0007 찾았어요·CMUC0008 만료), `GET /api/admin/lost-reports/{lostTpofSn}`(실종·만료는 회원용 `LostReportResponse`처럼 `pstCn`·`imgs[{ atchFileSn, sortSeq }]`·`expryCrtrDt`(관리자에게도 노출) 포함, 찾았어요는 `LostReportResponse.closed`처럼 `lostTpofSn·pstSn·pstTtl·lostTpofSttsCd·dscvSwtcDt`만)가 프론트 가짜와 같은 모양으로 동작한다. 강제 만료·기간 조정 API는 만들지 않는다(결정 12). 관리자 목록 필드 이름(가짜 `mbrNcnm`·`expryCrtrDt`)을 정해 프론트에 알린다
+- 완료 조건 결과: 검증 `통과`(2026-11-03, 1회차), 사람 확인 2026-11-03
+- 연결 남음: FN-ADM-021-01·02 (프론트 연결 `features/adminCommunity/api.js` 실종제보 목록·상세 모달, 프론트 저장소에서 /start)
 
 ## SCR-MYP-031 영수증 업로드 · 가계부 출처 OCR 내부 API — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-MYP-031-03·05(가계부 SJM), FN-AIM-010-01(인식 판정)

@@ -194,6 +194,48 @@
                 , L.LOST_TPOF_SN DESC
     </select>
 
+    <resultMap id="adminLostReportSummaryResultMap" type="com.nyangmeong.community.dto.AdminLostReportSummary">
+        <id     column="LOST_TPOF_SN"      property="lostTpofSn" />
+        <result column="PST_SN"            property="pstSn" />
+        <result column="PST_TTL"           property="pstTtl" />
+        <result column="LOST_TPOF_STTS_CD" property="lostTpofSttsCd" />
+        <result column="MBR_SN"            property="mbrSn" />
+        <result column="MBR_NCNM"          property="mbrNcnm" />
+        <result column="EXPRY_CRTR_DT"     property="expryCrtrDt" />
+        <result column="REG_DT"            property="regDt" />
+    </resultMap>
+
+    <select id="selectAdminList" resultMap="adminLostReportSummaryResultMap">
+        SELECT L.LOST_TPOF_SN
+             , L.PST_SN
+             , P.PST_TTL
+             , CASE WHEN <include refid="expiredCond" /> THEN #{expiredCd} ELSE L.LOST_TPOF_STTS_CD END AS LOST_TPOF_STTS_CD
+             , P.MBR_SN
+             , M.MBR_NCNM
+             , CASE WHEN L.LOST_TPOF_STTS_CD = #{foundCd} THEN NULL ELSE L.EXPRY_CRTR_DT END AS EXPRY_CRTR_DT
+             , P.REG_DT
+          FROM LOST_TPOF L
+          JOIN PST P
+            ON P.PST_SN = L.PST_SN
+          JOIN MBR M
+            ON M.MBR_SN = P.MBR_SN
+         WHERE P.PST_STTS_CD = #{pstSttsCd}
+        <choose>
+            <when test="lostTpofSttsCd == expiredCd">
+           AND <include refid="expiredCond" />
+            </when>
+            <when test="lostTpofSttsCd == missingCd">
+           AND L.LOST_TPOF_STTS_CD = #{missingCd}
+           AND L.EXPRY_CRTR_DT <![CDATA[>=]]> NOW()
+            </when>
+            <when test="lostTpofSttsCd != null">
+           AND L.LOST_TPOF_STTS_CD = #{lostTpofSttsCd}
+            </when>
+        </choose>
+         ORDER BY P.REG_DT DESC
+                , L.LOST_TPOF_SN DESC
+    </select>
+
     <select id="selectDetail" resultMap="lostReportDetailResultMap">
         SELECT <include refid="lostReportColumns" />
              , P.MBR_SN
