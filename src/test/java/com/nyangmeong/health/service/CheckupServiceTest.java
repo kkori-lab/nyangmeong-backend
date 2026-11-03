@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,7 @@ import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.health.domain.CheckupRecord;
+import com.nyangmeong.health.domain.CheckupSource;
 import com.nyangmeong.health.domain.CheckupStatus;
 import com.nyangmeong.health.domain.HealthCodeGroup;
 import com.nyangmeong.health.domain.Schedule;
@@ -34,6 +36,9 @@ import com.nyangmeong.health.dto.CheckupCreateRequest;
 import com.nyangmeong.health.dto.CheckupResponse;
 import com.nyangmeong.health.dto.CheckupSearchCond;
 import com.nyangmeong.health.dto.CheckupUpdateRequest;
+import com.nyangmeong.health.dto.NearbyScheduleSummary;
+import com.nyangmeong.health.dto.ReceiptCheckupCommand;
+import com.nyangmeong.health.dto.ReceiptCheckupSummary;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.health.mapper.CareScheduleMapper;
 import com.nyangmeong.health.mapper.CheckupMapper;
@@ -315,5 +320,108 @@ class CheckupServiceTest {
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode").isEqualTo(ErrorCode.CHECKUP_NOT_FOUND);
         verify(checkupMapper, never()).updateStatus(anyLong(), anyString(), anyString());
+    }
+
+    private ReceiptCheckupCommand receiptCommand(Long schdlSn) {
+        return new ReceiptCheckupCommand(3L, YMD, " 튼튼동물병원 ", TYPE, "진찰료", null, schdlSn);
+    }
+
+    @Test
+    void 영수증_검진기록은_영수증을_연결하고_출처를_영수증으로_저장한다() {
+        when(checkupMapper.selectHospitalScheduleSn(PET, YMD, HOSPITAL)).thenReturn(SCHDL);
+
+        CheckupResponse response = service.createFromReceipt(MBR, PET, receiptCommand(null));
+
+        ArgumentCaptor<CheckupRecord> captor = ArgumentCaptor.forClass(CheckupRecord.class);
+        verify(checkupMapper).insertCheckup(captor.capture());
+        assertThat(captor.getValue().getRecptSn()).isEqualTo(3L);
+        assertThat(captor.getValue().getRcdSrcCd()).isEqualTo(CheckupSource.RECEIPT_OCR.getCode());
+        assertThat(captor.getValue().getSchdlSn()).isEqualTo(SCHDL);
+        assertThat(captor.getValue().getHsptlNm()).isEqualTo("튼튼동물병원");
+        assertThat(response.getCkupRcdSn()).isEqualTo(CKUP);
+        verify(checkupMapper).insertStatusHistory(CKUP, MBR, null, COMPLETED);
+        verify(careScheduleMapper, never()).insertSchedule(any());
+    }
+
+    @Test
+    void 영수증_검진기록은_같은_날_병원_일정이_없으면_일정을_만든다() {
+        when(checkupMapper.selectHospitalScheduleSn(PET, YMD, HOSPITAL)).thenReturn(null);
+
+        service.createFromReceipt(MBR, PET, receiptCommand(null));
+
+        ArgumentCaptor<Schedule> captor = ArgumentCaptor.forClass(Schedule.class);
+        verify(careScheduleMapper).insertSchedule(captor.capture());
+        assertThat(captor.getValue().getSchdlDt()).isEqualTo(YMD.atStartOfDay());
+        ArgumentCaptor<CheckupRecord> record = ArgumentCaptor.forClass(CheckupRecord.class);
+        verify(checkupMapper).insertCheckup(record.capture());
+        assertThat(record.getValue().getSchdlSn()).isEqualTo(777L);
+    }
+
+    @Test
+    void 영수증_검진기록은_고른_가까운_일정을_검진일로_옮겨_연결한다() {
+        when(careScheduleMapper.selectSchedule(SCHDL)).thenReturn(hospitalSchedule(SCHDL, PET, YMD.plusDays(3), "N"));
+
+        service.createFromReceipt(MBR, PET, receiptCommand(SCHDL));
+
+        ArgumentCaptor<Schedule> captor = ArgumentCaptor.forClass(Schedule.class);
+        verify(careScheduleMapper).updateSchedule(captor.capture(), eq(String.valueOf(MBR)));
+        assertThat(captor.getValue().getSchdlDt()).isEqualTo(YMD.atStartOfDay());
+        verify(careScheduleMapper, never()).insertSchedule(any());
+    }
+
+    @Test
+    void 영수증_검진기록은_연동되지_않은_반려동물이면_만들지_않는다() {
+        doThrow(new CustomException(ErrorCode.FORBIDDEN)).when(petAuthorizer).checkCaregiver(MBR, PET);
+
+        assertThatThrownBy(() -> service.createFromReceipt(MBR, PET, receiptCommand(null)))
+                .isInstanceOf(CustomException.class);
+        verify(checkupMapper, never()).insertCheckup(any());
+    }
+
+    @Test
+    void 영수증을_연결한_직접_등록은_출처가_직접_입력이다() {
+        service.create(MBR, PET, create(YMD, null), 3L);
+
+        ArgumentCaptor<CheckupRecord> captor = ArgumentCaptor.forClass(CheckupRecord.class);
+        verify(checkupMapper).insertCheckup(captor.capture());
+        assertThat(captor.getValue().getRecptSn()).isEqualTo(3L);
+        assertThat(captor.getValue().getRcdSrcCd()).isEqualTo(CheckupSource.DIRECT.getCode());
+    }
+
+    @Test
+    void 영수증_없는_직접_등록은_영수증을_연결하지_않는다() {
+        service.create(MBR, PET, create(YMD, null));
+
+        ArgumentCaptor<CheckupRecord> captor = ArgumentCaptor.forClass(CheckupRecord.class);
+        verify(checkupMapper).insertCheckup(captor.capture());
+        assertThat(captor.getValue().getRecptSn()).isNull();
+        assertThat(captor.getValue().getRcdSrcCd()).isEqualTo(CheckupSource.DIRECT.getCode());
+    }
+
+    @Test
+    void 영수증으로_만든_검진기록은_완료_상태만_조회한다() {
+        List<ReceiptCheckupSummary> rows = List.of(new ReceiptCheckupSummary(PET, CKUP));
+        when(checkupMapper.selectReceiptCheckups(3L, COMPLETED)).thenReturn(rows);
+
+        assertThat(service.findReceiptCheckups(3L)).isEqualTo(rows);
+    }
+
+    @Test
+    void 같은_날짜_병원_일정이_있는지_확인한다() {
+        when(checkupMapper.selectHospitalScheduleSn(PET, YMD, HOSPITAL)).thenReturn(SCHDL);
+        when(checkupMapper.selectHospitalScheduleSn(OTHER_PET, YMD, HOSPITAL)).thenReturn(null);
+
+        assertThat(service.existsHospitalSchedule(PET, YMD)).isTrue();
+        assertThat(service.existsHospitalSchedule(OTHER_PET, YMD)).isFalse();
+    }
+
+    @Test
+    void 가까운_미연결_병원_일정은_앞뒤_7일_완료_검진기록_기준으로_1건만_찾는다() {
+        NearbyScheduleSummary nearby = new NearbyScheduleSummary(SCHDL, YMD.plusDays(2).atStartOfDay(), "원래병원");
+        when(checkupMapper.selectNearestUnlinkedHospitalSchedule(PET, YMD, 7, HOSPITAL, COMPLETED))
+                .thenReturn(nearby);
+
+        assertThat(service.findNearestUnlinkedSchedule(PET, YMD)).contains(nearby);
+        assertThat(service.findNearestUnlinkedSchedule(OTHER_PET, YMD)).isEmpty();
     }
 }

@@ -7,8 +7,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.expense.dto.ReceiptCheckupCreateRequest;
 import com.nyangmeong.expense.dto.ReceiptSaveCheckRequest;
 import com.nyangmeong.expense.dto.ReceiptSaveCheckResponse;
 import com.nyangmeong.expense.dto.ReceiptSaveRequest;
@@ -16,6 +18,7 @@ import com.nyangmeong.expense.dto.ReceiptSaveResponse;
 import com.nyangmeong.expense.service.ReceiptSaveService;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
+import com.nyangmeong.health.dto.CheckupResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -25,6 +28,7 @@ import lombok.RequiredArgsConstructor;
  * [영수증 확인 후 저장 컨트롤러]
  * - 영수증 인식 결과 확인 모달의 저장 전 확인·일괄 저장 (SCR-AIM-008, 화면은 SCR-HLT-002)
  * - 같은 멱등 요청 ID 의 재전송은 201 이 아니라 200 으로 같은 결과를 돌려준다
+ * - 영수증 인식 실패 뒤 [직접 입력] 검진기록 등록 (SCR-HLT-002 FN-HLT-002-31)
  */
 @RestController
 @RequiredArgsConstructor
@@ -49,5 +53,14 @@ public class ReceiptSaveController {
             return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(saved.response()));
         }
         return ResponseEntity.ok(ApiResponse.success(saved.response()));
+    }
+
+    @Operation(summary = "영수증 인식 실패 뒤 [직접 입력] 검진기록 등록(영수증 저장완료·연결, 가계부 없음)")
+    @PostMapping("/{recptSn}/checkups")
+    public ResponseEntity<ApiResponse<CheckupResponse>> createDirectCheckup(@AuthenticationPrincipal LoginMember me,
+            @PathVariable Long recptSn, @RequestParam Long petSn,
+            @Valid @RequestBody ReceiptCheckupCreateRequest req) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.created(receiptSaveService.createDirectCheckup(me.id(), recptSn, petSn, req)));
     }
 }

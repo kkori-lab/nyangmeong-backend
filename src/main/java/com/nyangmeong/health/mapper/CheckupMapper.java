@@ -10,6 +10,8 @@ import com.nyangmeong.health.domain.CheckupRecord;
 import com.nyangmeong.health.dto.CheckupResponse;
 import com.nyangmeong.health.dto.CheckupSearchCond;
 import com.nyangmeong.health.dto.CheckupSummary;
+import com.nyangmeong.health.dto.NearbyScheduleSummary;
+import com.nyangmeong.health.dto.ReceiptCheckupSummary;
 
 /**
  * [검진기록 매퍼]
@@ -34,6 +36,19 @@ public interface CheckupMapper {
      */
     Long selectHospitalScheduleSn(@Param("petSn") Long petSn, @Param("ymd") LocalDate ymd,
             @Param("hospitalCd") String hospitalCd);
+
+    /**
+     * 검진일 앞뒤 days 일 안의 검진기록 미연결 병원 일정 중 검진일과 가장 가까운 1건 (같으면 먼저 등록된 일정)
+     */
+    NearbyScheduleSummary selectNearestUnlinkedHospitalSchedule(@Param("petSn") Long petSn,
+            @Param("ymd") LocalDate ymd, @Param("days") int days, @Param("hospitalCd") String hospitalCd,
+            @Param("completedCd") String completedCd);
+
+    /**
+     * 영수증으로 만든 완료 상태 검진기록 목록 (등록순)
+     */
+    List<ReceiptCheckupSummary> selectReceiptCheckups(@Param("recptSn") Long recptSn,
+            @Param("completedCd") String completedCd);
 
     /**
      * 일정에 연결된 완료 상태 검진기록 존재 여부

@@ -12,6 +12,7 @@
 | GET | /receipts/{recptSn}/image | 영수증 원본 이미지. 남의·없는 영수증은 404 `RECEIPT_NOT_FOUND` | AIM-009-01 | LJS | - | 이미지 파일 |
 | POST | /receipts/{recptSn}/save-check | 저장 전 확인. 가계부 중복 후보와 검진일 앞뒤 7일의 미연결 병원 일정. 저장하지 않는다 | AIM-009-22·23, HLT-002-46 | LJS | ReceiptSaveCheckRequest | ReceiptSaveCheckResponse |
 | POST | /receipts/{recptSn}/save | 확인 후 저장. 반려동물별 검진기록·병원 일정 연결/생성·처방약·가계부 지출을 한 트랜잭션으로, 영수증 상태 저장완료. 처음 201, 같은 `idmptDmndId` 재전송은 200과 같은 응답. 오류: `RECEIPT_NOT_SAVABLE`·`RECEIPT_ALREADY_SAVED`·`RECEIPT_ALREADY_CANCELED`·`RECEIPT_ANALYZING`·`ALREADY_PROCESSED`(409), `RECEIPT_NOT_FOUND`(404) | AIM-009-07~11·24·26·27, AIM-010-06, HLT-002-31·35·37~41·45 | LJS | ReceiptSaveRequest | ReceiptSaveResponse |
+| POST | /receipts/{recptSn}/checkups?petSn= | 영수증 인식 실패·일시 오류 뒤 [직접 입력] 검진기록 등록. 영수증 상태 저장완료(인식성공·부분인식·미인식·일시오류에서), 검진기록에 이 영수증 연결(출처 직접 입력), 가계부 없음. 일정 연결은 직접 등록과 같다. 201. 오류: `RECEIPT_ALREADY_SAVED`·`RECEIPT_ALREADY_CANCELED`·`RECEIPT_ANALYZING`·`ALREADY_PROCESSED`(409), `RECEIPT_NOT_FOUND`(404) | HLT-002-31 | JAJ | ReceiptCheckupCreateRequest | CheckupResponse(`docs/api/health.md`) |
 | POST | /internal/ai/receipts | Python AI 서버가 분석 전에 원본을 저장한다(2026-10-29 결정 (나): React → Python `POST /ai/receipts`가 분석 중심). multipart, 확장자·파일 시그니처 검증, 쿠키 회원·`X-Requested-With`. 원본 파일(ATCH_FILE)과 RECPT(상태 분석중, 출처)를 만들고 201 `recptSn`. 분석이 실패해도 원본은 남는다. 오류: `FILE_TYPE_NOT_ALLOWED`·`FILE_TOO_LARGE`·`INVALID_INPUT_VALUE`(400), `PET_ACCESS_DENIED`(양육하지 않는 반려동물) | AIM-008-09, AIM-010-06, AIM-013-08 | LJS | ReceiptOriginalRequest | ReceiptOriginalResponse |
 | POST | /internal/ai/receipts/{recptSn}/result | Python AI 서버가 분석 결과·상태를 보고한다. 분석중인 본인 영수증만. `RECOGNIZED`는 Java가 OCR 응답으로 인식 성공·부분 인식·인식 실패를 나누고, `TIMEOUT`·`API_ERROR`는 일시 오류로 두고 사유를 상태 이력에 남긴다. 200. 오류: `INVALID_INPUT_VALUE`(400, `ocrRslt` 없음·`RECOGNIZED`인데 `ocr` 없음), `BAD_REQUEST`(400, `ocrRslt` 허용값 밖), `RECEIPT_NOT_FOUND`(404), `RECEIPT_ALREADY_CANCELED`·`RECEIPT_ALREADY_SAVED`·`ALREADY_PROCESSED`(409, 분석중이 아님) | AIM-010-01, AIM-013-04 | LJS | ReceiptReportRequest | ReceiptReportResponse |
 
@@ -109,6 +110,13 @@ Java `global/external/ReceiptOcrResponse`, ai 저장소 `docs/api/internal.md` R
 | mdcnEndYmd | LocalDate | Y | 시작일 이후(같은 날 허용, AIM-009-07) | PRSC.MDCN_END_YMD |
 | dayMdcnNmtm | Integer | Y | 1 이상 | PRSC.DAY_MDCN_NMTM |
 | prscSttsCd | String | Y | HLTG06 공통코드 | PRSC.PRSC_STTS_CD |
+
+### ReceiptCheckupCreateRequest
+쓰는 API: POST /receipts/{recptSn}/checkups?petSn= (`petSn`은 로그인 회원과 연동된 반려동물)
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| idmptDmndId | String | Y | 최대 100자. 중복 클릭·재전송 차단(같은 영수증 재전송은 `RECEIPT_ALREADY_SAVED`, 다른 영수증이 쓴 ID는 `ALREADY_PROCESSED`) | RECPT.IDMPT_DMND_ID |
+| ckupYmd·hsptlNm·ckupTypeCd·ckupCn·ckupMemoCn·schdlSn | | | `docs/api/health.md` CheckupCreateRequest와 같다 | HLT-002-26~29·46 |
 
 ### ReceiptSaveResponse
 쓰는 API: POST /receipts/{recptSn}/save
