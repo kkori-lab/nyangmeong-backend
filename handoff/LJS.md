@@ -2,10 +2,16 @@
 
 ## 지금 하는 것
 
-SCR-ADM-023 노출 콘텐츠 · 프론트 연결 API 계약 — 끝 (2026-11-03). `/api/admin/community/exposure` 건강팁 현황·지정·해제, 오늘의 한마디 후보 문구 목록·등록·수정, AI 코멘트 목록·사용 여부 API와 매일 00:00 오늘의 한마디 선택 배치(SYSC0030)를 만들었다. 건강팁은 지정 글 + 빈 자리 자동 선정(건강 키워드, 좋아요순)이고 사용자 `GET /api/posts/health-tips`도 같은 규칙. 지정 글이 삭제·블라인드되면 지정이 풀린다. DB 변경 있음: v0.12 (4) `TODAY_PHRS` 테이블·공통코드 SYSC0030(공용 DB 반영됨)
+SCR-ADM-050 펫뉴스 · 프론트 연결 API 계약 — 끝 (2026-11-04). `/api/admin/news` 관리자 뉴스 목록(숨긴 기사 포함)·등록·수정(숨김·카테고리 변경)·썸네일 업로드와 분류 키워드 목록·등록·삭제 API를 만들었다. 분류 키워드는 한 행에 하나로 바꿨다. DB 변경 있음: v0.12 (5) 기준 데이터 `KWRD_DICT` AIMC0039 세 행 → 40행(공용 DB 미반영)
 
 ## 다음에 할 것
 
+- SCR-ADM-050 연결 남음: FN-ADM-050-01·02·03·05 (프론트 연결 `features/adminNews/api.js` 목록·등록/수정 모달·수집 기사 행·분류 키워드 탭, 프론트 저장소에서 /start). 프론트에 알릴 것: 썸네일은 `POST /api/admin/news/images`(form-data `image`) → `{ atchFileSn }`로 먼저 올리고 등록·수정 본문에 `atchFileSn`을 넣는다(가짜의 "등록 요청에 파일"과 다름). 목록 행에 `newsSrcCdNm` 추가, `useYn`은 true/false. 글자 수 제목 200·요약 1000·키워드 50(가정 그대로). 제목·요약·썸네일 수정은 관리자 등록 기사만(수집 기사에 보내면 400). 키워드 쉼표 400, 같은 카테고리 중복 409 `DUPLICATE_NEWS_KEYWORD`, 삭제한 키워드 다시 삭제 404 `NEWS_KEYWORD_NOT_FOUND`. 계약은 `docs/api/community.md` `/admin/news` 행
+- 프론트 마일스톤(사람): 프론트 저장소 LJS 마일스톤 `## 제외` 앞에 `## SCR-ADM-050 펫뉴스 · 펫뉴스 API 연결 — 대기` 절(기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-050-01·02·03·05 / 기다리는 것: 백엔드 SCR-ADM-050 펫뉴스 API(LJS, 끝) / 완료 조건: `features/adminNews/api.js` 가짜를 `/api/admin/news` 실제 API로 바꿔 목록 필터, 썸네일 업로드 후 관리자 뉴스 등록·수정, 수집 기사 숨김·카테고리 변경, 분류 키워드 등록·삭제가 화면에서 동작한다)을 넣는다. 옆 폴더가 없어 넣지 못했다
+- 공용 DB(사람, PR 병합 직후): `db/20261102_insert_base_data_v0.12.sql` 변경 절 v0.12 (5)만 실행한다(AIMC0039 쉼표 행 `DEL_YN='Y'` + 40행 INSERT). 실행 전에도 기존 분류·건강팁은 그대로 동작하고, 관리자 키워드 목록에 쉼표 행이 한 줄로 보일 뿐이다
+- KSJ에게 알린다(PR 전): SCR-ADM-050을 LJS가 구현했다(`AdminNewsController`·`AdminNewsService`). `NewsMapper`에 관리자 쿼리 추가, `NewsKeyword`에 `kwrdDictSn`·`sortSeq` 추가, `ErrorCode.NEWS_KEYWORD_NOT_FOUND`·`DUPLICATE_NEWS_KEYWORD`. 사용자 뉴스 목록·상세·수집 코드는 바꾸지 않았다(숨긴 기사는 기존 `USE_YN='Y'` 조건으로 빠진다)
+- 정하기: 뉴스 제외 키워드(AIMC0040) 편집 화면. 기준 데이터 주석에 "관리자 SCR-ADM-050에서 편집"이라고 돼 있지만 기능명세서·화면설계서·프론트 가정에 없어 만들지 않았다. 넣는다면 명세에 기능 ID를 추가하고 같은 키워드 API에 용도 구분을 더한다
+- 로컬 DB 정리(사람): SCR-ADM-050 검증이 올린 `ATCH_FILE` 4181과 감사 로그(`MNGR_TASK_LOG`) 행이 남아 있다. 사람 확인으로 만든 뉴스는 숨기거나 `DELETE FROM NEWS WHERE NEWS_SN=<번호>`
 - SCR-ADM-023 연결 남음: FN-ADM-023-01·02·04·06 (프론트 연결 `features/adminCommunity/api.js` 노출 콘텐츠 절 건강팁 표·지정 모달·오늘의 한마디 탭·AI 코멘트 탭, 프론트 저장소에서 /start). 프론트에 알릴 것: 후보 문구 필드 이름은 가정 그대로 `todayPhrsSn`·`phrsCn`(200자), `todayPhrs`는 오늘 노출 문구(없으면 null, 같은 문구 후보가 없으면 `todayPhrsSn` null), 건강팁 지정 모달의 글 검색은 기존 `GET /api/admin/posts?bbsCd=CMUC0001`
 - 프론트 마일스톤(사람): 프론트 저장소 LJS 마일스톤 `## 제외` 앞에 `## SCR-ADM-023 노출 콘텐츠 · 노출 콘텐츠 API 연결 — 대기` 절(기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-023-01·02·04·06 / 기다리는 것: 백엔드 SCR-ADM-023 노출 콘텐츠 API(LJS, 끝) / 완료 조건: `features/adminCommunity/api.js` 노출 콘텐츠 절 가짜를 `/api/admin/community/exposure` 실제 API로 바꿔 건강팁 지정·해제, 문구 등록·수정, AI 코멘트 사용 여부가 화면에서 동작한다)을 넣는다. 옆 폴더가 없어 넣지 못했다
 - KSJ에게 알린다(PR 전): SCR-ADM-023을 LJS가 구현했다. 사용자 `GET /api/posts/health-tips`(`PostService.getHealthTips`)가 지정 글만이 아니라 빈 자리를 자동 선정 글(정상 펫정보, 제목·본문에 `KWRD_DICT` 뉴스 분류 건강 키워드, 좋아요순)로 채운다. `PostMapper.updateStatus`가 정상 아닌 상태로 바꿀 때 `HLTH_INFO_EXPSR_SEQ`를 NULL로 만든다. `PostMapper`·`CommunityAiCommentaryMapper` 쿼리 추가, `ErrorCode.TODAY_PHRASE_NOT_FOUND`·`AI_COMMENTARY_NOT_FOUND`
@@ -17,7 +23,7 @@ SCR-ADM-023 노출 콘텐츠 · 프론트 연결 API 계약 — 끝 (2026-11-03)
 - SCR-ADM-022 연결 남음: FN-ADM-022-02 완료 사진 보기. `/api/files/public/{atchFileSn}`은 `public/` 경로 파일만 열어 지금 완료 사진(시드 3543·3544)은 404다. 완료 사진 업로드가 아직 없어(KSJ) 저장 경로를 정할 때 관리자가 볼 방법(공개 경로 또는 관리자 이미지 API)을 같이 정한다
 - 팀에 알린다(시드): `db/seed/20261028_seed_data.sql`에 RGN 전북 시군구 13건·행정동 243건을 넣었다(전주 완산·덕진 동은 전주시 아래). 공용 DB에는 반영돼 있다. 각자 로컬 DB에는 시드 파일의 `-- 2026-11-03 추가: 전북특별자치도…` 아래 INSERT 두 개만 실행한다(전북 행이 시도·전주시 2건일 때만). 출처 표시(SGIS 공공누리 1유형, admdongkor CC BY 4.0)는 그 주석에 있다
 - SCR-ADM-021 연결 남음: FN-ADM-021-01·02 (프론트 연결 `features/adminCommunity/api.js` 실종제보 목록·상세 모달, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트에 알릴 것: 필드 이름은 가짜와 같은 `mbrNcnm`·`expryCrtrDt`, 블라인드·삭제 글은 목록에 안 나옴, 상세에 연락처·반려동물 정보 없음
-- 마일스톤 정리(사람): `milestones/LJS.md`의 `## SCR-ADM-021 실종제보 — 대기`·`## SCR-ADM-022 펫돌봄 거래 — 대기`·`## SCR-ADM-023 노출 콘텐츠 — 대기` 절(KSJ 협의 표기)은 같은 기능 ID를 각 `· 프론트 연결 API 계약` 절로 끝냈다(그래서 `/start`가 고르는 "대기 맨 위"가 실제 남은 일이 아니다). 그 절과 `docs/admin/implementation-plan.md` 담당 표기를 사람이 맞춘다
+- 마일스톤 정리(사람): `milestones/LJS.md`의 `## SCR-ADM-021 실종제보 — 대기`·`## SCR-ADM-022 펫돌봄 거래 — 대기`·`## SCR-ADM-023 노출 콘텐츠 — 대기`·`## SCR-ADM-050 펫뉴스 — 대기` 절(KSJ 협의 표기)은 같은 기능 ID를 각 `· 프론트 연결 API 계약` 절로 끝냈다(ADM-050은 FN-ADM-050-06 자동 분류도 기존 수집 코드에 있다)(그래서 `/start`가 고르는 "대기 맨 위"가 실제 남은 일이 아니다). 그 절과 `docs/admin/implementation-plan.md` 담당 표기를 사람이 맞춘다
 - 공용 DB 정리(사람): SCR-ADM-091 확인용 발송 이력 4건. `DELETE FROM NOTI_SNDNG_LOG WHERE RGTR_ID='ADM091TEST';`
 - SCR-ADM-091 연결 남음: FN-ADM-091-01 (프론트 연결 `features/adminNotificationLog/api.js` 목록, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트 가짜와 다른 점: 기간 파라미터가 `fromYmd`·`toYmd`가 아니라 `bgngYmd`·`endYmd`(종료일 그날 끝까지 포함)
 - SCR-MYP-031 연결 남음: FN-AIM-013-06 가계부 출처 영수증 다시 열기 (프론트 연결 가계부 화면의 영수증 다시 열기, 화면 SJM, 프론트 저장소에서 /start). SJM에게 알린다: `GET /api/receipts/{recptSn}`을 `petSn` 없이 부르면 된다(응답 `petSn` null, `docs/api/receipt.md`). 프론트 저장소 마일스톤 절은 옆 폴더가 없어 넣지 못했다(아래 정리 항목)
@@ -29,7 +35,7 @@ SCR-ADM-023 노출 콘텐츠 · 프론트 연결 API 계약 — 끝 (2026-11-03)
 - SCR-ADM-090 연결 남음: FN-ADM-090-03 (SJM이 만든 `PetService.searchCaregiverMbrSns(petSn)`로 `scheduler/CaregiverFake`를 바꾼 뒤(2026-11-03 메서드 있음 확인), 실제 케어 일정 알림에 등록한 템플릿이 쓰이고 `useYn=false`면 기본 문구인지 확인)
 - SCR-ADM-090 연결 남음: FN-ADM-090-01·02 (프론트 연결 `features/adminNotificationTemplate/api.js` 목록·등록·수정, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트 가짜와 다른 점: `useYn`이 `'Y'|'N'`이 아니라 true/false, 케어 일정 외 유형은 등록 400(화면은 "기본 문구"만)
 - 공용 DB 정리(사람): SCR-ADM-090 사람 확인으로 만든 템플릿은 삭제 API가 없다. `DELETE FROM NOTI_TMPLT WHERE NOTI_TMPLT_SN=<번호>;`(관리자 작업 로그 `TRGT_TBL_NM='NOTI_TMPLT'`는 남거나 같이 지운다)
-- 정리(판단 필요): 핸드오프가 60줄을 넘는다(2026-11-03 /end 때 143줄. 펫돌봄 게시판 필터 항목은 `BoardType.CARE`(CMUC0028)가 생겨 지웠다. 2026-11-03 공용 DB에 반영된 것을 확인한 v0.12 (1)·v0.11 (5) 실행 항목 2건은 지웠다). 대부분 알림·사람 할 일이라 끝났는지 코드로 판단할 수 없어 남겼다. 끝난 알림·정리 항목을 사람이 지운다
+- 정리(판단 필요): 핸드오프가 60줄을 넘는다(2026-11-04 /end 때 144줄, 저장소로 끝났다고 확인되는 항목이 없어 지우지 않음. 2026-11-03 /end 때 143줄. 펫돌봄 게시판 필터 항목은 `BoardType.CARE`(CMUC0028)가 생겨 지웠다. 2026-11-03 공용 DB에 반영된 것을 확인한 v0.12 (1)·v0.11 (5) 실행 항목 2건은 지웠다). 대부분 알림·사람 할 일이라 끝났는지 코드로 판단할 수 없어 남겼다. 끝난 알림·정리 항목을 사람이 지운다
 - ai-47에 알린다: 굽기 계약 구현 끝(SCR-ADM-070). `bake-items` 응답 `{itemSn, regnCd, bakeHint}`(판매 중이고 지시 있음 30개), `GET /internal/ai/items/{itemSn}/bake-targets?page=`(관리자 쿠키, 100개씩 `{pixelCharSns, last}`, 아니면 403 `ADMIN_ONLY`, 굽기 대상 아님 404). 굽기 지시가 바뀌면 그 아이템 착용 시트를 지워 다시 굽기 대상이 된다. 시드에만 있던 6개(빨간 리본·작은 왕관·털모자·줄무늬 티셔츠·꼬까 한복·곰돌이 후드티)의 지시 문장은 LJS 초안이라 검토를 부탁한다. 백엔드 PR이 AI PR보다 먼저 병합돼야 한다
 - 공용 DB 정리(사람): SCR-ADM-070 사람 확인으로 만든 아이템(예: "확인용 가방")은 삭제 API가 없다. `DELETE FROM MNGR_TASK_LOG WHERE TRGT_TBL_NM='ITEM' AND TRGT_SN=<번호>; DELETE FROM ITEM WHERE ITEM_SN=<번호>;` 또는 판매 중지. 바꾼 순서·판매 여부·굽기 지시를 되돌린다
 - SCR-ADM-070 연결 남음: FN-ADM-070-01~04 (프론트 연결 `features/adminItem/api.js` 목록·등록·수정·순서 저장, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음

@@ -462,10 +462,13 @@
 - 연결 남음: FN-ADM-023-04 (프론트 연결 `features/adminCommunity/api.js` 오늘의 한마디 탭, 프론트 저장소에서 /start)
 - 연결 남음: FN-ADM-023-06 (프론트 연결 `features/adminCommunity/api.js` AI 코멘트 탭, 프론트 저장소에서 /start)
 
-## SCR-ADM-050 펫뉴스 · 프론트 연결 API 계약 — 대기
+## SCR-ADM-050 펫뉴스 · 프론트 연결 API 계약 — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-050-01·02·03·05
 - 기다리는 것: 프론트 SCR-ADM-050(끝, 가짜 응답 `features/adminNews/api.js`). FN-ADM-050-07 뉴스 수집 실행은 기존 `POST /api/admin/batches/SYSC0028/run`으로 이미 연결됨
 - 완료 조건: `GET /api/admin/news?newsSrcCd=&newsClsfCd=&page=&size=20`(최신순 `{ content, page, size, totalElements, totalPages, hasNext }`, content 행은 `News` 필드 `{ newsSn, atchFileSn, newsClsfCd, newsSrcCd, newsTtl, newsCn, srcPressNm, orgtxtPath, pblcnDt, useYn, regDt, mdfcnDt, thmbUrlPath }`, 숨긴 기사 포함), `POST /api/admin/news`(관리자 등록 `{ newsTtl, newsCn, newsClsfCd }` + 썸네일 파일 선택, 출처 CMUC0023, → `{ newsSn }`), `PATCH /api/admin/news/{newsSn}`(관리자 등록은 제목·요약·카테고리·썸네일, 수집 기사는 `useYn`·`newsClsfCd`), `GET /api/admin/news/keywords`(`[{ kwrdDictSn, mpngCd, kwrdCn, sortSeq }]`, KWRD_DICT `DICT_USG_CD` AIMC0039)·`POST` `{ mpngCd, kwrdCn }` → `{ kwrdDictSn }`(같은 카테고리 중복은 409)·`DELETE …/keywords/{kwrdDictSn}`. `useYn`은 true/false. 숨긴 수집 기사는 사용자 뉴스에서 빠진다. 글자 수(프론트 가정 제목 200·요약 1000·키워드 50)와 필드 이름을 정해 프론트에 알린다
+- 결정: 썸네일은 공지사항과 같이 `POST /api/admin/news/images`(multipart `image`) → `{ atchFileSn }`로 먼저 올리고 등록·수정에 `atchFileSn`을 넣는다(프론트 가정 "등록 요청에 파일"과 다름). 목록 행에 `newsSrcCdNm` 추가, 등록 최신순(`REG_DT`). 제목 200·요약 1000·키워드 50자(앞뒤 공백 지운 뒤). 제목·요약·썸네일은 관리자 등록 기사만, 숨김·카테고리는 모든 기사. 분류 키워드는 한 행에 하나로 바꿨다(DB 변경 v0.12 (5): AIMC0039 세 행 → 40행), 새 키워드의 `SORT_SEQ`는 그 카테고리 기존 값(없으면 최대+10), 쉼표 400·같은 카테고리 중복 409 `DUPLICATE_NEWS_KEYWORD`(대소문자 무시), 삭제 404 `NEWS_KEYWORD_NOT_FOUND`. 뉴스 제외 키워드(AIMC0040) 편집은 명세에 없어 하지 않음
+- 완료 조건 결과: 검증 `통과`(2026-11-04, 1회차, 로컬 DB에서 API로 확인), 사람 확인 2026-11-04
+- 연결 남음: FN-ADM-050-01·02·03·05 (프론트 연결 `features/adminNews/api.js` 목록·등록/수정 모달·수집 기사 행·분류 키워드 탭, 프론트 저장소에서 /start)
 
 ## SCR-MYP-031 영수증 업로드 · 가계부 출처 다시 열기 — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-AIM-013-06(결과 다시 열기), FN-MYP-031-03(가계부 출처, 화면 SJM)
@@ -483,6 +486,17 @@
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-051-01·02·03·04
 - 기다리는 것: 프론트 SCR-ADM-051(끝, 가짜 응답 `features/adminTerms/api.js`, 종류 키는 `features/adminTerms/termsKinds.js` 가정 값 SERVICE·PRIVACY·AGE·MARKETING·CARE_RULE·LOST_PRIVACY)
 - 완료 조건: `GET /api/admin/terms`(종류별 사용 중 버전 `[{ trmsSn, trmsFixIdntfKey, trmsVerId, trmsTtl, esntlAgreYn, useYn, regDt }]`), `GET /api/admin/terms/history?trmsFixIdntfKey=`(그 종류 모든 버전 최신순, 내용 제외), `GET /api/admin/terms/{trmsSn}`(내용 `trmsCn` 포함), `POST /api/admin/terms` `{ trmsFixIdntfKey, trmsVerId, trmsTtl, trmsCn, esntlAgreYn }` → 등록 행, 같은 종류 이전 버전 `useYn=N`, 같은 종류 같은 버전이면 409 `DUPLICATE_TRMS_VER`. 등록일 필드 이름(`regDt` 가정)과 종류 키 실제 값을 프론트에 알린다
+
+## SCR-ADM-071 케어미션 · 프론트 연결 관리자 케어미션 API — 대기
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-071-01·02
+- 기다리는 것: 프론트 SCR-ADM-071(끝, 가짜 응답 `features/adminCareMission/api.js`, 처음 값은 `db/` 기준 데이터 v0.12의 CARE_MSN 21행)
+- 완료 조건: `GET /api/admin/care-missions?msnPoolCd=`(없으면 전체, 번호순 `[{ careMsnSn, msnPoolCd, msnNm, cmpnPnt, achvCrtrNmtm, mvmnPath, useYn }]`, `useYn`은 'Y'/'N' 가정), `PATCH /api/admin/care-missions/{careMsnSn}` `{ cmpnPnt, achvCrtrNmtm, useYn }`(미션명·풀·경로는 안 바꿈, 없는 미션 404). 허용 범위를 정해 프론트에 알린다(프론트 가정: 1 이상 정수, 보상 1000P·횟수 10회 이하). 출제 배치 `CareMissionJob`이 `CARE_MSN`의 `useYn`·`cmpnPnt`·`achvCrtrNmtm`을 다음 날 00:00 출제부터 읽고 이미 낸 미션은 그대로인지 확인한다(FN-ADM-071-03)
+
+## SCR-ADM-072 포인트 · 프론트 연결 관리자 포인트 API — 대기
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-072-01·02·03
+- 기다리는 것: 프론트 SCR-ADM-072(끝, 가짜 응답 `features/adminPoint/api.js`)
+- 완료 조건: `GET /api/admin/points?mbrSn=&mbrNcnm=&pntDlngTypeCd=&fromDt=&toDt=&page=&size=`(최신순 `PageResponse`, 한 줄은 `AdminPointLedgerSummary` 필드 + 회원 `mbrSn`·`mbrNcnm`, 닉네임 부분 일치, 기간은 YYYY-MM-DD), `POST /api/admin/points/adjustments` `{ mbrSn, dlngPnt(지급 +, 차감 -), memoCn(사유 필수) }`(거래 유형 MYPC0009, 보유 포인트 갱신, 차감 후 잔액 0 미만이면 거절, 감사 로그). 조정 화면의 현재 잔액을 줄 필드(회원 보유 포인트)를 정한다. 상한을 정해 프론트에 알린다(프론트 가정: 1회 100,000P, 사유 200자). 회원 포인트 내역(FN-MYP-020)에 "관리자 조정"으로 보이는지 확인한다(FN-ADM-072-03)
+- 이미 바뀐 것: 회원 한 명 원장 `GET /api/admin/members/{mbrSn}/point-ledgers`(`AdminPointController`, SCR-ADM-011)
 
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)

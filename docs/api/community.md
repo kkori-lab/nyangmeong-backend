@@ -65,6 +65,13 @@
 | PATCH | /admin/community/exposure/phrases/{todayPhrsSn} | 오늘의 한마디 후보 문구 수정(보낸 칸만, 감사 로그). 둘 다 없거나 문구가 비거나 200자 초과면 400 INVALID_INPUT_VALUE, 없는 번호 404 TODAY_PHRASE_NOT_FOUND. 매일 00:00 배치(SYSC0030)가 사용 중 후보 1건을 무작위로 골라 그날 `CMNTY_AI_CMTRY`(출처 AIMC0029)에 저장한다. 그날 행이 있거나 후보가 없으면 저장하지 않는다(사용자 화면은 운영 설정 기본 문구) | ADM-023-04·05 | LJS | AdminTodayPhraseUpdateRequest | - |
 | GET | /admin/community/exposure/commentaries | 관리자 AI 코멘트 목록. 사용 안 함 포함, 최근 일자순 20건씩 | ADM-023-06 | LJS | PageQuery | PageResponse<AdminCommentarySummary> |
 | PATCH | /admin/community/exposure/commentaries/{cmntyAiCmtrySn} | AI 코멘트 사용 여부 변경(감사 로그). 끄면 사용자 `GET /community-ai-commentaries`는 운영 설정 기본 문구. 없는 번호 404 AI_COMMENTARY_NOT_FOUND | ADM-023-06 | LJS | AdminCommentaryUseRequest | - |
+| GET | /admin/news | 관리자 뉴스 목록. 숨긴 기사(`useYn=false`) 포함, 등록 최신순 20건씩. 쿼리 `newsSrcCd`(CMUG07)·`newsClsfCd`(CMUG06), 없거나 공백이면 전체. 모르는 코드 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-050-01 | LJS | AdminNewsSearchCond | PageResponse<AdminNewsSummary> |
+| POST | /admin/news | 관리자 뉴스 등록(201, 감사 로그). 출처 관리자 등록(CMUC0023), 발행일시는 지금, 원문 경로 없음. 썸네일은 먼저 `POST /admin/news/images`로 올린다. 제목 1~200자·요약 1~1000자(앞뒤 공백 지운 뒤)가 아니거나 카테고리 코드가 틀리면 400 INVALID_INPUT_VALUE | ADM-050-02 | LJS | AdminNewsCreateRequest | AdminNewsCreateResponse |
+| PATCH | /admin/news/{newsSn} | 뉴스 수정(보낸 칸만, 감사 로그). 제목·요약·썸네일은 관리자 등록 기사만(수집 기사에 보내면 400), 카테고리·사용 여부는 모든 기사. 숨긴 기사는 사용자 `GET /news` 목록·상세에서 빠진다. 아무 칸도 없으면 400 INVALID_INPUT_VALUE, 없는 기사 404 NEWS_NOT_FOUND | ADM-050-02·03 | LJS | AdminNewsUpdateRequest | - |
+| POST | /admin/news/images | 관리자 뉴스 썸네일 업로드(201, multipart `image`). 공개 파일이라 `/api/files/public/{atchFileSn}`으로 열린다. 파일이 없으면 400 INVALID_INPUT_VALUE | ADM-050-02 | LJS | - | AdminNewsImageResponse |
+| GET | /admin/news/keywords | 뉴스 분류 키워드 목록(`KWRD_DICT` 뉴스 분류 AIMC0039, 정렬순). 키워드 하나가 한 행. 수집 때 제목에 든 키워드 중 정렬 순서가 앞선 카테고리로 분류하고, 건강(CMUC0018) 키워드는 건강팁 자동 선정에도 쓴다 | ADM-050-05 | LJS | - | List<AdminNewsKeywordResponse> |
+| POST | /admin/news/keywords | 뉴스 분류 키워드 등록(201, 감사 로그). 정렬 순서는 그 카테고리 기존 행과 같다(없으면 뉴스 분류 최대 + 10). 키워드 1~50자(앞뒤 공백 지운 뒤)·쉼표 없음·카테고리 CMUG06 4종이 아니면 400 INVALID_INPUT_VALUE, 같은 카테고리에 같은 키워드(대소문자 무시) 409 DUPLICATE_NEWS_KEYWORD | ADM-050-05 | LJS | AdminNewsKeywordCreateRequest | AdminNewsKeywordCreateResponse |
+| DELETE | /admin/news/keywords/{kwrdDictSn} | 뉴스 분류 키워드 삭제(`DEL_YN='Y'`, 감사 로그). 다음 수집부터 쓰이지 않는다. 없거나 이미 삭제 404 NEWS_KEYWORD_NOT_FOUND | ADM-050-05 | LJS | - | - |
 | GET | /admin/comments | 관리자 댓글 목록. 최신순 20건씩, 삭제된 댓글도 원문 표시. `q`는 작성자 닉네임 부분 일치 | ADM-020-06 | LJS | AdminCommentSearchCond | PageResponse<AdminCommentSummary> |
 | POST | /admin/comments/{cmntSn}/deletion | 관리자 댓글 삭제. 사유는 감사 로그에 남긴다(`CMNT`에 사유 컬럼 없음). DELETE 본문 금지라 POST. 이미 삭제면 409 ALREADY_PROCESSED, 없는 댓글 404 COMMENT_NOT_FOUND | ADM-020-06 | LJS | AdminCommentDeleteRequest | - |
 | GET | /admin/reports | 관리자 신고 목록. 최신순 20건씩, 같은 대상 신고 수 포함. 코드가 틀리거나 기간이 뒤집히면 400 INVALID_INPUT_VALUE | ADM-030-01·02 | LJS | AdminReportSearchCond | PageResponse<AdminReportSummary> |
@@ -175,6 +182,96 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | 필드 | 타입 | 필수 | 설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | useYn | Boolean | Y | 사용 여부 | CMNTY_AI_CMTRY.USE_YN |
+
+### AdminNewsSearchCond
+쓰는 API: GET /admin/news
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| newsSrcCd | String | N | 출처 공통코드 CMUG07(CMUC0022 외부 언론사·CMUC0023 관리자 등록). 없으면 전체 | NEWS.NEWS_SRC_CD, ADM-050-01 |
+| newsClsfCd | String | N | 카테고리 공통코드 CMUG06. 없으면 전체 | NEWS.NEWS_CLSF_CD, ADM-050-01 |
+| page | Integer | N | 1부터, 기본 1 | PageQuery |
+| size | Integer | N | 기본 20, 최대 50 | PageQuery |
+
+### AdminNewsSummary
+쓰는 API: GET /admin/news
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| newsSn | Long | Y | | NEWS.NEWS_SN |
+| atchFileSn | Long | N | 관리자 등록 썸네일(`/api/files/public/{atchFileSn}`) | NEWS.ATCH_FILE_SN |
+| newsClsfCd | String | Y | 공통코드 CMUG06 | NEWS.NEWS_CLSF_CD |
+| newsSrcCd | String | Y | 공통코드 CMUG07 | NEWS.NEWS_SRC_CD |
+| newsSrcCdNm | String | Y | 출처 이름 | COM_CD.COM_CD_NM |
+| newsTtl | String | Y | | NEWS.NEWS_TTL |
+| newsCn | String | Y | 요약(전체) | NEWS.NEWS_CN |
+| srcPressNm | String | N | 수집 기사 언론사 | NEWS.SRC_PRESS_NM |
+| orgtxtPath | String | N | 수집 기사 원문 링크, 관리자 등록은 null | NEWS.ORGTXT_PATH |
+| pblcnDt | LocalDateTime | Y | 발행일시 | NEWS.PBLCN_DT |
+| useYn | boolean | Y | false면 사용자 화면에서 숨김 | NEWS.USE_YN |
+| regDt | LocalDateTime | Y | 등록일 | NEWS.REG_DT |
+| mdfcnDt | LocalDateTime | Y | | NEWS.MDFCN_DT |
+| thmbUrlPath | String | N | 수집 기사 썸네일(외부 URL) | NEWS.THMB_URL_PATH |
+
+### AdminNewsCreateRequest
+쓰는 API: POST /admin/news
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| newsTtl | String | Y | 앞뒤 공백 지운 뒤 1~200자 | NEWS.NEWS_TTL |
+| newsCn | String | Y | 요약. 앞뒤 공백 지운 뒤 1~1000자 | NEWS.NEWS_CN |
+| newsClsfCd | String | Y | 공통코드 CMUG06 | NEWS.NEWS_CLSF_CD |
+| atchFileSn | Long | N | `POST /admin/news/images`로 받은 번호 | NEWS.ATCH_FILE_SN |
+
+### AdminNewsCreateResponse
+쓰는 API: POST /admin/news
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| newsSn | Long | Y | | NEWS.NEWS_SN |
+
+### AdminNewsUpdateRequest
+쓰는 API: PATCH /admin/news/{newsSn}
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| newsTtl | String | N | 관리자 등록 기사만. 1~200자 | NEWS.NEWS_TTL |
+| newsCn | String | N | 관리자 등록 기사만. 1~1000자 | NEWS.NEWS_CN |
+| atchFileSn | Long | N | 관리자 등록 기사만. 새 썸네일 | NEWS.ATCH_FILE_SN |
+| newsClsfCd | String | N | 공통코드 CMUG06 | NEWS.NEWS_CLSF_CD, ADM-050-03 |
+| useYn | Boolean | N | false면 숨김. 하나도 없으면 400 | NEWS.USE_YN, ADM-050-03 |
+
+### AdminNewsImageResponse
+쓰는 API: POST /admin/news/images
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| atchFileSn | Long | Y | 등록·수정 요청의 `atchFileSn`에 넣는다 | ATCH_FILE.ATCH_FILE_SN |
+
+### AdminNewsKeywordResponse
+쓰는 API: GET /admin/news/keywords
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| kwrdDictSn | Long | Y | 삭제 경로 번호 | KWRD_DICT.KWRD_DICT_SN |
+| mpngCd | String | Y | 카테고리 공통코드 CMUG06 | KWRD_DICT.MPNG_CD |
+| kwrdCn | String | Y | 키워드 | KWRD_DICT.KWRD_CN |
+| sortSeq | Integer | Y | 분류 우선순위(작을수록 먼저) | KWRD_DICT.SORT_SEQ |
+
+### AdminNewsKeywordCreateRequest
+쓰는 API: POST /admin/news/keywords
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| mpngCd | String | Y | 카테고리 공통코드 CMUG06(건강·생활·정책·여행) | KWRD_DICT.MPNG_CD |
+| kwrdCn | String | Y | 앞뒤 공백 지운 뒤 1~50자, 쉼표 불가 | KWRD_DICT.KWRD_CN |
+
+### AdminNewsKeywordCreateResponse
+쓰는 API: POST /admin/news/keywords
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| kwrdDictSn | Long | Y | | KWRD_DICT.KWRD_DICT_SN |
 
 ### AdminLostReportSearchCond
 쓰는 API: GET /admin/lost-reports
