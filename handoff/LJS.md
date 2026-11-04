@@ -2,17 +2,19 @@
 
 ## 지금 하는 것
 
-SCR-ADM-050 펫뉴스 · 프론트 연결 API 계약 — 끝 (2026-11-04). `/api/admin/news` 관리자 뉴스 목록(숨긴 기사 포함)·등록·수정(숨김·카테고리 변경)·썸네일 업로드와 분류 키워드 목록·등록·삭제 API를 만들었다. 분류 키워드는 한 행에 하나로 바꿨다. DB 변경 있음: v0.12 (5) 기준 데이터 `KWRD_DICT` AIMC0039 세 행 → 40행(공용 DB 미반영)
+SCR-ADM-101 품종 · 프론트 연결 품종 관리 API — 끝 (2026-11-04). `/api/admin/breeds` 관리자 품종 목록(사용 안 함 포함)·추가(코드 서버가 매김)·수정(이름·정렬·사용 여부) API를 만들었다. DB 변경 없음
 
 ## 다음에 할 것
 
+- SCR-ADM-101 연결 남음: FN-ADM-101-01 (프론트 연결 `features/adminBreed/api.js` 품종 목록·[품종 추가]·[수정] 모달, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트에 알릴 것: 이름 50자, `sortSeq`는 빼도 됨(그 종 마지막 + 10), 중복 409 `DUPLICATE_VRTY_NM`(가짜 그대로), 없는 품종은 가짜 `NOT_FOUND`가 아니라 404 `BREED_NOT_FOUND`, 등록·수정 응답은 품종 행. 계약은 `docs/api/pet.md` `/admin/breeds` 행
+- 로컬·공용 DB 정리(사람): SCR-ADM-101 검증이 만든 품종 `VRTY_SN=38`(`DOGV0024` "검증용품종", 사용 안 함)과 사람 확인으로 만든 품종. `DELETE FROM VRTY WHERE VRTY_SN IN (38, <번호>);`, 감사 로그는 `TRGT_TBL_NM='VRTY'` 행
+- 다음 작업(ai-f2 요청, 2026-11-04): SCR-MAN-001 AI 건강분석 리포트(MANC0007) Java 내부 API `GET /internal/ai/pets/{petSn}/health-report-input?baseYmd=`·`PUT /internal/ai/pets/{petSn}/health-report`와 저장 테이블. `/start`로 기획하고 ai-f2 세션에 답한다(정본 초안 ai 저장소 `docs/api/internal.md` 맨 아래 두 행, `docs/api/healthreport.md`). 사람과 정한 방향: 새 테이블은 반려동물당 1행 덮어쓰기, 새로고침·자동 재생성 횟수는 컬럼 두 개로 PUT 때 갱신(기준일이 바뀌면 0), 리포트 본문(AI `tips`)은 `ANLS_CN`(분석내용) JSON 배열 한 칸, API 필드도 `anlsCns`로 바꾸자고 제안(`ANLS` 표준사전 확인). 남은 질문: `ageMm`(개월) 대신 `brthYmd`로 줄지, 일정. `docs/api/issues.md` 4번을 이 계약으로 닫는다
+- 정하기(사람): frontend-65 세션이 `milestones/LJS.md`에 넣은 `## SCR-ADM-080 라우팅 매핑표 · 프론트 연결 관리자 매핑표 API — 대기` 절. 사람이 "잘못 온 요청"이라고 했다(2026-11-04). 지울지 정한다
 - SCR-ADM-050 연결 남음: FN-ADM-050-01·02·03·05 (프론트 연결 `features/adminNews/api.js` 목록·등록/수정 모달·수집 기사 행·분류 키워드 탭, 프론트 저장소에서 /start). 프론트에 알릴 것: 썸네일은 `POST /api/admin/news/images`(form-data `image`) → `{ atchFileSn }`로 먼저 올리고 등록·수정 본문에 `atchFileSn`을 넣는다(가짜의 "등록 요청에 파일"과 다름). 목록 행에 `newsSrcCdNm` 추가, `useYn`은 true/false. 글자 수 제목 200·요약 1000·키워드 50(가정 그대로). 제목·요약·썸네일 수정은 관리자 등록 기사만(수집 기사에 보내면 400). 키워드 쉼표 400, 같은 카테고리 중복 409 `DUPLICATE_NEWS_KEYWORD`, 삭제한 키워드 다시 삭제 404 `NEWS_KEYWORD_NOT_FOUND`. 계약은 `docs/api/community.md` `/admin/news` 행
-- 프론트 마일스톤(사람): 프론트 저장소 LJS 마일스톤 `## 제외` 앞에 `## SCR-ADM-050 펫뉴스 · 펫뉴스 API 연결 — 대기` 절(기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-050-01·02·03·05 / 기다리는 것: 백엔드 SCR-ADM-050 펫뉴스 API(LJS, 끝) / 완료 조건: `features/adminNews/api.js` 가짜를 `/api/admin/news` 실제 API로 바꿔 목록 필터, 썸네일 업로드 후 관리자 뉴스 등록·수정, 수집 기사 숨김·카테고리 변경, 분류 키워드 등록·삭제가 화면에서 동작한다)을 넣는다. 옆 폴더가 없어 넣지 못했다
 - 공용 DB(사람, PR 병합 직후): `db/20261102_insert_base_data_v0.12.sql` 변경 절 v0.12 (5)만 실행한다(AIMC0039 쉼표 행 `DEL_YN='Y'` + 40행 INSERT). 실행 전에도 기존 분류·건강팁은 그대로 동작하고, 관리자 키워드 목록에 쉼표 행이 한 줄로 보일 뿐이다
 - 정하기: 뉴스 제외 키워드(AIMC0040) 편집 화면. 기준 데이터 주석에 "관리자 SCR-ADM-050에서 편집"이라고 돼 있지만 기능명세서·화면설계서·프론트 가정에 없어 만들지 않았다. 넣는다면 명세에 기능 ID를 추가하고 같은 키워드 API에 용도 구분을 더한다
 - 로컬 DB 정리(사람): SCR-ADM-050 검증이 올린 `ATCH_FILE` 4181과 감사 로그(`MNGR_TASK_LOG`) 행이 남아 있다. 사람 확인으로 만든 뉴스는 숨기거나 `DELETE FROM NEWS WHERE NEWS_SN=<번호>`
 - SCR-ADM-023 연결 남음: FN-ADM-023-01·02·04·06 (프론트 연결 `features/adminCommunity/api.js` 노출 콘텐츠 절 건강팁 표·지정 모달·오늘의 한마디 탭·AI 코멘트 탭, 프론트 저장소에서 /start). 프론트에 알릴 것: 후보 문구 필드 이름은 가정 그대로 `todayPhrsSn`·`phrsCn`(200자), `todayPhrs`는 오늘 노출 문구(없으면 null, 같은 문구 후보가 없으면 `todayPhrsSn` null), 건강팁 지정 모달의 글 검색은 기존 `GET /api/admin/posts?bbsCd=CMUC0001`
-- 프론트 마일스톤(사람): 프론트 저장소 LJS 마일스톤 `## 제외` 앞에 `## SCR-ADM-023 노출 콘텐츠 · 노출 콘텐츠 API 연결 — 대기` 절(기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-023-01·02·04·06 / 기다리는 것: 백엔드 SCR-ADM-023 노출 콘텐츠 API(LJS, 끝) / 완료 조건: `features/adminCommunity/api.js` 노출 콘텐츠 절 가짜를 `/api/admin/community/exposure` 실제 API로 바꿔 건강팁 지정·해제, 문구 등록·수정, AI 코멘트 사용 여부가 화면에서 동작한다)을 넣는다. 옆 폴더가 없어 넣지 못했다
 - ERDCloud·표준사전(사람): 새 테이블 `TODAY_PHRS`(오늘의한마디후보: `TODAY_PHRS_SN`·`PHRS_CN` varchar(200)·`USE_YN`·`REG_DT`·`MDFCN_DT`·`RGTR_ID`·`MDFR_ID`)를 추가하고 물리명(TODAY·PHRS)을 표준사전에 맞춘다
 - 공용 DB 정리(사람): SCR-ADM-023 검증 데이터. `DELETE FROM TODAY_PHRS WHERE TODAY_PHRS_SN = 1;`("[verify] test phrase"), `DELETE FROM CMNTY_AI_CMTRY WHERE CMNTY_AI_CMTRY_SN = 31;`(2026-11-03 행, 사용 안 함). 글 8 블라인드·복구 상태 이력, 배치 이력 382·383, 감사 로그는 남겨도 된다. 사람 확인으로 등록한 후보 문구도 같은 방식
 - JAJ에게 답한다(SCR-ADM-082): FN-ADM-082-03 PDF 분석 실패 집계는 `EXTL_API_CALL_LOG`(SYSC0025, Python 통지) 기준이 맞다(명세 비고·결정 B-15). JAJ의 PDF 분석 실패 집계 service와 검사결과지 첨부 수는 필요 없다(실패율 분모도 같은 로그). 그에 맞춰 `milestones/LJS.md` SCR-ADM-082 "기다리는 것"의 JAJ 부분과 `docs/admin/implementation-plan.md` 137행 JAJ 줄을 지운다(다음 작업 때). "검사결과지가 아닌 파일" 결과 구분은 아직 답하지 않았다

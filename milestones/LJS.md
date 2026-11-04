@@ -477,10 +477,13 @@
 - 완료 조건 결과: 검증 `통과`(2026-11-03, 잠금을 버린 뒤 1회차. 처음 1회차는 권한 검사를 영수증 조회보다 먼저 해 없는 영수증 + 남의 반려동물이 403이라 실패), 사람 확인 2026-11-03. 바뀐 것: 없는 영수증 + 남의 반려동물은 404 `RECEIPT_NOT_FOUND`
 - 연결 남음: FN-AIM-013-06 (프론트 연결 가계부 화면의 영수증 다시 열기, 화면 SJM, 프론트 저장소에서 /start)
 
-## SCR-ADM-101 품종·지역 · 프론트 연결 품종 관리 API — 대기
+## SCR-ADM-101 품종·지역 · 프론트 연결 품종 관리 API — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-101-01
-- 기다리는 것: 프론트 SCR-ADM-101(끝, 가짜 응답 `features/adminBreedRegion/api.js`). FN-ADM-101-02 지역 조회는 기존 공용 `GET /api/regions?upRgnSn=`로 이미 연결됨(프론트는 전북 `admdstCd` 5200000000 하위만 보임)
+- 기다리는 것: 프론트 SCR-ADM-101(끝, 가짜 응답 `features/adminBreed/api.js`). FN-ADM-101-02 지역 조회는 프론트 화면에서 뺐다(프론트 2026-11-03 사람 결정, 화면 `품종`·`/admin/breeds`. 명세에서 빼는 것은 문서 담당이 DMS에 올린다)
 - 완료 조건: `GET /api/admin/breeds?petSeCd=`(사용 안 함 포함, 정렬순 `[{ vrtySn, vrtyCd, vrtyNm, petSeCd, sortSeq, useYn }]`), `POST /api/admin/breeds` `{ petSeCd, vrtyNm, sortSeq, useYn }` → 품종 행(`vrtyCd`는 서버가 매김), `PATCH /api/admin/breeds/{vrtySn}` `{ vrtyNm, sortSeq, useYn }`(종·코드는 안 바꿈). 같은 종에 같은 이름(공백 무시)이면 409, 없는 품종 404. `useYn`은 true/false. 사용을 끈 품종은 공용 `GET /api/breeds`에서 빠진다. 이름 글자 수(프론트 가정 50)를 정해 프론트에 알린다
+- 결정: 관리자 품종은 새 `AdminBreedService`(기존 `BreedService`는 그대로). 이름 50자(앞뒤 공백 지운 뒤), `sortSeq` 생략 시 그 종 최대 + 10, `useYn` 생략 시 사용. 품종 코드는 `DOGV`·`CATV` + 그 접두 최대 번호 + 1. 같은 종 같은 이름(공백 무시, 사용 안 함 포함) 409 `DUPLICATE_VRTY_NM`(프론트 가짜 코드 그대로), 없는 품종 404 `BREED_NOT_FOUND`. 등록·수정 응답은 품종 행. DB 변경 없음
+- 완료 조건 결과: 검증 `통과`(2026-11-04, 1회차, 8082에서 API로 확인), 사람 확인 2026-11-04
+- 연결 남음: FN-ADM-101-01 (프론트 연결 `features/adminBreed/api.js` 품종 목록·[품종 추가]·[수정] 모달, 프론트 저장소에서 /start)
 
 ## SCR-ADM-051 약관 · 프론트 연결 관리자 약관 API — 대기
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-051-01·02·03·04
@@ -497,6 +500,11 @@
 - 기다리는 것: 프론트 SCR-ADM-072(끝, 가짜 응답 `features/adminPoint/api.js`)
 - 완료 조건: `GET /api/admin/points?mbrSn=&mbrNcnm=&pntDlngTypeCd=&fromDt=&toDt=&page=&size=`(최신순 `PageResponse`, 한 줄은 `AdminPointLedgerSummary` 필드 + 회원 `mbrSn`·`mbrNcnm`, 닉네임 부분 일치, 기간은 YYYY-MM-DD), `POST /api/admin/points/adjustments` `{ mbrSn, dlngPnt(지급 +, 차감 -), memoCn(사유 필수) }`(거래 유형 MYPC0009, 보유 포인트 갱신, 차감 후 잔액 0 미만이면 거절, 감사 로그). 조정 화면의 현재 잔액을 줄 필드(회원 보유 포인트)를 정한다. 상한을 정해 프론트에 알린다(프론트 가정: 1회 100,000P, 사유 200자). 회원 포인트 내역(FN-MYP-020)에 "관리자 조정"으로 보이는지 확인한다(FN-ADM-072-03)
 - 이미 바뀐 것: 회원 한 명 원장 `GET /api/admin/members/{mbrSn}/point-ledgers`(`AdminPointController`, SCR-ADM-011)
+
+## SCR-ADM-080 라우팅 매핑표 · 프론트 연결 관리자 매핑표 API — 대기
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-080-01·02·03·04·05
+- 기다리는 것: 프론트 SCR-ADM-080(끝, 가짜 응답 `features/adminAiRoute/api.js`)
+- 완료 조건: `GET /api/admin/ai/routes?q=`(우선순위 순 전체 목록, `q`는 지시어 공백 무시 부분 일치, 한 줄은 `AI_ROUT_MPNG` 필드 `aiRoutMpngSn`·`domnNm`·`trgtScrnNm`·`scrnId`·`scrnParamCn`·`instKwrdCn`·`mvmnMthdCd`(AIMG09)·`rprsChipYn`·`prrtSeq`·`rmrkCn`·`useYn`·`mdfcnDt`), `POST /api/admin/ai/routes`·`PATCH /api/admin/ai/routes/{aiRoutMpngSn}`(본문에 `prrtSeq`를 받으면 그 자리에 넣고 나머지를 한 칸씩 밀어 1부터 빈틈없이, 등록 기본값은 맨 아래), `DELETE /api/admin/ai/routes/{aiRoutMpngSn}`(뒤 순위를 당김), 감사 로그. 지시어 저장 형식(프론트 가정: 쉼표 구분 한 줄)과 `domnNm` 정하는 규칙(프론트 가정: 화면 ID 가운데 세 글자), 화면 ID 선택지 출처를 정해 프론트에 알린다. AI 서버·대화창용 조회 API(FN-ADM-080-04)와 부록 A 초기 데이터 INSERT(FN-ADM-080-05). 나중에 우선순위를 지시어별로 둘지(프론트 후속 메모) 함께 본다
 
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
