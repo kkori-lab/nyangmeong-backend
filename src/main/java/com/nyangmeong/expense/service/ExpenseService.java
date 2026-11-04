@@ -108,6 +108,7 @@ public class ExpenseService {
     @Transactional
     public void create(ExpenseCreateCommand command) {
         petAuthorizer.checkCaregiver(command.mbrSn(), command.petSn());
+        checkNotFuture(command.expndYmd());
         Expense expense = new Expense();
         expense.setPetSn(command.petSn());
         expense.setMbrSn(command.mbrSn());
@@ -161,6 +162,7 @@ public class ExpenseService {
         if (expense == null) {
             throw new CustomException(ErrorCode.EXPENSE_NOT_FOUND);
         }
+        checkNotFuture(req.expndYmd());
         boolean common = Boolean.TRUE.equals(req.common());
         if (common && req.petSn() != null) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
@@ -234,12 +236,22 @@ public class ExpenseService {
     }
 
     /**
+     * 지출일은 오늘(KST)까지만 허용 : 값이 없으면(수정에서 안 바꿈) 통과
+     */
+    private void checkNotFuture(LocalDate expndYmd) {
+        if (expndYmd != null && expndYmd.isAfter(LocalDate.now(ZONE))) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    /**
      * 등록 요청 검사
      */
     private void validate(Long mbrSn, ExpenseCreateRequest req) {
         if (!ExpenseCategory.exists(req.expndClsfCd()) || !ExpenseInputMethod.exists(req.expndInptMthCd())) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
+        checkNotFuture(req.expndYmd());
         Set<Long> petSns = new HashSet<>();
         for (ExpenseLineRequest line : req.lines()) {
             if (line.petSn() == null && ExpenseCategory.HOSPITAL.is(req.expndClsfCd())) {

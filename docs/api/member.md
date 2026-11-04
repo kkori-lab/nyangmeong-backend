@@ -26,13 +26,13 @@
 | POST | /email-certifications/{emlCertSn}/password-reset | 본인확인 결과로 비밀번호 재설정, 대상 계정 기존 로그인 종료. 권한 없음·만료·사용 완료·무효화는 400 PASSWORD_RESET_NOT_AVAILABLE, `pswd`와 `pswdCnfrm` 불일치는 400 PASSWORD_MISMATCH. 재설정 권한 조회 GET은 두지 않는다(순번 일련번호 노출 방지, 만료는 verify의 `initAuthrtExpryDt`와 이 API의 400으로 안다) | ACC-012-01~03 | YAY | EmailCertificationPasswordResetRequest | - |
 | POST | /email-certifications/{emlCertSn}/verify | 인증번호 확인. 목적별 결과(가입 진행 / 재설정 대상·SNS 전용·미가입·탈퇴 보관 분기 / 복구 확인 권한) 반환 | ACC-001-06·40·43, ACC-011-08~10 | YAY | EmailCertificationVerifyRequest | EmailCertificationResponse |
 | POST | /members | 회원가입(이메일·SNS 공통). 약관별 동의·번호 암호문/HMAC·기본 닉네임·최초 상태 이력·SNS 연결 저장, 서버 재검사. 201과 함께 닉네임 설정 전용 쿠키 `ncnm_setup`(로그인 쿠키 아님)을 준다. 이메일 가입만 구현(SNS 가입은 SNS 로그인 마일스톤) | ACC-001-09·10·12·14·22·24·27·29·32·38 | YAY | MemberCreateRequest | MemberResponse |
-| POST | /members/me/password-verification | 현재 비밀번호 확인(회원정보 수정 진입·비밀번호 변경 전) *통합 때 추가* | MYP-040-01 | YAY | PasswordVerifyRequest | - |
+| POST | /members/me/password-verification | 현재 비밀번호 확인(회원정보 수정 진입 전 본인 확인). 서버에 상태를 남기지 않고 맞으면 200, 틀리면 400 CURRENT_PASSWORD_MISMATCH, 비밀번호 없는 SNS 회원은 400 SNS_ONLY_MEMBER, 정지·탈퇴 회원은 403 MEMBER_INACTIVE *통합 때 추가* | MYP-040-01 | YAY | PasswordVerifyRequest | - |
 | POST | /members/recovery | 30일 이내 탈퇴 회원 기존 정보 복구 실행(탈퇴 → 정상, 상태 이력 "재가입 복구" 한 번). 로그인 없이 부르고 본문의 복구 확인 권한 토큰으로 본인확인하며 성공해도 로그인 쿠키를 만들지 않는다. 권한 문제는 400 MEMBER_RECOVERY_NOT_AVAILABLE, 보관 기간 지남은 400 MEMBER_RECOVERY_EXPIRED, 빠진 필수 약관 미동의는 400 REQUIRED_TERMS_NOT_AGREED, 번호는 INVALID_PHONE_NUMBER·409 PHONE_ALREADY_USED. 이미 쓴 권한이라도 그 회원이 지금 정상이면 바꾸는 것 없이 200(중복 클릭·응답 유실) | ACC-001-45 | YAY | MemberRecoverRequest | - |
 | POST | /members/me/withdraw | 회원탈퇴(상태·이력 반영, 모든 로그인·인증 권한 종료, 30일 보관) | ACC-020-03·14·16, AIM-011-19, MYP-002-08 (기능 분배 3.1절 5번) | YAY | MemberWithdrawRequest | - |
 | PUT | /members/me/dashboard-widgets | 메인 건강 지표 위젯 표시 여부·순서 전체 저장 | MAN-007 | YAY | DashboardWidgetSaveRequest | List<DashboardWidgetSummary> |
 | PATCH | /members/me | 회원정보 수정. 휴대전화(저장 시 중복 재검사)·프로필 사진 | MYP-040-02·05·08·11 | SJM | MemberUpdateRequest | MemberResponse |
 | PATCH | /members/me/nickname | 닉네임 설정 확정(로그인 회원 또는 가입 직후 받은 `ncnm_setup` 쿠키, 둘 다 없으면 401), 설정 완료 여부 반영 | ACC-001-26 | YAY | MemberNicknameUpdateRequest | MemberResponse |
-| PATCH | /members/me/password | 로그인 상태에서 비밀번호 변경 *통합 때 추가* | MYP-040-06 | YAY | PasswordChangeRequest | - |
+| PATCH | /members/me/password | 로그인 상태에서 비밀번호 변경. 현재 비밀번호를 같은 요청에서 다시 검사(틀리면 400 CURRENT_PASSWORD_MISMATCH), `pswd`와 `pswdCnfrm` 불일치 400 PASSWORD_MISMATCH, SNS 회원 400 SNS_ONLY_MEMBER. 성공하면 모든 기기의 로그인을 끝내고 요청한 기기에는 새 로그인 쿠키를 다시 준다 *통합 때 추가* | MYP-040-06 | YAY | PasswordChangeRequest | - |
 | GET | /admin/members | 관리자 회원 목록. 최신 가입순 20건씩, 정상·정지·탈퇴 전부. `q`에 @가 있으면 이메일 완전 일치, 없으면 닉네임 부분 일치. 시작일이 종료일보다 늦으면 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-010-01·02·03·04 | LJS | AdminMemberSearchCond | PageResponse<AdminMemberSummary> |
 | GET | /admin/members/suspensions | 지금 정지 중인 회원 목록. 최근 정지순 20건씩. 일반 회원 403 ADMIN_ONLY | ADM-012 | LJS | AdminSuspensionSearchCond | PageResponse<AdminSuspensionSummary> |
 | POST | /admin/members/{mbrSn}/suspension | 회원 정지(상태 정지, 상태 이력, 모든 세션 폐기, 감사 로그). 종료 일시는 오늘+N일 00:00. 7·30·null 외 값 400 INVALID_INPUT_VALUE, 관리자·본인·탈퇴·이미 정지 409 MEMBER_NOT_SUSPENDABLE, 없는 회원 404 MEMBER_NOT_FOUND | ADM-012-01·02·05 | LJS | AdminMemberSuspendRequest | - |
@@ -384,8 +384,9 @@
 쓰는 API: PATCH /members/me/password
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| pswd | String | N | 새 비밀번호. 8자 이상, 문자와 숫자 조합(가입·재설정 규칙 준용). PATCH 규칙상 N이지만 실제로는 필수(issues 3·4) | MBR.PSWD_HASH (해시 전 원문), MYP-040-06, ACC-001-09, ACC-012-01 |
-| pswdCnfrm | String | N | `pswd`와 일치(재설정 규칙 준용) | MYP-040-06, ACC-012-02 |
+| currentPswd | String | Y | 현재 비밀번호. 미입력 불가, 형식 규칙은 적용하지 않는다. 화면설계서 6-2의 "현재 비밀번호" 칸 | MBR.PSWD_HASH (해시 전 원문), MYP-040-06 |
+| pswd | String | Y | 새 비밀번호. 8자 이상, 문자와 숫자 조합(가입·재설정 규칙 준용). PATCH 규칙의 예외로 필수(issues 3) | MBR.PSWD_HASH (해시 전 원문), MYP-040-06, ACC-001-09, ACC-012-01 |
+| pswdCnfrm | String | Y | `pswd`와 일치(재설정 규칙 준용). PATCH 규칙의 예외로 필수(issues 3) | MYP-040-06, ACC-012-02 |
 
 ### PasswordVerifyRequest
 쓰는 API: POST /members/me/password-verification

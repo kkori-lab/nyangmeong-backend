@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 /**
  * [영수증 상태 처리]
  * - 업로드·다시 분석·분석 종료·취소 각각 별도 트랜잭션 : OCR 호출은 트랜잭션 밖 (ReceiptAnalyzer)
- * - 검진 경로 전용 : 출처 = 건강기록, AI 대화창 업로드는 AI 대화창 (FN-AIM-008-02·013-04)
+ * - 출처 : 건강기록(기본값)·가계부·AI 대화창 (FN-AIM-008-02·013-04, FN-MYP-031-03)
  */
 @Service
 @RequiredArgsConstructor
@@ -41,15 +41,21 @@ public class ReceiptService {
      */
     @Transactional
     public Long create(Long mbrSn, Long petSn, MultipartFile file, String ocrDmndSrcCd) {
-        petAuthorizer.checkCaregiver(mbrSn, petSn);
+        ReceiptSource source = ReceiptSource.from(ocrDmndSrcCd);
+        // 가계부 출처 : RECPT에 반려동물 칸이 없고 반려동물은 확인 모달에서 고른다 (FN-MYP-031-03)
+        if (source != ReceiptSource.EXPENSE) {
+            if (petSn == null) {
+                throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            }
+            petAuthorizer.checkCaregiver(mbrSn, petSn);
+        }
         Long atchFileSn = fileStore.store(file, String.valueOf(mbrSn));
 
         Receipt receipt = new Receipt();
         receipt.setMbrSn(mbrSn);
         receipt.setAtchFileSn(atchFileSn);
         receipt.setOcrPrcsSttsCd(ReceiptStatus.ANALYZING.getCode());
-        receipt.setOcrDmndSrcCd(ReceiptSource.CHAT.is(ocrDmndSrcCd) ? ReceiptSource.CHAT.getCode()
-                : ReceiptSource.HEALTH.getCode());
+        receipt.setOcrDmndSrcCd(source.getCode());
         receiptMapper.insert(receipt);
         insertHistory(receipt.getRecptSn(), mbrSn, null, ReceiptStatus.ANALYZING, null);
         return receipt.getRecptSn();
@@ -57,11 +63,25 @@ public class ReceiptService {
 
     /**
      * 회원 영수증 조회 : 결과 다시 열기 (FN-AIM-013-06)
+     * - 가계부 출처만 반려동물 생략 가능 (업로드와 같은 규칙, FN-MYP-031-03)
      */
     @Transactional(readOnly = true)
     public Receipt get(Long mbrSn, Long recptSn, Long petSn) {
-        petAuthorizer.checkCaregiver(mbrSn, petSn);
-        return getOwned(mbrSn, recptSn);
+        Receipt receipt = getOwned(mbrSn, recptSn);
+        if (petSn != null) {
+            petAuthorizer.checkCaregiver(mbrSn, petSn);
+        } else if (ReceiptSource.from(receipt.getOcrDmndSrcCd()) != ReceiptSource.EXPENSE) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return receipt;
+    }
+
+    /**
+     * 본인 영수증의 요청 출처 : 인식 판정 기준 (FN-AIM-010-01)
+     */
+    @Transactional(readOnly = true)
+    public ReceiptSource getSource(Long mbrSn, Long recptSn) {
+        return ReceiptSource.from(getOwned(mbrSn, recptSn).getOcrDmndSrcCd());
     }
 
     /**

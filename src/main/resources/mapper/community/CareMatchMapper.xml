@@ -278,4 +278,141 @@
              , MDFCN_DT = NOW()
          WHERE PRTC_CMPTN_DMND_CYCL_SN = #{prtcCmptnDmndCyclSn}
     </update>
+
+
+    <resultMap id="adminMatchResultMap" type="com.nyangmeong.community.dto.AdminCareMatchResponse$Match">
+        <id     column="PET_PRTC_MTCH_SN"  property="petPrtcMtchSn" />
+        <result column="CTPT_MBR_SN"       property="ctptMbrSn" />
+        <result column="CTPT_NCNM"         property="ctptNcnm" />
+        <result column="MTCH_DLNG_STTS_CD" property="mtchDlngSttsCd" />
+        <result column="RCV_YN"            property="rcvYn" />
+        <result column="RCV_IDNTY_DT"      property="rcvIdntyDt" />
+        <result column="REG_DT"            property="regDt" />
+    </resultMap>
+
+    <resultMap id="adminConditionVersionResultMap" type="com.nyangmeong.community.dto.AdminCareMatchResponse$ConditionVersion">
+        <result column="PET_PRTC_MTCH_SN"  property="petPrtcMtchSn" />
+        <result column="CND_VER_NO"        property="cndVerNo" />
+        <result column="CST_UNIT_CD"       property="cstUnitCd" />
+        <result column="ACRD_CST_AMT"      property="acrdCstAmt" />
+        <result column="ACRD_PRTC_CN"      property="acrdPrtcCn" />
+        <result column="ACRD_PRTC_BGNG_DT" property="acrdPrtcBgngDt" />
+        <result column="ACRD_PRTC_END_DT"  property="acrdPrtcEndDt" />
+        <result column="REG_DT"            property="regDt" />
+    </resultMap>
+
+    <resultMap id="adminStatusHistoryResultMap" type="com.nyangmeong.community.dto.AdminCareMatchResponse$StatusHistory">
+        <result column="PET_PRTC_MTCH_SN"  property="petPrtcMtchSn" />
+        <result column="BFR_STTS_CD"       property="bfrSttsCd" />
+        <result column="AFTR_STTS_CD"      property="aftrSttsCd" />
+        <result column="CND_VER_NO"        property="cndVerNo" />
+        <result column="CHG_RSN"           property="chgRsn" />
+        <result column="REG_DT"            property="regDt" />
+    </resultMap>
+
+    <resultMap id="adminCompletionRequestResultMap" type="com.nyangmeong.community.dto.AdminCareMatchResponse$CompletionRequest">
+        <result column="PET_PRTC_MTCH_SN"         property="petPrtcMtchSn" />
+        <result column="PRTC_CMPTN_DMND_CYCL_SN"  property="prtcCmptnDmndCyclSn" />
+        <result column="DMND_CYCL"                property="dmndCycl" />
+        <result column="CMPTN_CN"                 property="cmptnCn" />
+        <result column="SPCL_MTTR_CN"             property="spclMttrCn" />
+        <result column="PRTC_END_DT"              property="prtcEndDt" />
+        <result column="PRTCR_IDNTY_RSLT_CD"      property="prtcrIdntyRsltCd" />
+        <result column="PRTCR_IDNTY_DT"           property="prtcrIdntyDt" />
+        <result column="SPLMNT_DMND_RSN"          property="splmntDmndRsn" />
+        <result column="REG_DT"                   property="regDt" />
+    </resultMap>
+
+    <resultMap id="adminCompletionPhotoResultMap" type="com.nyangmeong.community.dto.AdminCareMatchResponse$Photo">
+        <result column="PRTC_CMPTN_DMND_CYCL_SN"  property="prtcCmptnDmndCyclSn" />
+        <result column="ATCH_FILE_SN"             property="atchFileSn" />
+        <result column="SORT_SEQ"                 property="sortSeq" />
+    </resultMap>
+
+    <select id="selectAdminMatches" resultMap="adminMatchResultMap">
+        SELECT T.PET_PRTC_MTCH_SN
+             , C.CTPT_MBR_SN
+             , M.MBR_NCNM AS CTPT_NCNM
+             , T.MTCH_DLNG_STTS_CD
+             , CASE T.RCV_YN WHEN 'Y' THEN 1 WHEN 'N' THEN 0 END AS RCV_YN
+             , T.RCV_IDNTY_DT
+             , T.REG_DT
+          FROM PET_PRTC_MTCH T
+          JOIN OTO_CHAT_ROOM C
+            ON C.OTO_CHAT_ROOM_SN = T.OTO_CHAT_ROOM_SN
+          LEFT JOIN MBR M
+            ON M.MBR_SN = C.CTPT_MBR_SN
+         WHERE T.PET_PRTC_RCRT_SN = #{petPrtcRcrtSn}
+         ORDER BY T.REG_DT DESC
+                , T.PET_PRTC_MTCH_SN DESC
+    </select>
+
+    <select id="selectAdminConditionVersions" resultMap="adminConditionVersionResultMap">
+        SELECT V.PET_PRTC_MTCH_SN
+             , V.CND_VER_NO
+             , V.CST_UNIT_CD
+             , V.ACRD_CST_AMT
+             , V.ACRD_PRTC_CN
+             , V.ACRD_PRTC_BGNG_DT
+             , V.ACRD_PRTC_END_DT
+             , V.REG_DT
+          FROM MTCH_CND_VER V
+          JOIN PET_PRTC_MTCH T
+            ON T.PET_PRTC_MTCH_SN = V.PET_PRTC_MTCH_SN
+         WHERE T.PET_PRTC_RCRT_SN = #{petPrtcRcrtSn}
+         ORDER BY V.PET_PRTC_MTCH_SN
+                , V.CND_VER_NO DESC
+    </select>
+
+    <select id="selectAdminStatusHistories" resultMap="adminStatusHistoryResultMap">
+        SELECT H.PET_PRTC_MTCH_SN
+             , H.BFR_STTS_CD
+             , H.AFTR_STTS_CD
+             , V.CND_VER_NO
+             , H.CHG_RSN
+             , H.REG_DT
+          FROM PET_PRTC_MTCH_STTS_HSTRY H
+          JOIN PET_PRTC_MTCH T
+            ON T.PET_PRTC_MTCH_SN = H.PET_PRTC_MTCH_SN
+          LEFT JOIN MTCH_CND_VER V
+            ON V.MTCH_CND_VER_SN = H.MTCH_CND_VER_SN
+         WHERE T.PET_PRTC_RCRT_SN = #{petPrtcRcrtSn}
+         ORDER BY H.PET_PRTC_MTCH_SN
+                , H.REG_DT
+                , H.PET_PRTC_MTCH_STTS_HSTRY_SN
+    </select>
+
+    <select id="selectAdminCompletionRequests" resultMap="adminCompletionRequestResultMap">
+        SELECT D.PET_PRTC_MTCH_SN
+             , D.PRTC_CMPTN_DMND_CYCL_SN
+             , D.DMND_CYCL
+             , D.CMPTN_CN
+             , D.SPCL_MTTR_CN
+             , D.PRTC_END_DT
+             , D.PRTCR_IDNTY_RSLT_CD
+             , D.PRTCR_IDNTY_DT
+             , D.SPLMNT_DMND_RSN
+             , D.REG_DT
+          FROM PRTC_CMPTN_DMND_CYCL D
+          JOIN PET_PRTC_MTCH T
+            ON T.PET_PRTC_MTCH_SN = D.PET_PRTC_MTCH_SN
+         WHERE T.PET_PRTC_RCRT_SN = #{petPrtcRcrtSn}
+         ORDER BY D.PET_PRTC_MTCH_SN
+                , D.DMND_CYCL
+    </select>
+
+    <select id="selectAdminCompletionPhotos" resultMap="adminCompletionPhotoResultMap">
+        SELECT F.PRTC_CMPTN_DMND_CYCL_SN
+             , F.ATCH_FILE_SN
+             , F.SORT_SEQ
+          FROM PRTC_CMPTN_PHOTO F
+          JOIN PRTC_CMPTN_DMND_CYCL D
+            ON D.PRTC_CMPTN_DMND_CYCL_SN = F.PRTC_CMPTN_DMND_CYCL_SN
+          JOIN PET_PRTC_MTCH T
+            ON T.PET_PRTC_MTCH_SN = D.PET_PRTC_MTCH_SN
+         WHERE T.PET_PRTC_RCRT_SN = #{petPrtcRcrtSn}
+         ORDER BY F.PRTC_CMPTN_DMND_CYCL_SN
+                , F.SORT_SEQ
+                , F.PRTC_CMPTN_PHOTO_SN
+    </select>
 </mapper>

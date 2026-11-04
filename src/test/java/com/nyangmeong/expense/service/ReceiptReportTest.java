@@ -20,6 +20,7 @@ import org.mockito.ArgumentCaptor;
 
 import com.nyangmeong.expense.domain.Receipt;
 import com.nyangmeong.expense.domain.ReceiptOcrResult;
+import com.nyangmeong.expense.domain.ReceiptSource;
 import com.nyangmeong.expense.domain.ReceiptStatus;
 import com.nyangmeong.expense.domain.ReceiptStatusHistory;
 import com.nyangmeong.expense.dto.ReceiptReportResponse;
@@ -82,6 +83,23 @@ class ReceiptReportTest {
         verify(mapper).updateAnalyzed(eq(3L), eq(analyzing), eq(expected), json.capture());
         assertThat(json.getValue()).contains("냥멍동물병원");
         assertThat(history().getAftrSttsCd()).isEqualTo(expected);
+    }
+
+    @Test
+    void 가계부_출처는_사용처_기준으로_판정하고_사용처와_추정_카테고리를_저장한다() {
+        Receipt expense = stored(ReceiptStatus.ANALYZING);
+        expense.setOcrDmndSrcCd(ReceiptSource.EXPENSE.getCode());
+        when(mapper.selectOwned(3L, 1L)).thenReturn(expense);
+        ReceiptOcrResponse shop = new ReceiptOcrResponse(null, LocalDate.of(2026, 10, 20), 32_000L, null,
+                List.of(), "펫월드", "MYPC0013");
+
+        ReceiptReportResponse response = analyzer.report(1L, 3L, ReceiptOcrResult.RECOGNIZED, shop);
+
+        String recognized = ReceiptStatus.RECOGNIZED.getCode();
+        assertThat(response.ocrPrcsSttsCd()).isEqualTo(recognized);
+        ArgumentCaptor<String> json = ArgumentCaptor.forClass(String.class);
+        verify(mapper).updateAnalyzed(eq(3L), eq(analyzing), eq(recognized), json.capture());
+        assertThat(json.getValue()).contains("\"expndPlcusNm\":\"펫월드\"").contains("\"expndClsfCd\":\"MYPC0013\"");
     }
 
     @Test

@@ -1,7 +1,7 @@
 -- =====================================================================
 -- 냥멍케어 MySQL DDL v0.12  |  MySQL 8.0.16+ / InnoDB / utf8mb4_0900_ai_ci
 -- 대상: DBeaver (전체 선택 후 스크립트 실행 Alt+X, 또는 스키마 우클릭 → Tools → Execute script)
--- 원천: DDL v0.11(db/archive/v0.11/) 위에 아래 "v0.11 → v0.12 변경"을 더한 것 (92 테이블 / 977 컬럼 / 관계 FK 151)
+-- 원천: DDL v0.11(db/archive/v0.11/) 위에 아래 "v0.11 → v0.12 변경"을 더한 것 (93 테이블 / 984 컬럼 / 관계 FK 151)
 --       UK·INDEX·CHECK·생성열·공통코드 FK 는 v0.8 그대로 유지
 -- 구성: [1] DROP  [2] CREATE(PK·UK·INDEX·CHECK·생성열)  [3] 관계 FK 151  [4] 공통코드 FK
 -- 주의: 전체 DROP 후 재생성합니다. 기존 데이터가 있으면 먼저 백업하세요. 공용 DB에는 실행하지 않습니다.
@@ -49,6 +49,55 @@
 -- v0.12 (2) 공지 알림 발송 시각·대상 수 (2026-11-02, LJS, 근거: 관리자_기능명세서 FN-ADM-040-01·03, 결정 15). 발송 시각이 NULL이면 미발송
 --   SET NAMES utf8mb4;
 --   ALTER TABLE `NTC_MTTR` ADD COLUMN `NOTI_SNDNG_DT` datetime NULL COMMENT '알림발송일시' AFTER `USE_YN`, ADD COLUMN `NOTI_TRGT_CNT` decimal(10,0) NULL COMMENT '알림대상수' AFTER `NOTI_SNDNG_DT`;
+-- v0.12 (3) 아이템 굽기 지시 (2026-11-03, LJS, 근거: 관리자_기능명세서 FN-ADM-070-02, 마이페이지_기능명세서 FN-MYP-011-01, AI 저장소 docs/api/internal.md bake-items). 엔진 키 대신 굽기 지시 문장을 Java가 가진다. 시드 원본 AI docs/design/item-bake-hints.json 26개 + 시드에만 있는 6개, 신발(MYPC0006)은 굽지 않아 NULL. 시드에 없는 12개는 아이템을 새로 넣고 이미지는 같은 부위 시드 아이템(머리 빨간 리본, 의상 노란 우비)의 첨부파일을 같이 쓴다
+--   SET NAMES utf8mb4;
+--   ALTER TABLE `ITEM` ADD COLUMN `BAKE_HINT` varchar(300) NULL COMMENT '굽기지시' AFTER `NTSL_YN`;
+--   INSERT INTO `ITEM` (`ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `BAKE_HINT`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) SELECT `ATCH_FILE_SN`,'MYPC0001','빨간 비니',500,250,'Y','a red knitted beanie with a pompom',NOW(),NOW(),'SEED','SEED' FROM `ITEM` WHERE `ITEM_NM`='빨간 리본';
+--   INSERT INTO `ITEM` (`ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `BAKE_HINT`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) SELECT `ATCH_FILE_SN`,'MYPC0001','야구모자',500,260,'Y','a blue baseball cap with a pale gray front panel',NOW(),NOW(),'SEED','SEED' FROM `ITEM` WHERE `ITEM_NM`='빨간 리본';
+--   INSERT INTO `ITEM` (`ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `BAKE_HINT`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) SELECT `ATCH_FILE_SN`,'MYPC0001','버킷햇',500,270,'Y','a soft olive green bucket hat with a wide drooping brim',NOW(),NOW(),'SEED','SEED' FROM `ITEM` WHERE `ITEM_NM`='빨간 리본';
+--   INSERT INTO `ITEM` (`ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `BAKE_HINT`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) SELECT `ATCH_FILE_SN`,'MYPC0001','귀달이 모자',500,280,'Y','a brown warm hat with fur-lined ear flaps hanging down',NOW(),NOW(),'SEED','SEED' FROM `ITEM` WHERE `ITEM_NM`='빨간 리본';
+--   INSERT INTO `ITEM` (`ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `BAKE_HINT`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) SELECT `ATCH_FILE_SN`,'MYPC0001','분홍 버킷햇',500,290,'Y','a soft pink bucket hat with a wide drooping brim',NOW(),NOW(),'SEED','SEED' FROM `ITEM` WHERE `ITEM_NM`='빨간 리본';
+--   INSERT INTO `ITEM` (`ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `BAKE_HINT`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) SELECT `ATCH_FILE_SN`,'MYPC0001','초록 귀달이 모자',500,300,'Y','a green warm hat with fur-lined ear flaps hanging down',NOW(),NOW(),'SEED','SEED' FROM `ITEM` WHERE `ITEM_NM`='빨간 리본';
+--   INSERT INTO `ITEM` (`ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `BAKE_HINT`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) SELECT `ATCH_FILE_SN`,'MYPC0004','초록 스웨터',500,310,'Y','a green knitted dog sweater',NOW(),NOW(),'SEED','SEED' FROM `ITEM` WHERE `ITEM_NM`='노란 우비';
+--   INSERT INTO `ITEM` (`ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `BAKE_HINT`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) SELECT `ATCH_FILE_SN`,'MYPC0004','청재킷',500,320,'Y','an open blue denim jacket with a collar',NOW(),NOW(),'SEED','SEED' FROM `ITEM` WHERE `ITEM_NM`='노란 우비';
+--   INSERT INTO `ITEM` (`ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `BAKE_HINT`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) SELECT `ATCH_FILE_SN`,'MYPC0004','후드티',500,330,'Y','a plain gray pullover hoodie with the hood down',NOW(),NOW(),'SEED','SEED' FROM `ITEM` WHERE `ITEM_NM`='노란 우비';
+--   INSERT INTO `ITEM` (`ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `BAKE_HINT`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) SELECT `ATCH_FILE_SN`,'MYPC0004','패딩 조끼',500,340,'Y','a quilted red puffer vest with horizontal padded seams',NOW(),NOW(),'SEED','SEED' FROM `ITEM` WHERE `ITEM_NM`='노란 우비';
+--   INSERT INTO `ITEM` (`ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `BAKE_HINT`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) SELECT `ATCH_FILE_SN`,'MYPC0004','보라 청재킷',500,350,'Y','an open purple denim jacket with a collar',NOW(),NOW(),'SEED','SEED' FROM `ITEM` WHERE `ITEM_NM`='노란 우비';
+--   INSERT INTO `ITEM` (`ATCH_FILE_SN`, `ITEM_REGN_CD`, `ITEM_NM`, `NEED_PNT`, `SORT_SEQ`, `NTSL_YN`, `BAKE_HINT`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) SELECT `ATCH_FILE_SN`,'MYPC0004','청록 패딩 조끼',500,360,'Y','a quilted teal puffer vest with horizontal padded seams',NOW(),NOW(),'SEED','SEED' FROM `ITEM` WHERE `ITEM_NM`='노란 우비';
+--   UPDATE `ITEM` SET `BAKE_HINT`='a straw sun hat with a wide brim and a brown hat band' WHERE `ITEM_NM`='밀짚모자';
+--   UPDATE `ITEM` SET `BAKE_HINT`='round thin black glasses with clear lenses' WHERE `ITEM_NM`='동그란 안경';
+--   UPDATE `ITEM` SET `BAKE_HINT`='black sunglasses with dark lenses' WHERE `ITEM_NM`='선글라스';
+--   UPDATE `ITEM` SET `BAKE_HINT`='pink heart-shaped glasses' WHERE `ITEM_NM`='하트 안경';
+--   UPDATE `ITEM` SET `BAKE_HINT`='a round golden monocle with a thin chain' WHERE `ITEM_NM`='외알 안경';
+--   UPDATE `ITEM` SET `BAKE_HINT`='a red collar with one round golden bell at the front of its neck' WHERE `ITEM_NM`='방울 목걸이';
+--   UPDATE `ITEM` SET `BAKE_HINT`='a red and cream checked scarf wrapped around its neck' WHERE `ITEM_NM`='체크 스카프';
+--   UPDATE `ITEM` SET `BAKE_HINT`='a navy blue bow tie at the front of its neck' WHERE `ITEM_NM`='나비넥타이';
+--   UPDATE `ITEM` SET `BAKE_HINT`='a white pearl necklace of round beads around its neck' WHERE `ITEM_NM`='진주 목걸이';
+--   UPDATE `ITEM` SET `BAKE_HINT`='a bright yellow dog raincoat' WHERE `ITEM_NM`='노란 우비';
+--   UPDATE `ITEM` SET `BAKE_HINT`='a small red backpack with both shoulder straps clearly visible across the chest from the front' WHERE `ITEM_NM`='작은 배낭';
+--   UPDATE `ITEM` SET `BAKE_HINT`='a small brown crossbody bag resting on its side with the strap crossing the chest' WHERE `ITEM_NM`='크로스백';
+--   UPDATE `ITEM` SET `BAKE_HINT`='a small checked lunch bag hanging at the front of its chest from a strap around the neck' WHERE `ITEM_NM`='도시락 가방';
+--   UPDATE `ITEM` SET `BAKE_HINT`='a small woven basket of colorful flowers hanging at the front of its chest from a strap around the neck' WHERE `ITEM_NM`='꽃바구니';
+--   UPDATE `ITEM` SET `BAKE_HINT`='a red satin ribbon bow on top of its head' WHERE `ITEM_NM`='빨간 리본';
+--   UPDATE `ITEM` SET `BAKE_HINT`='a small shiny golden crown on top of its head' WHERE `ITEM_NM`='작은 왕관';
+--   UPDATE `ITEM` SET `BAKE_HINT`='a cream knitted wool hat with a folded brim' WHERE `ITEM_NM`='털모자';
+--   UPDATE `ITEM` SET `BAKE_HINT`='a navy and white horizontally striped dog t-shirt' WHERE `ITEM_NM`='줄무늬 티셔츠';
+--   UPDATE `ITEM` SET `BAKE_HINT`='a colorful Korean hanbok jacket with rainbow striped sleeves' WHERE `ITEM_NM`='꼬까 한복';
+--   UPDATE `ITEM` SET `BAKE_HINT`='a brown dog hoodie with small round bear ears on the hood' WHERE `ITEM_NM`='곰돌이 후드티';
+--   ALTER TABLE `ITEM` DROP COLUMN `ENGINE_ITEM_KEY`;
+-- v0.12 (4) 오늘의 한마디 후보 문구 (2026-11-03, LJS, 근거: 관리자_기능명세서 FN-ADM-023-04·05, 구현 계획 결정 11·B-2). 선정 결과는 CMNTY_AI_CMTRY에 일자별로 저장한다. 삭제 API가 없어 DEL_YN 없음. 공통코드는 20261102_insert_base_data_v0.12.sql의 v0.12 (4)를 이어서 실행한다
+--   SET NAMES utf8mb4;
+--   CREATE TABLE `TODAY_PHRS` (
+--     `TODAY_PHRS_SN` bigint NOT NULL AUTO_INCREMENT COMMENT '오늘의한마디일련번호',
+--     `PHRS_CN` varchar(200) NOT NULL COMMENT '문구내용',
+--     `USE_YN` char(1) NOT NULL DEFAULT 'Y' COMMENT '사용여부',
+--     `REG_DT` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
+--     `MDFCN_DT` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+--     `RGTR_ID` varchar(20) NOT NULL DEFAULT 'SYSTEM' COMMENT '등록자ID',
+--     `MDFR_ID` varchar(20) NOT NULL DEFAULT 'SYSTEM' COMMENT '수정자ID',
+--     PRIMARY KEY (`TODAY_PHRS_SN`),
+--     CONSTRAINT `CK_TODAY_PHRS_USE_YN` CHECK (`USE_YN` IN ('Y','N'))
+--   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='오늘의한마디후보';
 -- =====================================================================
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -73,6 +122,7 @@ DROP TABLE IF EXISTS `CKUP_RCD`;
 DROP TABLE IF EXISTS `SCHDL`;
 DROP TABLE IF EXISTS `PET_PRTC_MTCH_STTS_HSTRY`;
 DROP TABLE IF EXISTS `CMNTY_AI_CMTRY`;
+DROP TABLE IF EXISTS `TODAY_PHRS`;
 DROP TABLE IF EXISTS `AI_CNVRS_MSG`;
 DROP TABLE IF EXISTS `AI_CNVRS_ROOM`;
 DROP TABLE IF EXISTS `INQRY_ATCH_PHOTO`;
@@ -753,7 +803,7 @@ CREATE TABLE `ITEM` (
   `NEED_PNT` decimal(10,0) NOT NULL COMMENT '필요포인트',
   `SORT_SEQ` decimal(10,0) NOT NULL DEFAULT '0' COMMENT '정렬순서',
   `NTSL_YN` char(1) NOT NULL DEFAULT 'Y' COMMENT '판매여부',
-  `ENGINE_ITEM_KEY` varchar(50) NULL COMMENT '엔진아이템키',
+  `BAKE_HINT` varchar(300) NULL COMMENT '굽기지시',
   `REG_DT` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
   `MDFCN_DT` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
   `RGTR_ID` varchar(20) NOT NULL DEFAULT 'SYSTEM' COMMENT '등록자ID',
@@ -1525,6 +1575,18 @@ CREATE TABLE `CMNTY_AI_CMTRY` (
   KEY `IDX_CMNTY_AI_CMTRY_1` (`CMTRY_SRC_CD`),
   CONSTRAINT `CK_CMNTY_AI_CMTRY_USE_YN` CHECK (`USE_YN` IN ('Y','N'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='커뮤니티AI코멘트';
+
+CREATE TABLE `TODAY_PHRS` (
+  `TODAY_PHRS_SN` bigint NOT NULL AUTO_INCREMENT COMMENT '오늘의한마디일련번호',
+  `PHRS_CN` varchar(200) NOT NULL COMMENT '문구내용',
+  `USE_YN` char(1) NOT NULL DEFAULT 'Y' COMMENT '사용여부',
+  `REG_DT` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
+  `MDFCN_DT` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+  `RGTR_ID` varchar(20) NOT NULL DEFAULT 'SYSTEM' COMMENT '등록자ID',
+  `MDFR_ID` varchar(20) NOT NULL DEFAULT 'SYSTEM' COMMENT '수정자ID',
+  PRIMARY KEY (`TODAY_PHRS_SN`),
+  CONSTRAINT `CK_TODAY_PHRS_USE_YN` CHECK (`USE_YN` IN ('Y','N'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='오늘의한마디후보';
 
 CREATE TABLE `PET_PRTC_MTCH_STTS_HSTRY` (
   `PET_PRTC_MTCH_STTS_HSTRY_SN` bigint NOT NULL AUTO_INCREMENT COMMENT '펫돌봄매칭상태이력일련번호',

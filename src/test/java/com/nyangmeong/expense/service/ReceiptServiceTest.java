@@ -118,4 +118,36 @@ class ReceiptServiceTest {
         assertThat(service.finish(1L, 3L, ReceiptStatus.RECOGNIZED, null, "{}")).isFalse();
         verify(mapper, never()).insertStatusHistory(any());
     }
+
+    @Test
+    void 가계부_출처는_반려동물_없이_권한_검사_없이_가계부_출처로_등록한다() {
+        when(fileStore.store(image, "1")).thenReturn(7L);
+
+        service.create(1L, null, image, ReceiptSource.EXPENSE.getCode());
+
+        ArgumentCaptor<Receipt> captor = ArgumentCaptor.forClass(Receipt.class);
+        verify(mapper).insert(captor.capture());
+        assertThat(captor.getValue().getOcrDmndSrcCd()).isEqualTo(ReceiptSource.EXPENSE.getCode());
+        verify(petAuthorizer, never()).checkCaregiver(any(), any());
+    }
+
+    @Test
+    void 가계부_출처가_아닌데_반려동물이_없으면_400_INVALID_INPUT_VALUE() {
+        for (String code : new String[] {null, ReceiptSource.HEALTH.getCode(), ReceiptSource.CHAT.getCode()}) {
+            assertThatThrownBy(() -> service.create(1L, null, image, code))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode").isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        verify(fileStore, never()).store(any(), any());
+        verify(mapper, never()).insert(any());
+    }
+
+    @Test
+    void 영수증_출처는_저장된_코드로_돌려준다() {
+        Receipt expense = receipt(ReceiptStatus.ANALYZING);
+        expense.setOcrDmndSrcCd(ReceiptSource.EXPENSE.getCode());
+        when(mapper.selectOwned(3L, 1L)).thenReturn(expense);
+
+        assertThat(service.getSource(1L, 3L)).isEqualTo(ReceiptSource.EXPENSE);
+    }
 }

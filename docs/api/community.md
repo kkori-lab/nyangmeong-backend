@@ -19,7 +19,7 @@
 | GET | /news | 펫뉴스 목록(쿼리 `newsClsfCd`·`keyword`·`page`·`size`, 최신순 10건, 상세 하단 최신 5건은 `size=5`) | CMU-003-01~04 | KSJ | - | Page<NewsSummary> |
 | GET | /news/{newsSn} | 펫뉴스 상세 | CMU-003-04 | KSJ | - | NewsResponse |
 | GET | /posts | 펫이야기 목록(게시판·정렬·키워드, 인기글 배지, 10건). 상세 하단 최신 5건도 사용 | CMU-001-01~04·08·10 | KSJ | - | Page<PostSummary> |
-| GET | /posts/health-tips | 오늘의 건강팁(관리자 선정 3건) | CMU-001-07 | KSJ | - | List<PostSummary> |
+| GET | /posts/health-tips | 오늘의 건강팁 최대 3건. 관리자 지정 글은 지정 자리에, 빈 자리는 자동 선정 글(규칙은 `GET /admin/community/exposure/health-tips`) | CMU-001-07 | KSJ | - | List<PostSummary> |
 | GET | /posts/popular-photo | 인기 포토(7일 → 30일 → 전체 순 대체) | CMU-001-06 | KSJ | - | PostResponse |
 | GET | /posts/{pstSn} | 게시글 상세(조회수 동일 사용자 1일 1회 증가) | CMU-001-10 | KSJ | - | PostResponse |
 | GET | /posts/{pstSn}/comments | 댓글·대댓글 목록(삭제 댓글 대체 문구) | CMU-001-11, CMU-002-07 | KSJ | - | List<CommentSummary> |
@@ -54,6 +54,25 @@
 | GET | /admin/posts/{pstSn} | 관리자 게시글 상세(상태 무관). 댓글 목록은 `GET /admin/comments?pstSn=`. 없는 글 404 POST_NOT_FOUND | ADM-020-03 | LJS | - | AdminPostDetailResponse |
 | POST | /admin/posts/{pstSn}/blind | 게시글 블라인드(상태 이력, 감사 로그). 정상 글이 아니면 409 ALREADY_PROCESSED, 없는 글 404 POST_NOT_FOUND | ADM-020-04 | LJS | AdminPostStatusChangeRequest | - |
 | POST | /admin/posts/{pstSn}/restore | 블라인드 복구(상태 이력, 감사 로그). 신고 누적 자동 블라인드 포함. 블라인드 글이 아니면 409 ALREADY_PROCESSED, 없는 글 404 POST_NOT_FOUND | ADM-020-05 | LJS | AdminPostStatusChangeRequest | - |
+| GET | /admin/lost-reports | 관리자 실종제보 목록. 정상 게시글만(블라인드·삭제 글은 `/admin/posts`), 최신순 20건씩. 만료 기준 일시가 지난 실종 글은 만료(CMUC0008)로 내리고 필터도 같은 기준. 찾았어요 행은 `expryCrtrDt` null. 강제 만료·기간 조정 API는 없다(ADM-021-03, 결정 12). 모르는 상태 코드 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-021-01·03 | LJS | AdminLostReportSearchCond | PageResponse<AdminLostReportSummary> |
+| GET | /admin/lost-reports/{lostTpofSn} | 관리자 실종제보 상세. 실종·만료는 본문·사진·만료 기준일, 찾았어요는 제목·상태·처리 시각만(결정 13). 조회수는 올리지 않는다. 없거나 정상 글이 아니면 404 LOST_REPORT_NOT_FOUND | ADM-021-02 | LJS | - | AdminLostReportResponse |
+| GET | /admin/care-matches | 관리자 펫돌봄 모집글 목록. 정상 게시글만(블라인드·삭제 글은 `/admin/posts`), 최신순 20건씩. 모르는 상태 코드 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-022-01 | LJS | AdminCareMatchSearchCond | PageResponse<AdminCareMatchSummary> |
+| GET | /admin/care-matches/{petPrtcRcrtSn} | 관리자 펫돌봄 매칭 상세(분쟁 대응, 1:1 문의의 `?rcrtSn=`도 이 번호). 모집글 정보 + 매칭 목록(최신순, 매칭마다 합의 조건 버전·상태 이력·완료 요청 회차와 사진·보호자 확인 결과). 블라인드 글도 열고, 없거나 삭제 글이면 404 CARE_RECRUITMENT_NOT_FOUND. 채팅 메시지·채팅방 번호는 주지 않는다(ADM-022-03, 결정 14·26) | ADM-022-02·03 | LJS | - | AdminCareMatchResponse |
+| GET | /admin/community/exposure/health-tips | 관리자 오늘의 건강팁 현황. 노출 자리 순서 최대 3건. 지정 글(정상 펫정보, 자리 1~3)은 그 자리에, 빈 자리는 자동 선정 글(지정 안 된 정상 펫정보 글 중 제목·본문에 건강 키워드가 든 글, 좋아요순·최신순)로 앞에서부터 채운다. 건강 키워드는 `KWRD_DICT` 뉴스 분류(AIMC0039)의 건강(CMUC0018) 행(SCR-ADM-050에서 편집). 일반 회원 403 ADMIN_ONLY | ADM-023-01·03 | LJS | - | List<AdminHealthTipResponse> |
+| PUT | /admin/community/exposure/health-tips/{pstSn} | 건강팁 지정(감사 로그). 같은 자리의 기존 지정은 풀리고, 다른 자리에 지정된 글이면 옮긴다. 글 검색은 `GET /admin/posts?bbsCd=CMUC0001`. 자리가 1~3이 아니거나 펫정보 글이 아니면 400 INVALID_INPUT_VALUE, 없거나 정상 글이 아니면 404 POST_NOT_FOUND | ADM-023-02 | LJS | AdminHealthTipAssignRequest | - |
+| DELETE | /admin/community/exposure/health-tips/{pstSn} | 건강팁 지정 해제(감사 로그). 지정 안 된 글 409 ALREADY_PROCESSED, 없는 글 404 POST_NOT_FOUND. 지정 글이 삭제·블라인드되면 지정은 자동으로 풀린다(ADM-023-03, 복구해도 돌아오지 않음) | ADM-023-02·03 | LJS | - | - |
+| GET | /admin/community/exposure/phrases | 오늘의 한마디 후보 문구 목록(사용 안 함 포함, 등록순)과 오늘 노출 문구 | ADM-023-04·05 | LJS | - | AdminTodayPhraseListResponse |
+| POST | /admin/community/exposure/phrases | 오늘의 한마디 후보 문구 등록(201, 감사 로그). 문구는 앞뒤 공백을 지운 뒤 1~200자, 아니면 400 INVALID_INPUT_VALUE | ADM-023-04 | LJS | AdminTodayPhraseCreateRequest | AdminTodayPhraseCreateResponse |
+| PATCH | /admin/community/exposure/phrases/{todayPhrsSn} | 오늘의 한마디 후보 문구 수정(보낸 칸만, 감사 로그). 둘 다 없거나 문구가 비거나 200자 초과면 400 INVALID_INPUT_VALUE, 없는 번호 404 TODAY_PHRASE_NOT_FOUND. 매일 00:00 배치(SYSC0030)가 사용 중 후보 1건을 무작위로 골라 그날 `CMNTY_AI_CMTRY`(출처 AIMC0029)에 저장한다. 그날 행이 있거나 후보가 없으면 저장하지 않는다(사용자 화면은 운영 설정 기본 문구) | ADM-023-04·05 | LJS | AdminTodayPhraseUpdateRequest | - |
+| GET | /admin/community/exposure/commentaries | 관리자 AI 코멘트 목록. 사용 안 함 포함, 최근 일자순 20건씩 | ADM-023-06 | LJS | PageQuery | PageResponse<AdminCommentarySummary> |
+| PATCH | /admin/community/exposure/commentaries/{cmntyAiCmtrySn} | AI 코멘트 사용 여부 변경(감사 로그). 끄면 사용자 `GET /community-ai-commentaries`는 운영 설정 기본 문구. 없는 번호 404 AI_COMMENTARY_NOT_FOUND | ADM-023-06 | LJS | AdminCommentaryUseRequest | - |
+| GET | /admin/news | 관리자 뉴스 목록. 숨긴 기사(`useYn=false`) 포함, 등록 최신순 20건씩. 쿼리 `newsSrcCd`(CMUG07)·`newsClsfCd`(CMUG06), 없거나 공백이면 전체. 모르는 코드 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-050-01 | LJS | AdminNewsSearchCond | PageResponse<AdminNewsSummary> |
+| POST | /admin/news | 관리자 뉴스 등록(201, 감사 로그). 출처 관리자 등록(CMUC0023), 발행일시는 지금, 원문 경로 없음. 썸네일은 먼저 `POST /admin/news/images`로 올린다. 제목 1~200자·요약 1~1000자(앞뒤 공백 지운 뒤)가 아니거나 카테고리 코드가 틀리면 400 INVALID_INPUT_VALUE | ADM-050-02 | LJS | AdminNewsCreateRequest | AdminNewsCreateResponse |
+| PATCH | /admin/news/{newsSn} | 뉴스 수정(보낸 칸만, 감사 로그). 제목·요약·썸네일은 관리자 등록 기사만(수집 기사에 보내면 400), 카테고리·사용 여부는 모든 기사. 숨긴 기사는 사용자 `GET /news` 목록·상세에서 빠진다. 아무 칸도 없으면 400 INVALID_INPUT_VALUE, 없는 기사 404 NEWS_NOT_FOUND | ADM-050-02·03 | LJS | AdminNewsUpdateRequest | - |
+| POST | /admin/news/images | 관리자 뉴스 썸네일 업로드(201, multipart `image`). 공개 파일이라 `/api/files/public/{atchFileSn}`으로 열린다. 파일이 없으면 400 INVALID_INPUT_VALUE | ADM-050-02 | LJS | - | AdminNewsImageResponse |
+| GET | /admin/news/keywords | 뉴스 분류 키워드 목록(`KWRD_DICT` 뉴스 분류 AIMC0039, 정렬순). 키워드 하나가 한 행. 수집 때 제목에 든 키워드 중 정렬 순서가 앞선 카테고리로 분류하고, 건강(CMUC0018) 키워드는 건강팁 자동 선정에도 쓴다 | ADM-050-05 | LJS | - | List<AdminNewsKeywordResponse> |
+| POST | /admin/news/keywords | 뉴스 분류 키워드 등록(201, 감사 로그). 정렬 순서는 그 카테고리 기존 행과 같다(없으면 뉴스 분류 최대 + 10). 키워드 1~50자(앞뒤 공백 지운 뒤)·쉼표 없음·카테고리 CMUG06 4종이 아니면 400 INVALID_INPUT_VALUE, 같은 카테고리에 같은 키워드(대소문자 무시) 409 DUPLICATE_NEWS_KEYWORD | ADM-050-05 | LJS | AdminNewsKeywordCreateRequest | AdminNewsKeywordCreateResponse |
+| DELETE | /admin/news/keywords/{kwrdDictSn} | 뉴스 분류 키워드 삭제(`DEL_YN='Y'`, 감사 로그). 다음 수집부터 쓰이지 않는다. 없거나 이미 삭제 404 NEWS_KEYWORD_NOT_FOUND | ADM-050-05 | LJS | - | - |
 | GET | /admin/comments | 관리자 댓글 목록. 최신순 20건씩, 삭제된 댓글도 원문 표시. `q`는 작성자 닉네임 부분 일치 | ADM-020-06 | LJS | AdminCommentSearchCond | PageResponse<AdminCommentSummary> |
 | POST | /admin/comments/{cmntSn}/deletion | 관리자 댓글 삭제. 사유는 감사 로그에 남긴다(`CMNT`에 사유 컬럼 없음). DELETE 본문 금지라 POST. 이미 삭제면 409 ALREADY_PROCESSED, 없는 댓글 404 COMMENT_NOT_FOUND | ADM-020-06 | LJS | AdminCommentDeleteRequest | - |
 | GET | /admin/reports | 관리자 신고 목록. 최신순 20건씩, 같은 대상 신고 수 포함. 코드가 틀리거나 기간이 뒤집히면 400 INVALID_INPUT_VALUE | ADM-030-01·02 | LJS | AdminReportSearchCond | PageResponse<AdminReportSummary> |
@@ -92,6 +111,255 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | status | String | N | 게시글 상태 코드(CMUG02) | PST.PST_STTS_CD, ADM-020-02 |
 | bgngYmd | LocalDate | N | 작성 시작일 | PST.REG_DT, ADM-020-02 |
 | endYmd | LocalDate | N | 작성 종료일 | PST.REG_DT, ADM-020-02 |
+
+### AdminHealthTipResponse
+쓰는 API: GET /admin/community/exposure/health-tips
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| pstSn | Long | Y | 게시글 번호 | PST.PST_SN |
+| pstTtl | String | Y | 제목 | PST.PST_TTL |
+| hlthInfoExpsrSeq | Integer | N | 관리자 지정 자리(1~3). 자동 선정 글은 null | PST.HLTH_INFO_EXPSR_SEQ, ADM-023-01 |
+
+### AdminHealthTipAssignRequest
+쓰는 API: PUT /admin/community/exposure/health-tips/{pstSn}
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| hlthInfoExpsrSeq | Integer | Y | 노출 자리 1~3 | PST.HLTH_INFO_EXPSR_SEQ, ADM-023-02 |
+
+### AdminTodayPhraseListResponse
+쓰는 API: GET /admin/community/exposure/phrases
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| todayPhrs | Object | N | 오늘 노출 문구 `{ todayPhrsSn, phrsCn }`. 오늘 선택된(사용 중) 문구가 없으면 null. 같은 문구의 후보가 없으면(수정됨) `todayPhrsSn` null | CMNTY_AI_CMTRY, ADM-023-05 |
+| content | List<AdminTodayPhraseSummary> | Y | 후보 문구 전체, 등록순 | TODAY_PHRS |
+
+### AdminTodayPhraseSummary
+쓰는 API: GET /admin/community/exposure/phrases
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| todayPhrsSn | Long | Y | 후보 문구 번호 | TODAY_PHRS.TODAY_PHRS_SN |
+| phrsCn | String | Y | 문구(200자 이하) | TODAY_PHRS.PHRS_CN |
+| useYn | Boolean | Y | 사용 여부. 사용 중인 문구만 매일 선택 대상 | TODAY_PHRS.USE_YN |
+
+### AdminTodayPhraseCreateRequest
+쓰는 API: POST /admin/community/exposure/phrases
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| phrsCn | String | Y | 문구. 앞뒤 공백을 지운 뒤 1~200자 | TODAY_PHRS.PHRS_CN, ADM-023-04 |
+| useYn | Boolean | Y | 사용 여부 | TODAY_PHRS.USE_YN |
+
+### AdminTodayPhraseCreateResponse
+쓰는 API: POST /admin/community/exposure/phrases
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| todayPhrsSn | Long | Y | 등록한 후보 문구 번호 | TODAY_PHRS.TODAY_PHRS_SN |
+
+### AdminTodayPhraseUpdateRequest
+쓰는 API: PATCH /admin/community/exposure/phrases/{todayPhrsSn}
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| phrsCn | String | N | 문구. 보내면 앞뒤 공백을 지운 뒤 1~200자 | TODAY_PHRS.PHRS_CN |
+| useYn | Boolean | N | 사용 여부. 둘 다 없으면 400 | TODAY_PHRS.USE_YN |
+
+### AdminCommentarySummary
+쓰는 API: GET /admin/community/exposure/commentaries
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| cmntyAiCmtrySn | Long | Y | 코멘트 번호 | CMNTY_AI_CMTRY.CMNTY_AI_CMTRY_SN |
+| cmtryCrtrYmd | LocalDate | Y | 기준 일자 | CMNTY_AI_CMTRY.CMTRY_CRTR_YMD |
+| cmtryCn | String | Y | 코멘트 내용 | CMNTY_AI_CMTRY.CMTRY_CN |
+| useYn | Boolean | Y | 사용 여부. 끄면 그날은 운영 설정 기본 문구 | CMNTY_AI_CMTRY.USE_YN, ADM-023-06 |
+
+### AdminCommentaryUseRequest
+쓰는 API: PATCH /admin/community/exposure/commentaries/{cmntyAiCmtrySn}
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| useYn | Boolean | Y | 사용 여부 | CMNTY_AI_CMTRY.USE_YN |
+
+### AdminNewsSearchCond
+쓰는 API: GET /admin/news
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| newsSrcCd | String | N | 출처 공통코드 CMUG07(CMUC0022 외부 언론사·CMUC0023 관리자 등록). 없으면 전체 | NEWS.NEWS_SRC_CD, ADM-050-01 |
+| newsClsfCd | String | N | 카테고리 공통코드 CMUG06. 없으면 전체 | NEWS.NEWS_CLSF_CD, ADM-050-01 |
+| page | Integer | N | 1부터, 기본 1 | PageQuery |
+| size | Integer | N | 기본 20, 최대 50 | PageQuery |
+
+### AdminNewsSummary
+쓰는 API: GET /admin/news
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| newsSn | Long | Y | | NEWS.NEWS_SN |
+| atchFileSn | Long | N | 관리자 등록 썸네일(`/api/files/public/{atchFileSn}`) | NEWS.ATCH_FILE_SN |
+| newsClsfCd | String | Y | 공통코드 CMUG06 | NEWS.NEWS_CLSF_CD |
+| newsSrcCd | String | Y | 공통코드 CMUG07 | NEWS.NEWS_SRC_CD |
+| newsSrcCdNm | String | Y | 출처 이름 | COM_CD.COM_CD_NM |
+| newsTtl | String | Y | | NEWS.NEWS_TTL |
+| newsCn | String | Y | 요약(전체) | NEWS.NEWS_CN |
+| srcPressNm | String | N | 수집 기사 언론사 | NEWS.SRC_PRESS_NM |
+| orgtxtPath | String | N | 수집 기사 원문 링크, 관리자 등록은 null | NEWS.ORGTXT_PATH |
+| pblcnDt | LocalDateTime | Y | 발행일시 | NEWS.PBLCN_DT |
+| useYn | boolean | Y | false면 사용자 화면에서 숨김 | NEWS.USE_YN |
+| regDt | LocalDateTime | Y | 등록일 | NEWS.REG_DT |
+| mdfcnDt | LocalDateTime | Y | | NEWS.MDFCN_DT |
+| thmbUrlPath | String | N | 수집 기사 썸네일(외부 URL) | NEWS.THMB_URL_PATH |
+
+### AdminNewsCreateRequest
+쓰는 API: POST /admin/news
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| newsTtl | String | Y | 앞뒤 공백 지운 뒤 1~200자 | NEWS.NEWS_TTL |
+| newsCn | String | Y | 요약. 앞뒤 공백 지운 뒤 1~1000자 | NEWS.NEWS_CN |
+| newsClsfCd | String | Y | 공통코드 CMUG06 | NEWS.NEWS_CLSF_CD |
+| atchFileSn | Long | N | `POST /admin/news/images`로 받은 번호 | NEWS.ATCH_FILE_SN |
+
+### AdminNewsCreateResponse
+쓰는 API: POST /admin/news
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| newsSn | Long | Y | | NEWS.NEWS_SN |
+
+### AdminNewsUpdateRequest
+쓰는 API: PATCH /admin/news/{newsSn}
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| newsTtl | String | N | 관리자 등록 기사만. 1~200자 | NEWS.NEWS_TTL |
+| newsCn | String | N | 관리자 등록 기사만. 1~1000자 | NEWS.NEWS_CN |
+| atchFileSn | Long | N | 관리자 등록 기사만. 새 썸네일 | NEWS.ATCH_FILE_SN |
+| newsClsfCd | String | N | 공통코드 CMUG06 | NEWS.NEWS_CLSF_CD, ADM-050-03 |
+| useYn | Boolean | N | false면 숨김. 하나도 없으면 400 | NEWS.USE_YN, ADM-050-03 |
+
+### AdminNewsImageResponse
+쓰는 API: POST /admin/news/images
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| atchFileSn | Long | Y | 등록·수정 요청의 `atchFileSn`에 넣는다 | ATCH_FILE.ATCH_FILE_SN |
+
+### AdminNewsKeywordResponse
+쓰는 API: GET /admin/news/keywords
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| kwrdDictSn | Long | Y | 삭제 경로 번호 | KWRD_DICT.KWRD_DICT_SN |
+| mpngCd | String | Y | 카테고리 공통코드 CMUG06 | KWRD_DICT.MPNG_CD |
+| kwrdCn | String | Y | 키워드 | KWRD_DICT.KWRD_CN |
+| sortSeq | Integer | Y | 분류 우선순위(작을수록 먼저) | KWRD_DICT.SORT_SEQ |
+
+### AdminNewsKeywordCreateRequest
+쓰는 API: POST /admin/news/keywords
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| mpngCd | String | Y | 카테고리 공통코드 CMUG06(건강·생활·정책·여행) | KWRD_DICT.MPNG_CD |
+| kwrdCn | String | Y | 앞뒤 공백 지운 뒤 1~50자, 쉼표 불가 | KWRD_DICT.KWRD_CN |
+
+### AdminNewsKeywordCreateResponse
+쓰는 API: POST /admin/news/keywords
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| kwrdDictSn | Long | Y | | KWRD_DICT.KWRD_DICT_SN |
+
+### AdminLostReportSearchCond
+쓰는 API: GET /admin/lost-reports
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| lostTpofSttsCd | String | N | 실종제보 상태 코드(CMUC0006 실종·CMUC0007 찾았어요·CMUC0008 만료). 없으면 전체. 만료는 기간 지난 실종 포함, 실종은 기간 안의 글만 | LOST_TPOF.LOST_TPOF_STTS_CD, ADM-021-01 |
+
+### AdminLostReportSummary
+쓰는 API: GET /admin/lost-reports
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| lostTpofSn | Long | Y | 실종제보 번호 | LOST_TPOF.LOST_TPOF_SN |
+| pstSn | Long | Y | 게시글 번호(게시글·댓글 화면 이동) | LOST_TPOF.PST_SN |
+| pstTtl | String | Y | 제목 | PST.PST_TTL |
+| lostTpofSttsCd | String | Y | 상태 코드(계산한 만료 포함) | LOST_TPOF.LOST_TPOF_STTS_CD |
+| mbrSn | Long | Y | 작성자 회원 번호 | PST.MBR_SN |
+| mbrNcnm | String | Y | 작성자 닉네임 | MBR.MBR_NCNM |
+| expryCrtrDt | LocalDateTime | N | 만료 기준 일시. 찾았어요는 null | LOST_TPOF.EXPRY_CRTR_DT |
+| regDt | LocalDateTime | Y | 작성 일시 | PST.REG_DT |
+
+### AdminLostReportResponse
+쓰는 API: GET /admin/lost-reports/{lostTpofSn}
+
+찾았어요 글은 `lostTpofSn`·`pstSn`·`pstTtl`·`lostTpofSttsCd`·`dscvSwtcDt`만 있고 나머지는 null. 연락처·반려동물 정보는 없다.
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| lostTpofSn | Long | Y | 실종제보 번호 | LOST_TPOF.LOST_TPOF_SN |
+| pstSn | Long | Y | 게시글 번호 | LOST_TPOF.PST_SN |
+| pstTtl | String | Y | 제목 | PST.PST_TTL |
+| lostTpofSttsCd | String | Y | 상태 코드(계산한 만료 포함) | LOST_TPOF.LOST_TPOF_STTS_CD |
+| dscvSwtcDt | LocalDateTime | N | 찾았어요 처리 시각 | LOST_TPOF.DSCV_SWTC_DT |
+| mbrSn | Long | N | 작성자 회원 번호 | PST.MBR_SN |
+| mbrNcnm | String | N | 작성자 닉네임 | MBR.MBR_NCNM |
+| regDt | LocalDateTime | N | 작성 일시 | PST.REG_DT |
+| pstCn | String | N | 본문 | PST.PST_CN |
+| expryCrtrDt | LocalDateTime | N | 만료 기준 일시 | LOST_TPOF.EXPRY_CRTR_DT |
+| imgs | List<PostImageSummary> | N | 사진 `[{ atchFileSn, sortSeq }]` | PST_IMG |
+
+### AdminCareMatchSearchCond
+쓰는 API: GET /admin/care-matches
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| rcrtSttsCd | String | N | 모집 상태 코드(PCAC0001 모집중·PCAC0002 매칭완료·PCAC0003 거래완료). 없으면 전체 | PET_PRTC_RCRT.RCRT_STTS_CD, ADM-022-01 |
+
+### AdminCareMatchSummary
+쓰는 API: GET /admin/care-matches
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| petPrtcRcrtSn | Long | Y | 펫돌봄 모집 번호(상세 조회 키) | PET_PRTC_RCRT.PET_PRTC_RCRT_SN |
+| pstSn | Long | Y | 게시글 번호 | PET_PRTC_RCRT.PST_SN |
+| pstTtl | String | Y | 제목 | PST.PST_TTL |
+| rcrtSttsCd | String | Y | 모집 상태 코드(PCAG01) | PET_PRTC_RCRT.RCRT_STTS_CD |
+| mbrSn | Long | Y | 작성자(보호자) 회원 번호 | PST.MBR_SN |
+| mbrNcnm | String | N | 작성자 닉네임 | MBR.MBR_NCNM |
+| cstAmt | BigDecimal | Y | 비용 금액 | PET_PRTC_RCRT.CST_AMT |
+| cstUnitCd | String | Y | 비용 단위 코드(PCAC0004 시급·PCAC0005 건당) | PET_PRTC_RCRT.CST_UNIT_CD |
+| regDt | LocalDateTime | Y | 작성 일시 | PST.REG_DT |
+
+### AdminCareMatchResponse
+쓰는 API: GET /admin/care-matches/{petPrtcRcrtSn}
+
+`AdminCareMatchSummary`의 필드 전부 + `mtchs`. 채팅방 번호·채팅 메시지는 없다.
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| mtchs | List<Match> | Y | 매칭 목록(최신순). 없으면 빈 배열. 화면은 매칭이 여럿이면 탭으로 나눈다 | PET_PRTC_MTCH |
+
+`Match`
+
+| 필드 | 타입 | 필수 | 설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| petPrtcMtchSn | Long | Y | 매칭 번호 | PET_PRTC_MTCH.PET_PRTC_MTCH_SN |
+| ctptMbrSn | Long | Y | 돌봄 제공자(채팅 상대방) 회원 번호 | OTO_CHAT_ROOM.CTPT_MBR_SN |
+| ctptNcnm | String | N | 돌봄 제공자 닉네임 | MBR.MBR_NCNM |
+| mtchDlngSttsCd | String | Y | 매칭 거래 상태 코드(PCAG05: PCAC0012 수락 대기·0013 매칭 완료·0014 확인 대기·0015 수령 대기·0016 거래 완료·0017 요청 취소·0018 무응답 종료) | PET_PRTC_MTCH.MTCH_DLNG_STTS_CD |
+| rcvYn | Boolean | N | 비용 수령 여부(아직 없으면 null) | PET_PRTC_MTCH.RCV_YN |
+| rcvIdntyDt | LocalDateTime | N | 수령 확인 일시 | PET_PRTC_MTCH.RCV_IDNTY_DT |
+| regDt | LocalDateTime | Y | 매칭 요청 일시 | PET_PRTC_MTCH.REG_DT |
+| cndVers | List<ConditionVersion> | Y | 합의 조건 버전(버전 내림차순) `{ cndVerNo, cstUnitCd, acrdCstAmt, acrdPrtcCn, acrdPrtcBgngDt, acrdPrtcEndDt, regDt }` | MTCH_CND_VER |
+| sttsHstry | List<StatusHistory> | Y | 상태 이력(오래된 순) `{ bfrSttsCd, aftrSttsCd, cndVerNo, chgRsn, regDt }`. `cndVerNo`는 그때 기준 조건 버전(없으면 null) | PET_PRTC_MTCH_STTS_HSTRY |
+| cmptnDmnds | List<CompletionRequest> | Y | 돌봄 완료 요청 회차(회차 순) `{ dmndCycl, cmptnCn, spclMttrCn, prtcEndDt, prtcrIdntyRsltCd, prtcrIdntyDt, splmntDmndRsn, regDt, imgs[{ atchFileSn, sortSeq }] }`. 보호자 확인 결과 PCAG06(PCAC0019 완료 확인·PCAC0020 보완 요청, 아직이면 null) | PRTC_CMPTN_DMND_CYCL, PRTC_CMPTN_PHOTO |
 
 ### AdminReportSearchCond
 쓰는 API: GET /admin/reports

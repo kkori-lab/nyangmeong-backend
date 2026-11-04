@@ -25,6 +25,7 @@ import com.nyangmeong.notification.domain.NotificationReceiveSetting;
 import com.nyangmeong.notification.domain.NotificationRecipient;
 import com.nyangmeong.notification.domain.NotificationSendingLog;
 import com.nyangmeong.notification.domain.NotificationTemplate;
+import com.nyangmeong.notification.domain.NotificationTemplateType;
 import com.nyangmeong.notification.domain.SendingResult;
 import com.nyangmeong.notification.mapper.NotificationMapper;
 import com.nyangmeong.notification.mapper.NotificationSendingLogMapper;
@@ -198,7 +199,7 @@ public class CareScheduleAlarmService {
      * 채널 템플릿 조회
      */
     private NotificationTemplate template(NotificationChannel channel) {
-        return notificationMapper.selectTemplate(NotificationType.CARE_SCHEDULE.getCode(), channel.getCode());
+        return notificationMapper.selectTemplate(NotificationTemplateType.CARE_SCHEDULE.getCode(), channel.getCode());
     }
 
     private String titleOf(NotificationTemplate template, String defaultTitle) {

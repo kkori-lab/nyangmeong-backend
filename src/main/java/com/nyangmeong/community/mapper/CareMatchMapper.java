@@ -9,9 +9,11 @@ import com.nyangmeong.community.domain.CareCompletionRequest;
 import com.nyangmeong.community.domain.CareMatch;
 import com.nyangmeong.community.domain.CareMatchCondition;
 import com.nyangmeong.community.domain.CareMatchStatusHistory;
+import com.nyangmeong.community.dto.AdminCareMatchResponse;
 
 /**
  * [펫돌봄 매칭 Mapper]
+ * - 거래 단계(SCR-CMU-005)와 관리자 상세 조회(SCR-ADM-022)를 함께 둔다
  */
 @Mapper
 public interface CareMatchMapper {
@@ -103,4 +105,33 @@ public interface CareMatchMapper {
      */
     int updateCompletionConfirm(@Param("prtcCmptnDmndCyclSn") Long prtcCmptnDmndCyclSn,
             @Param("prtcrIdntyRsltCd") String prtcrIdntyRsltCd);
+
+
+    /**
+     * 모집글의 매칭 목록 (최신순)
+     */
+    List<AdminCareMatchResponse.Match> selectAdminMatches(@Param("petPrtcRcrtSn") Long petPrtcRcrtSn);
+
+    /**
+     * 모집글 매칭들의 합의 조건 버전 (매칭별 버전 내림차순)
+     */
+    List<AdminCareMatchResponse.ConditionVersion> selectAdminConditionVersions(
+            @Param("petPrtcRcrtSn") Long petPrtcRcrtSn);
+
+    /**
+     * 모집글 매칭들의 상태 이력 (오래된 순)
+     */
+    List<AdminCareMatchResponse.StatusHistory> selectAdminStatusHistories(
+            @Param("petPrtcRcrtSn") Long petPrtcRcrtSn);
+
+    /**
+     * 모집글 매칭들의 돌봄 완료 요청 회차 (회차 순)
+     */
+    List<AdminCareMatchResponse.CompletionRequest> selectAdminCompletionRequests(
+            @Param("petPrtcRcrtSn") Long petPrtcRcrtSn);
+
+    /**
+     * 모집글 매칭들의 돌봄 완료 사진 (정렬 순서)
+     */
+    List<AdminCareMatchResponse.Photo> selectAdminCompletionPhotos(@Param("petPrtcRcrtSn") Long petPrtcRcrtSn);
 }

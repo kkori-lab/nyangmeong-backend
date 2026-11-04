@@ -17,6 +17,7 @@ import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
+import com.nyangmeong.global.security.session.LoginSessionManager;
 import com.nyangmeong.member.dto.MemberCreateRequest;
 import com.nyangmeong.member.dto.MemberJoinResult;
 import com.nyangmeong.member.dto.MemberNicknameAvailabilityResponse;
@@ -29,13 +30,17 @@ import com.nyangmeong.member.dto.MemberRecoveryInfoRequest;
 import com.nyangmeong.member.dto.MemberRecoveryResponse;
 import com.nyangmeong.member.dto.MemberResponse;
 import com.nyangmeong.member.dto.MemberUpdateRequest;
+import com.nyangmeong.member.dto.PasswordChangeRequest;
+import com.nyangmeong.member.dto.PasswordVerifyRequest;
 import com.nyangmeong.member.service.MemberJoinService;
+import com.nyangmeong.member.service.MemberPasswordService;
 import com.nyangmeong.member.service.MemberRecoveryService;
 import com.nyangmeong.member.service.MemberService;
 import com.nyangmeong.member.service.NicknameSetupTokenManager;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -45,6 +50,7 @@ import lombok.RequiredArgsConstructor;
  * - 탈퇴 회원 기존 정보 복구 안내·실행(POST /api/members/recovery-info·recovery), 복구 확인 권한 토큰이 본인확인이다
  * - 위는 모두 로그인 없이 열려 있고, 닉네임 설정과 닉네임 중복확인의 본인은 로그인 회원 또는 가입 직후 쿠키(ncnm_setup)로 가린다
  * - 회원정보 수정 조회·저장(GET·PATCH /api/members/me, SCR-MYP-040)은 로그인 회원만
+ * - 현재 비밀번호 확인·변경(POST /api/members/me/password-verification, PATCH /api/members/me/password)도 로그인 회원만
  */
 @RestController
 @RequiredArgsConstructor
@@ -54,6 +60,8 @@ public class MemberController {
     private final MemberService memberService;
     private final MemberJoinService memberJoinService;
     private final MemberRecoveryService memberRecoveryService;
+    private final MemberPasswordService memberPasswordService;
+    private final LoginSessionManager loginSessionManager;
     private final NicknameSetupTokenManager nicknameSetupTokenManager;
 
     @Operation(summary = "회원가입(이메일)")
@@ -101,9 +109,26 @@ public class MemberController {
         return ResponseEntity.ok(ApiResponse.success(memberService.getMember(me.id())));
     }
 
-    // TODO(MYP-040-01): 본인 확인 서버 검사 미구현.
-    // YAY 비밀번호 확인 API(POST /members/me/password-verification)와 방식 협의 중.
-    // 제안안: 확인 성공 시 세션에 확인 시각 저장 → 10분 이내만 수정 허용, 아니면 403.
+    @Operation(summary = "현재 비밀번호 확인(회원정보 수정 본인 확인)")
+    @PostMapping("/me/password-verification")
+    public ResponseEntity<ApiResponse<Void>> verifyPassword(@AuthenticationPrincipal LoginMember me,
+            @Valid @RequestBody PasswordVerifyRequest req) {
+        memberPasswordService.verify(me.id(), req);
+        return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    /**
+     * 변경하면 모든 기기의 세션이 끊기므로, 요청한 기기에만 새 세션을 다시 준다
+     */
+    @Operation(summary = "비밀번호 변경(로그인 상태)")
+    @PatchMapping("/me/password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(@AuthenticationPrincipal LoginMember me,
+            HttpServletResponse response, @Valid @RequestBody PasswordChangeRequest req) {
+        memberPasswordService.change(me.id(), req);
+        loginSessionManager.issue(me.id(), response);
+        return ResponseEntity.ok(ApiResponse.success());
+    }
+
     @Operation(summary = "회원정보 수정(휴대전화번호·프로필 사진)")
     @PatchMapping(value = "/me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<MemberResponse>> updateMe(@AuthenticationPrincipal LoginMember me,

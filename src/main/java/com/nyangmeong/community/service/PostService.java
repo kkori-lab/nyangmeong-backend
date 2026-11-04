@@ -2,7 +2,11 @@ package com.nyangmeong.community.service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +19,8 @@ import com.nyangmeong.community.domain.Post;
 import com.nyangmeong.community.domain.PostImage;
 import com.nyangmeong.community.domain.PostStatus;
 import com.nyangmeong.community.domain.PostStatusHistory;
+import com.nyangmeong.community.dto.HealthTipDesignation;
+import com.nyangmeong.community.dto.HealthTipSlot;
 import com.nyangmeong.community.dto.PostCreateRequest;
 import com.nyangmeong.community.dto.PostImageSummary;
 import com.nyangmeong.community.dto.PostLikeResponse;
@@ -47,6 +53,8 @@ public class PostService {
     static final String SORT_POPULAR = "popular";
     /** 인기 포토 대체 기간 (일), 마지막은 전체 기간 */
     static final List<Integer> POPULAR_PHOTO_DAYS = Arrays.asList(7, 30, null);
+    /** 오늘의 건강팁 노출 자리 수 */
+    static final int HEALTH_TIP_SLOTS = 3;
 
     private final PostMapper postMapper;
     private final FileStore fileStore;
@@ -76,11 +84,62 @@ public class PostService {
     }
 
     /**
-     * 오늘의 건강팁 조회
+     * 오늘의 건강팁 조회 : 관리자 지정 글 + 빈 자리는 자동 선정 (FN-ADM-023-01·03)
      */
     @Transactional(readOnly = true)
     public List<PostSummary> getHealthTips() {
-        return postMapper.selectHealthTips(BoardType.PET_INFO.getCode(), PostStatus.NORMAL.getCode());
+        return getHealthTipSlots().stream().map(HealthTipSlot::post).toList();
+    }
+
+    /**
+     * 오늘의 건강팁 노출 자리 조회
+     * - 지정 글(정상 펫정보, 자리 1~3)은 그 자리에, 빈 자리는 자동 선정 글로 앞에서부터 채움
+     * - 자동 선정 : 지정 안 된 정상 펫정보 글 중 건강 키워드가 든 글, 좋아요순 (결정 B-23)
+     */
+    @Transactional(readOnly = true)
+    public List<HealthTipSlot> getHealthTipSlots() {
+        String bbsCd = BoardType.PET_INFO.getCode();
+        String pstSttsCd = PostStatus.NORMAL.getCode();
+        Map<Long, PostSummary> designated = new HashMap<>();
+        for (PostSummary summary : postMapper.selectHealthTips(bbsCd, pstSttsCd)) {
+            designated.put(summary.getPstSn(), summary);
+        }
+
+        HealthTipSlot[] slots = new HealthTipSlot[HEALTH_TIP_SLOTS];
+        for (HealthTipDesignation designation : postMapper.selectHealthTipDesignations(bbsCd, pstSttsCd)) {
+            int index = designation.getHlthInfoExpsrSeq() - 1;
+            PostSummary summary = designated.get(designation.getPstSn());
+            if (index >= 0 && index < HEALTH_TIP_SLOTS && slots[index] == null && summary != null) {
+                slots[index] = new HealthTipSlot(designation.getHlthInfoExpsrSeq(), summary);
+            }
+        }
+
+        long empty = Arrays.stream(slots).filter(Objects::isNull).count();
+        List<String> keywords = healthKeywords();
+        if (empty > 0 && !keywords.isEmpty()) {
+            Iterator<PostSummary> autos = postMapper.selectAutoHealthTips(bbsCd, pstSttsCd, keywords, (int) empty)
+                    .iterator();
+            for (int i = 0; i < HEALTH_TIP_SLOTS && autos.hasNext(); i++) {
+                if (slots[i] == null) {
+                    slots[i] = new HealthTipSlot(null, autos.next());
+                }
+            }
+        }
+        return Arrays.stream(slots).filter(Objects::nonNull).toList();
+    }
+
+    /**
+     * 건강 키워드 : 쉼표로 나눠 앞뒤 공백을 지우고 LIKE 이스케이프, 중복 제거
+     */
+    private List<String> healthKeywords() {
+        return postMapper.selectHealthKeywords().stream()
+                .filter(Objects::nonNull)
+                .flatMap(line -> Arrays.stream(line.split(",")))
+                .map(String::strip)
+                .filter(keyword -> !keyword.isEmpty())
+                .map(this::escapeLike)
+                .distinct()
+                .toList();
     }
 
     /**

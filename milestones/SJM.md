@@ -113,17 +113,32 @@
 - 결과: 잘못된 제외 번호(조건 밖·남의 지출·없는 번호·삭제된 번호)는 구별하지 않고 모두 409 `EXPENSE_BULK_DELETE_CHANGED`. 검사 뒤 삭제 건수가 기대값과 다르면 409로 롤백한다. 제외 번호는 최대 1000개
 - 연결 남음: FN-MYP-030-18·19·21 (프론트 연결 SCR-MYP-030 전체 선택 뒤 해제한 번호를 `excludeExpndSn`으로 보내기·409 처리, 프론트 저장소에서 /start)
 
-## SCR-MYP-031 가계부 등록/수정 · 등록·수정 미래 날짜 검증 — 대기
+## SCR-MYP-031 가계부 등록/수정 · 등록·수정 미래 날짜 검증 — 끝
 
 - 기능: 명세 기능 ID 추가 없음. FN-MYP-031-02와 걸친다
 - 기다리는 것: 프론트 SCR-MYP-030 (프론트 저장소, 끝남. 사람 결정 2026-11-02: 오늘(KST)까지만 허용. 프론트 폼과 달력은 이미 막았다)
 - 완료 조건: `POST /api/expenses`(`ExpenseService.validate`)와 `PATCH /api/expenses/{expndSn}`(`update`)에서 `EXPND_YMD`가 오늘(KST)보다 뒤면 400(`INVALID_INPUT_VALUE`)이다
+- 연결 남음: 영수증 저장 `ExpenseFake` → `ExpenseService.create` 연결 때 같은 미래 날짜 검사를 받는다 (LJS)
 
-## SCR-MYP-030 가계부 목록 · 시드 병원 공용 지출 행 수정 — 대기
+## SCR-MYP-030 가계부 목록 · 시드 병원 공용 지출 행 수정 — 끝
 
 - 기능: 명세 기능 ID 추가 없음. FN-MYP-031-02 "병원은 공용 불가" 규칙과 걸친다
 - 기다리는 것: 프론트 SCR-MYP-030 (프론트 저장소, 끝남. 사람 확인 중 발견)
-- 완료 조건: `db/seed/20261028_seed_data.sql`의 `EXPND_SN=406`(회원 1, 2026-10-05, 병원 `MYPC0012`, `PET_SN` NULL, 42,000원)의 `PET_SN`을 채우거나 카테고리를 바꿔 병원 + 공용 행이 없게 한다. 서버 등록·수정은 이미 `EXPENSE_PET_REQUIRED`로 막고 있어 코드 수정은 없다
+- 완료 조건: `db/seed/20261028_seed_data.sql`의 `EXPND`에서 병원(`MYPC0012`) + 공용(`PET_SN` NULL) 176행(처음 발견한 `EXPND_SN=406`, 회원 1, 2026-10-05, 42,000원 포함)의 `PET_SN`을 채워 그런 행이 없게 한다. 회원마다 사용 중·삭제 안 된 반려동물을 `PET_SN` 순으로 세워 지출일(같으면 `EXPND_SN`) 순으로 돌아가며 배정한다. 공용 DB 반영 SQL은 사람이 DBeaver로 직접 실행한다. 서버 등록·수정은 이미 `EXPENSE_PET_REQUIRED`로 막고 있어 코드 수정은 없다
+
+## SCR-MYP-031 가계부 등록/수정 · 영수증 저장 경로 미래 날짜 검증 — 끝
+
+- 기능: 명세 기능 ID 추가 없음. FN-MYP-031-05·FN-AIM-009-10과 걸친다
+- 기다리는 것: 없음(영수증 저장은 이미 `ExpenseService.create(ExpenseCreateCommand)`를 부른다)
+- 완료 조건: `ExpenseService.create(ExpenseCreateCommand)`가 `expndYmd`가 오늘(KST)보다 뒤면 400(`INVALID_INPUT_VALUE`)을 던지고, 영수증 저장 전체가 롤백된다
+
+## SCR-HLT-002 건강 일지 · SJM 몫(PetService.syncWeight) — 끝
+
+- 기능: 명세 기능 ID 추가 없음. FN-HLT-002-09~11 체중 기록 등록·수정·삭제 뒤 프로필 체중 동기화(화면은 SCR-HLT-002, JAJ). `PetService.syncWeight(Long petSn, BigDecimal weight, Long actorMbrSn)`를 더한다
+- 기다리는 것: 없음
+- 프론트 연결: 없음(서버 내부 호출). JAJ가 `PetWeightFake`를 이 메서드로 바꾼다(JAJ 마일스톤 SCR-HLT-002 · 프로필 체중 동기화 연결)
+- 완료 조건: `PetService.syncWeight`가 `PET_BDWG`만 `MDFR_ID`·`MDFCN_DT`와 함께 갱신하고, 삭제됐거나 없는 반려동물이면 404 `PET_NOT_FOUND`를 던진다. 권한 검사는 하지 않는다(호출하는 쪽 담당). 단위 테스트와 `./gradlew build -q`가 통과한다
+- 연결 남음: FN-HLT-002-09~11 (`PetWeightFake`를 `PetService.syncWeight`로 바꾸기, JAJ)
 
 ## 제외
 

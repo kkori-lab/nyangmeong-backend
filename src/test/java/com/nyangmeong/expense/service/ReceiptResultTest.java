@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -145,9 +146,44 @@ class ReceiptResultTest {
 
     @Test
     void 연동되지_않은_반려동물이면_조회하지_않는다() {
+        when(mapper.selectOwned(3L, 1L)).thenReturn(stored(ReceiptStatus.RECOGNIZED, recognizedJson()));
         doThrow(new CustomException(ErrorCode.PET_ACCESS_DENIED)).when(petAuthorizer).checkCaregiver(1L, 99L);
 
         assertThatThrownBy(() -> analyzer.getResult(1L, 3L, 99L))
                 .extracting("errorCode").isEqualTo(ErrorCode.PET_ACCESS_DENIED);
+    }
+
+    @Test
+    void 없는_영수증은_반려동물_권한보다_먼저_RECEIPT_NOT_FOUND() {
+        when(mapper.selectOwned(3L, 1L)).thenReturn(null);
+        doThrow(new CustomException(ErrorCode.PET_ACCESS_DENIED)).when(petAuthorizer).checkCaregiver(1L, 99L);
+
+        assertThatThrownBy(() -> analyzer.getResult(1L, 3L, 99L))
+                .extracting("errorCode").isEqualTo(ErrorCode.RECEIPT_NOT_FOUND);
+    }
+
+    @Test
+    void 가계부_출처는_반려동물_없이_다시_열고_권한_검사를_하지_않는다() {
+        Receipt receipt = stored(ReceiptStatus.RECOGNIZED, recognizedJson());
+        receipt.setOcrDmndSrcCd(ReceiptSource.EXPENSE.getCode());
+        when(mapper.selectOwned(3L, 1L)).thenReturn(receipt);
+
+        ReceiptResultResponse response = analyzer.getResult(1L, 3L, null);
+
+        assertThat(response.petSn()).isNull();
+        assertThat(response.ocr()).isNotNull();
+        verify(petAuthorizer, never()).checkCaregiver(any(), any());
+    }
+
+    @Test
+    void 가계부가_아닌_출처는_반려동물이_없으면_INVALID_INPUT_VALUE() {
+        for (ReceiptSource source : List.of(ReceiptSource.HEALTH, ReceiptSource.CHAT)) {
+            Receipt receipt = stored(ReceiptStatus.RECOGNIZED, recognizedJson());
+            receipt.setOcrDmndSrcCd(source.getCode());
+            when(mapper.selectOwned(3L, 1L)).thenReturn(receipt);
+
+            assertThatThrownBy(() -> analyzer.getResult(1L, 3L, null))
+                    .extracting("errorCode").isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+        }
     }
 }

@@ -9,6 +9,7 @@ import com.nyangmeong.notification.domain.InappNotification;
 import com.nyangmeong.notification.domain.NotificationReceiveSetting;
 import com.nyangmeong.notification.domain.NotificationRecipient;
 import com.nyangmeong.notification.domain.NotificationTemplate;
+import com.nyangmeong.notification.dto.AdminNotificationTemplateSummary;
 import com.nyangmeong.notification.dto.NotificationSummary;
 
 /**
@@ -32,6 +33,26 @@ public interface NotificationMapper {
      */
     NotificationTemplate selectTemplate(@Param("notiTypeCd") String notiTypeCd,
             @Param("notiChnlCd") String notiChnlCd);
+
+    /**
+     * 관리자 알림 템플릿 목록 조회
+     */
+    List<AdminNotificationTemplateSummary> selectTemplates(@Param("notiChnlCd") String notiChnlCd);
+
+    /**
+     * 번호로 알림 템플릿 조회
+     */
+    NotificationTemplate selectTemplateBySn(Long notiTmpltSn);
+
+    /**
+     * 알림 템플릿 등록
+     */
+    void insertTemplate(NotificationTemplate template);
+
+    /**
+     * 알림 템플릿 수정
+     */
+    int updateTemplate(NotificationTemplate template);
 
     /**
      * 회원 알림 수신 설정 수정

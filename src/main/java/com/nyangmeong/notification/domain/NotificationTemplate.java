@@ -14,4 +14,6 @@ public class NotificationTemplate {
     private String notiTtl;
     private String notiCn;
     private String useYn;
+    private String rgtrId;
+    private String mdfrId;
 }

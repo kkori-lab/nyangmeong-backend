@@ -172,13 +172,15 @@ class CharacterInternalControllerTest {
     void 굽기_대상_목록() throws Exception {
         BakeItemSummary item = new BakeItemSummary();
         item.setItemSn(7L);
-        item.setEngineItemKey("straw-hat");
+        item.setRegnCd("MYPC0001");
+        item.setBakeHint("a straw sun hat");
         when(characterSheetService.searchBakeItems()).thenReturn(List.of(item));
 
         mockMvc.perform(get(BASE + "/bake-items"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].itemSn").value(7))
-                .andExpect(jsonPath("$.data[0].engineItemKey").value("straw-hat"));
+                .andExpect(jsonPath("$.data[0].regnCd").value("MYPC0001"))
+                .andExpect(jsonPath("$.data[0].bakeHint").value("a straw sun hat"));
     }
 
     @Test

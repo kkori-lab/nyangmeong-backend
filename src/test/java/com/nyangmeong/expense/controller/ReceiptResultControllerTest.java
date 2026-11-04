@@ -93,4 +93,28 @@ class ReceiptResultControllerTest {
                 .header("X-Requested-With", "XMLHttpRequest"))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    @WithMockLoginMember
+    void 반려동물_없이_다시_열면_null_petSn을_돌려준다() throws Exception {
+        when(receiptAnalyzer.getResult(1L, 3L, null))
+                .thenReturn(new ReceiptResultResponse(3L, null, "AIMC0002", null, null));
+
+        mockMvc.perform(get("/api/receipts/3")
+                .header("X-Requested-With", "XMLHttpRequest"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.recptSn").value(3))
+                .andExpect(jsonPath("$.data.petSn").doesNotExist());
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 가계부가_아닌_출처를_반려동물_없이_열면_400_INVALID_INPUT_VALUE() throws Exception {
+        when(receiptAnalyzer.getResult(1L, 3L, null)).thenThrow(new CustomException(ErrorCode.INVALID_INPUT_VALUE));
+
+        mockMvc.perform(get("/api/receipts/3")
+                .header("X-Requested-With", "XMLHttpRequest"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT_VALUE"));
+    }
 }

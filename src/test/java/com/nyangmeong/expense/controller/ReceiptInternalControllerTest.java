@@ -79,13 +79,24 @@ class ReceiptInternalControllerTest {
 
     @Test
     @WithMockLoginMember
+    void 가계부_출처는_반려동물_없이_원본을_저장한다() throws Exception {
+        when(receiptService.create(eq(1L), isNull(), any(), eq("AIMC0027"))).thenReturn(4L);
+
+        mockMvc.perform(multipart("/internal/ai/receipts").file(file)
+                .param("ocrDmndSrcCd", "AIMC0027").header("X-Requested-With", "XMLHttpRequest"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.recptSn").value(4));
+    }
+
+    @Test
+    @WithMockLoginMember
     void 출처가_없거나_허용값_밖이면_400_INVALID_INPUT_VALUE() throws Exception {
         mockMvc.perform(multipart("/internal/ai/receipts").file(file).param("petSn", "10")
                 .header("X-Requested-With", "XMLHttpRequest"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_INPUT_VALUE"))
                 .andExpect(jsonPath("$.data[0].field").value("ocrDmndSrcCd"));
-        for (String code : List.of("AIMC0027", "chat")) {
+        for (String code : List.of("AIMC0028", "chat")) {
             mockMvc.perform(multipart("/internal/ai/receipts").file(file).param("petSn", "10")
                     .param("ocrDmndSrcCd", code).header("X-Requested-With", "XMLHttpRequest"))
                     .andExpect(status().isBadRequest())

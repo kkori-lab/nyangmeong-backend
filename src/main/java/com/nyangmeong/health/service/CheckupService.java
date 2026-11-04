@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,8 +28,12 @@ import com.nyangmeong.health.dto.CheckupResponse;
 import com.nyangmeong.health.dto.CheckupSearchCond;
 import com.nyangmeong.health.dto.CheckupSummary;
 import com.nyangmeong.health.dto.CheckupUpdateRequest;
+import com.nyangmeong.health.dto.NearbyScheduleSummary;
+import com.nyangmeong.health.dto.ReceiptCheckupCommand;
+import com.nyangmeong.health.dto.ReceiptCheckupSummary;
 import com.nyangmeong.health.mapper.CareScheduleMapper;
 import com.nyangmeong.health.mapper.CheckupMapper;
+import com.nyangmeong.pet.service.PointService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -36,6 +41,7 @@ import lombok.RequiredArgsConstructor;
  * [검진기록 서비스]
  * - SCR-HLT-002 검진기록 목록·직접 등록·수정·삭제
  * - 검진기록은 같은 반려동물·같은 날짜 병원 일정에 연결하고 없으면 일정을 만든다
+ * - 영수증 저장(expense)은 영수증 번호만 값으로 넘긴다. 영수증 소유·상태는 호출하는 쪽에서 검사
  */
 @Service
 @RequiredArgsConstructor
@@ -48,6 +54,7 @@ public class CheckupService {
     private final CheckupMapper checkupMapper;
     private final CareScheduleMapper careScheduleMapper;
     private final PetAuthorizer petAuthorizer;
+    private final PointService pointService;
 
     /**
      * 검진기록 목록 조회
@@ -99,31 +106,56 @@ public class CheckupService {
      */
     @Transactional
     public CheckupResponse create(Long mbrSn, Long petSn, CheckupCreateRequest req) {
-        petAuthorizer.checkCaregiver(mbrSn, petSn);
-        String hsptlNm = requiredText(req.hsptlNm());
-        checkType(req.ckupTypeCd());
-        String actorId = String.valueOf(mbrSn);
+        return create(mbrSn, petSn, req, null);
+    }
 
-        Long schdlSn;
-        if (req.schdlSn() != null) {
-            schdlSn = moveAndLinkSchedule(petSn, req.schdlSn(), req.ckupYmd(), actorId);
-        } else {
-            schdlSn = findOrCreateSchedule(petSn, req.ckupYmd(), req.ckupTypeCd(), hsptlNm, actorId);
-        }
+    /**
+     * 검진기록 직접 등록 (영수증 연결)
+     * - 영수증 인식 실패·일시 오류 뒤 [직접 입력]으로 연 경우 recptSn 을 연결한다. 없으면 연결 없음 (FN-HLT-002-31)
+     */
+    @Transactional
+    public CheckupResponse create(Long mbrSn, Long petSn, CheckupCreateRequest req, Long recptSn) {
+        Long ckupRcdSn = insert(mbrSn, petSn, new ReceiptCheckupCommand(recptSn, req.ckupYmd(), req.hsptlNm(),
+                req.ckupTypeCd(), req.ckupCn(), req.ckupMemoCn(), req.schdlSn()), CheckupSource.DIRECT);
+        return getOwn(petSn, ckupRcdSn);
+    }
 
-        CheckupRecord record = new CheckupRecord();
-        record.setSchdlSn(schdlSn);
-        record.setCkupTypeCd(req.ckupTypeCd());
-        record.setCkupRcdSttsCd(CheckupStatus.COMPLETED.getCode());
-        record.setRcdSrcCd(CheckupSource.DIRECT.getCode());
-        record.setHsptlNm(hsptlNm);
-        record.setCkupCn(emptyToNull(req.ckupCn()));
-        record.setCkupMemoCn(emptyToNull(req.ckupMemoCn()));
-        record.setRgtrId(actorId);
-        record.setMdfrId(actorId);
-        checkupMapper.insertCheckup(record);
-        checkupMapper.insertStatusHistory(record.getCkupRcdSn(), mbrSn, null, CheckupStatus.COMPLETED.getCode());
-        return getOwn(petSn, record.getCkupRcdSn());
+    /**
+     * 영수증 확인 후 저장의 검진기록 등록 (출처 영수증)
+     * - 처방약은 호출하는 쪽이 PrescriptionService 로 따로 등록한다 (FN-HLT-002-45)
+     */
+    @Transactional
+    public CheckupResponse createFromReceipt(Long mbrSn, Long petSn, ReceiptCheckupCommand command) {
+        Long ckupRcdSn = insert(mbrSn, petSn, command, CheckupSource.RECEIPT_OCR);
+        return getOwn(petSn, ckupRcdSn);
+    }
+
+    /**
+     * 영수증으로 만든 완료 상태 검진기록 목록 (같은 요청 재전송 응답용)
+     * - 영수증 소유는 호출하는 쪽에서 검사
+     */
+    @Transactional(readOnly = true)
+    public List<ReceiptCheckupSummary> findReceiptCheckups(Long recptSn) {
+        return checkupMapper.selectReceiptCheckups(recptSn, CheckupStatus.COMPLETED.getCode());
+    }
+
+    /**
+     * 같은 날짜 병원 일정 존재 여부
+     * - 반려동물 권한은 호출하는 쪽에서 검사
+     */
+    @Transactional(readOnly = true)
+    public boolean existsHospitalSchedule(Long petSn, LocalDate ymd) {
+        return checkupMapper.selectHospitalScheduleSn(petSn, ymd, ScheduleKind.HOSPITAL.getCode()) != null;
+    }
+
+    /**
+     * 검진일 앞뒤 7일 안의 검진기록 미연결 병원 일정 중 가장 가까운 1건 (FN-HLT-002-46)
+     * - 반려동물 권한은 호출하는 쪽에서 검사
+     */
+    @Transactional(readOnly = true)
+    public Optional<NearbyScheduleSummary> findNearestUnlinkedSchedule(Long petSn, LocalDate ymd) {
+        return Optional.ofNullable(checkupMapper.selectNearestUnlinkedHospitalSchedule(petSn, ymd, NEARBY_DAYS,
+                ScheduleKind.HOSPITAL.getCode(), CheckupStatus.COMPLETED.getCode()));
     }
 
     /**
@@ -216,6 +248,40 @@ public class CheckupService {
         schedule.setMdfrId(actorId);
         careScheduleMapper.insertSchedule(schedule);
         return schedule.getSchdlSn();
+    }
+
+    /**
+     * 검진기록 등록 공통 : 일정 연결·생성, 완료 상태 이력
+     */
+    private Long insert(Long mbrSn, Long petSn, ReceiptCheckupCommand command, CheckupSource source) {
+        petAuthorizer.checkCaregiver(mbrSn, petSn);
+        String hsptlNm = requiredText(command.hsptlNm());
+        checkType(command.ckupTypeCd());
+        String actorId = String.valueOf(mbrSn);
+
+        Long schdlSn;
+        if (command.schdlSn() != null) {
+            schdlSn = moveAndLinkSchedule(petSn, command.schdlSn(), command.ckupYmd(), actorId);
+        } else {
+            schdlSn = findOrCreateSchedule(petSn, command.ckupYmd(), command.ckupTypeCd(), hsptlNm, actorId);
+        }
+
+        CheckupRecord record = new CheckupRecord();
+        record.setRecptSn(command.recptSn());
+        record.setSchdlSn(schdlSn);
+        record.setCkupTypeCd(command.ckupTypeCd());
+        record.setCkupRcdSttsCd(CheckupStatus.COMPLETED.getCode());
+        record.setRcdSrcCd(source.getCode());
+        record.setHsptlNm(hsptlNm);
+        record.setCkupCn(emptyToNull(command.ckupCn()));
+        record.setCkupMemoCn(emptyToNull(command.ckupMemoCn()));
+        record.setRgtrId(actorId);
+        record.setMdfrId(actorId);
+        checkupMapper.insertCheckup(record);
+        checkupMapper.insertStatusHistory(record.getCkupRcdSn(), mbrSn, null, CheckupStatus.COMPLETED.getCode());
+        /** 검진기록 등록 포인트 : 기간·중복은 PointService 가 판단. 수정에서는 주지 않는다 (FN-MYP-020-08) */
+        pointService.earnCheckupPoint(petSn, command.ckupYmd());
+        return record.getCkupRcdSn();
     }
 
     /**

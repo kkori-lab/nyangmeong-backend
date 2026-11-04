@@ -53,6 +53,8 @@ public enum ErrorCode {
     ADMIN_NOT_RELEASABLE(HttpStatus.CONFLICT, "본인과 마지막 남은 관리자는 해제할 수 없어요."),
     SNS_ONLY_MEMBER(HttpStatus.BAD_REQUEST, "SNS로 가입한 계정입니다. SNS 로그인을 이용해 주세요."),
     PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다."),
+    /** 로그인한 회원이 입력한 현재 비밀번호가 틀림 : 새 비밀번호·확인값 불일치(PASSWORD_MISMATCH)와 화면의 오류 위치가 달라 따로 둠 */
+    CURRENT_PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "현재 비밀번호가 일치하지 않습니다."),
     EMAIL_ALREADY_REGISTERED(HttpStatus.CONFLICT, "이미 가입된 이메일입니다. 기존에 가입한 방법으로 로그인해 주세요."),
     /** 탈퇴 후 보관 중인 이메일 : 새 회원을 만들지 않고 복구 흐름으로 안내 */
     MEMBER_RECOVERY_AVAILABLE(HttpStatus.CONFLICT, "탈퇴 후 보관 중인 계정입니다. 기존 정보 복구를 진행해 주세요."),
@@ -99,6 +101,8 @@ public enum ErrorCode {
     ITEM_ALREADY_HELD(HttpStatus.CONFLICT, "이미 보유한 아이템입니다."),
     ITEM_NOT_HELD(HttpStatus.BAD_REQUEST, "보유하지 않은 아이템은 착용할 수 없습니다."),
     ITEM_SLOT_DUPLICATED(HttpStatus.BAD_REQUEST, "같은 부위에는 아이템을 하나만 착용할 수 있습니다."),
+    ITEM_NAME_DUPLICATED(HttpStatus.CONFLICT, "같은 이름의 아이템이 있습니다."),
+    ITEM_REGION_LOCKED(HttpStatus.CONFLICT, "보유한 회원이 있는 아이템은 부위를 바꿀 수 없습니다."),
     POINT_NOT_ENOUGH(HttpStatus.BAD_REQUEST, "포인트가 부족합니다."),
 
     /** health */
@@ -130,6 +134,9 @@ public enum ErrorCode {
 
     /** notification */
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다."),
+    NOTIFICATION_TEMPLATE_NOT_FOUND(HttpStatus.NOT_FOUND, "알림 템플릿을 찾을 수 없습니다."),
+    NOTIFICATION_TEMPLATE_DUPLICATED(HttpStatus.CONFLICT, "같은 알림 유형과 채널의 템플릿이 이미 있습니다."),
+    NOTIFICATION_TEMPLATE_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "템플릿을 쓸 수 없는 알림 유형입니다. 기본 문구로 보냅니다."),
 
     /** expense */
     EXPENSE_NOT_FOUND(HttpStatus.NOT_FOUND, "지출 내역을 찾을 수 없습니다."),
@@ -161,6 +168,10 @@ public enum ErrorCode {
     LOST_REPORT_NOT_RENEWABLE(HttpStatus.BAD_REQUEST, "게시 종료 7일 전부터 종료 전까지 한 번만 연장할 수 있습니다."),
     LOST_REPORT_CLOSED(HttpStatus.BAD_REQUEST, "찾았어요 처리된 제보에는 댓글을 달 수 없습니다."),
     NEWS_NOT_FOUND(HttpStatus.NOT_FOUND, "뉴스를 찾을 수 없습니다."),
+    NEWS_KEYWORD_NOT_FOUND(HttpStatus.NOT_FOUND, "분류 키워드를 찾을 수 없습니다."),
+    DUPLICATE_NEWS_KEYWORD(HttpStatus.CONFLICT, "이 카테고리에 이미 있는 키워드입니다."),
+    TODAY_PHRASE_NOT_FOUND(HttpStatus.NOT_FOUND, "오늘의 한마디 문구를 찾을 수 없습니다."),
+    AI_COMMENTARY_NOT_FOUND(HttpStatus.NOT_FOUND, "AI 코멘트를 찾을 수 없습니다."),
     NEWS_FEED_FETCH_FAILED(HttpStatus.BAD_GATEWAY, "뉴스를 가져오지 못했습니다."),
     CARE_RECRUITMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "펫돌봄 모집글을 찾을 수 없습니다."),
     CARE_RECRUITMENT_CLOSED(HttpStatus.CONFLICT, "마감된 모집글입니다."),

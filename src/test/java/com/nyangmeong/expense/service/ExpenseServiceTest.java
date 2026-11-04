@@ -417,6 +417,48 @@ class ExpenseServiceTest {
     }
 
     @Test
+    void 미래_날짜로_등록하면_INVALID_INPUT_VALUE() {
+        assertThatThrownBy(() -> service.create(MBR,
+                request(FOOD, DIRECT, null, today.plusDays(1), line(10L, 1_000, "a"))))
+                .extracting("errorCode").isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+        verify(expenseMapper, never()).insert(any());
+    }
+
+    @Test
+    void 영수증_저장의_병원_지출도_미래_날짜면_INVALID_INPUT_VALUE() {
+        assertThatThrownBy(() -> service.create(
+                new ExpenseCreateCommand(MBR, 10L, 3L, today.plusDays(1), 50_000L, "행복동물병원", null)))
+                .extracting("errorCode").isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+        verify(expenseMapper, never()).insert(any());
+    }
+
+    @Test
+    void 오늘_날짜로_등록할_수_있다() {
+        service.create(MBR, request(FOOD, DIRECT, null, today, line(10L, 1_000, "a")));
+
+        inserted(1);
+    }
+
+    @Test
+    void 미래_날짜로_수정하면_INVALID_INPUT_VALUE() {
+        saved(10L, FOOD);
+
+        assertThatThrownBy(() -> service.update(MBR, 5L,
+                new ExpenseUpdateRequest(today.plusDays(1), null, null, null, null, null, null)))
+                .extracting("errorCode").isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+        verify(expenseMapper, never()).update(any());
+    }
+
+    @Test
+    void 오늘_날짜로_수정할_수_있다() {
+        Expense expense = saved(10L, FOOD);
+
+        service.update(MBR, 5L, new ExpenseUpdateRequest(today, null, null, null, null, null, null));
+
+        verify(expenseMapper).update(expense);
+    }
+
+    @Test
     void 남의_지출이거나_없는_지출은_수정할_수_없다() {
         when(expenseMapper.selectMine(MBR, 5L)).thenReturn(null);
 
