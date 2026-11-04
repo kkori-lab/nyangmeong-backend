@@ -34,6 +34,7 @@ import lombok.RequiredArgsConstructor;
  * - 출제·자정 정산은 scheduler 배치, 진행 반영은 활동이 일어난 도메인이 부름 (SCR-MYP-020)
  * - 반려동물마다 하루 8개 = 일상케어 5개(매일 할 수 있는 것) + 활동기반 3개(변별력)
  * - 포인트는 출제 때의 주양육자(DAY_MSN.MBR_SN)에게 적립 (FN-MYP-020-06)
+ * - 배점·달성 기준은 출제 때 DAY_MSN에 복사한 값을 씀 : 관리자가 바꾸면 다음 출제부터 (FN-ADM-071-03)
  */
 @Service
 @RequiredArgsConstructor
@@ -78,6 +79,7 @@ public class CareMissionService {
                 dayMsn.setMbrSn(target.getMbrSn());
                 dayMsn.setMsnCrtrYmd(msnCrtrYmd);
                 dayMsn.setScorPnt(master.getCmpnPnt());
+                dayMsn.setAchvCrtrNmtm(master.getAchvCrtrNmtm());
                 careMissionMapper.insertDayMission(dayMsn);
             }
         }
@@ -131,7 +133,7 @@ public class CareMissionService {
                 continue;
             }
             CareMsn master = masters.get(dayMsn.getCareMsnSn());
-            int givePnt = settledPoint(dayMsn.getScorPnt(), dayMsn.getPrgrsNmtm(), master.getAchvCrtrNmtm());
+            int givePnt = settledPoint(dayMsn.getScorPnt(), dayMsn.getPrgrsNmtm(), dayMsn.getAchvCrtrNmtm());
             careMissionMapper.updateDayMissionSettled(dayMsn.getDayMsnSn(), givePnt);
             if (givePnt > 0) {
                 pointService.earnMission(dayMsn.getMbrSn(), dayMsn.getDayMsnSn(), givePnt,
@@ -159,7 +161,7 @@ public class CareMissionService {
             return;
         }
         int prgrsNmtm = dayMsn.getPrgrsNmtm() + 1;
-        if (prgrsNmtm < master.getAchvCrtrNmtm()) {
+        if (prgrsNmtm < dayMsn.getAchvCrtrNmtm()) {
             careMissionMapper.updateDayMissionProgress(dayMsn.getDayMsnSn(), prgrsNmtm);
             return;
         }

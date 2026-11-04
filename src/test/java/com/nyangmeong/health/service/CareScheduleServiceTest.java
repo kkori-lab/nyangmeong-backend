@@ -9,6 +9,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -34,6 +35,8 @@ import com.nyangmeong.health.dto.CareScheduleSearchCond;
 import com.nyangmeong.health.dto.CareScheduleSummary;
 import com.nyangmeong.health.dto.CareScheduleUpdateRequest;
 import com.nyangmeong.health.mapper.CareScheduleMapper;
+import com.nyangmeong.pet.domain.CareMission;
+import com.nyangmeong.pet.service.CareMissionService;
 
 /**
  * [검사 - 케어 캘린더 일정]
@@ -49,7 +52,8 @@ class CareScheduleServiceTest {
 
     private final CareScheduleMapper mapper = mock(CareScheduleMapper.class);
     private final PetAuthorizer petAuthorizer = mock(PetAuthorizer.class);
-    private final CareScheduleService service = new CareScheduleService(mapper, petAuthorizer);
+    private final CareMissionService careMissionService = mock(CareMissionService.class);
+    private final CareScheduleService service = new CareScheduleService(mapper, petAuthorizer, careMissionService);
 
     @BeforeEach
     void setUp() {
@@ -176,6 +180,29 @@ class CareScheduleServiceTest {
                 grooming("미용 예약", ScheduleSource.AI_GENERATED.getCode(), null));
 
         assertThat(res.schdlSrcCd()).isEqualTo(ScheduleSource.AI_GENERATED.getCode());
+    }
+
+    @Test
+    void 직접_등록은_케어미션에_반영한다() {
+        service.create(MBR, PET, grooming("미용 예약", null, null));
+        service.create(MBR, PET, grooming("미용 예약", ScheduleSource.DIRECT.getCode(), null));
+
+        verify(careMissionService, times(2)).reflect(PET, CareMission.SCHEDULE_CREATE, MBR);
+    }
+
+    @Test
+    void AI_생성과_검진기록_연동_출처는_케어미션에_반영하지_않는다() {
+        service.create(MBR, PET, grooming("미용 예약", ScheduleSource.AI_GENERATED.getCode(), null));
+        service.create(MBR, PET, grooming("미용 예약", ScheduleSource.CHECKUP.getCode(), null));
+
+        verify(careMissionService, never()).reflect(anyLong(), any(), anyLong());
+    }
+
+    @Test
+    void 입력이_틀려_등록하지_못하면_케어미션에_반영하지_않는다() {
+        assertInvalid(() -> service.create(MBR, PET, grooming(null, null, null)));
+
+        verify(careMissionService, never()).reflect(anyLong(), any(), anyLong());
     }
 
     @Test
