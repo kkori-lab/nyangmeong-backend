@@ -78,6 +78,17 @@ public interface CareRecruitmentMapper {
             @Param("recruitingCd") String recruitingCd);
 
     /**
+     * 모집 행 잠금 읽기 (매칭 확정·되돌림을 모집 단위로 직렬화, 스냅샷이 아닌 최신 커밋 값)
+     */
+    CareRecruitment selectForUpdate(Long petPrtcRcrtSn);
+
+    /**
+     * 모집 상태 변경 (현재 상태가 bfrSttsCd 일 때만, 확정 매칭 번호는 함께 바꿈)
+     */
+    int updateStatus(@Param("petPrtcRcrtSn") Long petPrtcRcrtSn, @Param("bfrSttsCd") String bfrSttsCd,
+            @Param("aftrSttsCd") String aftrSttsCd, @Param("cfmtnPetPrtcMtchSn") Long cfmtnPetPrtcMtchSn);
+
+    /**
      * 모집 반려동물 종류 삭제 (목록 교체 때)
      */
     int deletePets(Long petPrtcRcrtSn);

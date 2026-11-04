@@ -9,7 +9,7 @@
 | GET | /care-matches/{petPrtcMtchSn} | 매칭 조건·완료 요청 회차·사진·수령 상태 조회 | CMU-005-09·11 | KSJ | - | CareMatchResponse |
 | GET | /care-recruitments | 펫돌봄 모집 목록(상태·지역·기간·동물 구분·크기 필터, 10건) | CMU-004-01·02 | KSJ | - | Page<CareRecruitmentSummary> |
 | GET | /care-recruitments/{petPrtcRcrtSn} | 펫돌봄 모집 상세(상세 주소·정확 좌표 제외) | CMU-004-04 | KSJ | - | CareRecruitmentResponse |
-| GET | /chat-rooms | 내 채팅 목록(`?unreadOnly=`) | CMU-005-02, COM-009 | KSJ | - | List<ChatRoomSummary> |
+| GET | /chat-rooms | 내 채팅 목록(`?tab=&unreadOnly=&pstSn=`. `tab`은 ALL(기본)·MINE(내 글)·APPLIED(지원한 글), 마지막 대화 최신순, 나간 방 제외) | CMU-005-02, COM-009 | KSJ | - | List<ChatRoomSummary> |
 | GET | /chat-rooms/unread-count | 읽지 않은 메시지 총수(채팅 메뉴·헤더 배지) | CMU-005-03, COM-009 | KSJ | - | ChatUnreadCountResponse |
 | GET | /chat-rooms/{otoChatRoomSn} | 채팅방 상단 게시글 카드·매칭 진행 상태·내 역할 조회(참여자만) | CMU-005-01·11, COM-009 | KSJ | - | ChatRoomResponse |
 | GET | /chat-rooms/{otoChatRoomSn}/messages | 대화 메시지 조회(커서 방식, 최신순). `?beforeChatMsgSn=&size=30` — 처음은 `beforeChatMsgSn` 없이, 위로 스크롤하면 받은 것 중 가장 오래된 `chatMsgSn`을 넘긴다. `size` 최대 50 | CMU-005-04, COM-009 | KSJ | - | ChatMessageSliceResponse |
@@ -23,16 +23,17 @@
 | GET | /posts/popular-photo | 인기 포토(7일 → 30일 → 전체 순 대체) | CMU-001-06 | KSJ | - | PostResponse |
 | GET | /posts/{pstSn} | 게시글 상세(조회수 동일 사용자 1일 1회 증가) | CMU-001-10 | KSJ | - | PostResponse |
 | GET | /posts/{pstSn}/comments | 댓글·대댓글 목록(삭제 댓글 대체 문구) | CMU-001-11, CMU-002-07 | KSJ | - | List<CommentSummary> |
-| POST | /care-matches | 매칭 요청(채팅방 기준, 조건 버전 생성) | CMU-005-06 | KSJ | CareMatchCreateRequest | CareMatchResponse |
-| POST | /care-matches/{petPrtcMtchSn}/accept | 매칭 수락(게시글당 1명 확정, 모집 상태 갱신) | CMU-005-07 | KSJ | - | - |
-| POST | /care-matches/{petPrtcMtchSn}/cancel | 수락 전 매칭 요청 취소 | CMU-005-06 | KSJ | - | - |
-| POST | /care-matches/{petPrtcMtchSn}/completion-requests | 돌봄 완료 요청(회차·종료 시각·내용·특이사항·인계 확인·사진) | CMU-005-08 | KSJ | CareCompletionRequestCreateRequest | CareCompletionRequestResponse |
+| POST | /care-matches | 매칭 요청(채팅방 기준, 보호자만. 요청 시점의 모집글 조건을 복사해 조건 버전을 만든다. 요청 취소된 매칭은 같은 행으로 다시 요청해 조건 버전이 늘어난다) | CMU-005-06 | KSJ | CareMatchCreateRequest | CareMatchResponse |
+| POST | /care-matches/{petPrtcMtchSn}/accept | 매칭 수락(제공자만, 게시글당 1명 확정, 모집글이 매칭완료로 바뀌고 같은 글의 다른 방은 모집 종료 안내) | CMU-005-07 | KSJ | - | - |
+| POST | /care-matches/{petPrtcMtchSn}/cancel | 수락 전 매칭 요청 취소(보호자만, 사유 필수) | CMU-005-06 | KSJ | CareMatchCancelRequest | - |
+| POST | /care-matches/{petPrtcMtchSn}/completion-requests | 돌봄 완료 요청(제공자만. 별도 입력 없음, 서버가 회차·요청 시각을 기록. 201) | CMU-005-08 | KSJ | CareCompletionRequestCreateRequest | CareCompletionRequestResponse |
 | POST | /care-matches/{petPrtcMtchSn}/confirm-completion | 보호자 돌봄 완료 확정 | CMU-005-09 | KSJ | - | - |
 | POST | /care-matches/{petPrtcMtchSn}/confirm-receipt | 제공자 비용 수령 확인(양측 충족 시 거래 완료) | CMU-005-10 | KSJ | CareMatchReceiptConfirmRequest | - |
-| POST | /care-matches/{petPrtcMtchSn}/request-supplement | 보호자 보완 요청(사유, 확인 대기 유지) | CMU-005-09 | KSJ | CareMatchSupplementRequest | - |
 | POST | /care-recruitments | 펫돌봄 모집 등록(multipart/form-data. 반려동물·돌봄 형태·일정·비용 최저시급 검증·장소·사진·동의) | CMU-004-06~11·13 | KSJ | CareRecruitmentCreateRequest | CareRecruitmentResponse |
 | POST | /chat-rooms | 게시글·보호자·지원자 조합 채팅방 생성 또는 기존 방 반환(새 방 201, 기존 방 200) | CMU-004-05, CMU-005-01 | KSJ | ChatRoomCreateRequest | ChatRoomResponse |
-| POST | /chat-rooms/{otoChatRoomSn}/messages | 메시지 전송(텍스트·사진·주소 공유, 멱등 요청 ID). 처음은 201, 같은 `idmptDmndId` 재전송은 200과 같은 응답. 저장 뒤 참여자에게 실시간으로 보낸다(아래 "실시간") | CMU-004-05, CMU-005-04·05, COM-009 | KSJ | ChatMessageCreateRequest | ChatMessageResponse |
+| POST | /chat-rooms/{otoChatRoomSn}/leave | 채팅방 나가기(내 목록에서만 숨기고 기록 유지, 진행 중 매칭은 요청 취소로 바뀌고 매칭 완료 이후였으면 모집글이 모집중으로 돌아감). 이미 나갔으면 200 | CMU-005-11 | KSJ | - | - |
+| POST | /chat-rooms/{otoChatRoomSn}/messages | 메시지 전송(텍스트·사진·주소 공유, multipart/form-data, 멱등 요청 ID). 처음은 201, 같은 `idmptDmndId` 재전송은 200과 같은 응답. 저장 뒤 참여자에게 실시간으로 보낸다(아래 "실시간") | CMU-004-05, CMU-005-04·05, COM-009 | KSJ | ChatMessageCreateRequest | ChatMessageResponse |
+| GET | /chat-rooms/{otoChatRoomSn}/images/{atchFileSn} | 채팅 사진 보기(참여자만, 그 방 메시지에 붙은 사진만) | CMU-005-05 | KSJ | - | 이미지 바이너리 |
 | POST | /chat-rooms/{otoChatRoomSn}/read | 활성 대화창에 표시된 메시지까지 읽음 처리 | CMU-005-03, COM-009 | KSJ | ChatRoomReadRequest | - |
 | POST | /lost-reports | 실종 제보 등록(게시글+제보, 품종 마스터/직접입력, 목격 좌표, 개인정보 동의) | CMU-002-10·13 | KSJ | LostReportCreateRequest | LostReportResponse |
 | POST | /lost-reports/{lostTpofSn}/found | 찾았어요 전환(완료 안내 댓글 자동 생성) | CMU-002-09 | KSJ | - | - |
@@ -68,14 +69,15 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 
 | 항목 | 값 |
 | --- | --- |
-| 연결 | `/ws` (STOMP over WebSocket). 연결할 때 access 토큰 쿠키로 인증하고, 연결 속성에 `mbrSn`·`sid`(RFRSH_TKN 일련번호)를 저장한다 |
-| 구독 | `/user/queue/chat`. 사용자 식별자는 `mbrSn`이라 같은 회원의 모든 기기 연결로 간다 |
-| 받는 것 | `{ type: "MESSAGE", otoChatRoomSn, message: ChatMessageSummary }`, `{ type: "READ", otoChatRoomSn, mbrSn, msgSeq }` |
+| 연결 | `/ws` (STOMP over WebSocket, SockJS 없음). 연결(핸드셰이크)할 때 access 토큰 쿠키로 인증하고 인증이 없으면 401이다. 연결 사용자 이름은 `mbrSn`이다. 브라우저는 쿠키를 보내도록 `withCredentials`로 연결한다 |
+| 구독 | `/user/queue/chat`만 구독할 수 있다. 사용자 식별자는 `mbrSn`이라 같은 회원의 모든 기기 연결로 간다 |
+| 받는 것 | `{ type: "MESSAGE", otoChatRoomSn, message: ChatMessageSummary }`(`mine`은 받는 사람 기준), `{ type: "READ", otoChatRoomSn, mbrSn, msgSeq }`(`mbrSn`은 읽은 사람) |
+| 보내는 것 | `/app/chat/view` 에 `{ otoChatRoomSn }`. 지금 화면에 띄워 보는 방을 알린다(방을 닫거나 창이 포커스를 잃으면 `{ otoChatRoomSn: null }`). 이 목적지 외로 보내면 거부한다 |
 
 다중 로그인(한 회원이 여러 기기로 동시에 접속)에서 지킬 것:
 - 메시지와 읽음은 회원의 모든 연결로 보낸다. 읽음 위치는 DB(회원 + 방 기준 마지막 읽은 `msgSeq`)에 두고, 한 기기에서 읽으면 다른 기기 연결에도 `READ`를 보낸다. 헤더의 채팅 안 읽은 수(`GET /chat-rooms/unread-count`)도 같은 값을 쓴다
-- "채팅방을 보는 중이면 거래 알림을 만들지 않는다"(COM-004-14)는 그 회원의 연결 중 하나라도 그 방을 보고 있으면 보는 중으로 본다. 기준(연결 여부 / 화면 포커스)은 KSJ가 정한다
-- 로그아웃·세션 폐기 뒤에도 소켓이 살아 있으면 안 된다. `LoginSessionManager.revoke`가 세션 폐기 이벤트를 발행하고, 채팅 쪽이 그 `sid`의 연결을 끊는다. 오래 열린 연결은 access 토큰 만료 때 다시 인증한다
+- "채팅방을 보는 중이면 거래 알림을 만들지 않는다"(COM-004-14)는 그 회원의 연결 중 하나라도 그 방을 보고 있으면 보는 중으로 본다. 기준은 「연결 + `/app/chat/view`로 알린 방」이고, 연결이 끊기면 등록이 지워진다. 화면 포커스는 프론트가 `view`를 보내는 시점으로 정한다
+- (아직 안 함) 로그아웃·세션 폐기 뒤에도 소켓이 살아 있으면 안 된다. `LoginSessionManager.revoke`가 세션 폐기 이벤트를 발행하고, 채팅 쪽이 그 `sid`의 연결을 끊는다. 지금은 `LoginSessionManager`에 이벤트가 없어 공통 모듈 변경이 필요하다. 오래 열린 연결은 access 토큰 만료 때 다시 인증한다
 - 서버가 한 대면 내장 브로커로 충분하다. 여러 대가 되면 외부 브로커(Redis pub/sub 등)가 필요하다
 
 ## DTO
@@ -274,15 +276,10 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | delRsn | String | Y | 삭제 사유. 1000자 이내 | MNGR_TASK_LOG.CHG_AFTR_CN, ADM-020-06 |
 
 ### CareCompletionRequestCreateRequest
-쓰는 API: POST /care-matches/{petPrtcMtchSn}/completion-requests
+쓰는 API: POST /care-matches/{petPrtcMtchSn}/completion-requests (명세 08 「별도 입력 항목은 없다」. 돌봄 내용 `''`, 종료 시각은 요청 시각, 인계 확인 `Y`로 저장)
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| prtcEndDt | LocalDateTime | Y | 돌봄 종료 시각 | PRTC_CMPTN_DMND_CYCL.PRTC_END_DT, CMU-005-08 |
-| cmptnCn | String | Y | 돌봄 내용. 최대 4000자 | PRTC_CMPTN_DMND_CYCL.CMPTN_CN, CMU-005-08 |
-| spclMttrCn | String | N | 특이사항. 최대 1000자 | PRTC_CMPTN_DMND_CYCL.SPCL_MTTR_CN, CMU-005-08 |
-| hnovCmptnIdntyYn | Boolean | Y | 인계·마무리 확인. true여야 제출 | PRTC_CMPTN_DMND_CYCL.HNOV_CMPTN_IDNTY_YN, CMU-005-08 |
-| atchFileSns | List<Long> | N | 사진 선택 첨부. 개수·용량은 명세 없음 | PRTC_CMPTN_PHOTO.ATCH_FILE_SN, CMU-005-08 |
-| idmptDmndId | String | Y | 중복 제출 방지 | PRTC_CMPTN_DMND_CYCL.IDMPT_DMND_ID, CMU-005-11 |
+| idmptDmndId | String | Y | 중복 제출 방지. 최대 100자 | PRTC_CMPTN_DMND_CYCL.IDMPT_DMND_ID, CMU-005-11 |
 
 ### CareCompletionRequestResponse
 쓰는 API: POST /care-matches/{petPrtcMtchSn}/completion-requests (`CareMatchResponse.cmptnDmnds`에서도 씀)
@@ -292,33 +289,28 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | petPrtcMtchSn | Long | Y | | PRTC_CMPTN_DMND_CYCL.PET_PRTC_MTCH_SN |
 | mtchCndVerSn | Long | Y | 요청 당시 조건 버전 | PRTC_CMPTN_DMND_CYCL.MTCH_CND_VER_SN |
 | dmndCycl | Integer | Y | 요청 회차 | PRTC_CMPTN_DMND_CYCL.DMND_CYCL, CMU-005-09 |
-| prtcEndDt | LocalDateTime | Y | | PRTC_CMPTN_DMND_CYCL.PRTC_END_DT |
-| cmptnCn | String | Y | | PRTC_CMPTN_DMND_CYCL.CMPTN_CN |
-| spclMttrCn | String | N | | PRTC_CMPTN_DMND_CYCL.SPCL_MTTR_CN |
-| hnovCmptnIdntyYn | boolean | Y | | PRTC_CMPTN_DMND_CYCL.HNOV_CMPTN_IDNTY_YN |
+| prtcEndDt | LocalDateTime | Y | 요청 시각 | PRTC_CMPTN_DMND_CYCL.PRTC_END_DT |
 | prtcrIdntyRsltCd | String | N | 보호자 확인 결과. 공통코드 PCAG06. 확인 전 null | PRTC_CMPTN_DMND_CYCL.PRTCR_IDNTY_RSLT_CD, CMU-005-09 |
 | prtcrIdntyDt | LocalDateTime | N | | PRTC_CMPTN_DMND_CYCL.PRTCR_IDNTY_DT, CMU-005-11 |
-| splmntDmndRsn | String | N | 보완 요청 사유 | PRTC_CMPTN_DMND_CYCL.SPLMNT_DMND_RSN, CMU-005-09 |
-| photos | List<ImageItem> | Y | 없으면 빈 목록 | PRTC_CMPTN_PHOTO, CMU-005-09 |
 
-#### ImageItem (응답 record. 펫이야기는 접미어 규칙에 맞춰 `PostImageSummary`로 쓴다. 쓰는 DTO: CareCompletionRequestResponse, CareRecruitmentResponse, ChatMessageResponse, ChatMessageSummary, LostReportResponse, PostResponse)
+#### ImageItem (응답 record. 펫이야기는 접미어 규칙에 맞춰 `PostImageSummary`로 쓴다. 쓰는 DTO: CareRecruitmentResponse, ChatMessageResponse, ChatMessageSummary, LostReportResponse, PostResponse)
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| atchFileSn | Long | Y | 공개 사진(펫이야기 등)은 `GET /api/files/public/{atchFileSn}`, 1:1 문의 사진은 `GET /api/inquiries/{otoInqrySn}/images/{atchFileSn}`(본인만). 채팅 사진은 그 마일스톤에서 정한다 | PST_IMG·PRTC_CMPTN_PHOTO·CHAT_MSG_PHOTO·INQRY_ATCH_PHOTO의 ATCH_FILE_SN |
+| atchFileSn | Long | Y | 공개 사진(펫이야기 등)은 `GET /api/files/public/{atchFileSn}`, 1:1 문의 사진은 `GET /api/inquiries/{otoInqrySn}/images/{atchFileSn}`(본인만), 채팅 사진은 `GET /api/chat-rooms/{otoChatRoomSn}/images/{atchFileSn}`(방 참여자만) | PST_IMG·CHAT_MSG_PHOTO·INQRY_ATCH_PHOTO의 ATCH_FILE_SN |
 | sortSeq | Integer | Y | | 같은 테이블들의 SORT_SEQ |
 
+### CareMatchCancelRequest
+쓰는 API: POST /care-matches/{petPrtcMtchSn}/cancel
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| cnclRsn | String | Y | 취소 사유(칩 선택 문구 또는 직접 입력). 최대 50자, 공백만 불가. 상태 이력 `CHG_RSN`과 채팅 시스템 메시지에 남는다 | PET_PRTC_MTCH_STTS_HSTRY.CHG_RSN, CMU-005-06 |
+
 ### CareMatchCreateRequest
-쓰는 API: POST /care-matches
+쓰는 API: POST /care-matches (조건은 받지 않고 요청 시점의 모집글 조건(비용·일정·돌봄 내용)을 복사한다. 화면설계서 005-03 「현재 모집글 조건으로 다시 요청했어요」)
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | otoChatRoomSn | Long | Y | 이 채팅방의 게시글 작성자(보호자)만 요청 | PET_PRTC_MTCH.OTO_CHAT_ROOM_SN, CMU-005-06 |
-| acrdPrtcBgngDt | LocalDateTime | N | 일정 협의 가능이 아니면 필수(모집 등록 규칙 준용) | MTCH_CND_VER.ACRD_PRTC_BGNG_DT, CMU-005-06 |
-| acrdPrtcEndDt | LocalDateTime | N | 시작보다 뒤 | MTCH_CND_VER.ACRD_PRTC_END_DT, CMU-005-06 |
-| schdlCnsltnPsbltyYn | Boolean | Y | | MTCH_CND_VER.SCHDL_CNSLTN_PSBLTY_YN |
-| acrdPrtcCn | String | Y | 돌봄 내용. 최대 4000자 | MTCH_CND_VER.ACRD_PRTC_CN, CMU-005-06 |
-| cstUnitCd | String | Y | 공통코드 PCAG02(시급·건당) | MTCH_CND_VER.CST_UNIT_CD |
-| acrdCstAmt | Integer | Y | 원 단위 양의 정수 | MTCH_CND_VER.ACRD_CST_AMT, CMU-005-06 |
-| idmptDmndId | String | Y | 중복 요청 방지 | PET_PRTC_MTCH.IDMPT_DMND_ID, CMU-005-11 |
+| idmptDmndId | String | Y | 중복 요청 방지. 최대 100자 | PET_PRTC_MTCH.IDMPT_DMND_ID, CMU-005-11 |
 
 ### CareMatchReceiptConfirmRequest
 쓰는 API: POST /care-matches/{petPrtcMtchSn}/confirm-receipt
@@ -350,12 +342,6 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | acrdPrtcCn | String | Y | | MTCH_CND_VER.ACRD_PRTC_CN |
 | cstUnitCd | String | Y | 공통코드 PCAG02 | MTCH_CND_VER.CST_UNIT_CD |
 | acrdCstAmt | Integer | Y | 확정 금액(수령 확인 모달 표시) | MTCH_CND_VER.ACRD_CST_AMT, CMU-005-10 |
-
-### CareMatchSupplementRequest
-쓰는 API: POST /care-matches/{petPrtcMtchSn}/request-supplement
-| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
-| --- | --- | --- | --- | --- |
-| splmntDmndRsn | String | Y | 최대 1000자. 가장 최근 완료 요청 회차에 기록 | PRTC_CMPTN_DMND_CYCL.SPLMNT_DMND_RSN, CMU-005-09 |
 
 ### CareRecruitmentCreateRequest
 쓰는 API: POST /care-recruitments (multipart/form-data. 반려동물은 `pets[0].petSeCd`처럼 인덱스 필드로 보낸다)
@@ -473,11 +459,12 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 쓰는 API: POST /chat-rooms/{otoChatRoomSn}/messages
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| msgTypeCd | String | Y | 공통코드 CHTG03(텍스트·사진·주소 공유) | CHAT_MSG.MSG_TYPE_CD, CMU-005-04·05 |
-| msgCn | String | N | 텍스트면 필수. 공백만 입력 불가. 길이는 명세 없음 | CHAT_MSG.MSG_CN_ENC, CMU-005-04 |
-| shrnAddr | String | N | 주소 공유면 필수. 참여자에게만 공개 | CHAT_MSG.SHRN_ADDR_ENC, CMU-005-05 |
-| atchFileSns | List<Long> | N | 사진이면 필수. JPG·PNG·WEBP, 최대 10장, 장당 10MB | CHAT_MSG_PHOTO.ATCH_FILE_SN, CMU-005-05 |
-| idmptDmndId | String | Y | 재시도 중복 전송 방지 | CHAT_MSG.IDMPT_DMND_ID, CMU-005-04 |
+| msgTypeCd | String | Y | 공통코드 CHTG03 중 `CHTC0005`(텍스트)·`CHTC0006`(사진)·`CHTC0007`(주소). 거래 카드·시스템은 서버만 만든다. 방 참여 중인 회원만 보내며 multipart/form-data | CHAT_MSG.MSG_TYPE_CD, CMU-005-04·05 |
+| msgCn | String | N | 텍스트면 필수. 공백만 입력 불가, 최대 2000자(명세에 길이 없어 서버가 정함) | CHAT_MSG.MSG_CN_ENC, CMU-005-04 |
+| shrnAddr | String | N | 주소 공유면 필수. 선택한 장소(이름·주소), 최대 200자. 매칭 완료·확인 대기·수령 대기에서만 보낼 수 있고 그 외는 409 `CHAT_ADDRESS_NOT_ALLOWED` | CHAT_MSG.SHRN_ADDR_ENC, CMU-005-05 |
+| dtlAddr | String | N | 주소 공유의 상세 주소. 최대 30자. `shrnAddr`와 한 암호문으로 저장한다 | CHAT_MSG.SHRN_ADDR_ENC, CMU-005-05 |
+| images | List<MultipartFile> | N | 사진이면 필수. JPG·PNG·WEBP, 최대 10장, 장당 10MB | CHAT_MSG_PHOTO.ATCH_FILE_SN, CMU-005-05 |
+| idmptDmndId | String | Y | 재시도 중복 전송 방지. 최대 100자 | CHAT_MSG.IDMPT_DMND_ID, CMU-005-04 |
 
 ### ChatMessageResponse
 쓰는 API: POST /chat-rooms/{otoChatRoomSn}/messages
@@ -489,8 +476,11 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | mine | Boolean | Y | 본인 메시지(오른쪽 배치) | CHAT_MSG.MBR_SN, CMU-005-04 |
 | msgTypeCd | String | Y | 공통코드 CHTG03 | CHAT_MSG.MSG_TYPE_CD |
 | msgCn | String | N | 복호화 | CHAT_MSG.MSG_CN_ENC |
-| shrnAddr | String | N | 복호화. 참여자에게만 | CHAT_MSG.SHRN_ADDR_ENC, CMU-005-05 |
+| shrnAddr | String | N | 복호화한 장소. 참여자에게만 | CHAT_MSG.SHRN_ADDR_ENC, CMU-005-05 |
+| dtlAddr | String | N | 복호화한 상세 주소. 참여자에게만 | CHAT_MSG.SHRN_ADDR_ENC, CMU-005-05 |
 | photos | List<ImageItem> | Y | 사진 메시지가 아니면 빈 목록 | CHAT_MSG_PHOTO, CMU-005-05 |
+| regDt | LocalDateTime | Y | 보낸 시각 | CHAT_MSG.REG_DT |
+| created | boolean | Y | 이번 요청으로 저장했는지. 같은 `idmptDmndId` 재전송은 false(200) | CHAT_MSG.IDMPT_DMND_ID, CMU-005-04 |
 
 ### ChatMessageSliceResponse
 쓰는 API: GET /chat-rooms/{otoChatRoomSn}/messages (전체 건수를 세지 않는 커서 응답. `PageResponse`를 쓰지 않는다)
@@ -509,8 +499,12 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | mine | Boolean | Y | 본인 메시지(오른쪽 배치) | CHAT_MSG.MBR_SN, CMU-005-04 |
 | msgTypeCd | String | Y | 공통코드 CHTG03 | CHAT_MSG.MSG_TYPE_CD |
 | msgCn | String | N | 복호화 | CHAT_MSG.MSG_CN_ENC, CMU-005-04 |
-| shrnAddr | String | N | 복호화. 참여자에게만 | CHAT_MSG.SHRN_ADDR_ENC, CMU-005-05 |
+| shrnAddr | String | N | 복호화한 장소. 참여자에게만 | CHAT_MSG.SHRN_ADDR_ENC, CMU-005-05 |
+| dtlAddr | String | N | 복호화한 상세 주소. 참여자에게만 | CHAT_MSG.SHRN_ADDR_ENC, CMU-005-05 |
 | photos | List<ImageItem> | Y | 사진 메시지가 아니면 빈 목록 | CHAT_MSG_PHOTO, CMU-005-05 |
+| regDt | LocalDateTime | Y | 보낸 시각 | CHAT_MSG.REG_DT |
+
+시스템 메시지(`msgTypeCd=CHTC0009`, 요청·수락·완료 등 거래 단계 안내)는 `mbrSn`이 null이고 `mine`은 false다. 화면은 가운데 안내 줄로 그린다. 안 읽은 수에는 세지 않는다.
 
 ### ChatRoomCreateRequest
 쓰는 API: POST /chat-rooms
@@ -553,7 +547,10 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | ctptMbrSn | Long | Y | 초안 그대로 | OTO_CHAT_ROOM.CTPT_MBR_SN |
 | ctptMbrNcnm | String | Y | 초안 그대로 | MBR.MBR_NCNM |
 | ctptProfileAtchFileSn | Long | N | 초안 그대로 | MBR.ATCH_FILE_SN |
-| lastMsgCn | String | N | 초안 그대로. 1행 말줄임 | CHAT_MSG.MSG_CN_ENC (복호화) |
+| myRole | String | Y | 내 역할 `GUARDIAN`·`SITTER`(닉네임 옆 「돌보미/보호자」 표시는 상대 역할이므로 반대로 그린다) | CMU-005-02 |
+| mtchDlngSttsCd | String | N | 거래 상태 배지. 매칭 전이면 null. 공통코드 PCAG05 | PET_PRTC_MTCH.MTCH_DLNG_STTS_CD, CMU-005-02 |
+| lastMsgTypeCd | String | N | 마지막 메시지 유형. 없으면 null. 공통코드 CHTG03 | CHAT_MSG.MSG_TYPE_CD |
+| lastMsgCn | String | N | 초안 그대로. 1행 말줄임. 사진은 「사진을 보냈어요.」, 주소는 「주소를 공유했어요.」 | CHAT_MSG.MSG_CN_ENC (복호화) |
 | lastMsgDt | LocalDateTime | N | 초안 그대로 | CMU-005-02 |
 | unreadCnt | Integer | Y | 초안 그대로 | CHAT_PRTPNT.LAST_PRSL_MSG_SEQ, CHAT_MSG.MSG_SEQ |
 
