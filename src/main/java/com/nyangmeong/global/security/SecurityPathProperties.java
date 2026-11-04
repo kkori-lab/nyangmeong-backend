@@ -21,6 +21,7 @@ public class SecurityPathProperties {
     private List<String> permitAllPaths = List.of(
             "/api/auth/dev-tokens",
             "/api/auth/login",
+            "/api/auth/sns-login",
             "/api/auth/login-attempt-limits",
             "/api/auth/captchas",
             "/api/auth/refresh",

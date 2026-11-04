@@ -27,7 +27,7 @@ app.cookie.secure=false
 # 쿠키를 실어 보낼 수 있는 프론트 오리진(쉼표 구분). 개발은 Vite 주소
 app.cors.allowed-origins=http://localhost:5173
 # 로그인 없이 여는 경로(쉼표 구분). 목록 밖은 전부 인증이 필요하다. 생략하면 아래와 같은 기본값
-app.security.permit-all-paths=/api/auth/dev-tokens,/api/auth/login,/api/auth/login-attempt-limits,/api/auth/captchas,/api/auth/refresh,/api/auth/logout,/api/terms,/api/terms/*,/api/email-certifications,/api/email-certifications/*/verify,/api/email-certifications/*/invalidate,/api/email-certifications/*/password-reset,/api/members,/api/members/nickname-availability,/api/members/phone-availability,/api/members/recovery-info,/api/members/recovery,/api/members/me/nickname,/api/files/public/**,/swagger-ui/**,/swagger-ui.html,/v3/api-docs/**
+app.security.permit-all-paths=/api/auth/dev-tokens,/api/auth/login,/api/auth/sns-login,/api/auth/login-attempt-limits,/api/auth/captchas,/api/auth/refresh,/api/auth/logout,/api/terms,/api/terms/*,/api/email-certifications,/api/email-certifications/*/verify,/api/email-certifications/*/invalidate,/api/email-certifications/*/password-reset,/api/members,/api/members/nickname-availability,/api/members/phone-availability,/api/members/recovery-info,/api/members/recovery,/api/members/me/nickname,/api/files/public/**,/swagger-ui/**,/swagger-ui.html,/v3/api-docs/**
 
 # 이메일 인증·가입(SCR-ACC-001). 모두 생략 가능, 생략하면 아래와 같은 기본값(초·분 단위는 키 이름 끝)
 app.email-cert.code-validity-seconds=180
@@ -37,6 +37,20 @@ app.email-cert.resend-max-count=5
 app.email-cert.verified-keep-minutes=30
 app.email-cert.fail-limit=5
 app.signup.nickname-token-valid-minutes=30
+app.signup.sns-token-valid-minutes=30
+
+# SNS 로그인. 이 줄이 없으면 실제 호출(real, 앱 키 필요)이다. 로컬에서 앱 키 없이 확인할 때만 fake 로 두고 code 를 fake-이름 으로 보낸다. 배포 서버에는 fake 를 두지 않는다
+app.sns.client=fake
+app.sns.timeout-ms=3000
+app.sns.naver.client-id=
+app.sns.naver.client-secret=
+app.sns.naver.redirect-uri=
+app.sns.kakao.client-id=
+app.sns.kakao.client-secret=
+app.sns.kakao.redirect-uri=
+app.sns.google.client-id=
+app.sns.google.client-secret=
+app.sns.google.redirect-uri=
 
 # 파일 저장(SCR-MYP-010). 저장 루트 폴더. 비우면 OS별 기본 경로: Windows는 프로젝트가 있는 드라이브 루트 아래 home/ggorilab/attachment, Mac은 /Users/Shared/ggorilab/attachment
 # 그 밖의 OS와 prod는 반드시 적는다(운영은 application-prod.properties). 개인 PC 경로는 커밋하지 않는다. 업로드 상한은 SYS_STNG.FILE_MAX_SZ(10MB)와 맞춘다
