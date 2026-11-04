@@ -7,6 +7,8 @@ import org.apache.ibatis.annotations.Param;
 
 import com.nyangmeong.member.domain.Terms;
 import com.nyangmeong.member.dto.AdminMemberTermsAgreeSummary;
+import com.nyangmeong.member.dto.AdminTermsDetail;
+import com.nyangmeong.member.dto.AdminTermsSummary;
 import com.nyangmeong.member.dto.TermsSummary;
 
 /**
@@ -45,4 +47,42 @@ public interface TermsMapper {
      */
     int insertAgreement(@Param("mbrSn") Long mbrSn, @Param("trmsSn") Long trmsSn, @Param("agreYn") String agreYn,
             @Param("actorId") String actorId);
+
+    /**
+     * 관리자 : 종류별 사용 중 버전 (정렬순서)
+     */
+    List<AdminTermsSummary> selectAdminCurrentList();
+
+    /**
+     * 관리자 : 한 종류의 모든 버전 (최신순, 내용 제외)
+     */
+    List<AdminTermsSummary> selectAdminHistory(@Param("trmsFixIdntfKey") String trmsFixIdntfKey);
+
+    /**
+     * 관리자 : 약관 상세 (사용 안 함 포함), 없으면 null
+     */
+    AdminTermsDetail selectAdminDetail(@Param("trmsSn") Long trmsSn);
+
+    /**
+     * 관리자 : 같은 종류·같은 버전 상세, 없으면 null
+     */
+    AdminTermsDetail selectAdminDetailByVersion(@Param("trmsFixIdntfKey") String trmsFixIdntfKey,
+            @Param("trmsVerId") String trmsVerId);
+
+    /**
+     * 관리자 : 종류의 가장 최근 버전 정렬순서 (그 종류 행을 잠근다), 종류가 없으면 null
+     */
+    Integer selectLatestSortSeqForUpdate(@Param("trmsFixIdntfKey") String trmsFixIdntfKey);
+
+    /**
+     * 관리자 : 같은 종류의 사용 중 버전을 사용 안 함으로
+     */
+    int updateDisableByKey(@Param("trmsFixIdntfKey") String trmsFixIdntfKey, @Param("actorId") String actorId);
+
+    /**
+     * 관리자 : 약관 새 버전 등록 (사용)
+     */
+    int insertAdminTerms(@Param("trmsFixIdntfKey") String trmsFixIdntfKey, @Param("trmsVerId") String trmsVerId,
+            @Param("trmsTtl") String trmsTtl, @Param("trmsCn") String trmsCn, @Param("esntlAgreYn") String esntlAgreYn,
+            @Param("sortSeq") Integer sortSeq, @Param("actorId") String actorId);
 }

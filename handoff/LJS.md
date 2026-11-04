@@ -2,9 +2,15 @@
 
 ## 지금 하는 것
 
-SCR-MAN-001 메인 · AI 건강분석 리포트 내부 API — 끝 (2026-11-04). Python용 `GET /internal/ai/pets/{petSn}/health-report-input`(14일 일상기록·최근 검진 범위 밖 수치·저장본·가능 여부)·`PUT /internal/ai/pets/{petSn}/health-report`(반려동물당 1행, 기준일별 새로고침 1회·자동 재생성 5회)와 새 테이블 `AI_HLTH_RPT`(DB v0.12 (6))를 만들었다
+SCR-ADM-051 약관 · 프론트 연결 관리자 약관 API — 끝 (2026-11-04). 관리자 `GET /api/admin/terms`(종류별 사용 중 버전)·`GET /api/admin/terms/history`·`GET /api/admin/terms/{trmsSn}`·`POST /api/admin/terms`(새 버전 등록, 이전 버전 사용 안 함, 기존 회원 재동의 없음)를 만들었다. 가입 약관 4종만, DB 변경 없음
 
 ## 다음에 할 것
+
+- SCR-ADM-051 연결 남음: FN-ADM-051-01·02·03 (프론트 연결 `features/adminTerms/api.js` 약관 목록·새 버전 등록·[이력] 모달, `termsKinds.js` 종류 키, 프론트 저장소에서 /start). 프론트 저장소 마일스톤 절은 옆 폴더가 없어 넣지 못했다(아래 "프론트 마일스톤(사람)"). 프론트에 알릴 것: 종류 키 실제 값은 `SERVICE`·`PRIVACY`·`AGE_14`·`MARKETING`(가정 `AGE` 아님) 4종, `CARE_RULE`·`LOST_PRIVACY`는 아직 없음(등록 404), `useYn`·`esntlAgreYn`은 true/false, `regDt` 그대로, 같은 종류 같은 버전 409 `DUPLICATE_TRMS_VER`, 계약은 `docs/api/member.md` 관리자 약관 4행
+- 프론트 마일스톤(사람): 프론트 저장소 LJS 마일스톤 `## 제외` 앞에 `## SCR-ADM-051 약관 · 관리자 약관 API 연결 — 대기` 절(기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-051-01·02·03 / 기다리는 것: 백엔드 SCR-ADM-051 관리자 약관 API(LJS, 끝) / 완료 조건: `features/adminTerms/api.js` 가짜 응답을 `GET /api/admin/terms`·`GET /api/admin/terms/history?trmsFixIdntfKey=`·`GET /api/admin/terms/{trmsSn}`·`POST /api/admin/terms`로 바꾸고, `termsKinds.js` 종류 키를 `AGE_14` 포함 4종으로 맞춘다)
+- SCR-ADM-051 남김: FN-ADM-051-04 기능별 동의 2종(펫돌봄 이용수칙 `CARE_RULE`·실종 개인정보 공개 동의 `LOST_PRIVACY`). 커뮤니티가 동의 문구를 `TRMS`에서 읽게 될 때(KSJ) 넣는다. 그때 가입 쪽 쿼리 4개(`TermsMapper.xml` 가입 목록·가입 동의 검사·복구 빠진 필수 약관·관리자 회원 상세 약관 동의)가 섞이지 않게 가르는 방법(컬럼 추가 등)을 YAY와 정한다
+- YAY에게 알린다(PR 전): `member`에 `AdminTermsController`·`AdminTermsService`·DTO 3개를 넣고 `TermsMapper`에 관리자 쿼리만 추가했다(가입 쪽 쿼리는 그대로). `ErrorCode` member 구획에 `DUPLICATE_TRMS_VER`
+- 판단 필요(SCR-ADM-051): `GET /api/admin/terms/history`에 `trmsFixIdntfKey`를 빼면 문서(`docs/api/member.md`)는 400 `INVALID_INPUT_VALUE`인데 실제는 400 `BAD_REQUEST`(필수 파라미터 누락). 문서를 고치거나 `@RequestParam(required = false)`로 바꾼다
 
 - ai-f2에 알린다(SCR-MAN-001 끝, PR 번호와 함께): 계약은 `docs/api/ai.md` 두 행과 DTO 절. 초안과 다른 점: PUT도 그날 두 번째 새로고침 409 `HEALTH_REPORT_REFRESH_LIMIT`·자동 재생성 6회째 409 `HEALTH_REPORT_AUTO_LIMIT`·저장본보다 이른 기준일 400(Python은 저장 실패여도 200이니 그대로), 하루 값은 체중 그날 마지막 기록·식사량·음수량·산책 그날 합계·배변 기록마다 한 줄, `baseYmd` 없으면 400 `BAD_REQUEST`, `inputHash`는 소문자로 저장. 필드 이름은 `tips`·`ageMm` 그대로(`anlsCns`로 바꾸지 않음). ai 저장소 `docs/api/internal.md` 두 행을 확정으로 바꾸는 것은 ai 세션
 - 공용 DB(사람): v0.12 (6) `AI_HLTH_RPT`는 2026-11-04 실행함(PR 전, 사람). PR 본문에 "DB 변경 있음 v0.12 (6), 공용 DB 실행함"을 적고, 팀에 각자 로컬 DB에 그 절을 실행하라고 알린다. 사람 확인으로 남은 행은 `DELETE FROM AI_HLTH_RPT WHERE PET_SN = 573;`
@@ -37,7 +43,7 @@ SCR-MAN-001 메인 · AI 건강분석 리포트 내부 API — 끝 (2026-11-04).
 - SCR-ADM-090 연결 남음: FN-ADM-090-03 (SJM이 만든 `PetService.searchCaregiverMbrSns(petSn)`로 `scheduler/CaregiverFake`를 바꾼 뒤(2026-11-03 메서드 있음 확인), 실제 케어 일정 알림에 등록한 템플릿이 쓰이고 `useYn=false`면 기본 문구인지 확인)
 - SCR-ADM-090 연결 남음: FN-ADM-090-01·02 (프론트 연결 `features/adminNotificationTemplate/api.js` 목록·등록·수정, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트 가짜와 다른 점: `useYn`이 `'Y'|'N'`이 아니라 true/false, 케어 일정 외 유형은 등록 400(화면은 "기본 문구"만)
 - 공용 DB 정리(사람): SCR-ADM-090 사람 확인으로 만든 템플릿은 삭제 API가 없다. `DELETE FROM NOTI_TMPLT WHERE NOTI_TMPLT_SN=<번호>;`(관리자 작업 로그 `TRGT_TBL_NM='NOTI_TMPLT'`는 남거나 같이 지운다)
-- 정리(판단 필요): 핸드오프가 60줄을 넘는다(2026-11-04 SCR-MAN-001 /end 때 146줄, ai-f2 요청 항목은 끝나 지움. 2026-11-04 /end 때 144줄, 저장소로 끝났다고 확인되는 항목이 없어 지우지 않음. 2026-11-03 /end 때 143줄. 펫돌봄 게시판 필터 항목은 `BoardType.CARE`(CMUC0028)가 생겨 지웠다. 2026-11-03 공용 DB에 반영된 것을 확인한 v0.12 (1)·v0.11 (5) 실행 항목 2건은 지웠다). 대부분 알림·사람 할 일이라 끝났는지 코드로 판단할 수 없어 남겼다. 끝난 알림·정리 항목을 사람이 지운다
+- 정리(판단 필요): 핸드오프가 60줄을 넘는다(2026-11-04 SCR-ADM-051 /end 때 약 145줄, 저장소로 끝났다고 확인되는 항목이 없어 지우지 않음. 2026-11-04 SCR-MAN-001 /end 때 146줄, ai-f2 요청 항목은 끝나 지움. 2026-11-04 /end 때 144줄, 저장소로 끝났다고 확인되는 항목이 없어 지우지 않음. 2026-11-03 /end 때 143줄. 펫돌봄 게시판 필터 항목은 `BoardType.CARE`(CMUC0028)가 생겨 지웠다. 2026-11-03 공용 DB에 반영된 것을 확인한 v0.12 (1)·v0.11 (5) 실행 항목 2건은 지웠다). 대부분 알림·사람 할 일이라 끝났는지 코드로 판단할 수 없어 남겼다. 끝난 알림·정리 항목을 사람이 지운다
 - ai-47에 알린다: 굽기 계약 구현 끝(SCR-ADM-070). `bake-items` 응답 `{itemSn, regnCd, bakeHint}`(판매 중이고 지시 있음 30개), `GET /internal/ai/items/{itemSn}/bake-targets?page=`(관리자 쿠키, 100개씩 `{pixelCharSns, last}`, 아니면 403 `ADMIN_ONLY`, 굽기 대상 아님 404). 굽기 지시가 바뀌면 그 아이템 착용 시트를 지워 다시 굽기 대상이 된다. 시드에만 있던 6개(빨간 리본·작은 왕관·털모자·줄무늬 티셔츠·꼬까 한복·곰돌이 후드티)의 지시 문장은 LJS 초안이라 검토를 부탁한다. 백엔드 PR이 AI PR보다 먼저 병합돼야 한다
 - 공용 DB 정리(사람): SCR-ADM-070 사람 확인으로 만든 아이템(예: "확인용 가방")은 삭제 API가 없다. `DELETE FROM MNGR_TASK_LOG WHERE TRGT_TBL_NM='ITEM' AND TRGT_SN=<번호>; DELETE FROM ITEM WHERE ITEM_SN=<번호>;` 또는 판매 중지. 바꾼 순서·판매 여부·굽기 지시를 되돌린다
 - SCR-ADM-070 연결 남음: FN-ADM-070-01~04 (프론트 연결 `features/adminItem/api.js` 목록·등록·수정·순서 저장, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
