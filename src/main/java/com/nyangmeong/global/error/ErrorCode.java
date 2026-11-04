@@ -83,6 +83,7 @@ public enum ErrorCode {
     PET_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "반려동물은 계정당 10마리까지 등록할 수 있습니다."),
     PET_WEIGHT_LOCKED(HttpStatus.BAD_REQUEST, "건강 일지에 체중 기록이 있어 체중을 직접 수정할 수 없습니다."),
     BREED_NOT_FOUND(HttpStatus.NOT_FOUND, "품종을 찾을 수 없습니다."),
+    DUPLICATE_VRTY_NM(HttpStatus.CONFLICT, "같은 종에 이미 있는 품종 이름입니다."),
     CAREGIVER_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "공동양육자는 반려동물당 5명까지입니다."),
     CAREGIVER_NOT_FOUND(HttpStatus.NOT_FOUND, "공동양육 정보를 찾을 수 없습니다."),
     CAREGIVER_INVITATION_NOT_FOUND(HttpStatus.NOT_FOUND, "초대를 찾을 수 없습니다."),
