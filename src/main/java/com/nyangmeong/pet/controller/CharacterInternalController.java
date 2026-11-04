@@ -26,6 +26,7 @@ import com.nyangmeong.pet.dto.CharacterJobResponse;
 import com.nyangmeong.pet.dto.CharacterSheetsResponse;
 import com.nyangmeong.pet.dto.CharacterSuccessRequest;
 import com.nyangmeong.pet.dto.CharacterSuccessResponse;
+import com.nyangmeong.pet.dto.EquippedImageSaveRequest;
 import com.nyangmeong.pet.dto.ItemSheetSaveRequest;
 import com.nyangmeong.pet.service.CharacterCreationService;
 import com.nyangmeong.pet.service.CharacterSheetService;
@@ -82,7 +83,15 @@ public class CharacterInternalController {
     @PutMapping(value = "/{pixelCharSn}/item-sheets/{itemSn}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<Void>> saveItemSheet(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long pixelCharSn, @PathVariable Long itemSn, @Valid @ModelAttribute ItemSheetSaveRequest req) {
-        characterSheetService.saveItemSheet(me.id(), pixelCharSn, itemSn, req.sheet());
+        characterSheetService.saveItemSheet(me.id(), me.isAdmin(), pixelCharSn, itemSn, req.sheet());
+        return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    @Operation(summary = "착용 모습 대표 이미지 저장")
+    @PutMapping(value = "/{pixelCharSn}/equipped-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<Void>> saveEquippedImage(@AuthenticationPrincipal LoginMember me,
+            @PathVariable Long pixelCharSn, @Valid @ModelAttribute EquippedImageSaveRequest req) {
+        pixelCharacterService.saveEquippedImage(me.id(), pixelCharSn, req);
         return ResponseEntity.ok(ApiResponse.success());
     }
 
@@ -90,7 +99,7 @@ public class CharacterInternalController {
     @PostMapping("/{pixelCharSn}/item-sheets/{itemSn}/failure")
     public ResponseEntity<ApiResponse<Void>> failItemSheet(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long pixelCharSn, @PathVariable Long itemSn) {
-        characterSheetService.failItemSheet(me.id(), pixelCharSn, itemSn);
+        characterSheetService.failItemSheet(me.id(), me.isAdmin(), pixelCharSn, itemSn);
         return ResponseEntity.ok(ApiResponse.success());
     }
 
@@ -98,14 +107,14 @@ public class CharacterInternalController {
     @GetMapping("/{pixelCharSn}/sheets")
     public ResponseEntity<ApiResponse<CharacterSheetsResponse>> getSheets(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long pixelCharSn, @RequestParam(required = false) List<Long> itemSns) {
-        return ResponseEntity.ok(ApiResponse.success(characterSheetService.getSheets(me.id(), pixelCharSn, itemSns)));
+        return ResponseEntity.ok(ApiResponse.success(characterSheetService.getSheets(me.id(), me.isAdmin(), pixelCharSn, itemSns)));
     }
 
     @Operation(summary = "시트 파일 내려받기")
     @GetMapping("/{pixelCharSn}/sheet-files/{atchFileSn}")
     public ResponseEntity<byte[]> getSheetFile(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long pixelCharSn, @PathVariable Long atchFileSn) {
-        StoredFile file = characterSheetService.getSheetFile(me.id(), pixelCharSn, atchFileSn);
+        StoredFile file = characterSheetService.getSheetFile(me.id(), me.isAdmin(), pixelCharSn, atchFileSn);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(file.contentType()))
                 .body(file.content());

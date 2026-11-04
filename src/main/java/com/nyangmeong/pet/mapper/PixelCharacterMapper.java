@@ -48,6 +48,12 @@ public interface PixelCharacterMapper {
             @Param("actorId") String actorId);
 
     /**
+     * 착용 모습 대표 이미지 저장·삭제 : NULL이면 삭제
+     */
+    int updateWearImage(@Param("pixelCharSn") Long pixelCharSn, @Param("wearImgFileSn") Long wearImgFileSn,
+            @Param("actorId") String actorId);
+
+    /**
      * 맨몸 시트·배치값 저장
      */
     int updateBodySheet(@Param("pixelCharSn") Long pixelCharSn, @Param("bodySheetFileSn") Long bodySheetFileSn,

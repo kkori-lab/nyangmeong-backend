@@ -550,6 +550,13 @@
 - 기다리는 것: 프론트 SCR-ADM-001(끝, 가짜 응답 `features/adminDashboard/api.js`)
 - 완료 조건: `GET /api/admin/dashboard/stats?fromYmd=&toYmd=`(양끝 포함, 최대 90일)가 `daily`[`ymd`·`joinCnt`·`whdwlCnt`·`aiChatCnt`·`ocrRqstCnt`](날짜 순서대로 빠짐없이, 없는 날은 0), `pstCntByBbs`[`bbsCd`·`bbsNm`·`cnt`], `expnsCntByCtgry`[`ctgryCd`·`ctgryNm`·`cnt`], `petDstrb`[`petSeNm`·`vrtyNm`·`cnt`], `fvrtPlcs`[`plcSn`·`plcNm`·`cnt`]를 준다. 기간이 잘못되면 400
 
+## SCR-MYP-010 픽셀 캐릭터 관리 · 착용 모습 대표 이미지·전체 굽기 관리자 허용·얼굴 영역 — 진행
+- 기능: 명세 기능 ID 추가 없음(명세 밖 추가 요청, ai-f2 2026-11-04), 걸치는 기능 FN-MYP-010-16·13, FN-ADM-070-02
+- 기다리는 것: 없음. 정본 초안은 ai 저장소 `docs/api/internal.md` 32~36행. Python 합성은 AI PR #37 병합됨
+- 완료 조건: `PUT /internal/ai/characters/{pixelCharSn}/equipped-image`(multipart `image` 512×512 PNG·`itemSns`)가 지금 착용 목록과 같을 때만 대표 이미지를 저장하고 다르면 409 `EQUIPPED_ITEMS_CHANGED`, `PUT equipped-items` 때 대표 이미지가 지워지며, `GET /api/pets/{petSn}/character-image`는 저장본이 있으면 그것을 준다. 관리자 쿠키로 남의 캐릭터 시트 4개 API를 부를 수 있다. 얼굴 영역이 `(96, 32, 320, 320)`이다
+- 남김: 무료 재생성 계약 FN-MYP-010-23(SCR-ADM-042 전), 신발 정리(`SCR-ADM-070 아이템 · 신발 부위 제외` 절)
+- 완료 조건 결과: 검증 1회차 `실패`(2026-11-04, 추가-① 화면 확인 못 함: 검증의 공용 DB 쓰기 거부·로컬 DB에 v0.13 (1) 없음, 추가-0·②·③은 확인함), 사람이 공용 DB로 확인함(2026-11-04). 함께 정한 것: DB 기준 파일 v0.13(사람 결정), 이전 대표 이미지 파일은 디스크에 남김(`FileStore` 삭제 없음)
+
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
 - FN-COM-002-11: 채팅 안 읽은 수 API는 KSJ(채팅, 마일스톤 담당 표 COM-009)
