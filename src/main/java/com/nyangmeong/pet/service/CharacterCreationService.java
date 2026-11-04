@@ -120,6 +120,7 @@ public class CharacterCreationService {
         pixelCharacterMapper.updateBodySheet(character.getPixelCharSn(), sheetFileSn, req.scale(), req.originX(),
                 req.originY(), SYSTEM);
         pixelCharacterMapper.updateItemSheetDelete(character.getPixelCharSn());
+        pixelCharacterMapper.updateWearImage(character.getPixelCharSn(), null, SYSTEM);
         return new CharacterSuccessResponse(character.getPixelCharSn());
     }
 

@@ -15,6 +15,8 @@ public class PixelCharacter {
     private Long petSn;
     private String bscCharSbstYn;
     private Long bodySheetFileSn;
+    /** 착용 모습 대표 이미지 : 착용을 바꾸면 NULL */
+    private Long wearImgFileSn;
     private Double sheetScale;
     private Double sheetOriginX;
     private Double sheetOriginY;
