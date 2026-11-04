@@ -196,6 +196,10 @@ public enum ErrorCode {
     CARE_MATCH_ALREADY_MATCHED(HttpStatus.CONFLICT, "이미 다른 분과 매칭된 모집글입니다."),
     CARE_MATCH_INVALID_STATE(HttpStatus.CONFLICT, "현재 매칭 단계에서는 할 수 없는 요청입니다."),
 
+    /** ai */
+    HEALTH_REPORT_REFRESH_LIMIT(HttpStatus.CONFLICT, "오늘은 이미 새로고침했어요. 내일 다시 시도해 주세요."),
+    HEALTH_REPORT_AUTO_LIMIT(HttpStatus.CONFLICT, "오늘은 리포트를 더 만들 수 없어요."),
+
     /** support */
     NOTICE_NOT_FOUND(HttpStatus.NOT_FOUND, "공지사항을 찾을 수 없습니다."),
     FAQ_NOT_FOUND(HttpStatus.NOT_FOUND, "FAQ를 찾을 수 없습니다."),

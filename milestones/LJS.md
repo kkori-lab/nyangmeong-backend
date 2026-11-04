@@ -506,6 +506,18 @@
 - 기다리는 것: 프론트 SCR-ADM-080(끝, 가짜 응답 `features/adminAiRoute/api.js`)
 - 완료 조건: `GET /api/admin/ai/routes?q=`(우선순위 순 전체 목록, `q`는 지시어 공백 무시 부분 일치, 한 줄은 `AI_ROUT_MPNG` 필드 `aiRoutMpngSn`·`domnNm`·`trgtScrnNm`·`scrnId`·`scrnParamCn`·`instKwrdCn`·`mvmnMthdCd`(AIMG09)·`rprsChipYn`·`prrtSeq`·`rmrkCn`·`useYn`·`mdfcnDt`), `POST /api/admin/ai/routes`·`PATCH /api/admin/ai/routes/{aiRoutMpngSn}`(본문에 `prrtSeq`를 받으면 그 자리에 넣고 나머지를 한 칸씩 밀어 1부터 빈틈없이, 등록 기본값은 맨 아래), `DELETE /api/admin/ai/routes/{aiRoutMpngSn}`(뒤 순위를 당김), 감사 로그. 지시어 저장 형식(프론트 가정: 쉼표 구분 한 줄)과 `domnNm` 정하는 규칙(프론트 가정: 화면 ID 가운데 세 글자), 화면 ID 선택지 출처를 정해 프론트에 알린다. AI 서버·대화창용 조회 API(FN-ADM-080-04)와 부록 A 초기 데이터 INSERT(FN-ADM-080-05). 나중에 우선순위를 지시어별로 둘지(프론트 후속 메모) 함께 본다
 
+## SCR-MAN-001 메인 · AI 건강분석 리포트 내부 API — 끝
+- 기능: 명세 기능 ID 추가 없음(명세 밖 추가 요청, ai-f2 2026-11-04), 걸치는 기능 FN-MAN-006(AI 건강분석 리포트 위젯 MANC0007)
+- 기다리는 것: 없음. 정본 초안은 ai 저장소 `docs/api/internal.md` 맨 아래 두 행과 `docs/api/healthreport.md`
+- 완료 조건: `GET /internal/ai/pets/{petSn}/health-report-input?baseYmd=`가 양육 회원에게 `{ input, report, rfrshPsblYn, autoRgnrPsblYn }`(14일 기록·최근 검진 참고 범위 밖 수치·저장본)을 주고, `PUT /internal/ai/pets/{petSn}/health-report`가 반려동물당 1행에 덮어쓰며 기준일별 새로고침 1회·자동 재생성 5회를 센다. `docs/api/issues.md` 4번을 닫는다
+- 결정: 하루 값은 체중 그날 마지막 기록·식사량·음수량·산책 그날 합계·배변 기록마다 한 줄, 검진은 `baseYmd` 이전 가장 최근 완료(HLTC0006) 1회, `ageMm`·`tips` 이름 유지. 초안에 더한 것: PUT 새로고침 두 번째·자동 재생성 6회째 409(`HEALTH_REPORT_REFRESH_LIMIT`·`HEALTH_REPORT_AUTO_LIMIT`), 저장본보다 이른 기준일 400. DB v0.12 (6) `AI_HLTH_RPT`(공용 DB 실행함 2026-11-04)
+- 완료 조건 결과: 검증 `통과`(2026-11-04, 2회차. 1회차는 공용 DB에 `AI_HLTH_RPT` 미반영으로 화면 확인 못 함 → 사람이 v0.12 (6) SQL 실행 뒤 재검증, 문서 400 코드 `BAD_REQUEST`로 고침), 사람 확인 2026-11-04
+
+## SCR-ADM-081 키워드 사전 · 프론트 연결 관리자 키워드 사전 API — 대기
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-081-01·02·03
+- 기다리는 것: 프론트 SCR-ADM-081(끝, 가짜 응답 `features/adminAiKeyword/api.js`)
+- 완료 조건: `GET /api/admin/ai/keywords?dictUsgCd=&kwrdClsfNm=`(용도·분류가 같은 행, `sortSeq`·`kwrdDictSn` 순, 한 줄은 `KWRD_DICT` 필드 `kwrdDictSn`·`dictUsgCd`·`kwrdClsfNm`·`artclNm`·`kwrdCn`·`intrpRsltCn`·`mpngCd`·`sortSeq`·`rmrkCn`·`useYn`), `POST /api/admin/ai/keywords`(본문 `dictUsgCd`·`kwrdClsfNm`·`artclNm`·`kwrdCn`·`intrpRsltCn`·`mpngCd`·`rmrkCn`, 새 행 `sortSeq`는 프론트 가정 그 탭 맨 아래), `PATCH`·`DELETE /api/admin/ai/keywords/{kwrdDictSn}`, 감사 로그. 프론트 탭은 AIMC0037의 등록 동사·날짜·주기·일정 종류·검진유형(판정 규칙·시간 행은 뺌)과 AIMC0038 "가계부 카테고리". 가계부 분류(AIMC0038) 초기 키워드 INSERT. AI 서버·대화창용 조회 API: 예시 문구 형식 차이: AI 서버 `ai/data/register_dict.yaml`은 정규식(`(잡아|등록해)(줘|주|줄)`·`\d+일후`), DB `KWRD_CN`은 부록 B 예시 문구(`잡아줘, 등록해줘`·`○일 후`)라 그대로 못 쓴다. 사전에 정규식을 저장할지, 예시를 정규식으로 바꾸는 규칙을 둘지 정한다
+
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
 - FN-COM-002-11: 채팅 안 읽은 수 API는 KSJ(채팅, 마일스톤 담당 표 COM-009)

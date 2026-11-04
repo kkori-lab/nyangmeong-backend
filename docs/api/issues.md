@@ -20,6 +20,7 @@
 2. **위젯 순서 저장 단위 모순** — MAN-007은 "반려동물 단위로 저장"인데 MBR_DSHBD_WDGT는 MBR_SN만 있고 PET_SN이 없다(회원 단위). MAN-004도 탭 전환 시 위젯이 개체 기준으로 바뀐다고 한다. 테이블에 PET_SN을 추가할지, 회원 단위로 명세를 고칠지. 근거: MAN-004·007.
 3. **위젯 조정 방식·숨김 1종 선택 주체 불명** — MAN-007 본문에 조정 방식(드래그 등) 없이 저장 결과만 있다. MAN-006 "6종 중 최대 5종 노출, 1종 숨김"에서 숨길 1종을 회원이 고르는지 고정인지 없다(INDCT_YN 컬럼은 있음). PUT 요청에서 표시 5종 초과를 400으로 막을지 결정 필요. 근거: MAN-006·007.
 4. **"AI 건강분석 리포트" 위젯 정의 없음** — 데이터 출처·담당이 없다(기능 분배 3.1절 14번 남은 일과 같음). 근거: MAN-006.
+   - **결정(2026-11-04, LJS):** 담당은 LJS. React는 Python `GET /ai/pets/{petSn}/health-report`(ai 저장소 `docs/api/healthreport.md`)를 부르고, Python은 Java 내부 API `GET /internal/ai/pets/{petSn}/health-report-input`·`PUT /internal/ai/pets/{petSn}/health-report`(`docs/api/ai.md`)로 입력을 받고 결과를 `AI_HLTH_RPT`(DB v0.12 (6))에 저장한다.
 5. **MBR_DSHBD_WDGT 패키지 위치** — MBR_ 접두 테이블이라 도메인을 member(0층)로 두었으나 구현은 YAY다. member 패키지에 YAY가 만들지, 별도 패키지로 둘지. 근거: MAN-006·007.
 6. **비로그인 메인 접근 모순** — MAN-001은 "비로그인이면 기본 캐릭터"라 하지만 COM-002-02는 레이아웃을 쓰는 모든 페이지가 로그인 필수, COM-003-08은 로그인 상태만 메인으로 보낸다. 메인이 비로그인 공개면 쓰는 API(반려동물·캐릭터)의 인증 예외가 필요하다. 근거: MAN-001, COM-002-02, COM-003-08.
 7. **알림 수신 설정 저장 위치와 경로** — 설정 값이 MBR 컬럼(member 0층)에 있는데 API 담당은 notification(LJS)이다. notification → member 호출은 층 규칙상 가능하나 MBR 컬럼 수정 service를 어느 도메인에 둘지 정해야 한다. 경로는 `/members/me/notification-settings`로 임시 지정. 근거: COM-008-02·14·20.
