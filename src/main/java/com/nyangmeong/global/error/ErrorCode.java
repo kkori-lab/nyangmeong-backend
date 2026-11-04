@@ -52,6 +52,13 @@ public enum ErrorCode {
     MEMBER_NOT_APPOINTABLE(HttpStatus.CONFLICT, "관리자로 지정할 수 없는 회원이에요."),
     ADMIN_NOT_RELEASABLE(HttpStatus.CONFLICT, "본인과 마지막 남은 관리자는 해제할 수 없어요."),
     SNS_ONLY_MEMBER(HttpStatus.BAD_REQUEST, "SNS로 가입한 계정입니다. SNS 로그인을 이용해 주세요."),
+    /** SNS 인가 코드가 틀리거나 제공자 호출이 실패함 */
+    SNS_AUTH_FAILED(HttpStatus.BAD_REQUEST, "SNS 로그인에 실패했습니다. 다시 시도해 주세요."),
+    /** 제공자가 이메일을 주지 않음 : MBR.ACNT_EML 이 필수라 가입할 수 없다 */
+    SNS_EMAIL_NOT_PROVIDED(HttpStatus.BAD_REQUEST, "SNS 계정에서 이메일을 받지 못했습니다. 이메일 제공에 동의해 주세요."),
+    /** 가입 확인 토큰이 만료·변조됐거나 가입 경로와 맞지 않음 : 로그인 방법 선택에서 SNS로 다시 시작 */
+    SNS_SIGNUP_TOKEN_INVALID(HttpStatus.BAD_REQUEST, "SNS 가입 확인 시간이 지났습니다. SNS 로그인을 다시 진행해 주세요."),
+    SNS_ACCOUNT_ALREADY_LINKED(HttpStatus.CONFLICT, "이미 가입된 SNS 계정입니다. SNS 로그인을 이용해 주세요."),
     PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다."),
     /** 로그인한 회원이 입력한 현재 비밀번호가 틀림 : 새 비밀번호·확인값 불일치(PASSWORD_MISMATCH)와 화면의 오류 위치가 달라 따로 둠 */
     CURRENT_PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "현재 비밀번호가 일치하지 않습니다."),
