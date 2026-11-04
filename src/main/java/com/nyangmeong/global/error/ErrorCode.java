@@ -190,6 +190,11 @@ public enum ErrorCode {
     CARE_MATCH_PROVIDER_ONLY(HttpStatus.FORBIDDEN, "돌봄 제공자만 할 수 있습니다."),
     CARE_MATCH_ALREADY_ACCEPTED(HttpStatus.CONFLICT, "이미 매칭이 확정된 모집글입니다."),
     CARE_MATCH_INVALID_STATUS(HttpStatus.CONFLICT, "현재 매칭 상태에서는 할 수 없는 요청입니다."),
+    CHAT_ROOM_ACCESS_DENIED(HttpStatus.FORBIDDEN, "채팅방 참여자만 이용할 수 있습니다."),
+    CHAT_ADDRESS_NOT_ALLOWED(HttpStatus.CONFLICT, "매칭이 완료된 뒤 주소를 공유할 수 있어요."),
+    CARE_MATCH_ROLE_DENIED(HttpStatus.FORBIDDEN, "현재 역할에서는 할 수 없는 요청입니다."),
+    CARE_MATCH_ALREADY_MATCHED(HttpStatus.CONFLICT, "이미 다른 분과 매칭된 모집글입니다."),
+    CARE_MATCH_INVALID_STATE(HttpStatus.CONFLICT, "현재 매칭 단계에서는 할 수 없는 요청입니다."),
 
     /** ai */
     HEALTH_REPORT_REFRESH_LIMIT(HttpStatus.CONFLICT, "오늘은 이미 새로고침했어요. 내일 다시 시도해 주세요."),
