@@ -169,7 +169,7 @@ class SnsLoginServiceTest {
         assertThat(response.snsOffrCd()).isEqualTo(KAKAO);
         assertThat(response.acntEml()).isEqualTo("newbie@example.com");
         assertThat(response.mblTelno()).matches("^01\\d{8,9}$");
-        assertThat(response.ageCnfrmd()).isTrue();
+        assertThat(response.ageCnfrmd()).isFalse();
         SnsSignupClaims claims = tokenManager.resolve(response.signupTkn());
         assertThat(claims.offrAcntId()).isEqualTo(KAKAO + ":fake-newbie");
         assertThat(claims.email()).isEqualTo("newbie@example.com");

@@ -28,7 +28,7 @@ import tools.jackson.databind.json.JsonMapper;
  * - app.sns.client 가 없거나 real 이면 이 클라이언트를 쓴다 (가짜는 fake 로 정했을 때만)
  * - 인가 코드 → 액세스 토큰 → 사용자 정보 순서로 두 번 부른다
  * - 제공자가 인증하지 않은 이메일은 받지 않은 것으로 본다 (구글 email_verified, 카카오 is_email_verified·is_email_valid)
- * - 네이버·카카오는 콘솔의 "만 14세 이상" 필수 설정을 전제로 연령 확인을 true 로 본다, 구글은 연령을 주지 않아 false
+ * - 연령 확인은 항상 false. 세 제공자 모두 연령을 받아 오지 않으므로 화면에서 만 14세 이상 약관(AGE_14) 체크로 받는다
  * - 어떤 실패든 SNS_AUTH_FAILED. 로그에는 제공자 오류 코드·설명만 남기고 토큰·인가 코드는 남기지 않는다
  */
 @Slf4j
@@ -158,7 +158,7 @@ public class RealSnsOAuthClient implements SnsOAuthClient {
         if (accountId == null) {
             throw new CustomException(ErrorCode.SNS_AUTH_FAILED);
         }
-        return new SnsProfile(provider, accountId, email, mblTelno, provider != SnsProvider.GOOGLE);
+        return new SnsProfile(provider, accountId, email, mblTelno, false);
     }
 
     /**

@@ -64,7 +64,7 @@ class RealSnsOAuthClientTest {
         assertThat(profile.accountId()).isEqualTo("n-1");
         assertThat(profile.email()).isEqualTo("n@naver.com");
         assertThat(profile.mblTelno()).isEqualTo("010-1234-5678");
-        assertThat(profile.ageCnfrmd()).isTrue();
+        assertThat(profile.ageCnfrmd()).isFalse();
     }
 
     @Test

@@ -451,7 +451,7 @@
 | snsOffrCd | String | N | 신규 가입 확인일 때 읽기 전용 표시 | SNS_ACNT_LINK.SNS_OFFR_CD, ACC-001-31 |
 | acntEml | String | N | 신규 가입 확인·복구일 때 읽기 전용 표시(제공자가 준 이메일) | ACC-001-31, ACC-001-40 |
 | mblTelno | String | N | 신규 가입 확인일 때 제공자가 준 번호. 미제공이면 null(직접 입력) | MBR.MBL_TELNO_ENC, ACC-001-29 |
-| ageCnfrmd | Boolean | N | 신규 가입 확인일 때 외부 연령 확인이 검증됐는지. true면 "확인 완료" 표시 | ACC-001-12, ACC-001-31 |
+| ageCnfrmd | Boolean | N | 신규 가입 확인일 때 외부 연령 확인이 검증됐는지. 지금은 세 제공자 모두 연령을 받아 오지 않아 항상 false이고, 화면은 만 14세 이상 약관(`AGE_14`) 체크로 받는다. true면 "확인 완료" 표시 | ACC-001-12, ACC-001-31 |
 | signupTkn | String | N | 신규 가입 확인일 때 `POST /members`로 넘길 확인 토큰. 저장소 없이 암호화한 값(제공자·계정 ID·이메일·번호·연령 확인·만료), 유효시간 `app.signup.sns-token-valid-minutes`(기본 30분) | ACC-001-31 |
 
 복구(`RECOVERY_AVAILABLE`)에서 SNS 인증을 본인확인으로 쓰는 `rcvryAuthrtTkn`은 두지 않는다. 복구 권한이 `EML_CERT` 행에 묶여 있어, 프론트가 `acntEml`로 기존 이메일 복구 인증번호 흐름을 이어 간다.

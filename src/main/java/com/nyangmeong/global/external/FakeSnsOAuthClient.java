@@ -11,7 +11,7 @@ import com.nyangmeong.global.error.ErrorCode;
  * - code 가 "fake-" 로 시작해야 한다. 아니면 SNS_AUTH_FAILED
  * - "fake-이름" : 계정 ID 는 제공자+code, 이메일은 이름@example.com (같은 이메일의 회원이 있으면 중복 확인에 쓸 수 있다)
  * - 이름이 -noemail 로 끝나면 이메일을 주지 않는다
- * - 번호는 네이버·카카오만 code 에서 만든 고정값, 구글은 주지 않는다. 연령 확인은 네이버·카카오만 true
+ * - 번호는 네이버·카카오만 code 에서 만든 고정값, 구글은 주지 않는다. 연령 확인은 실제 클라이언트처럼 항상 false
  */
 @Component
 @ConditionalOnProperty(name = "app.sns.client", havingValue = "fake")
@@ -30,6 +30,6 @@ public class FakeSnsOAuthClient implements SnsOAuthClient {
         boolean phoneProvided = provider != SnsProvider.GOOGLE;
         String mblTelno = phoneProvided ? String.format("010-%04d-%04d", Math.abs(code.hashCode()) % 10000,
                 Math.abs((code + provider.name()).hashCode()) % 10000) : null;
-        return new SnsProfile(provider, provider.getCode() + ":" + code, email, mblTelno, phoneProvided);
+        return new SnsProfile(provider, provider.getCode() + ":" + code, email, mblTelno, false);
     }
 }
