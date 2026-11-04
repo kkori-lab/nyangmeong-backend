@@ -1,5 +1,6 @@
 package com.nyangmeong.pet.mapper;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
@@ -99,6 +100,12 @@ public interface PetMapper {
      * 반려동물 수정
      */
     int updatePet(@Param("pet") Pet pet, @Param("actorId") String actorId);
+
+    /**
+     * 반려동물 체중 수정 (PET_BDWG만)
+     */
+    int updatePetWeight(@Param("petSn") Long petSn, @Param("weight") BigDecimal weight,
+            @Param("actorId") String actorId);
 
     /**
      * 반려동물 삭제

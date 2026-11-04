@@ -423,6 +423,16 @@
            AND DEL_YN = 'N'
     </update>
 
+    <update id="updatePetWeight">
+        /* 반려동물 체중 수정 */
+        UPDATE PET
+           SET PET_BDWG = #{weight}
+             , MDFR_ID  = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE PET_SN = #{petSn}
+           AND DEL_YN = 'N'
+    </update>
+
     <update id="updatePetDelete">
         /* 반려동물 삭제 */
         UPDATE PET
