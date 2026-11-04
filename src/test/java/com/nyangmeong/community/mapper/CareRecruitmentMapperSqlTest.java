@@ -143,4 +143,25 @@ class CareRecruitmentMapperSqlTest {
         assertThat(sql("ChatRoomMapper.selectByPstSnAndCtptMbrSn", param)).contains("C.PST_SN = ?")
                 .contains("C.CTPT_MBR_SN = ?");
     }
+
+    @Test
+    void 채팅_중_여부는_나가지_않은_참여_방_중_메시지가_오간_방만_본다() {
+        Map<String, Object> param = new HashMap<>();
+        param.put("pstSn", 7L);
+        param.put("mbrSn", 2L);
+        param.put("joinedCd", "CHTC0003");
+
+        assertThat(sql("CareRecruitmentMapper.existsChatting", param)).startsWith("SELECT EXISTS")
+                .contains("C.PST_SN = ?").contains("T.MBR_SN = ?").contains("T.PTCP_STTS_CD = ?")
+                .contains("FROM CHAT_MSG G WHERE G.OTO_CHAT_ROOM_SN = C.OTO_CHAT_ROOM_SN");
+    }
+
+    @Test
+    void 매칭_돌보미는_확정된_매칭의_채팅방_지원자_닉네임이다() {
+        Map<String, Object> param = new HashMap<>();
+        param.put("petPrtcMtchSn", 30L);
+
+        assertThat(sql("CareRecruitmentMapper.selectMatchedSitterNcnm", param)).contains("M.MBR_NCNM")
+                .contains("M.MBR_SN = C.CTPT_MBR_SN").contains("T.PET_PRTC_MTCH_SN = ?");
+    }
 }

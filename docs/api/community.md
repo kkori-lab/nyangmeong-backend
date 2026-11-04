@@ -8,7 +8,8 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | GET | /care-matches/{petPrtcMtchSn} | 매칭 조건·완료 요청 회차·사진·수령 상태 조회 | CMU-005-09·11 | KSJ | - | CareMatchResponse |
 | GET | /care-recruitments | 펫돌봄 모집 목록(상태·지역·기간·동물 구분·크기 필터, 10건) | CMU-004-01·02 | KSJ | - | Page<CareRecruitmentSummary> |
-| GET | /care-recruitments/{petPrtcRcrtSn} | 펫돌봄 모집 상세(상세 주소·정확 좌표 제외) | CMU-004-04 | KSJ | - | CareRecruitmentResponse |
+| GET | /care-recruitments/minimum-wage | 최저시급 조회(로그인 회원, 관리자 설정의 현재 값을 매번 읽는다. 등록·수정 화면의 시급 안내) | CMU-004-08 | KSJ | - | MinimumWageResponse |
+| GET | /care-recruitments/{petPrtcRcrtSn} | 펫돌봄 모집 상세(상세 주소·정확 좌표 제외, 내 채팅 여부·매칭 돌보미 포함) | CMU-004-04·05 | KSJ | - | CareRecruitmentResponse |
 | GET | /chat-rooms | 내 채팅 목록(`?tab=&unreadOnly=&pstSn=`. `tab`은 ALL(기본)·MINE(내 글)·APPLIED(지원한 글), 마지막 대화 최신순, 나간 방 제외) | CMU-005-02, COM-009 | KSJ | - | List<ChatRoomSummary> |
 | GET | /chat-rooms/unread-count | 읽지 않은 메시지 총수(채팅 메뉴·헤더 배지) | CMU-005-03, COM-009 | KSJ | - | ChatUnreadCountResponse |
 | GET | /chat-rooms/{otoChatRoomSn} | 채팅방 상단 게시글 카드·매칭 진행 상태·내 역할 조회(참여자만) | CMU-005-01·11, COM-009 | KSJ | - | ChatRoomResponse |
@@ -669,6 +670,8 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | aplcntCnt | Integer | N | 「지금 n명과 채팅 중」. 메시지가 1건 이상 오간 채팅방 수. 작성자에게만 주고 그 밖에는 null | OTO_CHAT_ROOM.PST_SN, CMU-004-05 |
 | liked | Boolean | Y | 내가 좋아요했는지 | PST_RCMDTN.USE_YN, CMU-004-12 |
 | owner | Boolean | Y | 작성자 본인인지(수정·삭제 버튼) | PST.MBR_SN, CMU-004-11 |
+| chatting | Boolean | Y | 내가 이 글로 채팅 중인지. 나가지 않은 참여 방 중 메시지가 1건 이상 오간 방이 있으면 true(지원자 수 `aplcntCnt`와 같은 기준, 작성자도 같은 규칙). 목록 응답에는 없다 | OTO_CHAT_ROOM.PST_SN, CHAT_PRTPNT.PTCP_STTS_CD, CMU-004-05 |
+| mtchSitterNcnm | String | N | 매칭 완료·거래 완료일 때 확정된 매칭의 돌보미(채팅을 건 지원자) 닉네임. 모집중이거나 확정 매칭이 없으면 null. 상세를 보는 로그인 회원 모두에게 보인다 | PET_PRTC_RCRT.CFMTN_PET_PRTC_MTCH_SN, MBR.MBR_NCNM, CMU-004-05 |
 
 #### CareRecruitmentPetItem (응답 record, 쓰는 DTO: CareRecruitmentResponse)
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
@@ -703,6 +706,13 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | owner | Boolean | Y | 내 글 배지 | PST.MBR_SN, CMU-004-01 |
 
 목록 검색 조건(`CareRecruitmentSearchCond`, 쿼리): `rcrtSttsCd`(없으면 전체, `PCAC0001`이면 모집중), `mineYn`, `rgnSn`(하위 지역 포함), `prtcBgngDe`~`prtcEndDe`(일정이 기간과 겹치는 글, 일정 없는 글은 제외), `petSeCd`, `petSizeCd`(고양이만 고르면 무시). 모두 AND, 10건 최신순.
+### MinimumWageResponse
+쓰는 API: GET /care-recruitments/minimum-wage
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| lowstHrwgAplcnYr | String | Y | 최저시급 적용 연도 | SYS_STNG.LOWST_HRWG_APLCN_YR, CMU-004-08 |
+| lowstHrwgAmt | Long | Y | 시간당 최저시급(원). 관리자 설정(`PATCH /admin/settings`)을 바꾸면 다음 호출부터 바뀐 값이 나온다 | SYS_STNG.LOWST_HRWG_AMT, CMU-004-08 |
+
 ### CareRecruitmentUpdateRequest
 쓰는 API: PATCH /care-recruitments/{petPrtcRcrtSn} (multipart/form-data, 모집중인 글만. 아니면 `CARE_RECRUITMENT_NOT_EDITABLE` 400)
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
@@ -711,7 +721,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | prtcShpCds | List<String> | N | 보내면 1개 이상. 목록 교체 방식 | RCRT_PRTC_SHP.PRTC_SHP_CD, CMU-004-06·11 |
 | prtcBgngDt | LocalDateTime | N | 30분 단위 | PET_PRTC_RCRT.PRTC_BGNG_DT, CMU-004-07 |
 | prtcEndDt | LocalDateTime | N | 시작 일시보다 뒤, 30분 단위 | PET_PRTC_RCRT.PRTC_END_DT, CMU-004-07 |
-| schdlCnsltnPsbltyYn | Boolean | N | | PET_PRTC_RCRT.SCHDL_CNSLTN_PSBLTY_YN, CMU-004-07 |
+| schdlCnsltnPsbltyYn | Boolean | N | `true`이고 `prtcBgngDt`·`prtcEndDt`를 둘 다 보내지 않으면 기존 일정을 비운다(일정 미정). 일정을 보내면 희망 일정으로 저장한다. `false`인데 보낸 값과 저장된 값을 합친 일정이 없으면 400. 보내지 않으면 일정을 그대로 둔다 | PET_PRTC_RCRT.SCHDL_CNSLTN_PSBLTY_YN, CMU-004-07 |
 | cstUnitCd | String | N | 공통코드 PCAG02 | PET_PRTC_RCRT.CST_UNIT_CD, CMU-004-08 |
 | cstAmt | Integer | N | 원 단위 양의 정수. 시급이면 최저시급 이상 | PET_PRTC_RCRT.CST_AMT, CMU-004-08 |
 | rlsRgnNm | String | N | 최대 100자 | PET_PRTC_RCRT.RLS_RGN_NM, CMU-004-10 |
