@@ -111,6 +111,39 @@
            AND USE_YN = 'Y'
          ORDER BY SNS_ACNT_LINK_SN
     </select>
+    <select id="selectBySnsAccount" resultMap="memberResultMap">
+        /* SNS 제공자 계정에 연결된 회원 조회 */
+        SELECT M.MBR_SN
+             , M.ATCH_FILE_SN
+             , M.MBR_STTS_CD
+             , M.MBR_AUTHRT_CD
+             , M.JOIN_PATH_CD
+             , M.ACNT_EML_ENC
+             , M.MBL_TELNO_ENC
+             , M.PSWD_HASH
+             , M.MBR_NCNM
+             , M.LAST_LGN_DT
+             , M.WHDWL_DT
+             , M.NCNM_STNG_CMPTN_YN
+             , M.REG_DT
+          FROM SNS_ACNT_LINK L
+          JOIN MBR M ON M.MBR_SN = L.MBR_SN
+         WHERE L.SNS_OFFR_CD = #{snsOffrCd}
+           AND L.OFFR_ACNT_ID = #{offrAcntId}
+           AND L.USE_YN = 'Y'
+    </select>
+    <insert id="insertSnsLink">
+        /* SNS 연동 등록 */
+        INSERT INTO SNS_ACNT_LINK (
+               MBR_SN
+             , SNS_OFFR_CD
+             , OFFR_ACNT_ID
+        ) VALUES (
+               #{mbrSn}
+             , #{snsOffrCd}
+             , #{offrAcntId}
+        )
+    </insert>
 
     <!-- 로그인 이력(LAST_LGN_DT)은 비워 둔다 : 첫 로그인 닉네임 재안내 판정 기준 -->
     <insert id="insert" parameterType="com.nyangmeong.member.domain.Member"

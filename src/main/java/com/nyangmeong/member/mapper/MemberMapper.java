@@ -56,6 +56,17 @@ public interface MemberMapper {
     List<String> selectSnsOffrCds(Long mbrSn);
 
     /**
+     * SNS 제공자 계정에 연결된 회원 조회 (연동 중인 연결만, 탈퇴·정지 포함), 없으면 null
+     */
+    Member selectBySnsAccount(@Param("snsOffrCd") String snsOffrCd, @Param("offrAcntId") String offrAcntId);
+
+    /**
+     * SNS 연동 등록, 같은 제공자 계정이 이미 있으면 DuplicateKeyException
+     */
+    int insertSnsLink(@Param("mbrSn") Long mbrSn, @Param("snsOffrCd") String snsOffrCd,
+            @Param("offrAcntId") String offrAcntId);
+
+    /**
      * 회원 등록 (mbrSn 채움)
      */
     int insert(Member member);

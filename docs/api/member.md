@@ -25,7 +25,7 @@
 | POST | /email-certifications/{emlCertSn}/invalidate | 인증번호·재설정 권한·복구 확인 권한 무효화. 일련번호가 순번이라 본문의 `certTrgtEml`이 그 인증의 이메일과 맞아야 한다(없음·불일치·다른 목적은 404 EMAIL_CERT_NOT_FOUND, 이미 무효·사용 완료는 200). 비밀번호 찾기(재설정 취소 포함)와 복구(복구 취소) 목적을 받는다. 가입 목적은 404 | ACC-011-05, ACC-012-04, ACC-001-46 | YAY | EmailCertificationInvalidateRequest | - |
 | POST | /email-certifications/{emlCertSn}/password-reset | 본인확인 결과로 비밀번호 재설정, 대상 계정 기존 로그인 종료. 권한 없음·만료·사용 완료·무효화는 400 PASSWORD_RESET_NOT_AVAILABLE, `pswd`와 `pswdCnfrm` 불일치는 400 PASSWORD_MISMATCH. 재설정 권한 조회 GET은 두지 않는다(순번 일련번호 노출 방지, 만료는 verify의 `initAuthrtExpryDt`와 이 API의 400으로 안다) | ACC-012-01~03 | YAY | EmailCertificationPasswordResetRequest | - |
 | POST | /email-certifications/{emlCertSn}/verify | 인증번호 확인. 목적별 결과(가입 진행 / 재설정 대상·SNS 전용·미가입·탈퇴 보관 분기 / 복구 확인 권한) 반환 | ACC-001-06·40·43, ACC-011-08~10 | YAY | EmailCertificationVerifyRequest | EmailCertificationResponse |
-| POST | /members | 회원가입(이메일·SNS 공통). 약관별 동의·번호 암호문/HMAC·기본 닉네임·최초 상태 이력·SNS 연결 저장, 서버 재검사. 201과 함께 닉네임 설정 전용 쿠키 `ncnm_setup`(로그인 쿠키 아님)을 준다. 이메일 가입만 구현(SNS 가입은 SNS 로그인 마일스톤) | ACC-001-09·10·12·14·22·24·27·29·32·38 | YAY | MemberCreateRequest | MemberResponse |
+| POST | /members | 회원가입(이메일·SNS 공통). 약관별 동의·번호 암호문/HMAC·기본 닉네임·최초 상태 이력·SNS 연결 저장, 서버 재검사. 201과 함께 닉네임 설정 전용 쿠키 `ncnm_setup`(로그인 쿠키 아님)을 준다. SNS 가입은 `signupTkn`으로 비밀번호 없이 저장 | ACC-001-09·10·12·14·22·24·27·29·32·38 | YAY | MemberCreateRequest | MemberResponse |
 | POST | /members/me/password-verification | 현재 비밀번호 확인(회원정보 수정 진입 전 본인 확인). 서버에 상태를 남기지 않고 맞으면 200, 틀리면 400 CURRENT_PASSWORD_MISMATCH, 비밀번호 없는 SNS 회원은 400 SNS_ONLY_MEMBER, 정지·탈퇴 회원은 403 MEMBER_INACTIVE *통합 때 추가* | MYP-040-01 | YAY | PasswordVerifyRequest | - |
 | POST | /members/recovery | 30일 이내 탈퇴 회원 기존 정보 복구 실행(탈퇴 → 정상, 상태 이력 "재가입 복구" 한 번). 로그인 없이 부르고 본문의 복구 확인 권한 토큰으로 본인확인하며 성공해도 로그인 쿠키를 만들지 않는다. 권한 문제는 400 MEMBER_RECOVERY_NOT_AVAILABLE, 보관 기간 지남은 400 MEMBER_RECOVERY_EXPIRED, 빠진 필수 약관 미동의는 400 REQUIRED_TERMS_NOT_AGREED, 번호는 INVALID_PHONE_NUMBER·409 PHONE_ALREADY_USED. 이미 쓴 권한이라도 그 회원이 지금 정상이면 바꾸는 것 없이 200(중복 클릭·응답 유실) | ACC-001-45 | YAY | MemberRecoverRequest | - |
 | POST | /members/me/withdraw | 회원탈퇴(상태·이력 반영, 모든 로그인·인증 권한 종료, 30일 보관) | ACC-020-03·14·16, AIM-011-19, MYP-002-08 (기능 분배 3.1절 5번) | YAY | MemberWithdrawRequest | - |
@@ -306,11 +306,11 @@
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | joinPathCd | String | Y | 공통코드 USRG03(이메일·네이버·카카오·구글) | MBR.JOIN_PATH_CD |
-| emlCertSn | Long | N | 이메일 가입이면 필수. 가입 목적 인증이 완료·유효해야 한다. 이메일은 이 인증의 대상 이메일을 쓴다 | EML_CERT.EML_CERT_SN, ACC-001-14 |
+| emlCertSn | Long | N | 이메일 가입이면 필수, SNS 가입이면 보내면 400이다. 가입 목적 인증이 완료·유효해야 한다. 이메일은 이 인증의 대상 이메일을 쓴다 | EML_CERT.EML_CERT_SN, ACC-001-14 |
 | certNo | String | N | 이메일 가입이면 필수. 숫자 6자리 인증번호를 한 번 더 확인한다. `emlCertSn`이 순번이라 남이 인증해 둔 번호로 가입하는 것을 막는다(issues 로그인 6) | EML_CERT.CERT_NO_HASH, ACC-001-14 |
-| signupTkn | String | N | 지금은 받지 않는다(SNS 가입 마일스톤에서 추가). SNS 가입이면 필수. `POST /auth/sns-login`이 준 신규 가입 확인 토큰(저장소 미정, issues 5) | ACC-001-31·32 |
+| signupTkn | String | N | SNS 가입이면 필수, 이메일 가입이면 보내지 않는다. `POST /auth/sns-login`이 준 신규 가입 확인 토큰. 토큰의 제공자가 `joinPathCd`와 다르거나 만료·변조면 400 `SNS_SIGNUP_TOKEN_INVALID`. 이메일은 토큰 값을 쓴다. 토큰에 번호가 있으면 `mblTelno`가 그 번호와 같아야 한다(다르면 400 `INVALID_INPUT_VALUE`). 같은 토큰의 재요청은 그 사이 만들어진 같은 회원의 결과만 돌려주고, 그 밖에 이미 연동된 계정이면 409 `SNS_ACCOUNT_ALREADY_LINKED` | ACC-001-31·32 |
 | mblTelno | String | Y | 공백·하이픈 제거, +82 표기 통일 후 형식 검사. 다른 회원(30일 보관 포함)과 중복 불가 | MBR.MBL_TELNO_ENC, MBR.MBL_TELNO_HMAC, ACC-001-29·30 |
-| pswd | String | N | 이메일 가입이면 필수, SNS 가입이면 보내지 않는다. 8자 이상 64자 이하, 영문과 숫자를 함께 포함하는 공백 없는 ASCII(BCrypt 72바이트 한계) | MBR.PSWD_HASH (해시 전 원문), ACC-001-09, ACC-001-32 |
+| pswd | String | N | 이메일 가입이면 필수, SNS 가입이면 보내면 400이다. 8자 이상 64자 이하, 영문과 숫자를 함께 포함하는 공백 없는 ASCII(BCrypt 72바이트 한계) | MBR.PSWD_HASH (해시 전 원문), ACC-001-09, ACC-001-32 |
 | pswdCnfrm | String | N | 이메일 가입이면 필수. `pswd`와 일치 | ACC-001-10 |
 | trmsAgres | List<TermsAgreeRequest> | Y | 화면에 보여 준 약관 전부. 필수 약관(서비스 이용약관·개인정보 수집 및 이용·만 14세 이상) 모두 `agreYn=true`. 마케팅 미동의도 false로 보낸다 | MBR_TRMS_AGRE, ACC-001-12 |
 | idmptDmndId | String | N | 같은 가입 시도의 재요청 식별값. 저장 컬럼이 없어 받기만 한다. 중복 클릭·응답 유실 재요청은 같은 인증(`emlCertSn`·`certNo`)의 사용 기록으로 가려 닉네임 쿠키 유효시간 안에서 기존 결과만 돌려준다 | ACC-001-14, ACC-001-32 |
@@ -438,21 +438,23 @@
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | snsOffrCd | String | Y | 공통코드 USRG03(네이버·카카오·구글) | SNS_ACNT_LINK.SNS_OFFR_CD, ACC-002-09~11 |
-| code | String | Y | 제공자 인가 결과 코드. 흐름은 `issues.md` API의 로그인·플레이스·커뮤니티·고객센터 2번에서 미정 | ACC-002-09~11 |
+| code | String | Y | 제공자 인가 결과 코드. 프론트가 인가 창에서 받아 넘긴다(Spring 리다이렉트 흐름 아님, issues 로그인 2 결정). 로컬 가짜 제공자(`app.sns.client=fake`)는 `fake-이름` 형식 | ACC-002-09~11 |
+| state | String | N | 네이버는 필수(토큰 교환에 필요). 서버는 확인하지 않고 그대로 넘긴다. 로그인 CSRF 확인은 프론트가 한다. `redirectUri`는 받지 않고 서버 설정에 고정한다 | ACC-002-09 |
 
 ### SnsLoginResponse
 쓰는 API: POST /auth/sns-login
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| snsLoginRslt | String | Y | 기존 회원 로그인 / 신규 가입 확인 / 이메일 중복 / 30일 복구 중 하나(값 미정) | ACC-002-09~11 |
+| snsLoginRslt | String | Y | `LOGIN`(연결된 정상 회원, 로그인 쿠키가 함께 내려간다) / `SIGNUP_REQUIRED`(처음 보는 계정) / `EMAIL_DUPLICATE`(연결 없이 같은 이메일의 정상·정지 회원이 있음, 새 회원·연결을 만들지 않는다) / `RECOVERY_AVAILABLE`(연결된 또는 같은 이메일의 탈퇴 보관 회원, 이메일 복구 흐름으로 이어진다). 연결된 정지 회원은 403 `MEMBER_INACTIVE`. 제공자 실패는 400 `SNS_AUTH_FAILED`, 이메일을 받지 못하면 400 `SNS_EMAIL_NOT_PROVIDED` | ACC-002-09~11 |
 | ncnmReguide | Boolean | N | 기존 회원 로그인일 때만. `LoginResponse`와 같은 기준 | MBR.NCNM_STNG_CMPTN_YN, MBR.LAST_LGN_DT, ACC-001-22 |
 | mbrNcnm | String | N | 기존 회원 로그인일 때만. 재안내 모달 저장값 | MBR.MBR_NCNM, ACC-001-22 |
 | snsOffrCd | String | N | 신규 가입 확인일 때 읽기 전용 표시 | SNS_ACNT_LINK.SNS_OFFR_CD, ACC-001-31 |
 | acntEml | String | N | 신규 가입 확인·복구일 때 읽기 전용 표시(제공자가 준 이메일) | ACC-001-31, ACC-001-40 |
 | mblTelno | String | N | 신규 가입 확인일 때 제공자가 준 번호. 미제공이면 null(직접 입력) | MBR.MBL_TELNO_ENC, ACC-001-29 |
-| ageCnfrmd | Boolean | N | 신규 가입 확인일 때 외부 연령 확인이 검증됐는지. true면 "확인 완료" 표시 | ACC-001-12, ACC-001-31 |
-| signupTkn | String | N | 신규 가입 확인일 때 `POST /members`로 넘길 확인 토큰(저장소 미정, issues 5) | ACC-001-31 |
-| rcvryAuthrtTkn | String | N | 30일 복구이고 기존 연결과 같은 SNS 계정으로 인증했을 때만. 미연결 SNS면 null(이메일 추가 인증) | ACC-002-09, ACC-001-40 |
+| ageCnfrmd | Boolean | N | 신규 가입 확인일 때 외부 연령 확인이 검증됐는지. 지금은 세 제공자 모두 연령을 받아 오지 않아 항상 false이고, 화면은 만 14세 이상 약관(`AGE_14`) 체크로 받는다. true면 "확인 완료" 표시 | ACC-001-12, ACC-001-31 |
+| signupTkn | String | N | 신규 가입 확인일 때 `POST /members`로 넘길 확인 토큰. 저장소 없이 암호화한 값(제공자·계정 ID·이메일·번호·연령 확인·만료), 유효시간 `app.signup.sns-token-valid-minutes`(기본 30분) | ACC-001-31 |
+
+복구(`RECOVERY_AVAILABLE`)에서 SNS 인증을 본인확인으로 쓰는 `rcvryAuthrtTkn`은 두지 않는다. 복구 권한이 `EML_CERT` 행에 묶여 있어, 프론트가 `acntEml`로 기존 이메일 복구 인증번호 흐름을 이어 간다.
 
 ### TermsResponse
 쓰는 API: GET /terms/{trmsSn}

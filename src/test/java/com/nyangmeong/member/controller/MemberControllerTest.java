@@ -572,4 +572,47 @@ class MemberControllerTest {
 
         verify(memberPasswordService, never()).change(any(), any());
     }
+
+    private static final String SNS_JOIN_BODY = """
+            {"joinPathCd":"USRC0008","signupTkn":"tkn","mblTelno":"01012345678",
+             "trmsAgres":[{"trmsSn":1,"agreYn":true}]}
+            """;
+
+    @Test
+    void SNS_가입은_signupTkn을_서비스에_넘기고_201과_닉네임_쿠키를_준다() throws Exception {
+        when(memberJoinService.create(any(MemberCreateRequest.class)))
+                .thenReturn(new MemberJoinResult(21L, memberResponse));
+
+        mockMvc.perform(join(SNS_JOIN_BODY))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Set-Cookie", Matchers.startsWith("ncnm_setup=")));
+
+        ArgumentCaptor<MemberCreateRequest> captor = ArgumentCaptor.forClass(MemberCreateRequest.class);
+        verify(memberJoinService).create(captor.capture());
+        assertThat(captor.getValue().signupTkn()).isEqualTo("tkn");
+        assertThat(captor.getValue().pswd()).isNull();
+    }
+
+    @Test
+    void SNS_가입에_pswd를_보내면_400이다() throws Exception {
+        when(memberJoinService.create(any(MemberCreateRequest.class)))
+                .thenThrow(new CustomException(ErrorCode.BAD_REQUEST));
+
+        mockMvc.perform(join(SNS_JOIN_BODY.replace("\"signupTkn\":\"tkn\",",
+                "\"signupTkn\":\"tkn\",\"pswd\":\"pass1234\",\"pswdCnfrm\":\"pass1234\",")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+                .andExpect(header().doesNotExist("Set-Cookie"));
+    }
+
+    @Test
+    void SNS_가입에_signupTkn이_없으면_400이다() throws Exception {
+        when(memberJoinService.create(any(MemberCreateRequest.class)))
+                .thenThrow(new CustomException(ErrorCode.BAD_REQUEST));
+
+        mockMvc.perform(join(SNS_JOIN_BODY.replace("\"signupTkn\":\"tkn\",", "")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+                .andExpect(header().doesNotExist("Set-Cookie"));
+    }
 }
