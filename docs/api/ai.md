@@ -1,6 +1,6 @@
 # AI 대화(ai) 내부 API·DTO
 
-공통 규칙(응답 껍데기, `Yn` 필드, 정본)은 `docs/api/README.md`에 있다. 이 파일은 Python AI 서버가 호출하는 대화 저장·조회와 AI 설정값 조회 내부 API만 담는다. 구현된 API의 정본은 Swagger(`/swagger-ui.html`)다.
+공통 규칙(응답 껍데기, `Yn` 필드, 정본)은 `docs/api/README.md`에 있다. 이 파일은 Python AI 서버가 호출하는 대화 저장·조회, AI 설정값 조회, AI 건강분석 리포트 입력·저장 내부 API만 담는다. 구현된 API의 정본은 Swagger(`/swagger-ui.html`)다.
 
 ## 호출 규칙
 
@@ -24,6 +24,8 @@
 | DELETE | /internal/ai/conversations/{aiCnvrsRoomSn} | 대화 삭제(물리 삭제, 메시지 CASCADE, 200) | AIM-011-13 | LJS | - | - |
 | GET | /internal/ai/settings | AI 설정값(응답 토큰 상한·대화 턴 수). 설정 행이 없으면 기본 4500·6 | AIM-002-02·11 | LJS | - | AiSettingResponse |
 | GET | /internal/ai/register-context | 등록 카드 컨텍스트. 쿠키 회원이 양육하는 반려동물 전부(공동양육 포함)와 각자의 케어 항목 이름. 반려동물이 없으면 빈 배열. 반려동물 목록은 외부 AI에 보내지 않는다 | AIM-012-04·08 | LJS | - | List<RegisterContextPet> |
+| GET | /internal/ai/pets/{petSn}/health-report-input?baseYmd= | AI 건강분석 리포트(메인 위젯 MANC0007)의 분석 입력과 저장본. 쿠키 회원이 양육하는 반려동물만(남의 반려동물 403 `PET_ACCESS_DENIED`, 없는 반려동물 404 `PET_NOT_FOUND`). `baseYmd`(KST 오늘, 필수, 없거나 형식이 틀리면 400 `BAD_REQUEST`) 포함 14일 일상기록과 `baseYmd` 이전 가장 최근 완료(HLTC0006) 검진 1회의 참고 범위 밖 검사 수치. `rfrshPsblYn`은 저장본이 없거나 저장 기준일이 `baseYmd`와 다르거나 그날 새로고침 0회면 true, `autoRgnrPsblYn`은 저장본이 없거나 저장 기준일이 다르거나 그날 자동 재생성 5회 미만이면 true. 명세 밖 추가 요청(ai 저장소 `docs/api/healthreport.md`) | MAN-006 | LJS | - | HealthReportContextResponse |
+| PUT | /internal/ai/pets/{petSn}/health-report | AI 건강분석 리포트 저장. 반려동물당 1행 덮어쓰기(`AI_HLTH_RPT`). 저장본이 없거나 기준일이 바뀌면 두 횟수를 0부터 센다. `rfrshYn: true`면 새로고침 횟수 +1(그날 이미 1회면 409 `HEALTH_REPORT_REFRESH_LIMIT`), 같은 기준일에 `rfrshYn: false`면 자동 재생성 횟수 +1(그날 이미 5회면 409 `HEALTH_REPORT_AUTO_LIMIT`). 그날 첫 생성은 세지 않는다. 저장본보다 이른 기준일·형식 오류는 400 `INVALID_INPUT_VALUE`. 응답 200 data 없음. `X-Requested-With` 필요 | MAN-006 | LJS | HealthReportSaveRequest | - |
 
 탈퇴 회원 대화 파기(AIM-011-19)는 API가 아니라 `scheduler/AiConversationPurgeJob`이 매일 03:00 KST에 한다. Python의 `DELETE /internal/v1/members/{mbrSn}/conversations`는 쓰지 않는다.
 
@@ -93,3 +95,73 @@
 | petSn | Long | Y | | PET.PET_SN, AIM-012-04 |
 | petNm | String | Y | 문장 속 이름과 대조 | PET.PET_NM, AIM-012-04 |
 | careArtclNms | List<String> | Y | 그 반려동물의 케어 항목 이름(삭제 제외, 등록순). 없으면 빈 배열. 케어 항목 목록 service(JAJ) 연결 전까지 빈 배열 | CARE_ARTCL.CARE_ARTCL_NM, AIM-012-08 |
+
+### HealthReportContextResponse
+쓰는 API: GET /internal/ai/pets/{petSn}/health-report-input
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| input | HealthReportInputResponse | Y | 분석 입력 | MAN-006 |
+| report | HealthReportResponse | N | 그 반려동물의 저장본(기준일과 관계없이 최근 1건). 없으면 null | AI_HLTH_RPT |
+| rfrshPsblYn | Boolean | Y | `baseYmd`에 새로고침할 수 있는가 | AI_HLTH_RPT.RFRSH_NMTM |
+| autoRgnrPsblYn | Boolean | Y | `baseYmd`에 자동 재생성할 수 있는가 | AI_HLTH_RPT.AUTO_RGNR_NMTM |
+
+### HealthReportInputResponse
+쓰는 API: GET /internal/ai/pets/{petSn}/health-report-input
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| petNm | String | Y | | PET.PET_NM |
+| petSeCd | String | Y | PETG01 | PET.PET_SE_CD |
+| vrtyNm | String | N | 품종 이름, 품종이 없으면 직접 입력명 | VRTY.VRTY_NM, PET.VRTY_DRCT_INPT_NM |
+| ageMm | Integer | Y | `baseYmd` 기준 만 개월 | PET.PET_BRDT |
+| nutrYn | Boolean | Y | 중성화 | PET.NUTR_YN |
+| goalBdwg | BigDecimal | N | 목표체중 | PET.GOAL_BDWG |
+| weights | List<HealthReportDailySummary> | Y | 체중(HLTC0014). 그날 마지막 기록. 날짜 오름차순, 기록 없는 날은 빠짐 | DAILY_HLTH_RCD |
+| meals | List<HealthReportDailySummary> | Y | 식사량(HLTC0015). 그날 합계 | DAILY_HLTH_RCD |
+| waters | List<HealthReportDailySummary> | Y | 음수량(HLTC0016). 그날 합계 | DAILY_HLTH_RCD |
+| walks | List<HealthReportDailySummary> | Y | 산책(HLTC0018). 그날 합계 | DAILY_HLTH_RCD |
+| stools | List<HealthReportStoolSummary> | Y | 배변(HLTC0017). 기록마다 한 줄, 기록 시각 오름차순 | DAILY_HLTH_RCD |
+| latestCkupYmd | LocalDate | N | `baseYmd` 이전 가장 최근 완료 검진일. 없으면 null | SCHDL.SCHDL_DT |
+| inspOutOfRange | List<HealthReportInspectionSummary> | Y | 그 검진의 참고 범위 밖 검사 수치. 없으면 빈 배열 | INSP_NVL |
+
+### HealthReportDailySummary
+쓰는 API: GET /internal/ai/pets/{petSn}/health-report-input
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| ymd | LocalDate | Y | 기록일 | DAILY_HLTH_RCD.RCD_DT |
+| rcdNvl | BigDecimal | Y | 하루 값 | DAILY_HLTH_RCD.RCD_NVL |
+
+### HealthReportStoolSummary
+쓰는 API: GET /internal/ai/pets/{petSn}/health-report-input
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| ymd | LocalDate | Y | 기록일 | DAILY_HLTH_RCD.RCD_DT |
+| crsdSttsCdNm | String | Y | 배변 상태 이름(HLTG10) | DAILY_HLTH_RCD.CRSD_STTS_CD |
+
+### HealthReportInspectionSummary
+쓰는 API: GET /internal/ai/pets/{petSn}/health-report-input
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| inspArtclNm | String | Y | 검사항목 이름(HLTG12), 직접 입력 항목이면 직접 입력명 | INSP_NVL.INSP_ARTCL_CD·INSP_ARTCL_DRCT_INPT_NM |
+| rsltNvl | BigDecimal | Y | | INSP_NVL.RSLT_NVL |
+| unitNm | String | Y | | INSP_NVL.UNIT_NM |
+| refLlmtNvl | BigDecimal | N | | INSP_NVL.REF_LLMT_NVL |
+| refUplmtNvl | BigDecimal | N | | INSP_NVL.REF_UPLMT_NVL |
+
+### HealthReportResponse
+쓰는 API: GET /internal/ai/pets/{petSn}/health-report-input
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| rptTtl | String | Y | | AI_HLTH_RPT.RPT_TTL |
+| tips | List<String> | Y | | AI_HLTH_RPT.ANLS_CN(JSON 배열) |
+| inputHash | String | Y | 소문자 16진 64자 | AI_HLTH_RPT.INPT_HASH |
+| crtDt | LocalDateTime | Y | 리포트를 저장한 시각 | AI_HLTH_RPT.CRT_DT |
+
+### HealthReportSaveRequest
+쓰는 API: PUT /internal/ai/pets/{petSn}/health-report
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| baseYmd | LocalDate | Y | 기준일(KST 오늘). 저장본보다 이르면 400 | AI_HLTH_RPT.BASE_YMD |
+| rptTtl | String | Y | 1~20자 | AI_HLTH_RPT.RPT_TTL |
+| tips | List<String> | Y | 1~3개, 각 1~40자 | AI_HLTH_RPT.ANLS_CN |
+| inputHash | String | Y | 16진 64자(SHA-256), 소문자로 저장 | AI_HLTH_RPT.INPT_HASH |
+| rfrshYn | Boolean | Y | 새로고침으로 만든 리포트인가 | AI_HLTH_RPT.RFRSH_NMTM |

@@ -2,13 +2,15 @@
 
 ## 지금 하는 것
 
-SCR-ADM-101 품종 · 프론트 연결 품종 관리 API — 끝 (2026-11-04). `/api/admin/breeds` 관리자 품종 목록(사용 안 함 포함)·추가(코드 서버가 매김)·수정(이름·정렬·사용 여부) API를 만들었다. DB 변경 없음
+SCR-MAN-001 메인 · AI 건강분석 리포트 내부 API — 끝 (2026-11-04). Python용 `GET /internal/ai/pets/{petSn}/health-report-input`(14일 일상기록·최근 검진 범위 밖 수치·저장본·가능 여부)·`PUT /internal/ai/pets/{petSn}/health-report`(반려동물당 1행, 기준일별 새로고침 1회·자동 재생성 5회)와 새 테이블 `AI_HLTH_RPT`(DB v0.12 (6))를 만들었다
 
 ## 다음에 할 것
 
+- ai-f2에 알린다(SCR-MAN-001 끝, PR 번호와 함께): 계약은 `docs/api/ai.md` 두 행과 DTO 절. 초안과 다른 점: PUT도 그날 두 번째 새로고침 409 `HEALTH_REPORT_REFRESH_LIMIT`·자동 재생성 6회째 409 `HEALTH_REPORT_AUTO_LIMIT`·저장본보다 이른 기준일 400(Python은 저장 실패여도 200이니 그대로), 하루 값은 체중 그날 마지막 기록·식사량·음수량·산책 그날 합계·배변 기록마다 한 줄, `baseYmd` 없으면 400 `BAD_REQUEST`, `inputHash`는 소문자로 저장. 필드 이름은 `tips`·`ageMm` 그대로(`anlsCns`로 바꾸지 않음). ai 저장소 `docs/api/internal.md` 두 행을 확정으로 바꾸는 것은 ai 세션
+- 공용 DB(사람): v0.12 (6) `AI_HLTH_RPT`는 2026-11-04 실행함(PR 전, 사람). PR 본문에 "DB 변경 있음 v0.12 (6), 공용 DB 실행함"을 적고, 팀에 각자 로컬 DB에 그 절을 실행하라고 알린다. 사람 확인으로 남은 행은 `DELETE FROM AI_HLTH_RPT WHERE PET_SN = 573;`
+- ERDCloud·표준사전(사람): 새 테이블 `AI_HLTH_RPT`(AI건강리포트: `AI_HLTH_RPT_SN`·`PET_SN`(UK, FK PET)·`BASE_YMD` date·`RPT_TTL` varchar(20)·`ANLS_CN` varchar(1000)·`INPT_HASH` char(64)·`RFRSH_NMTM`·`AUTO_RGNR_NMTM` int·`CRT_DT` datetime·공통 4컬럼)를 추가하고 물리명(HLTH_RPT·INPT_HASH·RFRSH·RGNR)을 표준사전에 맞춘다
 - SCR-ADM-101 연결 남음: FN-ADM-101-01 (프론트 연결 `features/adminBreed/api.js` 품종 목록·[품종 추가]·[수정] 모달, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트에 알릴 것: 이름 50자, `sortSeq`는 빼도 됨(그 종 마지막 + 10), 중복 409 `DUPLICATE_VRTY_NM`(가짜 그대로), 없는 품종은 가짜 `NOT_FOUND`가 아니라 404 `BREED_NOT_FOUND`, 등록·수정 응답은 품종 행. 계약은 `docs/api/pet.md` `/admin/breeds` 행
 - 로컬·공용 DB 정리(사람): SCR-ADM-101 검증이 만든 품종 `VRTY_SN=38`(`DOGV0024` "검증용품종", 사용 안 함)과 사람 확인으로 만든 품종. `DELETE FROM VRTY WHERE VRTY_SN IN (38, <번호>);`, 감사 로그는 `TRGT_TBL_NM='VRTY'` 행
-- 다음 작업(ai-f2 요청, 2026-11-04): SCR-MAN-001 AI 건강분석 리포트(MANC0007) Java 내부 API `GET /internal/ai/pets/{petSn}/health-report-input?baseYmd=`·`PUT /internal/ai/pets/{petSn}/health-report`와 저장 테이블. `/start`로 기획하고 ai-f2 세션에 답한다(정본 초안 ai 저장소 `docs/api/internal.md` 맨 아래 두 행, `docs/api/healthreport.md`). 사람과 정한 방향: 새 테이블은 반려동물당 1행 덮어쓰기, 새로고침·자동 재생성 횟수는 컬럼 두 개로 PUT 때 갱신(기준일이 바뀌면 0), 리포트 본문(AI `tips`)은 `ANLS_CN`(분석내용) JSON 배열 한 칸, API 필드도 `anlsCns`로 바꾸자고 제안(`ANLS` 표준사전 확인). 남은 질문: `ageMm`(개월) 대신 `brthYmd`로 줄지, 일정. `docs/api/issues.md` 4번을 이 계약으로 닫는다
 - 정하기(사람): frontend-65 세션이 `milestones/LJS.md`에 넣은 `## SCR-ADM-080 라우팅 매핑표 · 프론트 연결 관리자 매핑표 API — 대기` 절. 사람이 "잘못 온 요청"이라고 했다(2026-11-04). 지울지 정한다
 - SCR-ADM-050 연결 남음: FN-ADM-050-01·02·03·05 (프론트 연결 `features/adminNews/api.js` 목록·등록/수정 모달·수집 기사 행·분류 키워드 탭, 프론트 저장소에서 /start). 프론트에 알릴 것: 썸네일은 `POST /api/admin/news/images`(form-data `image`) → `{ atchFileSn }`로 먼저 올리고 등록·수정 본문에 `atchFileSn`을 넣는다(가짜의 "등록 요청에 파일"과 다름). 목록 행에 `newsSrcCdNm` 추가, `useYn`은 true/false. 글자 수 제목 200·요약 1000·키워드 50(가정 그대로). 제목·요약·썸네일 수정은 관리자 등록 기사만(수집 기사에 보내면 400). 키워드 쉼표 400, 같은 카테고리 중복 409 `DUPLICATE_NEWS_KEYWORD`, 삭제한 키워드 다시 삭제 404 `NEWS_KEYWORD_NOT_FOUND`. 계약은 `docs/api/community.md` `/admin/news` 행
 - 공용 DB(사람, PR 병합 직후): `db/20261102_insert_base_data_v0.12.sql` 변경 절 v0.12 (5)만 실행한다(AIMC0039 쉼표 행 `DEL_YN='Y'` + 40행 INSERT). 실행 전에도 기존 분류·건강팁은 그대로 동작하고, 관리자 키워드 목록에 쉼표 행이 한 줄로 보일 뿐이다
@@ -35,7 +37,7 @@ SCR-ADM-101 품종 · 프론트 연결 품종 관리 API — 끝 (2026-11-04). `
 - SCR-ADM-090 연결 남음: FN-ADM-090-03 (SJM이 만든 `PetService.searchCaregiverMbrSns(petSn)`로 `scheduler/CaregiverFake`를 바꾼 뒤(2026-11-03 메서드 있음 확인), 실제 케어 일정 알림에 등록한 템플릿이 쓰이고 `useYn=false`면 기본 문구인지 확인)
 - SCR-ADM-090 연결 남음: FN-ADM-090-01·02 (프론트 연결 `features/adminNotificationTemplate/api.js` 목록·등록·수정, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트 가짜와 다른 점: `useYn`이 `'Y'|'N'`이 아니라 true/false, 케어 일정 외 유형은 등록 400(화면은 "기본 문구"만)
 - 공용 DB 정리(사람): SCR-ADM-090 사람 확인으로 만든 템플릿은 삭제 API가 없다. `DELETE FROM NOTI_TMPLT WHERE NOTI_TMPLT_SN=<번호>;`(관리자 작업 로그 `TRGT_TBL_NM='NOTI_TMPLT'`는 남거나 같이 지운다)
-- 정리(판단 필요): 핸드오프가 60줄을 넘는다(2026-11-04 /end 때 144줄, 저장소로 끝났다고 확인되는 항목이 없어 지우지 않음. 2026-11-03 /end 때 143줄. 펫돌봄 게시판 필터 항목은 `BoardType.CARE`(CMUC0028)가 생겨 지웠다. 2026-11-03 공용 DB에 반영된 것을 확인한 v0.12 (1)·v0.11 (5) 실행 항목 2건은 지웠다). 대부분 알림·사람 할 일이라 끝났는지 코드로 판단할 수 없어 남겼다. 끝난 알림·정리 항목을 사람이 지운다
+- 정리(판단 필요): 핸드오프가 60줄을 넘는다(2026-11-04 SCR-MAN-001 /end 때 146줄, ai-f2 요청 항목은 끝나 지움. 2026-11-04 /end 때 144줄, 저장소로 끝났다고 확인되는 항목이 없어 지우지 않음. 2026-11-03 /end 때 143줄. 펫돌봄 게시판 필터 항목은 `BoardType.CARE`(CMUC0028)가 생겨 지웠다. 2026-11-03 공용 DB에 반영된 것을 확인한 v0.12 (1)·v0.11 (5) 실행 항목 2건은 지웠다). 대부분 알림·사람 할 일이라 끝났는지 코드로 판단할 수 없어 남겼다. 끝난 알림·정리 항목을 사람이 지운다
 - ai-47에 알린다: 굽기 계약 구현 끝(SCR-ADM-070). `bake-items` 응답 `{itemSn, regnCd, bakeHint}`(판매 중이고 지시 있음 30개), `GET /internal/ai/items/{itemSn}/bake-targets?page=`(관리자 쿠키, 100개씩 `{pixelCharSns, last}`, 아니면 403 `ADMIN_ONLY`, 굽기 대상 아님 404). 굽기 지시가 바뀌면 그 아이템 착용 시트를 지워 다시 굽기 대상이 된다. 시드에만 있던 6개(빨간 리본·작은 왕관·털모자·줄무늬 티셔츠·꼬까 한복·곰돌이 후드티)의 지시 문장은 LJS 초안이라 검토를 부탁한다. 백엔드 PR이 AI PR보다 먼저 병합돼야 한다
 - 공용 DB 정리(사람): SCR-ADM-070 사람 확인으로 만든 아이템(예: "확인용 가방")은 삭제 API가 없다. `DELETE FROM MNGR_TASK_LOG WHERE TRGT_TBL_NM='ITEM' AND TRGT_SN=<번호>; DELETE FROM ITEM WHERE ITEM_SN=<번호>;` 또는 판매 중지. 바꾼 순서·판매 여부·굽기 지시를 되돌린다
 - SCR-ADM-070 연결 남음: FN-ADM-070-01~04 (프론트 연결 `features/adminItem/api.js` 목록·등록·수정·순서 저장, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음

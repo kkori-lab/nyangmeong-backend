@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nyangmeong.ai.mapper.AiHealthReportMapper">
+
+    <resultMap id="reportResultMap" type="com.nyangmeong.ai.domain.AiHealthReport">
+        <id     column="AI_HLTH_RPT_SN" property="aiHlthRptSn" />
+        <result column="PET_SN"         property="petSn" />
+        <result column="BASE_YMD"       property="baseYmd" />
+        <result column="RPT_TTL"        property="rptTtl" />
+        <result column="ANLS_CN"        property="anlsCn" />
+        <result column="INPT_HASH"      property="inptHash" />
+        <result column="RFRSH_NMTM"     property="rfrshNmtm" />
+        <result column="AUTO_RGNR_NMTM" property="autoRgnrNmtm" />
+        <result column="CRT_DT"         property="crtDt" />
+        <result column="REG_DT"         property="regDt" />
+        <result column="MDFCN_DT"       property="mdfcnDt" />
+    </resultMap>
+
+    <sql id="reportColumns">
+        SELECT AI_HLTH_RPT_SN
+             , PET_SN
+             , BASE_YMD
+             , RPT_TTL
+             , ANLS_CN
+             , INPT_HASH
+             , RFRSH_NMTM
+             , AUTO_RGNR_NMTM
+             , CRT_DT
+             , REG_DT
+             , MDFCN_DT
+          FROM AI_HLTH_RPT
+         WHERE PET_SN = #{petSn}
+    </sql>
+
+    <select id="selectByPet" parameterType="long" resultMap="reportResultMap">
+        /* 반려동물의 저장 리포트 */
+        <include refid="reportColumns" />
+    </select>
+
+    <select id="selectByPetForUpdate" parameterType="long" resultMap="reportResultMap">
+        /* 반려동물의 저장 리포트(행 잠금) */
+        <include refid="reportColumns" />
+           FOR UPDATE
+    </select>
+
+    <insert id="upsert" parameterType="com.nyangmeong.ai.domain.AiHealthReport">
+        /* 리포트 저장(반려동물 행 덮어쓰기) */
+        INSERT INTO AI_HLTH_RPT (
+               PET_SN
+             , BASE_YMD
+             , RPT_TTL
+             , ANLS_CN
+             , INPT_HASH
+             , RFRSH_NMTM
+             , AUTO_RGNR_NMTM
+             , CRT_DT
+             , REG_DT
+             , MDFCN_DT
+             , RGTR_ID
+             , MDFR_ID
+        ) VALUES (
+               #{petSn}
+             , #{baseYmd}
+             , #{rptTtl}
+             , #{anlsCn}
+             , #{inptHash}
+             , #{rfrshNmtm}
+             , #{autoRgnrNmtm}
+             , #{crtDt}
+             , NOW()
+             , NOW()
+             , #{rgtrId}
+             , #{mdfrId}
+        )
+        ON DUPLICATE KEY UPDATE
+               BASE_YMD       = VALUES(BASE_YMD)
+             , RPT_TTL        = VALUES(RPT_TTL)
+             , ANLS_CN        = VALUES(ANLS_CN)
+             , INPT_HASH      = VALUES(INPT_HASH)
+             , RFRSH_NMTM     = VALUES(RFRSH_NMTM)
+             , AUTO_RGNR_NMTM = VALUES(AUTO_RGNR_NMTM)
+             , CRT_DT         = VALUES(CRT_DT)
+             , MDFR_ID        = VALUES(MDFR_ID)
+             , MDFCN_DT       = NOW()
+    </insert>
+</mapper>
