@@ -90,10 +90,12 @@
 - 완료 조건: 오늘 미션에 "케어 캘린더 일정 등록하기"가 있는 반려동물에 일정을 등록하면 그 미션이 완료된다. 미션이 없는 날은 일정 등록만 된다
 - 결정: 케어 캘린더 직접 등록 경로에만 반영한다. 검진기록 등록·영수증 저장·AI 대화(FN-AIM-012-13·14)가 만드는 일정은 반영하지 않는다. 그래서 공통 저장 메서드가 아니라 직접 등록 전용 service 메서드(`CareScheduleService.create`, 지금 `CareScheduleController`만 부른다)에서 부른다(SJM 확인 2026-11-04)
 
-## SCR-HLT-002 건강 일지 · 메인 건강 지표 — 대기
+## SCR-HLT-002 건강 일지 · 메인 건강 지표 — 끝
 - 기능: 명세 기능 ID 추가 없음, FN-MAN-005 건강 대시보드 기준일·업데이트 시각, FN-MAN-006 건강 지표 위젯 노출(화면·위젯 설정 API는 YAY SCR-MAN-001, 지표 값은 JAJ). FN-HLT-002-09~11 일상 기록 조회에 걸침
 - 기다리는 것: YAY와 지표 범위 결정. `docs/api/`에 건강 지표 요약 API가 없고 `docs/api/issues.md` 12번(조합 조회를 둘지)·4번("AI 건강분석 리포트" 위젯 정의 없음)이 열려 있다. 위젯 6종(MANG01)마다 어느 health 값을 쓰는지, 기존 일상 기록 조회 재사용인지 요약 API 신설인지 정한다
 - 완료 조건: 반려동물의 최신 체중·식사·음수·배변 등 위젯 값과 기준일·마지막 기록 시각을 돌려주고, 기록이 없는 지표는 null이다 (YAY와 정한 뒤 고친다)
+- 결정: 메인페이지 기능명세서 v0.10 FN-MAN-006이 표시 기준을 정해 YAY와 범위 결정을 명세로 갈음했다. 요약 API 1개 `GET /pets/{petSn}/health-indicators`로 둔다(issues.md 12번 2026-11-04 결정). AI 건강분석 리포트(LJS)·토탈 케어리스트·위젯 순서(YAY)는 범위 밖
+- 연결 남음: FN-MAN-005·006 (프론트 연결 메인 건강 대시보드 위젯 5종·기준일 표시, 프론트 저장소에서 /start, 화면 YAY)
 
 ## SCR-HLT-002 건강 일지 · 프로필 체중 동기화 연결 — 대기
 - 기능: 명세 기능 ID 추가 없음, FN-HLT-002-09~11 체중 기록(`dailyRcdIdctCd=HLTC0014`) 등록·수정·삭제 뒤 프로필 체중 동기화. `health/service/PetWeightFake`를 지우고 `PetService`를 주입해 `PetService.syncWeight(Long petSn, BigDecimal weight, Long actorMbrSn)`을 부른다. `actorMbrSn`은 체중 기록을 등록·수정·삭제한 회원의 mbrSn이다(`MDFR_ID`에 남는다). `DailyHealthRecordServiceTest`의 mock도 `PetService`로 바꾼다. 삭제된 반려동물이면 `PET_NOT_FOUND`(404)가 나서 같은 트랜잭션이 롤백된다(권한 검사에서 먼저 걸리는 게 정상이고, 이건 안전망). 자세한 건 SJM PR #137 본문 Breaking Changes

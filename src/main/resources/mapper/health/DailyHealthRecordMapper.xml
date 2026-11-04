@@ -11,6 +11,16 @@
         <result column="RCD_DT"             property="rcdDt" />
     </resultMap>
 
+    <resultMap id="healthWeightPointResultMap" type="com.nyangmeong.health.dto.HealthWeightPoint">
+        <result column="RCD_DT"   property="rcdDt" />
+        <result column="RCD_NVL"  property="rcdNvl" />
+    </resultMap>
+
+    <resultMap id="healthDailySumPointResultMap" type="com.nyangmeong.health.dto.HealthDailySumPoint">
+        <result column="RCD_YMD"  property="rcdYmd" />
+        <result column="SUM_NVL"  property="sumNvl" />
+    </resultMap>
+
     <resultMap id="dailyHealthRecordResultMap" type="com.nyangmeong.health.domain.DailyHealthRecord">
         <id     column="DAILY_HLTH_RCD_SN"  property="dailyHlthRcdSn" />
         <result column="PET_SN"             property="petSn" />
@@ -104,6 +114,41 @@
            AND DEL_YN = 'N'
          ORDER BY RCD_DT DESC, DAILY_HLTH_RCD_SN DESC
          LIMIT 1
+    </select>
+
+    <select id="selectWeightPoints" resultMap="healthWeightPointResultMap">
+        /* 메인 건강 지표 체중 점 조회(최근 N건을 기록 시각 오름차순) */
+        SELECT T.RCD_DT
+             , T.RCD_NVL
+          FROM (SELECT R.DAILY_HLTH_RCD_SN
+                     , R.RCD_DT
+                     , R.RCD_NVL
+                  FROM DAILY_HLTH_RCD R
+                 WHERE R.PET_SN = #{petSn}
+                   AND R.DAILY_RCD_IDCT_CD = #{weightCd}
+                   AND R.RCD_NVL IS NOT NULL
+                   AND R.DEL_YN = 'N'
+                 ORDER BY R.RCD_DT DESC, R.DAILY_HLTH_RCD_SN DESC
+                 LIMIT #{size}) T
+         ORDER BY T.RCD_DT, T.DAILY_HLTH_RCD_SN
+    </select>
+
+    <select id="selectDailySumPoints" resultMap="healthDailySumPointResultMap">
+        /* 메인 건강 지표 일 합계 점 조회(기준일 이전 기록 있는 최근 N일을 날짜 오름차순) */
+        SELECT T.RCD_YMD
+             , T.SUM_NVL
+          FROM (SELECT DATE(R.RCD_DT) AS RCD_YMD
+                     , SUM(R.RCD_NVL) AS SUM_NVL
+                  FROM DAILY_HLTH_RCD R
+                 WHERE R.PET_SN = #{petSn}
+                   AND R.DAILY_RCD_IDCT_CD = #{indicatorCd}
+                   AND R.RCD_NVL IS NOT NULL
+                   AND R.DEL_YN = 'N'
+                   AND R.RCD_DT &lt; DATE_ADD(#{baseYmd}, INTERVAL 1 DAY)
+                 GROUP BY DATE(R.RCD_DT)
+                 ORDER BY DATE(R.RCD_DT) DESC
+                 LIMIT #{size}) T
+         ORDER BY T.RCD_YMD
     </select>
 
     <select id="existsChildCode" resultType="boolean">
