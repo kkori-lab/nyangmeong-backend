@@ -1,6 +1,7 @@
 package com.nyangmeong.health.mapper;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
@@ -9,6 +10,8 @@ import org.apache.ibatis.annotations.Param;
 import com.nyangmeong.health.domain.DailyHealthRecord;
 import com.nyangmeong.health.dto.DailyHealthRecordSearchCond;
 import com.nyangmeong.health.dto.DailyHealthRecordSummary;
+import com.nyangmeong.health.dto.HealthDailySumPoint;
+import com.nyangmeong.health.dto.HealthWeightPoint;
 
 /**
  * [일상 건강기록 매퍼]
@@ -36,6 +39,18 @@ public interface DailyHealthRecordMapper {
      * 반려동물의 최신 체중 기록 수치 조회(없으면 null)
      */
     BigDecimal selectLatestWeight(@Param("petSn") Long petSn, @Param("weightCd") String weightCd);
+
+    /**
+     * 메인 건강 지표 체중 점 조회(최근 N건, 기록 시각 오름차순)
+     */
+    List<HealthWeightPoint> selectWeightPoints(@Param("petSn") Long petSn, @Param("weightCd") String weightCd,
+            @Param("size") int size);
+
+    /**
+     * 메인 건강 지표 일 합계 점 조회(기준일 이전 기록 있는 최근 N일, 날짜 오름차순)
+     */
+    List<HealthDailySumPoint> selectDailySumPoints(@Param("petSn") Long petSn,
+            @Param("indicatorCd") String indicatorCd, @Param("baseYmd") LocalDate baseYmd, @Param("size") int size);
 
     /**
      * 공통코드 그룹의 하위 코드 존재 여부

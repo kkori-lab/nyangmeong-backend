@@ -2,20 +2,18 @@
 
 ## 지금 하는 것
 
-SCR-CMU-005 우리동네 펫돌봄 채팅 — 끝남 (승인 2026-11-03 11:41, 시작 2026-11-03 11:10, 검증 통과 1회차(확인 못 함 있음 = 프론트 연결), 사람 확인 2026-11-04)
-기준: 커뮤니티 기능명세서·화면설계서 v0.8(20261101). 실시간은 WebSocket(STOMP, 사람 지시 2026-11-03), 보내기·조회·읽음·거래는 REST(`docs/api/community.md` "실시간" 절)
-- API: `GET /chat-rooms`·`/unread-count`·`/{sn}`, `POST /chat-rooms/{sn}/read`·`/leave`, `GET·POST /chat-rooms/{sn}/messages`(전송은 multipart), `GET /chat-rooms/{sn}/images/{atchFileSn}`, `GET·POST /care-matches`와 `/cancel`·`/accept`·`/completion-requests`·`/confirm-completion`·`/confirm-receipt`, STOMP `/ws`(구독 `/user/queue/chat`, 보냄 `/app/chat/view`)
-- 결정: 매칭 요청은 조건 입력 없이 모집글 조건을 복사한다. 취소 사유 `cnclRsn`. 완료 요청은 `idmptDmndId`만. 보완 요청 API는 만들지 않는다. 주소는 `shrnAddr`·`dtlAddr`를 한 암호문(줄바꿈 구분)으로 저장한다. 잠금 순서는 모집 행 → 채팅방 행 → 매칭 행. 초안 `docs/api/community.md`는 구현에 맞게 고쳤다
-- 위치: STOMP 인증은 `global/security/stomp/`, 새 컴포넌트 `ChatRoomGuard`·`ChatViewRegistry`·`ChatRealtimePublisher`. 순환을 피하려고 `ChatRoomService.leave`가 `CareMatchService.cancelOnLeave`를 부른다. `ErrorCode` 새 5개(`CHAT_ROOM_ACCESS_DENIED`·`CHAT_ADDRESS_NOT_ALLOWED`·`CARE_MATCH_ROLE_DENIED`·`CARE_MATCH_ALREADY_MATCHED`·`CARE_MATCH_INVALID_STATE`), 같은 뜻의 기존 코드는 쓰지 않는다
-- 확인: Postman으로 채팅·거래 단계·403·409, Node 스크립트로 `/ws` 수신(`MESSAGE`·`READ`, 쿠키 없음 401, 다른 Origin 403)을 봤다. 개발 DB 방 259에 확인용 메시지가 쌓였다
-- 이번에 안 한 것: 14일 무응답 자동 취소·종료 배치, 로그아웃·세션 폐기 때 소켓 끊기(`LoginSessionManager`에 이벤트가 없어 공통 모듈 변경 필요), 새 메시지 알림(거래 단계 알림만 발행), 알림 `mvmnPath`(프론트 경로 미정이라 null)
-새 의존성: `org.springframework.boot:spring-boot-starter-websocket`(STOMP over WebSocket)
+SCR-CMU-002 실종센터 · 시드 게시판 코드 — 끝남 (승인 2026-11-04 12:46, 시작 2026-11-04 12:44, 검증 통과 1회차, 사람 확인 2026-11-04)
+기준: 기능 추가 없음(사람 요청 2026-11-04). 시드가 실종 제보(`LOST_TPOF`)와 연결된 `PST` 100행(`PST_SN` 801~900)을 `BBS_CD=CMUC0002`(펫이야기)로 넣어, 관리자 실종 목록(`CMUC0024` 필터)에 0건이고 펫이야기 목록에 섞여 보였다. 서버 코드(`BoardType.LOST = CMUC0024`)와 `LostReportMapper`는 맞았다
+- 한 일: `db/seed/20261028_seed_data.sql`의 `PST` insert에서 그 100행의 `BBS_CD`만 `CMUC0024`로 바꿨다(옛 파일과 비교해 다른 글자 200개, 다른 행·줄바꿈 변화 없음). 공용 DB는 사람이 2026-11-04에 같은 내용으로 먼저 고쳤고 시드는 다시 실행하지 않는다
+- 알려 둔 것: 로컬 `application.properties`에 디스코드로 설정을 받아 붙일 때 `app.security.permit-all-paths`의 `*`가 마크다운에 먹혀 사라지면 테스트 15건이 401로 실패한다. 설정 파일은 코드 블록으로 공유한다
+새 의존성: 없음
 
 ## 지난 작업
 
-SCR-CMU-004 우리동네 펫돌봄 — 끝남 (2026-11-03). `GET·POST /care-recruitments`, `GET·PATCH·DELETE /care-recruitments/{petPrtcRcrtSn}`, `POST /chat-rooms`(새 방 201, 기존 방 200). 게시판 코드 `CMUC0028`은 기준 SQL 변경 절 v0.12 (3)에 있고 공용 DB에 실행했다(`COM_CD_SN` 391). 중복 키 뒤 방을 다시 읽을 때 `FOR SHARE`를 쓰므로 실제 격리 수준 동작은 로컬 MySQL 동시 요청으로 따로 봐야 한다
+SCR-CMU-005 우리동네 펫돌봄 채팅 — 끝남 (2026-11-04, PR #139 병합). 채팅방·메시지·읽음 REST, 매칭 요청~수령 확인, STOMP `/ws`(구독 `/user/queue/chat`, 보냄 `/app/chat/view`). `CareMatchMapper`는 LJS의 관리자 조회(SCR-ADM-022)와 한 파일로 합쳤다. 이번에 안 한 것: 14일 무응답 자동 취소·종료 배치, 로그아웃·세션 폐기 때 소켓 끊기(LJS에 이벤트 요청), 새 메시지 알림, 알림 `mvmnPath`
 
 ## 다음에 할 것
+- 다음 작업: SCR-CMU-002 실종센터 · 전북 밖 좌표 거절(`/start CMU-002 전북`). 원인: 거절 로직은 맞고 `app.region.client=fake`가 좌표와 무관하게 전주시를 줘서 서울역도 201이 났다. 카카오 역지오코딩 `KakaoRegionResolver`(YAY의 `KakaoLocalProperties`·키 사용)를 붙이고, 카카오가 주는 읍면동 10자리 코드가 지역 표(시군구까지)에 없을 때 `RegionService`가 시(4자리) 단계를 거치지 않으면 전주시가 전북 도로 저장되니 4자리 단계를 넣는다. 실패는 `EXTERNAL_API_ERROR`. 우선순위 낮음
 - 연결 남음: SCR-CMU-005 채팅 모달 목록·채팅방·거래 카드와 STOMP 연결 (프론트 저장소에서 /start)
 - 연결 남음: FN-CMU-005-05 주소 공유 모달 장소 검색 (YAY `GET /places`, 프론트 저장소에서 /start)
 - 연결 남음: FN-COM-002-11·FN-COM-009-17 헤더 채팅 아이콘·안 읽은 수 배지 (LJS 대기, 프론트 저장소에서 /start)
@@ -24,7 +22,6 @@ SCR-CMU-004 우리동네 펫돌봄 — 끝남 (2026-11-03). `GET·POST /care-rec
 - 연결 남음: SCR-CMU-004 리스트·상세·글쓰기·[채팅하기] 버튼 (프론트 연결, 지역 필터는 `GET /regions`, 프론트 저장소에서 /start)
 - 사람이 할 일: PR 본문에 "DB 변경 있음, `db/20261102_insert_base_data_v0.12.sql` 변경 절 v0.12 (3)"와 공용 DB 실행 완료 댓글(2026-11-03, `COM_CD_SN` 391). 확인용 글 `pstSn` 1003(공용 DB)과 채팅방 행은 정리했다
 - 확인 남음: 공용 DB 시드에서 회원 1의 사진 25는 공개 주소가 404일 수 있다(시드 이미지 묶음 문제). 응답에 번호가 오면 백엔드는 맞다
-- 다음 작업: SCR-CMU-002 실종센터 · 전북 밖 좌표 거절(`/start CMU-002 전북`). 우선순위 낮음. 그 뒤 SCR-CMU-005 펫돌봄 채팅(메시지·채팅 목록·매칭, 장소 검색은 YAY `GET /places`)
 - 이번 작업 메모: 상세 응답 `mbrSn` 추가로 프론트 `CommentSection`의 `authorSn={post.mbrSn}`에 값이 들어가 글쓴이 댓글에 「작성자」 배지가 붙는다. 프론트 변경 없음
 - SCR-CMU-003 주제 무관 기사 거르기(PR #104 병합): 제외 키워드는 `KWRD_DICT` `AIMC0040` 분류별 4행, 공용 DB 실행 완료. 키워드를 늘릴 때는 수집 로그의 `주제 무관 건너뜀`을 보고 정상 기사가 걸리는지 먼저 본다. 쌓인 무관 기사는 2026-11-02 확인에서 0건이라 정리할 것 없음
 - 사람이 할 일(공용 DB, 일회성이라 `db/`에 넣지 않음): 시드와 확인용으로 쌓인 기존 뉴스를 지우고 새 중복 판정으로 다시 수집한다(사람 결정 2026-11-02). 대상은 외부 언론사(`CMUC0022`) 143건만이다. 관리자 등록(`CMUC0023`) 시드 14건은 프론트의 「관리자 등록」 배지·원문보기 미노출 확인용으로 남긴다(사람 결정 2026-11-02). 지운 뒤 로컬에서 `app.news.batch-enabled=true` 또는 `POST /api/admin/batches/SYSC0028/run`을 한 번 돌려 로그의 `중복 건너뜀 K건`과 `GET /api/news`를 확인하고, 팀에 공용 DB를 비웠다고 알린다
