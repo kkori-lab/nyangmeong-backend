@@ -31,6 +31,7 @@ import com.nyangmeong.health.dto.DailyHealthRecordUpdateRequest;
 import com.nyangmeong.health.mapper.DailyHealthRecordMapper;
 import com.nyangmeong.pet.domain.CareMission;
 import com.nyangmeong.pet.service.CareMissionService;
+import com.nyangmeong.pet.service.PetService;
 
 /**
  * [검사 - 일상 건강기록 등록·조회·수정·삭제]
@@ -51,9 +52,9 @@ class DailyHealthRecordServiceTest {
     private final DailyHealthRecordMapper mapper = mock(DailyHealthRecordMapper.class);
     private final PetAuthorizer petAuthorizer = mock(PetAuthorizer.class);
     private final CareMissionService careMissionService = mock(CareMissionService.class);
-    private final PetWeightFake petWeightFake = mock(PetWeightFake.class);
+    private final PetService petService = mock(PetService.class);
     private final DailyHealthRecordService service = new DailyHealthRecordService(mapper, petAuthorizer,
-            careMissionService, petWeightFake);
+            careMissionService, petService);
 
     @BeforeEach
     void setUp() {
@@ -92,7 +93,7 @@ class DailyHealthRecordServiceTest {
         assertThat(response).isNotNull();
         verify(petAuthorizer).checkCaregiver(MBR, PET);
         verify(careMissionService).reflect(PET, CareMission.WEIGHT_RECORD, MBR);
-        verify(petWeightFake).sync(PET, new BigDecimal("4.200"));
+        verify(petService).syncWeight(PET, new BigDecimal("4.200"), MBR);
     }
 
     @Test
@@ -100,7 +101,7 @@ class DailyHealthRecordServiceTest {
         service.create(MBR, PET, new DailyHealthRecordCreateRequest(MEAL, AT, new BigDecimal("80"), null));
 
         verify(careMissionService).reflect(PET, CareMission.MEAL_RECORD, MBR);
-        verify(petWeightFake, never()).sync(anyLong(), any());
+        verify(petService, never()).syncWeight(anyLong(), any(), anyLong());
     }
 
     @Test
@@ -167,7 +168,7 @@ class DailyHealthRecordServiceTest {
         assertThat(stored.getRcdNvl()).isEqualByComparingTo("4.000");
         assertThat(stored.getRcdDt()).isEqualTo(AT.plusHours(1));
         verify(mapper).updateRecord(stored, String.valueOf(MBR));
-        verify(petWeightFake).sync(PET, new BigDecimal("4.500"));
+        verify(petService).syncWeight(PET, new BigDecimal("4.500"), MBR);
         verify(careMissionService, never()).reflect(anyLong(), any(), anyLong());
     }
 
@@ -204,10 +205,10 @@ class DailyHealthRecordServiceTest {
         service.delete(MBR, PET, RCD);
 
         verify(mapper).deleteRecord(RCD, String.valueOf(MBR));
-        verify(petWeightFake).sync(eq(PET), eq(new BigDecimal("3.900")));
+        verify(petService).syncWeight(eq(PET), eq(new BigDecimal("3.900")), eq(MBR));
 
         when(mapper.selectLatestWeight(PET, WEIGHT)).thenReturn(null);
         service.delete(MBR, PET, RCD);
-        verify(petWeightFake).sync(eq(PET), any());
+        verify(petService).syncWeight(eq(PET), any(), eq(MBR));
     }
 }
