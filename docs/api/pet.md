@@ -8,6 +8,9 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | GET | /admin/members/{mbrSn}/pets | 관리자 회원 상세 반려동물. 연동 중인 관계만, 삭제한 동물 포함, 20건씩. 건강 정보 없음. 일반 회원 403 ADMIN_ONLY, 없는 회원 404 MEMBER_NOT_FOUND | ADM-011-02 | LJS | - | PageResponse\<AdminPetSummary\> |
 | GET | /admin/members/{mbrSn}/point-ledgers | 관리자 회원 상세 포인트 원장. 최신순 20건씩. 일반 회원 403 ADMIN_ONLY, 없는 회원 404 MEMBER_NOT_FOUND | ADM-011-04 | LJS | - | PageResponse\<AdminPointLedgerSummary\> |
+| GET | /admin/breeds | 관리자 품종 목록. 사용 안 함 포함, 종·정렬 순서·번호순, 페이지 없음. 쿼리 `petSeCd`(PETG01) 없거나 공백이면 전체. 모르는 종 코드 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-101-01 | LJS | - | List<AdminBreedSummary> |
+| POST | /admin/breeds | 품종 추가(201, 감사 로그). 품종 코드는 서버가 매긴다(강아지 `DOGV`·고양이 `CATV` + 그 접두 최대 번호 + 1, 네 자리). 이름 1~50자(앞뒤 공백 지운 뒤)가 아니거나 종 코드가 틀리면 400 INVALID_INPUT_VALUE, 같은 종에 같은 이름(공백 무시, 사용 안 함 포함) 409 DUPLICATE_VRTY_NM | ADM-101-01 | LJS | AdminBreedCreateRequest | AdminBreedSummary |
+| PATCH | /admin/breeds/{vrtySn} | 품종 수정(보낸 칸만, 종·코드는 안 바꿈, 감사 로그). 사용을 끄면 공용 `GET /breeds`와 새 반려동물·실종제보·펫돌봄 등록 선택에서 빠지고, 이미 등록된 반려동물의 품종 이름은 그대로 보인다. 아무 칸도 없거나 형식이 틀리면 400 INVALID_INPUT_VALUE, 없는 품종 404 BREED_NOT_FOUND, 자기 말고 같은 종 같은 이름 409 DUPLICATE_VRTY_NM | ADM-101-01 | LJS | AdminBreedUpdateRequest | AdminBreedSummary |
 | GET | /breeds | 반려동물 구분별 품종 마스터 목록(`?petSeCd=`) | CMU-002-13, CMU-004-06·13, MYP-003-02 (기능 분배 3.1절 10번) | KSJ | - | List<BreedSummary> |
 | GET | /caregiver-invitations | 내가 보낸 공동양육 초대 목록(계정 전체) | MYP-005-03 | SJM | - | List<CaregiverInvitationSummary> |
 | GET | /caregiver-invitations/{jntBrupInvtnSn} | 받은 초대 상세. 로그인 회원 누구나. 대기중이고 로그인 이메일이 초대 이메일과 같을 때만 초대한 사람·대상 반려동물 카드, 아니면 상태와 가린 이메일만(만료·처리 여부를 이메일보다 먼저 판단) | MYP-005-05·09·10 | SJM | - | CaregiverInvitationResponse |
@@ -121,6 +124,33 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 | items[].bakeFailed | boolean | Y | | CHAR_ITEM_SHEET.BAKE_FAIL_YN |
 
 ## DTO
+
+### AdminBreedSummary
+쓰는 API: GET·POST /admin/breeds, PATCH /admin/breeds/{vrtySn}
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| vrtySn | Long | Y | | VRTY.VRTY_SN, ADM-101-01 |
+| vrtyCd | String | Y | 서버가 매긴다 | VRTY.VRTY_CD, ADM-101-01 |
+| vrtyNm | String | Y | | VRTY.VRTY_NM, ADM-101-01 |
+| petSeCd | String | Y | 공통코드 PETG01 | VRTY.PET_SE_CD, ADM-101-01 |
+| sortSeq | Integer | Y | 종 안 정렬 순서 | VRTY.SORT_SEQ, ADM-101-01 |
+| useYn | boolean | Y | 사용 중이면 true | VRTY.USE_YN, ADM-101-01 |
+
+### AdminBreedCreateRequest
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| petSeCd | String | Y | PETG01 코드(PETC0001 강아지·PETC0002 고양이) | VRTY.PET_SE_CD |
+| vrtyNm | String | Y | 앞뒤 공백 지운 뒤 1~50자. 같은 종에 같은 이름(공백 무시) 409 | VRTY.VRTY_NM |
+| sortSeq | Integer | N | 0 이상 정수. 없으면 그 종 최대 + 10 | VRTY.SORT_SEQ |
+| useYn | Boolean | N | 없으면 true | VRTY.USE_YN |
+
+### AdminBreedUpdateRequest
+보낸 칸만 바뀐다. 종·코드는 바꾸지 않는다
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| vrtyNm | String | N | 앞뒤 공백 지운 뒤 1~50자 | VRTY.VRTY_NM |
+| sortSeq | Integer | N | 0 이상 정수 | VRTY.SORT_SEQ |
+| useYn | Boolean | N | false면 사용 안 함 | VRTY.USE_YN |
 
 ### AdminItemSummary
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |

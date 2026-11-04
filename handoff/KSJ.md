@@ -2,20 +2,24 @@
 
 ## 지금 하는 것
 
-SCR-CMU-004 우리동네 펫돌봄 — 끝남 (승인 2026-11-03 09:46, 시작 2026-11-03 09:33, 검증 통과 1회차(새 루프), 사람 확인 2026-11-03)
-기준: 커뮤니티 기능명세서·화면설계서 v0.8(20261101). 걸치는 기능 FN-CMU-004-01·02·04·05·06~11·13, FN-COM-009-02. 제외 FN-CMU-004-12 좋아요·신고(기존 `/posts/{pstSn}/likes`·`/reports`가 펫돌봄 글에도 동작)
-- API: `GET·POST /care-recruitments`, `GET·PATCH·DELETE /care-recruitments/{petPrtcRcrtSn}`(등록·수정은 multipart), `POST /chat-rooms`(새 방 201, 기존 방 200). 목록·상세는 `mbrNcnm`과 `mbrAtchFileSn`을 준다
-- 결정: 강아지 크기는 컬럼 추가 없이 대표 체중(5·15·30kg, 고양이 0)으로 저장하고 `petSizeCd`로 주고받는다(`issues.md` 커뮤니티 11번). 「채팅 n명」은 메시지가 1건 이상 오간 방만 센다. 수정은 모집중인 글만, 삭제는 상태 무관. 블라인드·삭제 글에는 새 채팅방을 만들지 않고 기존 방은 계속 연다. 신고 누적 처리는 펫이야기와 같다
-- DB: 게시판 코드 `CMUC0028`(우리동네 펫돌봄)을 기준 SQL 본문과 변경 절 v0.12 (3)에 추가했고 공용 DB에 실행했다(`COM_CD_SN` 391)
-- 1회차 검증이 `ErrorCode` 이름이 기획과 달라 실패해 사람이 루프를 버리고 새 루프로 통과했다. 기존 `CARE_WAGE_BELOW_MINIMUM`·`CHAT_SELF_NOT_ALLOWED`·`CARE_RECRUITMENT_CLOSED`는 새 코드와 뜻이 겹치나 쓰지 않는다
-- 알려 둔 것: 중복 키 뒤 방을 다시 읽을 때 `FOR SHARE`를 쓴다. 단위 테스트는 mock이라 실제 격리 수준 동작은 로컬 MySQL에서 동시 요청으로 따로 봐야 한다
-이번에 하지 않은 것: FN-CMU-004-12(위), 메시지·채팅 목록·매칭(SCR-CMU-005)
-새 의존성: 없음
+SCR-CMU-005 우리동네 펫돌봄 채팅 — 끝남 (승인 2026-11-03 11:41, 시작 2026-11-03 11:10, 검증 통과 1회차(확인 못 함 있음 = 프론트 연결), 사람 확인 2026-11-04)
+기준: 커뮤니티 기능명세서·화면설계서 v0.8(20261101). 실시간은 WebSocket(STOMP, 사람 지시 2026-11-03), 보내기·조회·읽음·거래는 REST(`docs/api/community.md` "실시간" 절)
+- API: `GET /chat-rooms`·`/unread-count`·`/{sn}`, `POST /chat-rooms/{sn}/read`·`/leave`, `GET·POST /chat-rooms/{sn}/messages`(전송은 multipart), `GET /chat-rooms/{sn}/images/{atchFileSn}`, `GET·POST /care-matches`와 `/cancel`·`/accept`·`/completion-requests`·`/confirm-completion`·`/confirm-receipt`, STOMP `/ws`(구독 `/user/queue/chat`, 보냄 `/app/chat/view`)
+- 결정: 매칭 요청은 조건 입력 없이 모집글 조건을 복사한다. 취소 사유 `cnclRsn`. 완료 요청은 `idmptDmndId`만. 보완 요청 API는 만들지 않는다. 주소는 `shrnAddr`·`dtlAddr`를 한 암호문(줄바꿈 구분)으로 저장한다. 잠금 순서는 모집 행 → 채팅방 행 → 매칭 행. 초안 `docs/api/community.md`는 구현에 맞게 고쳤다
+- 위치: STOMP 인증은 `global/security/stomp/`, 새 컴포넌트 `ChatRoomGuard`·`ChatViewRegistry`·`ChatRealtimePublisher`. 순환을 피하려고 `ChatRoomService.leave`가 `CareMatchService.cancelOnLeave`를 부른다. `ErrorCode` 새 5개(`CHAT_ROOM_ACCESS_DENIED`·`CHAT_ADDRESS_NOT_ALLOWED`·`CARE_MATCH_ROLE_DENIED`·`CARE_MATCH_ALREADY_MATCHED`·`CARE_MATCH_INVALID_STATE`), 같은 뜻의 기존 코드는 쓰지 않는다
+- 확인: Postman으로 채팅·거래 단계·403·409, Node 스크립트로 `/ws` 수신(`MESSAGE`·`READ`, 쿠키 없음 401, 다른 Origin 403)을 봤다. 개발 DB 방 259에 확인용 메시지가 쌓였다
+- 이번에 안 한 것: 14일 무응답 자동 취소·종료 배치, 로그아웃·세션 폐기 때 소켓 끊기(`LoginSessionManager`에 이벤트가 없어 공통 모듈 변경 필요), 새 메시지 알림(거래 단계 알림만 발행), 알림 `mvmnPath`(프론트 경로 미정이라 null)
+새 의존성: `org.springframework.boot:spring-boot-starter-websocket`(STOMP over WebSocket)
 
-### 추가 요청
-| 추가-1 | `ChatRoomMapper`(java·XML), `ChatRoomService`, `ChatRoomServiceTest`, `CareRecruitmentMapperSqlTest` | 명령: `./gradlew build -q` 통과. 중복 키 뒤 다시 조회는 `FOR SHARE` 잠금 읽기라 상대 트랜잭션이 커밋한 방을 읽고, 그래도 없으면 NPE 대신 `CustomException`을 던진다 | 요청 2026-11-03 10:21 "동시 채팅 요청에서 중복 키 뒤 다시 조회가 방을 못 보는 문제를 이번에 고침" |
+## 지난 작업
+
+SCR-CMU-004 우리동네 펫돌봄 — 끝남 (2026-11-03). `GET·POST /care-recruitments`, `GET·PATCH·DELETE /care-recruitments/{petPrtcRcrtSn}`, `POST /chat-rooms`(새 방 201, 기존 방 200). 게시판 코드 `CMUC0028`은 기준 SQL 변경 절 v0.12 (3)에 있고 공용 DB에 실행했다(`COM_CD_SN` 391). 중복 키 뒤 방을 다시 읽을 때 `FOR SHARE`를 쓰므로 실제 격리 수준 동작은 로컬 MySQL 동시 요청으로 따로 봐야 한다
 
 ## 다음에 할 것
+- 연결 남음: SCR-CMU-005 채팅 모달 목록·채팅방·거래 카드와 STOMP 연결 (프론트 저장소에서 /start)
+- 연결 남음: FN-CMU-005-05 주소 공유 모달 장소 검색 (YAY `GET /places`, 프론트 저장소에서 /start)
+- 연결 남음: FN-COM-002-11·FN-COM-009-17 헤더 채팅 아이콘·안 읽은 수 배지 (LJS 대기, 프론트 저장소에서 /start)
+- 다음 작업: 14일 무응답 자동 취소·종료 배치(`NO_RESPONSE` `PCAC0018`)와 로그아웃 때 소켓 끊기(공통 모듈 변경이라 담당 확인). 알림 `mvmnPath`는 프론트 채팅 모달 경로가 정해진 뒤 채운다
 - 연결 남음: FN-CMU-004-10 주소 찾기·장소 선택 (글쓰기 장소 모달에서 YAY의 `GET /places` 결과 좌표를 등록 요청에 넣음, 프론트 저장소에서 /start)
 - 연결 남음: SCR-CMU-004 리스트·상세·글쓰기·[채팅하기] 버튼 (프론트 연결, 지역 필터는 `GET /regions`, 프론트 저장소에서 /start)
 - 사람이 할 일: PR 본문에 "DB 변경 있음, `db/20261102_insert_base_data_v0.12.sql` 변경 절 v0.12 (3)"와 공용 DB 실행 완료 댓글(2026-11-03, `COM_CD_SN` 391). 확인용 글 `pstSn` 1003(공용 DB)과 채팅방 행은 정리했다

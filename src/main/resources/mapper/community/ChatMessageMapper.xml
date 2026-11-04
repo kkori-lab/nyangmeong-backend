@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nyangmeong.community.mapper.ChatMessageMapper">
+
+    <resultMap id="chatMessageResultMap" type="com.nyangmeong.community.domain.ChatMessage">
+        <id     column="CHAT_MSG_SN"       property="chatMsgSn" />
+        <result column="OTO_CHAT_ROOM_SN"  property="otoChatRoomSn" />
+        <result column="MBR_SN"            property="mbrSn" />
+        <result column="MSG_TYPE_CD"       property="msgTypeCd" />
+        <result column="MSG_SEQ"           property="msgSeq" />
+        <result column="MSG_CN_ENC"        property="msgCnEnc" />
+        <result column="IDMPT_DMND_ID"     property="idmptDmndId" />
+        <result column="SHRN_ADDR_ENC"     property="shrnAddrEnc" />
+        <result column="REG_DT"            property="regDt" />
+    </resultMap>
+
+    <resultMap id="chatMessageSummaryResultMap" type="com.nyangmeong.community.dto.ChatMessageSummary">
+        <id     column="CHAT_MSG_SN"   property="chatMsgSn" />
+        <result column="MSG_SEQ"       property="msgSeq" />
+        <result column="MBR_SN"        property="mbrSn" />
+        <result column="MSG_TYPE_CD"   property="msgTypeCd" />
+        <result column="MSG_CN_ENC"    property="msgCn" />
+        <result column="SHRN_ADDR_ENC" property="shrnAddr" />
+        <result column="REG_DT"        property="regDt" />
+    </resultMap>
+
+    <resultMap id="chatMessagePhotoResultMap" type="com.nyangmeong.community.domain.ChatMessagePhoto">
+        <id     column="CHAT_MSG_PHOTO_SN" property="chatMsgPhotoSn" />
+        <result column="CHAT_MSG_SN"       property="chatMsgSn" />
+        <result column="ATCH_FILE_SN"      property="atchFileSn" />
+        <result column="SORT_SEQ"          property="sortSeq" />
+        <result column="REG_DT"            property="regDt" />
+    </resultMap>
+
+    <!-- 방 잠금 뒤 경로 : 스냅샷에 없는 행도 보도록 잠금 읽기 -->
+    <select id="selectByIdmptDmndIdForShare" parameterType="string" resultMap="chatMessageResultMap">
+        SELECT M.CHAT_MSG_SN
+             , M.OTO_CHAT_ROOM_SN
+             , M.MBR_SN
+             , M.MSG_TYPE_CD
+             , M.MSG_SEQ
+             , M.MSG_CN_ENC
+             , M.IDMPT_DMND_ID
+             , M.SHRN_ADDR_ENC
+             , M.REG_DT
+          FROM CHAT_MSG M
+         WHERE M.IDMPT_DMND_ID = #{idmptDmndId}
+           FOR SHARE
+    </select>
+
+    <select id="selectNextMsgSeqForUpdate" parameterType="long" resultType="int">
+        SELECT COALESCE(MAX(M.MSG_SEQ), 0) + 1
+          FROM CHAT_MSG M
+         WHERE M.OTO_CHAT_ROOM_SN = #{otoChatRoomSn}
+           FOR UPDATE
+    </select>
+
+    <insert id="insertMessage" parameterType="com.nyangmeong.community.domain.ChatMessage"
+            useGeneratedKeys="true" keyProperty="chatMsgSn" keyColumn="CHAT_MSG_SN">
+        INSERT INTO CHAT_MSG
+             ( OTO_CHAT_ROOM_SN
+             , MBR_SN
+             , MSG_TYPE_CD
+             , MSG_SEQ
+             , MSG_CN_ENC
+             , IDMPT_DMND_ID
+             , SHRN_ADDR_ENC
+             , REG_DT )
+        VALUES
+             ( #{otoChatRoomSn}
+             , #{mbrSn}
+             , #{msgTypeCd}
+             , #{msgSeq}
+             , #{msgCnEnc}
+             , #{idmptDmndId}
+             , #{shrnAddrEnc}
+             , NOW() )
+    </insert>
+
+    <insert id="insertPhoto" parameterType="com.nyangmeong.community.domain.ChatMessagePhoto">
+        INSERT INTO CHAT_MSG_PHOTO
+             ( CHAT_MSG_SN
+             , ATCH_FILE_SN
+             , SORT_SEQ
+             , REG_DT )
+        VALUES
+             ( #{chatMsgSn}
+             , #{atchFileSn}
+             , #{sortSeq}
+             , NOW() )
+    </insert>
+
+    <select id="selectList" resultMap="chatMessageSummaryResultMap">
+        SELECT M.CHAT_MSG_SN
+             , M.MSG_SEQ
+             , M.MBR_SN
+             , M.MSG_TYPE_CD
+             , M.MSG_CN_ENC
+             , M.SHRN_ADDR_ENC
+             , M.REG_DT
+          FROM CHAT_MSG M
+         WHERE M.OTO_CHAT_ROOM_SN = #{otoChatRoomSn}
+        <if test="beforeChatMsgSn != null">
+           AND M.CHAT_MSG_SN <![CDATA[<]]> #{beforeChatMsgSn}
+        </if>
+         ORDER BY M.CHAT_MSG_SN DESC
+         LIMIT #{limit}
+    </select>
+
+    <select id="selectPhotos" resultMap="chatMessagePhotoResultMap">
+        SELECT PH.CHAT_MSG_PHOTO_SN
+             , PH.CHAT_MSG_SN
+             , PH.ATCH_FILE_SN
+             , PH.SORT_SEQ
+             , PH.REG_DT
+          FROM CHAT_MSG_PHOTO PH
+         WHERE PH.CHAT_MSG_SN IN
+        <foreach collection="chatMsgSns" item="chatMsgSn" open="(" separator="," close=")">
+            #{chatMsgSn}
+        </foreach>
+         ORDER BY PH.CHAT_MSG_SN, PH.SORT_SEQ
+    </select>
+</mapper>

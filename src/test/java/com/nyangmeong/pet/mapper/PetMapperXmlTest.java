@@ -42,6 +42,21 @@ class PetMapperXmlTest {
     }
 
     @Test
+    void 체중_수정은_PET_BDWG만_바꾸고_삭제되지_않은_행만_고른다() throws Exception {
+        String sql = sql("update", "updatePetWeight");
+        assertThat(sql)
+                .contains("UPDATE PET")
+                .contains("SET PET_BDWG = #{weight}")
+                .contains("MDFR_ID = #{actorId}")
+                .contains("MDFCN_DT = NOW()")
+                .contains("WHERE PET_SN = #{petSn}")
+                .contains("AND DEL_YN = 'N'")
+                .doesNotContain("GOAL_BDWG")
+                .doesNotContain("MIN_BDWG")
+                .doesNotContain("MAX_BDWG");
+    }
+
+    @Test
     void 연동_중인_행만_해제하고_대표_표시도_끈다() throws Exception {
         assertThat(sql("update", "updateBrupRelUnlink"))
                 .contains("UPDATE BRUP_REL")

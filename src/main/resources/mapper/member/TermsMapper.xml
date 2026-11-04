@@ -147,4 +147,129 @@
              , #{actorId}
         )
     </insert>
+
+    <!-- ===== 관리자 약관 (SCR-ADM-051) ===== -->
+
+    <resultMap id="adminTermsSummaryResultMap" type="com.nyangmeong.member.dto.AdminTermsSummary">
+        <id     column="TRMS_SN"            property="trmsSn" />
+        <result column="TRMS_FIX_IDNTF_KEY" property="trmsFixIdntfKey" />
+        <result column="TRMS_VER_ID"        property="trmsVerId" />
+        <result column="TRMS_TTL"           property="trmsTtl" />
+        <result column="ESNTL_AGRE_YN"      property="esntlAgreYn" />
+        <result column="USE_YN"             property="useYn" />
+        <result column="REG_DT"             property="regDt" />
+    </resultMap>
+
+    <resultMap id="adminTermsDetailResultMap" type="com.nyangmeong.member.dto.AdminTermsDetail">
+        <id     column="TRMS_SN"            property="trmsSn" />
+        <result column="TRMS_FIX_IDNTF_KEY" property="trmsFixIdntfKey" />
+        <result column="TRMS_VER_ID"        property="trmsVerId" />
+        <result column="TRMS_TTL"           property="trmsTtl" />
+        <result column="TRMS_CN"            property="trmsCn" />
+        <result column="ESNTL_AGRE_YN"      property="esntlAgreYn" />
+        <result column="USE_YN"             property="useYn" />
+        <result column="REG_DT"             property="regDt" />
+    </resultMap>
+
+    <!-- TRMS 는 DEL_YN 없음 -->
+    <select id="selectAdminCurrentList" resultMap="adminTermsSummaryResultMap">
+        /* 관리자 약관 목록 : 종류별 사용 중 버전 */
+        SELECT TRMS_SN
+             , TRMS_FIX_IDNTF_KEY
+             , TRMS_VER_ID
+             , TRMS_TTL
+             , (ESNTL_AGRE_YN = 'Y') AS ESNTL_AGRE_YN
+             , (USE_YN = 'Y')        AS USE_YN
+             , REG_DT
+          FROM TRMS
+         WHERE USE_YN = 'Y'
+         ORDER BY SORT_SEQ, TRMS_SN
+    </select>
+
+    <select id="selectAdminHistory" resultMap="adminTermsSummaryResultMap">
+        /* 관리자 약관 버전 이력 : 한 종류 모든 버전 최신순 */
+        SELECT TRMS_SN
+             , TRMS_FIX_IDNTF_KEY
+             , TRMS_VER_ID
+             , TRMS_TTL
+             , (ESNTL_AGRE_YN = 'Y') AS ESNTL_AGRE_YN
+             , (USE_YN = 'Y')        AS USE_YN
+             , REG_DT
+          FROM TRMS
+         WHERE TRMS_FIX_IDNTF_KEY = #{trmsFixIdntfKey}
+         ORDER BY REG_DT DESC, TRMS_SN DESC
+    </select>
+
+    <select id="selectAdminDetail" resultMap="adminTermsDetailResultMap">
+        /* 관리자 약관 상세 (사용 안 함 포함) */
+        SELECT TRMS_SN
+             , TRMS_FIX_IDNTF_KEY
+             , TRMS_VER_ID
+             , TRMS_TTL
+             , TRMS_CN
+             , (ESNTL_AGRE_YN = 'Y') AS ESNTL_AGRE_YN
+             , (USE_YN = 'Y')        AS USE_YN
+             , REG_DT
+          FROM TRMS
+         WHERE TRMS_SN = #{trmsSn}
+    </select>
+
+    <select id="selectAdminDetailByVersion" resultMap="adminTermsDetailResultMap">
+        /* 관리자 약관 상세 : 종류·버전으로 (UK_TRMS_1) */
+        SELECT TRMS_SN
+             , TRMS_FIX_IDNTF_KEY
+             , TRMS_VER_ID
+             , TRMS_TTL
+             , TRMS_CN
+             , (ESNTL_AGRE_YN = 'Y') AS ESNTL_AGRE_YN
+             , (USE_YN = 'Y')        AS USE_YN
+             , REG_DT
+          FROM TRMS
+         WHERE TRMS_FIX_IDNTF_KEY = #{trmsFixIdntfKey}
+           AND TRMS_VER_ID = #{trmsVerId}
+    </select>
+
+    <select id="selectLatestSortSeqForUpdate" resultType="java.lang.Integer">
+        /* 새 버전 등록 전 : 같은 종류 가장 최근 버전의 정렬순서, 그 종류 행을 잠근다 */
+        SELECT SORT_SEQ
+          FROM TRMS
+         WHERE TRMS_FIX_IDNTF_KEY = #{trmsFixIdntfKey}
+         ORDER BY TRMS_SN DESC
+         LIMIT 1
+           FOR UPDATE
+    </select>
+
+    <update id="updateDisableByKey">
+        /* 새 버전 등록 : 같은 종류 이전 버전 사용 안 함 */
+        UPDATE TRMS
+           SET USE_YN = 'N'
+             , MDFR_ID = #{actorId}
+         WHERE TRMS_FIX_IDNTF_KEY = #{trmsFixIdntfKey}
+           AND USE_YN = 'Y'
+    </update>
+
+    <insert id="insertAdminTerms">
+        /* 약관 새 버전 등록 */
+        INSERT INTO TRMS (
+               TRMS_FIX_IDNTF_KEY
+             , TRMS_VER_ID
+             , TRMS_TTL
+             , TRMS_CN
+             , ESNTL_AGRE_YN
+             , SORT_SEQ
+             , USE_YN
+             , RGTR_ID
+             , MDFR_ID
+        ) VALUES (
+               #{trmsFixIdntfKey}
+             , #{trmsVerId}
+             , #{trmsTtl}
+             , #{trmsCn}
+             , #{esntlAgreYn}
+             , #{sortSeq}
+             , 'Y'
+             , #{actorId}
+             , #{actorId}
+        )
+    </insert>
 </mapper>

@@ -2,13 +2,27 @@
 
 ## 지금 하는 것
 
-SCR-ADM-023 노출 콘텐츠 · 프론트 연결 API 계약 — 끝 (2026-11-03). `/api/admin/community/exposure` 건강팁 현황·지정·해제, 오늘의 한마디 후보 문구 목록·등록·수정, AI 코멘트 목록·사용 여부 API와 매일 00:00 오늘의 한마디 선택 배치(SYSC0030)를 만들었다. 건강팁은 지정 글 + 빈 자리 자동 선정(건강 키워드, 좋아요순)이고 사용자 `GET /api/posts/health-tips`도 같은 규칙. 지정 글이 삭제·블라인드되면 지정이 풀린다. DB 변경 있음: v0.12 (4) `TODAY_PHRS` 테이블·공통코드 SYSC0030(공용 DB 반영됨)
+SCR-ADM-051 약관 · 프론트 연결 관리자 약관 API — 끝 (2026-11-04). 관리자 `GET /api/admin/terms`(종류별 사용 중 버전)·`GET /api/admin/terms/history`·`GET /api/admin/terms/{trmsSn}`·`POST /api/admin/terms`(새 버전 등록, 이전 버전 사용 안 함, 기존 회원 재동의 없음)를 만들었다. 가입 약관 4종만, DB 변경 없음
 
 ## 다음에 할 것
 
+- SCR-ADM-051 연결 남음: FN-ADM-051-01·02·03 (프론트 연결 `features/adminTerms/api.js` 약관 목록·새 버전 등록·[이력] 모달, `termsKinds.js` 종류 키, 프론트 저장소에서 /start). 프론트 저장소 마일스톤 절은 옆 폴더가 없어 넣지 못했다(아래 "프론트 마일스톤(사람)"). 프론트에 알릴 것: 종류 키 실제 값은 `SERVICE`·`PRIVACY`·`AGE_14`·`MARKETING`(가정 `AGE` 아님) 4종, `CARE_RULE`·`LOST_PRIVACY`는 아직 없음(등록 404), `useYn`·`esntlAgreYn`은 true/false, `regDt` 그대로, 같은 종류 같은 버전 409 `DUPLICATE_TRMS_VER`, 계약은 `docs/api/member.md` 관리자 약관 4행
+- 프론트 마일스톤(사람): 프론트 저장소 LJS 마일스톤 `## 제외` 앞에 `## SCR-ADM-051 약관 · 관리자 약관 API 연결 — 대기` 절(기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-051-01·02·03 / 기다리는 것: 백엔드 SCR-ADM-051 관리자 약관 API(LJS, 끝) / 완료 조건: `features/adminTerms/api.js` 가짜 응답을 `GET /api/admin/terms`·`GET /api/admin/terms/history?trmsFixIdntfKey=`·`GET /api/admin/terms/{trmsSn}`·`POST /api/admin/terms`로 바꾸고, `termsKinds.js` 종류 키를 `AGE_14` 포함 4종으로 맞춘다)
+- SCR-ADM-051 남김: FN-ADM-051-04 기능별 동의 2종(펫돌봄 이용수칙 `CARE_RULE`·실종 개인정보 공개 동의 `LOST_PRIVACY`). 커뮤니티가 동의 문구를 `TRMS`에서 읽게 될 때(KSJ) 넣는다. 그때 가입 쪽 쿼리 4개(`TermsMapper.xml` 가입 목록·가입 동의 검사·복구 빠진 필수 약관·관리자 회원 상세 약관 동의)가 섞이지 않게 가르는 방법(컬럼 추가 등)을 YAY와 정한다
+- YAY에게 알린다(PR 전): `member`에 `AdminTermsController`·`AdminTermsService`·DTO 3개를 넣고 `TermsMapper`에 관리자 쿼리만 추가했다(가입 쪽 쿼리는 그대로). `ErrorCode` member 구획에 `DUPLICATE_TRMS_VER`
+- 판단 필요(SCR-ADM-051): `GET /api/admin/terms/history`에 `trmsFixIdntfKey`를 빼면 문서(`docs/api/member.md`)는 400 `INVALID_INPUT_VALUE`인데 실제는 400 `BAD_REQUEST`(필수 파라미터 누락). 문서를 고치거나 `@RequestParam(required = false)`로 바꾼다
+
+- ai-f2에 알린다(SCR-MAN-001 끝, PR 번호와 함께): 계약은 `docs/api/ai.md` 두 행과 DTO 절. 초안과 다른 점: PUT도 그날 두 번째 새로고침 409 `HEALTH_REPORT_REFRESH_LIMIT`·자동 재생성 6회째 409 `HEALTH_REPORT_AUTO_LIMIT`·저장본보다 이른 기준일 400(Python은 저장 실패여도 200이니 그대로), 하루 값은 체중 그날 마지막 기록·식사량·음수량·산책 그날 합계·배변 기록마다 한 줄, `baseYmd` 없으면 400 `BAD_REQUEST`, `inputHash`는 소문자로 저장. 필드 이름은 `tips`·`ageMm` 그대로(`anlsCns`로 바꾸지 않음). ai 저장소 `docs/api/internal.md` 두 행을 확정으로 바꾸는 것은 ai 세션
+- 공용 DB(사람): v0.12 (6) `AI_HLTH_RPT`는 2026-11-04 실행함(PR 전, 사람). PR 본문에 "DB 변경 있음 v0.12 (6), 공용 DB 실행함"을 적고, 팀에 각자 로컬 DB에 그 절을 실행하라고 알린다. 사람 확인으로 남은 행은 `DELETE FROM AI_HLTH_RPT WHERE PET_SN = 573;`
+- ERDCloud·표준사전(사람): 새 테이블 `AI_HLTH_RPT`(AI건강리포트: `AI_HLTH_RPT_SN`·`PET_SN`(UK, FK PET)·`BASE_YMD` date·`RPT_TTL` varchar(20)·`ANLS_CN` varchar(1000)·`INPT_HASH` char(64)·`RFRSH_NMTM`·`AUTO_RGNR_NMTM` int·`CRT_DT` datetime·공통 4컬럼)를 추가하고 물리명(HLTH_RPT·INPT_HASH·RFRSH·RGNR)을 표준사전에 맞춘다
+- SCR-ADM-101 연결 남음: FN-ADM-101-01 (프론트 연결 `features/adminBreed/api.js` 품종 목록·[품종 추가]·[수정] 모달, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트에 알릴 것: 이름 50자, `sortSeq`는 빼도 됨(그 종 마지막 + 10), 중복 409 `DUPLICATE_VRTY_NM`(가짜 그대로), 없는 품종은 가짜 `NOT_FOUND`가 아니라 404 `BREED_NOT_FOUND`, 등록·수정 응답은 품종 행. 계약은 `docs/api/pet.md` `/admin/breeds` 행
+- 로컬·공용 DB 정리(사람): SCR-ADM-101 검증이 만든 품종 `VRTY_SN=38`(`DOGV0024` "검증용품종", 사용 안 함)과 사람 확인으로 만든 품종. `DELETE FROM VRTY WHERE VRTY_SN IN (38, <번호>);`, 감사 로그는 `TRGT_TBL_NM='VRTY'` 행
+- 정하기(사람): frontend-65 세션이 `milestones/LJS.md`에 넣은 `## SCR-ADM-080 라우팅 매핑표 · 프론트 연결 관리자 매핑표 API — 대기` 절. 사람이 "잘못 온 요청"이라고 했다(2026-11-04). 지울지 정한다
+- SCR-ADM-050 연결 남음: FN-ADM-050-01·02·03·05 (프론트 연결 `features/adminNews/api.js` 목록·등록/수정 모달·수집 기사 행·분류 키워드 탭, 프론트 저장소에서 /start). 프론트에 알릴 것: 썸네일은 `POST /api/admin/news/images`(form-data `image`) → `{ atchFileSn }`로 먼저 올리고 등록·수정 본문에 `atchFileSn`을 넣는다(가짜의 "등록 요청에 파일"과 다름). 목록 행에 `newsSrcCdNm` 추가, `useYn`은 true/false. 글자 수 제목 200·요약 1000·키워드 50(가정 그대로). 제목·요약·썸네일 수정은 관리자 등록 기사만(수집 기사에 보내면 400). 키워드 쉼표 400, 같은 카테고리 중복 409 `DUPLICATE_NEWS_KEYWORD`, 삭제한 키워드 다시 삭제 404 `NEWS_KEYWORD_NOT_FOUND`. 계약은 `docs/api/community.md` `/admin/news` 행
+- 공용 DB(사람, PR 병합 직후): `db/20261102_insert_base_data_v0.12.sql` 변경 절 v0.12 (5)만 실행한다(AIMC0039 쉼표 행 `DEL_YN='Y'` + 40행 INSERT). 실행 전에도 기존 분류·건강팁은 그대로 동작하고, 관리자 키워드 목록에 쉼표 행이 한 줄로 보일 뿐이다
+- 정하기: 뉴스 제외 키워드(AIMC0040) 편집 화면. 기준 데이터 주석에 "관리자 SCR-ADM-050에서 편집"이라고 돼 있지만 기능명세서·화면설계서·프론트 가정에 없어 만들지 않았다. 넣는다면 명세에 기능 ID를 추가하고 같은 키워드 API에 용도 구분을 더한다
+- 로컬 DB 정리(사람): SCR-ADM-050 검증이 올린 `ATCH_FILE` 4181과 감사 로그(`MNGR_TASK_LOG`) 행이 남아 있다. 사람 확인으로 만든 뉴스는 숨기거나 `DELETE FROM NEWS WHERE NEWS_SN=<번호>`
 - SCR-ADM-023 연결 남음: FN-ADM-023-01·02·04·06 (프론트 연결 `features/adminCommunity/api.js` 노출 콘텐츠 절 건강팁 표·지정 모달·오늘의 한마디 탭·AI 코멘트 탭, 프론트 저장소에서 /start). 프론트에 알릴 것: 후보 문구 필드 이름은 가정 그대로 `todayPhrsSn`·`phrsCn`(200자), `todayPhrs`는 오늘 노출 문구(없으면 null, 같은 문구 후보가 없으면 `todayPhrsSn` null), 건강팁 지정 모달의 글 검색은 기존 `GET /api/admin/posts?bbsCd=CMUC0001`
-- 프론트 마일스톤(사람): 프론트 저장소 LJS 마일스톤 `## 제외` 앞에 `## SCR-ADM-023 노출 콘텐츠 · 노출 콘텐츠 API 연결 — 대기` 절(기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-023-01·02·04·06 / 기다리는 것: 백엔드 SCR-ADM-023 노출 콘텐츠 API(LJS, 끝) / 완료 조건: `features/adminCommunity/api.js` 노출 콘텐츠 절 가짜를 `/api/admin/community/exposure` 실제 API로 바꿔 건강팁 지정·해제, 문구 등록·수정, AI 코멘트 사용 여부가 화면에서 동작한다)을 넣는다. 옆 폴더가 없어 넣지 못했다
-- KSJ에게 알린다(PR 전): SCR-ADM-023을 LJS가 구현했다. 사용자 `GET /api/posts/health-tips`(`PostService.getHealthTips`)가 지정 글만이 아니라 빈 자리를 자동 선정 글(정상 펫정보, 제목·본문에 `KWRD_DICT` 뉴스 분류 건강 키워드, 좋아요순)로 채운다. `PostMapper.updateStatus`가 정상 아닌 상태로 바꿀 때 `HLTH_INFO_EXPSR_SEQ`를 NULL로 만든다. `PostMapper`·`CommunityAiCommentaryMapper` 쿼리 추가, `ErrorCode.TODAY_PHRASE_NOT_FOUND`·`AI_COMMENTARY_NOT_FOUND`
 - ERDCloud·표준사전(사람): 새 테이블 `TODAY_PHRS`(오늘의한마디후보: `TODAY_PHRS_SN`·`PHRS_CN` varchar(200)·`USE_YN`·`REG_DT`·`MDFCN_DT`·`RGTR_ID`·`MDFR_ID`)를 추가하고 물리명(TODAY·PHRS)을 표준사전에 맞춘다
 - 공용 DB 정리(사람): SCR-ADM-023 검증 데이터. `DELETE FROM TODAY_PHRS WHERE TODAY_PHRS_SN = 1;`("[verify] test phrase"), `DELETE FROM CMNTY_AI_CMTRY WHERE CMNTY_AI_CMTRY_SN = 31;`(2026-11-03 행, 사용 안 함). 글 8 블라인드·복구 상태 이력, 배치 이력 382·383, 감사 로그는 남겨도 된다. 사람 확인으로 등록한 후보 문구도 같은 방식
 - JAJ에게 답한다(SCR-ADM-082): FN-ADM-082-03 PDF 분석 실패 집계는 `EXTL_API_CALL_LOG`(SYSC0025, Python 통지) 기준이 맞다(명세 비고·결정 B-15). JAJ의 PDF 분석 실패 집계 service와 검사결과지 첨부 수는 필요 없다(실패율 분모도 같은 로그). 그에 맞춰 `milestones/LJS.md` SCR-ADM-082 "기다리는 것"의 JAJ 부분과 `docs/admin/implementation-plan.md` 137행 JAJ 줄을 지운다(다음 작업 때). "검사결과지가 아닌 파일" 결과 구분은 아직 답하지 않았다
@@ -17,7 +31,7 @@ SCR-ADM-023 노출 콘텐츠 · 프론트 연결 API 계약 — 끝 (2026-11-03)
 - SCR-ADM-022 연결 남음: FN-ADM-022-02 완료 사진 보기. `/api/files/public/{atchFileSn}`은 `public/` 경로 파일만 열어 지금 완료 사진(시드 3543·3544)은 404다. 완료 사진 업로드가 아직 없어(KSJ) 저장 경로를 정할 때 관리자가 볼 방법(공개 경로 또는 관리자 이미지 API)을 같이 정한다
 - 팀에 알린다(시드): `db/seed/20261028_seed_data.sql`에 RGN 전북 시군구 13건·행정동 243건을 넣었다(전주 완산·덕진 동은 전주시 아래). 공용 DB에는 반영돼 있다. 각자 로컬 DB에는 시드 파일의 `-- 2026-11-03 추가: 전북특별자치도…` 아래 INSERT 두 개만 실행한다(전북 행이 시도·전주시 2건일 때만). 출처 표시(SGIS 공공누리 1유형, admdongkor CC BY 4.0)는 그 주석에 있다
 - SCR-ADM-021 연결 남음: FN-ADM-021-01·02 (프론트 연결 `features/adminCommunity/api.js` 실종제보 목록·상세 모달, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트에 알릴 것: 필드 이름은 가짜와 같은 `mbrNcnm`·`expryCrtrDt`, 블라인드·삭제 글은 목록에 안 나옴, 상세에 연락처·반려동물 정보 없음
-- 마일스톤 정리(사람): `milestones/LJS.md`의 `## SCR-ADM-021 실종제보 — 대기`·`## SCR-ADM-022 펫돌봄 거래 — 대기`·`## SCR-ADM-023 노출 콘텐츠 — 대기` 절(KSJ 협의 표기)은 같은 기능 ID를 각 `· 프론트 연결 API 계약` 절로 끝냈다(그래서 `/start`가 고르는 "대기 맨 위"가 실제 남은 일이 아니다). 그 절과 `docs/admin/implementation-plan.md` 담당 표기를 사람이 맞춘다
+- 마일스톤 정리(사람): `milestones/LJS.md`의 `## SCR-ADM-021 실종제보 — 대기`·`## SCR-ADM-022 펫돌봄 거래 — 대기`·`## SCR-ADM-023 노출 콘텐츠 — 대기`·`## SCR-ADM-050 펫뉴스 — 대기` 절(KSJ 협의 표기)은 같은 기능 ID를 각 `· 프론트 연결 API 계약` 절로 끝냈다(ADM-050은 FN-ADM-050-06 자동 분류도 기존 수집 코드에 있다)(그래서 `/start`가 고르는 "대기 맨 위"가 실제 남은 일이 아니다). 그 절과 `docs/admin/implementation-plan.md` 담당 표기를 사람이 맞춘다
 - 공용 DB 정리(사람): SCR-ADM-091 확인용 발송 이력 4건. `DELETE FROM NOTI_SNDNG_LOG WHERE RGTR_ID='ADM091TEST';`
 - SCR-ADM-091 연결 남음: FN-ADM-091-01 (프론트 연결 `features/adminNotificationLog/api.js` 목록, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트 가짜와 다른 점: 기간 파라미터가 `fromYmd`·`toYmd`가 아니라 `bgngYmd`·`endYmd`(종료일 그날 끝까지 포함)
 - SCR-MYP-031 연결 남음: FN-AIM-013-06 가계부 출처 영수증 다시 열기 (프론트 연결 가계부 화면의 영수증 다시 열기, 화면 SJM, 프론트 저장소에서 /start). SJM에게 알린다: `GET /api/receipts/{recptSn}`을 `petSn` 없이 부르면 된다(응답 `petSn` null, `docs/api/receipt.md`). 프론트 저장소 마일스톤 절은 옆 폴더가 없어 넣지 못했다(아래 정리 항목)
@@ -29,7 +43,7 @@ SCR-ADM-023 노출 콘텐츠 · 프론트 연결 API 계약 — 끝 (2026-11-03)
 - SCR-ADM-090 연결 남음: FN-ADM-090-03 (SJM이 만든 `PetService.searchCaregiverMbrSns(petSn)`로 `scheduler/CaregiverFake`를 바꾼 뒤(2026-11-03 메서드 있음 확인), 실제 케어 일정 알림에 등록한 템플릿이 쓰이고 `useYn=false`면 기본 문구인지 확인)
 - SCR-ADM-090 연결 남음: FN-ADM-090-01·02 (프론트 연결 `features/adminNotificationTemplate/api.js` 목록·등록·수정, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트 가짜와 다른 점: `useYn`이 `'Y'|'N'`이 아니라 true/false, 케어 일정 외 유형은 등록 400(화면은 "기본 문구"만)
 - 공용 DB 정리(사람): SCR-ADM-090 사람 확인으로 만든 템플릿은 삭제 API가 없다. `DELETE FROM NOTI_TMPLT WHERE NOTI_TMPLT_SN=<번호>;`(관리자 작업 로그 `TRGT_TBL_NM='NOTI_TMPLT'`는 남거나 같이 지운다)
-- 정리(판단 필요): 핸드오프가 60줄을 넘는다(2026-11-03 /end 때 143줄. 펫돌봄 게시판 필터 항목은 `BoardType.CARE`(CMUC0028)가 생겨 지웠다. 2026-11-03 공용 DB에 반영된 것을 확인한 v0.12 (1)·v0.11 (5) 실행 항목 2건은 지웠다). 대부분 알림·사람 할 일이라 끝났는지 코드로 판단할 수 없어 남겼다. 끝난 알림·정리 항목을 사람이 지운다
+- 정리(판단 필요): 핸드오프가 60줄을 넘는다(2026-11-04 SCR-ADM-051 /end 때 약 145줄, 저장소로 끝났다고 확인되는 항목이 없어 지우지 않음. 2026-11-04 SCR-MAN-001 /end 때 146줄, ai-f2 요청 항목은 끝나 지움. 2026-11-04 /end 때 144줄, 저장소로 끝났다고 확인되는 항목이 없어 지우지 않음. 2026-11-03 /end 때 143줄. 펫돌봄 게시판 필터 항목은 `BoardType.CARE`(CMUC0028)가 생겨 지웠다. 2026-11-03 공용 DB에 반영된 것을 확인한 v0.12 (1)·v0.11 (5) 실행 항목 2건은 지웠다). 대부분 알림·사람 할 일이라 끝났는지 코드로 판단할 수 없어 남겼다. 끝난 알림·정리 항목을 사람이 지운다
 - ai-47에 알린다: 굽기 계약 구현 끝(SCR-ADM-070). `bake-items` 응답 `{itemSn, regnCd, bakeHint}`(판매 중이고 지시 있음 30개), `GET /internal/ai/items/{itemSn}/bake-targets?page=`(관리자 쿠키, 100개씩 `{pixelCharSns, last}`, 아니면 403 `ADMIN_ONLY`, 굽기 대상 아님 404). 굽기 지시가 바뀌면 그 아이템 착용 시트를 지워 다시 굽기 대상이 된다. 시드에만 있던 6개(빨간 리본·작은 왕관·털모자·줄무늬 티셔츠·꼬까 한복·곰돌이 후드티)의 지시 문장은 LJS 초안이라 검토를 부탁한다. 백엔드 PR이 AI PR보다 먼저 병합돼야 한다
 - 공용 DB 정리(사람): SCR-ADM-070 사람 확인으로 만든 아이템(예: "확인용 가방")은 삭제 API가 없다. `DELETE FROM MNGR_TASK_LOG WHERE TRGT_TBL_NM='ITEM' AND TRGT_SN=<번호>; DELETE FROM ITEM WHERE ITEM_SN=<번호>;` 또는 판매 중지. 바꾼 순서·판매 여부·굽기 지시를 되돌린다
 - SCR-ADM-070 연결 남음: FN-ADM-070-01~04 (프론트 연결 `features/adminItem/api.js` 목록·등록·수정·순서 저장, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
@@ -38,13 +52,10 @@ SCR-ADM-023 노출 콘텐츠 · 프론트 연결 API 계약 — 끝 (2026-11-03)
 - 시험 데이터 정리(사람): 로컬 DB 문의 202(회원 4, 캐릭터 601)는 local 프로필에서 회원 4로 `DELETE /api/inquiries/202`. 공용 DB에서 사람 확인으로 캐릭터 601 오류 문의를 접수했다면 `POST /api/admin/inquiries/{번호}/character-error`에 `{"charErrPrcsRsltCd":"CHRC0009"}`로 원래 캐릭터로 복원하고 문의를 지운다(ai-47의 시험 캐릭터)
 - SCR-ADM-042 연결 남음: FN-ADM-042-07 무료 재생성. 생성 흐름이 원본 사진(`FILC0006`)을 Java에 남기지 않아 관리자 [무료 재생성]은 404 FILE_NOT_FOUND로 롤백된다(복원만 실제 동작). FN-MYP-010-23 계약과 함께 정한다(LJS·ai)
 - SCR-ADM-042 연결 남음: FN-ADM-042-08 (작성자 매칭 목록. SCR-ADM-022 상세는 모집글 번호 기준이라 문의 작성자 기준 목록(`?mbrSn=`)이 필요하면 따로 만든다, KSJ 협의)
-- KSJ에게 알린다(PR 전): SCR-ADM-042를 LJS가 구현했다. `InquiryService`·`InquiryMapper` 기존 메서드는 그대로 두고 관리자 쿼리(`selectAdminList`·`selectAdminInquiry`·`selectNickname`·`selectStatusHistories`·`updateAnswerContent`·`updateCharErrResult`)를 더했다. `ErrorCode.INQUIRY_NOT_ANSWERED`·`INQUIRY_DELETED`, `MapperXmlRuleTest` 예외 1줄
 - SCR-ADM-041 연결 남음: FN-ADM-041-01 (프론트 연결 관리자 FAQ 목록 `/admin/faqs`, 프론트 저장소에서 /start), FN-ADM-041-02 (프론트 연결 등록·수정 모달, 프론트 저장소에서 /start), FN-ADM-041-03 (프론트 연결 목록·모달의 사용 토글, 프론트 저장소에서 /start), FN-ADM-041-04 (프론트 연결 카테고리 탭·모달 선택지, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
-- KSJ에게 알린다(PR 전): SCR-ADM-041을 LJS가 구현했다. 사용자 FAQ(`FaqController`·`FaqMapper.selectList`)는 그대로 두고 같은 Mapper에 관리자 쿼리(`selectAdminList`·`selectAdminFaq`·`insert`·`update`)와 `Faq` VO 등록자·수정자 필드, `ErrorCode.FAQ_NOT_FOUND`를 더했다
 - 공용 DB 정리(사람): 검증으로 생긴 FAQ 41번(비노출, "[검증] 4000자 답변 FAQ")과 그 감사 로그. 지우려면 `DELETE FROM MNGR_TASK_LOG WHERE TRGT_TBL_NM='FAQ' AND TRGT_SN=41; DELETE FROM FAQ WHERE FAQ_SN=41;`. 사람 확인으로 만든 FAQ도 같은 방식
 - 정하기(공용 DB 정리, 사람): 구현·확인 중 생긴 공지 31·32번과 `/notices/32` 알림 191건(최적화 전 방식으로 실제 회원에게 감)을 지울지 정한다. 지우면 `INAPP_NOTI`의 `MVMN_PATH='/notices/<번호>'`와 `NTC_MTTR` 행
 - ERDCloud(사람): `NTC_MTTR.NOTI_SNDNG_DT`(datetime NULL, 알림발송일시)·`NOTI_TRGT_CNT`(decimal(10,0) NULL, 알림대상수)를 추가한다
-- KSJ에게 알린다(PR 전): SCR-ADM-040을 LJS가 구현했다(`support`에 `AdminNoticeController`·`AdminNoticeService`·DTO 7개, `NoticeMapper` 관리자 쿼리, `Notice` VO 필드). 본문 이미지는 `![](/api/files/public/{atchFileSn})` 줄로 넣고 HTML은 저장하지 않는다(`docs/api/issues.md` 고객센터 10). 사용자 공지 상세가 이 줄을 이미지로 그려야 한다. 삭제는 `USE_YN='N'`
 - YAY에게 알린다(PR 전): `MemberService.countNormalMembers()`·`MemberMapper.countByStatus` 추가(공지 알림 대상 수)
 - 팀에 알린다(알림): 여러 회원에게 같은 알림을 보낼 때는 회원마다 `NotificationEvent`를 발행하지 않는다(커밋 뒤 회원마다 트랜잭션, 191명 46초). 공지는 `NoticeNotificationEvent` + `NotificationMapper.insertForNormalMembers` 한 번이다
 - 팀에 알린다(PR): DB 기준 파일이 v0.12로 바뀌었다. v0.11 두 파일은 `db/archive/v0.11/`에 있고, 아직 병합 안 된 브랜치의 v0.11 변경 항목은 v0.12 파일의 변경 절로 옮겨야 한다. `handoff/KSJ.md`에 옛 v0.11 경로가 남아 있다(KSJ)
@@ -57,12 +68,9 @@ SCR-ADM-023 노출 콘텐츠 · 프론트 연결 API 계약 — 끝 (2026-11-03)
 - 로컬 Python 서버(사람): 8000은 `--reload`로 띄운다. 14:29에 띄운 옛 프로세스가 가짜 저장소로 돌아 미리보기가 `PIXEL_CHARACTER_NOT_FOUND`였다
 - 판단 필요(시드): 시드의 자동 블라인드 이력 18건은 사유가 `신고 누적으로 블라인드`라 `신고 누적`과 달라 자동 블라인드 탭에 나오지 않는다. 시드를 고칠지 탭 판별을 넓힐지 정한다. 이 코드 이전에 자동 삭제된 댓글도 나오지 않는다
 - ERDCloud(사람): `DCLR.DCLR_ACTN_CD` 신고조치공통코드(CMUG08)를 추가한다
-- KSJ에게 알린다(PR 전): SCR-ADM-030을 LJS가 구현했다(구현 계획 담당 KSJ, 저장소에 협의 기록 없음). `ReportService` 누적 계산에서 반려를 뺐고 자동 삭제 댓글에 `DCLR_STTS_HSTRY` 표시 행을 남긴다. 알림 `NotificationType.REPORT_RESULT`는 `COMMUNITY`와 코드 `AIMC0010`이 같다
 - 명세 정리(사람): 설정 화면 FN-COM-008-11 항상 받는 알림에 신고 처리 결과를 넣을지 정한다(2026-11-02 결정: 댓글 알림 설정과 무관하게 보낸다. 앱 알림 채널을 끄면 안 간다)
 - 테스트 부족: 복구 뒤 재삭제 판별(`autoTargetCondition`의 `MDFCN_DT` 비교)은 SQL 조건이라 자동 테스트가 없다
 - 실제 DB 확인 범위(SCR-ADM-020): 사람 확인 내용은 `확인`이라고만 기록됐다. 검증 에이전트는 공용 DB라 블라인드·복구·댓글 삭제 성공 경로를 실행하지 않았다
-- KSJ에게 알린다(PR 전): SCR-ADM-020을 LJS가 구현했다(구현 계획 담당은 KSJ, 저장소에 협의 기록 없음). `community`에 관리자 컨트롤러·서비스, `PostMapper`·`CommentMapper` 관리자 쿼리를 넣었다. `MapperXmlRuleTest` 예외 2줄 추가
-- 시드 확인(KSJ): 공용 DB의 "[실종]" 글이 `CMUC0002`라 `bbsCd=CMUC0024` 필터가 0건이다. 코드 문제는 확인되지 않았다
 - SCR-ADM-011 연결 남음: FN-ADM-011-01 (백엔드 연결 `AdminMemberDetailResponse.mbrAuthrtCd`, 백엔드 저장소에서 /start). 프론트 마일스톤 결정이며 프론트 5개 탭 연결은 끝났다
 - 공용 DB 정리(사람): SCR-ADM-020·011·113·114 검증의 `dev-tokens`로 회원 1~6 세션이 생겼다. 지울지 정한다
 - 실행해 보지 못한 SQL(SCR-ADM-011): 재동의 시 최신 1행, 동의 기록 없는 약관(`TermsMapper.selectAdminAgreementList`), 해제된 연동 제외(`PetMapper.selectAdminList`). 자동 테스트는 매퍼 목이고 공용 DB에 해당 데이터가 없어 SQL 읽기로만 확인했다. 파기 회원 상세도 데이터가 없어 코드로만 확인했다
@@ -72,7 +80,6 @@ SCR-ADM-023 노출 콘텐츠 · 프론트 연결 API 계약 — 끝 (2026-11-03)
 - 판단 필요(SCR-ADM-113): 지정 기록이 없는 기존 관리자는 `apntDt`가 null이다. `MBR_AUTHRT_CD`에 인덱스가 없어 해제 트랜잭션 동안 `MBR`의 많은 행이 잠길 수 있다(부하 상황 확인 안 함)
 - PR 전 확인(사람): YAY에게 `member`에 넣은 것을 알린다. `MemberPurgeJob`·`MemberPurgeService`, 탈퇴 회원 목록, `MemberSuspensionService`, 관리자 목록 조회. 파기 뒤 같은 이메일은 새 가입이 되고 복구는 `MEMBER_NOT_FOUND`다. 저장소에 협의 기록 없음
 - 탈퇴 파기 남은 범위: 채팅 원문(REQ-NFR-002, 채팅 구현 뒤 KSJ와 `scheduler`로 묶는다), 프로필 파일 실물(`FileStore`에 삭제 없음, 지금은 연결만 끊는다), 게시물·댓글·포인트·반려동물·건강기록(정책 미확정, `docs/api/issues.md` 8번)
-- KSJ에게 알린다: 게시글·댓글 작성자 '탈퇴한 회원' 표시가 없어 파기 회원은 `탈퇴회원#<번호>`로 보인다. 쿼리에서 탈퇴 상태로 표시를 바꾼다
 - 회원 탈퇴 처리가 코드에 없다: `POST /members/me/withdraw` 초안은 있으나 `src/main`에 `WHDWL_DT`를 채우는 코드가 없다(YAY에게 확인)
 - 테스트 부족: `selectWithdrawnList`의 보관 기간 경계를 검사하는 매퍼 테스트가 없다. 검증은 같은 조건을 바꾼 읽기 전용 SELECT로 했다
 - 위험, PR 병합 전(사람): v0.11 (4) 없는 DB에서는 `selectBySn`이 `Unknown column`이라 `GET /api/members/me` 등 기존 API도 500이다. 공용 DB에는 규칙의 "병합 직후"가 아니라 병합 전에 실행하고 팀에 각자 로컬 DB 실행을 알린다. 사람이 실행했다고 답했으나(2026-11-02) 어느 DB인지는 기록이 없다
@@ -116,7 +123,6 @@ SCR-ADM-023 노출 콘텐츠 · 프론트 연결 API 계약 — 끝 (2026-11-03)
 - 팀에 알린다(2026-10-22): `docs/convention/api.md` 새 규칙 4가지, `docs/api/README.md`(구현하며 달라지면 같은 PR에서 초안도 고친다), `/start`가 `docs/api`를 기능 ID로 찾아 쓴다, 테이블 변경 SQL은 `db/migration/`에(공용 DB에는 이것만 실행)
 - YAY에게 알린다: 로그인·SNS 로그인 응답에 토큰을 넣지 않는다(`TokenResponse` 삭제, `/auth/refresh`는 `data` 없음). SNS 흐름을 정할 때 `issues.md` 로그인 2번 2026-10-22 추가 4가지를 함께 정한다
 - SJM에게 알린다: 지출 다중 삭제는 `DELETE /expenses?expndSn=`와 `POST /expenses/bulk-delete`(`expectedCnt` 확인, LJS가 더한 안전장치), 지출 등록은 줄마다 `idmptDmndId`. 사용처 `expndPlcusNm`(80자, `EXPND_PLCUS_NM`)을 등록·수정·응답·목록 DTO에 추가(`docs/api/expense.md`), 중복 확인 표시는 "내용 · 사용처"
-- KSJ에게 알린다: 채팅 메시지 커서 조회, 실시간 STOMP 제안과 다중 로그인 다섯 가지(`docs/api/community.md` "실시간"). 세션 폐기 때 소켓을 끊는 이벤트는 `LoginSessionManager.revoke`에서 같이 정한다. 좋아요는 멱등
 - JAJ에게 알린다: 케어 완료 중복은 `UK_CARE_CMPTN_HSTRY_1`로 200 기존 기록, 검사결과지 분석은 동기+제한 시간과 `anlysRslt`(제안, 확인 필요). 영수증 확인 모달의 사용처 칸은 저장 요청 `expndPlcusNm`(공통, 병원명 기본값, 비우면 사용처 없음)
 - 프론트에 알린다: 알림·상점·영수증 API는 `docs/api/notification.md`·`pet.md`·`receipt.md`(구현에 맞춤). 알림 설정 경로는 `/api/members/me/notification-settings`로 바뀌었다. 영수증 업로드는 실패도 201이고 `ocrPrcsSttsCd`·`failRsn`으로 문구를 고른다. 중복 확인에서 [아니오]를 고른 탭은 `expenseYn=false`
 - 프론트 `start` 스킬에도 `docs/api`(백엔드 저장소) 기준 줄을 넣을지 정한다
