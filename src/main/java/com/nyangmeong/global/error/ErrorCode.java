@@ -78,6 +78,7 @@ public enum ErrorCode {
     PASSWORD_RESET_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "비밀번호 재설정 권한이 만료되었거나 이미 사용되었습니다."),
     REQUIRED_TERMS_NOT_AGREED(HttpStatus.BAD_REQUEST, "필수 약관에 동의해야 합니다."),
     TERMS_NOT_FOUND(HttpStatus.NOT_FOUND, "약관을 찾을 수 없습니다."),
+    DUPLICATE_TRMS_VER(HttpStatus.CONFLICT, "같은 종류에 이미 있는 약관 버전입니다."),
     WITHDRAW_PHRASE_MISMATCH(HttpStatus.BAD_REQUEST, "탈퇴 확인 문구가 일치하지 않습니다."),
     MEMBER_RECOVERY_EXPIRED(HttpStatus.BAD_REQUEST, "복구 가능 기간이 지난 계정입니다."),
     MEMBER_RECOVERY_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "복구 확인 시간이 지났습니다. 이메일 인증을 다시 진행해 주세요."),
@@ -90,6 +91,7 @@ public enum ErrorCode {
     PET_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "반려동물은 계정당 10마리까지 등록할 수 있습니다."),
     PET_WEIGHT_LOCKED(HttpStatus.BAD_REQUEST, "건강 일지에 체중 기록이 있어 체중을 직접 수정할 수 없습니다."),
     BREED_NOT_FOUND(HttpStatus.NOT_FOUND, "품종을 찾을 수 없습니다."),
+    DUPLICATE_VRTY_NM(HttpStatus.CONFLICT, "같은 종에 이미 있는 품종 이름입니다."),
     CAREGIVER_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "공동양육자는 반려동물당 5명까지입니다."),
     CAREGIVER_NOT_FOUND(HttpStatus.NOT_FOUND, "공동양육 정보를 찾을 수 없습니다."),
     CAREGIVER_INVITATION_NOT_FOUND(HttpStatus.NOT_FOUND, "초대를 찾을 수 없습니다."),
@@ -175,6 +177,10 @@ public enum ErrorCode {
     LOST_REPORT_NOT_RENEWABLE(HttpStatus.BAD_REQUEST, "게시 종료 7일 전부터 종료 전까지 한 번만 연장할 수 있습니다."),
     LOST_REPORT_CLOSED(HttpStatus.BAD_REQUEST, "찾았어요 처리된 제보에는 댓글을 달 수 없습니다."),
     NEWS_NOT_FOUND(HttpStatus.NOT_FOUND, "뉴스를 찾을 수 없습니다."),
+    NEWS_KEYWORD_NOT_FOUND(HttpStatus.NOT_FOUND, "분류 키워드를 찾을 수 없습니다."),
+    DUPLICATE_NEWS_KEYWORD(HttpStatus.CONFLICT, "이 카테고리에 이미 있는 키워드입니다."),
+    TODAY_PHRASE_NOT_FOUND(HttpStatus.NOT_FOUND, "오늘의 한마디 문구를 찾을 수 없습니다."),
+    AI_COMMENTARY_NOT_FOUND(HttpStatus.NOT_FOUND, "AI 코멘트를 찾을 수 없습니다."),
     NEWS_FEED_FETCH_FAILED(HttpStatus.BAD_GATEWAY, "뉴스를 가져오지 못했습니다."),
     CARE_RECRUITMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "펫돌봄 모집글을 찾을 수 없습니다."),
     CARE_RECRUITMENT_CLOSED(HttpStatus.CONFLICT, "마감된 모집글입니다."),
@@ -192,6 +198,15 @@ public enum ErrorCode {
     CARE_MATCH_PROVIDER_ONLY(HttpStatus.FORBIDDEN, "돌봄 제공자만 할 수 있습니다."),
     CARE_MATCH_ALREADY_ACCEPTED(HttpStatus.CONFLICT, "이미 매칭이 확정된 모집글입니다."),
     CARE_MATCH_INVALID_STATUS(HttpStatus.CONFLICT, "현재 매칭 상태에서는 할 수 없는 요청입니다."),
+    CHAT_ROOM_ACCESS_DENIED(HttpStatus.FORBIDDEN, "채팅방 참여자만 이용할 수 있습니다."),
+    CHAT_ADDRESS_NOT_ALLOWED(HttpStatus.CONFLICT, "매칭이 완료된 뒤 주소를 공유할 수 있어요."),
+    CARE_MATCH_ROLE_DENIED(HttpStatus.FORBIDDEN, "현재 역할에서는 할 수 없는 요청입니다."),
+    CARE_MATCH_ALREADY_MATCHED(HttpStatus.CONFLICT, "이미 다른 분과 매칭된 모집글입니다."),
+    CARE_MATCH_INVALID_STATE(HttpStatus.CONFLICT, "현재 매칭 단계에서는 할 수 없는 요청입니다."),
+
+    /** ai */
+    HEALTH_REPORT_REFRESH_LIMIT(HttpStatus.CONFLICT, "오늘은 이미 새로고침했어요. 내일 다시 시도해 주세요."),
+    HEALTH_REPORT_AUTO_LIMIT(HttpStatus.CONFLICT, "오늘은 리포트를 더 만들 수 없어요."),
 
     /** support */
     NOTICE_NOT_FOUND(HttpStatus.NOT_FOUND, "공지사항을 찾을 수 없습니다."),

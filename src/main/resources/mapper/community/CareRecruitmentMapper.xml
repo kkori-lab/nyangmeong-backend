@@ -247,6 +247,63 @@
                 , S.PRTC_SHP_CD
     </select>
 
+    <resultMap id="adminCareMatchSummaryResultMap" type="com.nyangmeong.community.dto.AdminCareMatchSummary">
+        <id     column="PET_PRTC_RCRT_SN" property="petPrtcRcrtSn" />
+        <result column="PST_SN"           property="pstSn" />
+        <result column="PST_TTL"          property="pstTtl" />
+        <result column="RCRT_STTS_CD"     property="rcrtSttsCd" />
+        <result column="MBR_SN"           property="mbrSn" />
+        <result column="MBR_NCNM"         property="mbrNcnm" />
+        <result column="CST_AMT"          property="cstAmt" />
+        <result column="CST_UNIT_CD"      property="cstUnitCd" />
+        <result column="REG_DT"           property="regDt" />
+    </resultMap>
+
+    <resultMap id="adminCareMatchResponseResultMap" type="com.nyangmeong.community.dto.AdminCareMatchResponse">
+        <id     column="PET_PRTC_RCRT_SN" property="petPrtcRcrtSn" />
+        <result column="PST_SN"           property="pstSn" />
+        <result column="PST_TTL"          property="pstTtl" />
+        <result column="RCRT_STTS_CD"     property="rcrtSttsCd" />
+        <result column="MBR_SN"           property="mbrSn" />
+        <result column="MBR_NCNM"         property="mbrNcnm" />
+        <result column="CST_AMT"          property="cstAmt" />
+        <result column="CST_UNIT_CD"      property="cstUnitCd" />
+        <result column="REG_DT"           property="regDt" />
+    </resultMap>
+
+    <sql id="adminCareMatchColumns">
+               R.PET_PRTC_RCRT_SN
+             , R.PST_SN
+             , P.PST_TTL
+             , R.RCRT_STTS_CD
+             , P.MBR_SN
+             , M.MBR_NCNM
+             , R.CST_AMT
+             , R.CST_UNIT_CD
+             , P.REG_DT
+          FROM PET_PRTC_RCRT R
+          JOIN PST P
+            ON P.PST_SN = R.PST_SN
+          LEFT JOIN MBR M
+            ON M.MBR_SN = P.MBR_SN
+    </sql>
+
+    <select id="selectAdminList" resultMap="adminCareMatchSummaryResultMap">
+        SELECT <include refid="adminCareMatchColumns" />
+         WHERE P.PST_STTS_CD = #{pstSttsCd}
+        <if test="rcrtSttsCd != null">
+           AND R.RCRT_STTS_CD = #{rcrtSttsCd}
+        </if>
+         ORDER BY P.REG_DT DESC
+                , R.PET_PRTC_RCRT_SN DESC
+    </select>
+
+    <select id="selectAdminDetail" resultMap="adminCareMatchResponseResultMap">
+        SELECT <include refid="adminCareMatchColumns" />
+         WHERE R.PET_PRTC_RCRT_SN = #{petPrtcRcrtSn}
+           AND P.PST_STTS_CD <![CDATA[<>]]> #{deletedCd}
+    </select>
+
     <insert id="insertRecruitment" parameterType="com.nyangmeong.community.domain.CareRecruitment"
             useGeneratedKeys="true" keyProperty="petPrtcRcrtSn" keyColumn="PET_PRTC_RCRT_SN">
         INSERT INTO PET_PRTC_RCRT
@@ -347,6 +404,39 @@
              , MDFCN_DT = NOW()
          WHERE PET_PRTC_RCRT_SN = #{recruitment.petPrtcRcrtSn}
            AND RCRT_STTS_CD = #{recruitingCd}
+    </update>
+
+    <!-- 방 잠금보다 먼저 잡는 모집 단위 잠금 : 스냅샷이 아닌 최신 커밋 값을 읽음 -->
+    <select id="selectForUpdate" parameterType="long" resultMap="careRecruitmentResultMap">
+        SELECT R.PET_PRTC_RCRT_SN
+             , R.PST_SN
+             , R.RGN_SN
+             , R.RCRT_STTS_CD
+             , R.CST_UNIT_CD
+             , R.CST_AMT
+             , R.RLS_RGN_NM
+             , R.PRTC_PLC_DADDR_ENC
+             , R.PRTC_BGNG_DT
+             , R.PRTC_END_DT
+             , R.SCHDL_CNSLTN_PSBLTY_YN
+             , R.UTZTN_RUL_AGRE_YN
+             , R.REG_DT
+             , R.MDFCN_DT
+             , R.PRTC_PLC_LAT
+             , R.PRTC_PLC_LOT
+             , R.CFMTN_PET_PRTC_MTCH_SN
+          FROM PET_PRTC_RCRT R
+         WHERE R.PET_PRTC_RCRT_SN = #{petPrtcRcrtSn}
+           FOR UPDATE
+    </select>
+
+    <update id="updateStatus">
+        UPDATE PET_PRTC_RCRT
+           SET RCRT_STTS_CD = #{aftrSttsCd}
+             , CFMTN_PET_PRTC_MTCH_SN = #{cfmtnPetPrtcMtchSn}
+             , MDFCN_DT = NOW()
+         WHERE PET_PRTC_RCRT_SN = #{petPrtcRcrtSn}
+           AND RCRT_STTS_CD = #{bfrSttsCd}
     </update>
 
     <delete id="deletePets">

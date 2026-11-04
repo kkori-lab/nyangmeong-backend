@@ -12,6 +12,7 @@ import lombok.Setter;
 @Setter
 public class ChatRoomDetail extends ChatRoom {
     private String pstTtl;
+    private String pstSttsCd;
     private Long ownerMbrSn;
     private String ownerNcnm;
     private Long ownerAtchFileSn;

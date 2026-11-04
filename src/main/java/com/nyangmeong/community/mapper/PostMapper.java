@@ -11,6 +11,7 @@ import com.nyangmeong.community.domain.PostStatusHistory;
 import com.nyangmeong.community.dto.AdminPostSearchCond;
 import com.nyangmeong.community.dto.AdminPostStatusHistorySummary;
 import com.nyangmeong.community.dto.AdminPostSummary;
+import com.nyangmeong.community.dto.HealthTipDesignation;
 import com.nyangmeong.community.dto.PostAuthor;
 import com.nyangmeong.community.dto.PostSummary;
 
@@ -30,6 +31,39 @@ public interface PostMapper {
      * 오늘의 건강팁 조회
      */
     List<PostSummary> selectHealthTips(@Param("bbsCd") String bbsCd, @Param("pstSttsCd") String pstSttsCd);
+
+    /**
+     * 건강팁 지정 자리 조회 (노출 자리 1~3, 자리순)
+     */
+    List<HealthTipDesignation> selectHealthTipDesignations(@Param("bbsCd") String bbsCd,
+            @Param("pstSttsCd") String pstSttsCd);
+
+    /**
+     * 건강팁 자동 선정 키워드 조회 (쉼표로 이어진 문자열 목록)
+     */
+    List<String> selectHealthKeywords();
+
+    /**
+     * 건강팁 자동 선정 (지정 안 된 글, 키워드는 LIKE 이스케이프 된 값, 1개 이상)
+     */
+    List<PostSummary> selectAutoHealthTips(@Param("bbsCd") String bbsCd, @Param("pstSttsCd") String pstSttsCd,
+            @Param("keywords") List<String> keywords, @Param("limit") int limit);
+
+    /**
+     * 같은 노출 자리의 다른 글 지정 해제
+     */
+    int clearHealthTipSeqBySeq(@Param("hlthInfoExpsrSeq") Integer hlthInfoExpsrSeq, @Param("pstSn") Long pstSn);
+
+    /**
+     * 건강팁 지정 (정상 펫정보 글만)
+     */
+    int updateHealthTipSeq(@Param("pstSn") Long pstSn, @Param("hlthInfoExpsrSeq") Integer hlthInfoExpsrSeq,
+            @Param("bbsCd") String bbsCd, @Param("pstSttsCd") String pstSttsCd);
+
+    /**
+     * 건강팁 지정 해제
+     */
+    int clearHealthTipSeq(Long pstSn);
 
     /**
      * 인기 포토 조회 (days 없으면 전체 기간)

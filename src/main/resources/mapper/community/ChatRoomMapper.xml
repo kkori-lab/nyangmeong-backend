@@ -14,6 +14,7 @@
     <resultMap id="chatRoomDetailResultMap" type="com.nyangmeong.community.domain.ChatRoomDetail"
                extends="chatRoomResultMap">
         <result column="PST_TTL"                property="pstTtl" />
+        <result column="PST_STTS_CD"            property="pstSttsCd" />
         <result column="OWNER_MBR_SN"           property="ownerMbrSn" />
         <result column="OWNER_NCNM"             property="ownerNcnm" />
         <result column="OWNER_ATCH_FILE_SN"     property="ownerAtchFileSn" />
@@ -23,6 +24,32 @@
         <result column="RCRT_STTS_CD"           property="rcrtSttsCd" />
         <result column="PET_PRTC_MTCH_SN"       property="petPrtcMtchSn" />
         <result column="MTCH_DLNG_STTS_CD"      property="mtchDlngSttsCd" />
+    </resultMap>
+
+    <resultMap id="chatParticipantResultMap" type="com.nyangmeong.community.domain.ChatParticipant">
+        <id     column="CHAT_PRTPNT_SN"      property="chatPrtpntSn" />
+        <result column="OTO_CHAT_ROOM_SN"    property="otoChatRoomSn" />
+        <result column="MBR_SN"              property="mbrSn" />
+        <result column="PTCP_STTS_CD"        property="ptcpSttsCd" />
+        <result column="LAST_PRSL_MSG_SEQ"   property="lastPrslMsgSeq" />
+        <result column="REG_DT"              property="regDt" />
+        <result column="MDFCN_DT"            property="mdfcnDt" />
+    </resultMap>
+
+    <resultMap id="chatRoomSummaryResultMap" type="com.nyangmeong.community.dto.ChatRoomSummary">
+        <id     column="OTO_CHAT_ROOM_SN"       property="otoChatRoomSn" />
+        <result column="CHAT_ROOM_STTS_CD"      property="chatRoomSttsCd" />
+        <result column="PST_SN"                 property="pstSn" />
+        <result column="PST_TTL"                property="pstTtl" />
+        <result column="CTPT_MBR_SN"            property="ctptMbrSn" />
+        <result column="CTPT_MBR_NCNM"          property="ctptMbrNcnm" />
+        <result column="CTPT_ATCH_FILE_SN"      property="ctptProfileAtchFileSn" />
+        <result column="MY_ROLE"                property="myRole" />
+        <result column="MTCH_DLNG_STTS_CD"      property="mtchDlngSttsCd" />
+        <result column="LAST_MSG_TYPE_CD"       property="lastMsgTypeCd" />
+        <result column="LAST_MSG_CN_ENC"        property="lastMsgCn" />
+        <result column="LAST_MSG_DT"            property="lastMsgDt" />
+        <result column="UNREAD_CNT"             property="unreadCnt" />
     </resultMap>
 
     <select id="selectByPstSnAndCtptMbrSn" resultMap="chatRoomResultMap">
@@ -59,6 +86,7 @@
              , C.REG_DT
              , C.MDFCN_DT
              , P.PST_TTL
+             , P.PST_STTS_CD
              , P.MBR_SN AS OWNER_MBR_SN
              , O.MBR_NCNM AS OWNER_NCNM
              , O.ATCH_FILE_SN AS OWNER_ATCH_FILE_SN
@@ -157,4 +185,147 @@
              , #{chgRsn}
              , NOW() )
     </insert>
+
+    <!-- 방 단위 직렬화 : 메시지 순서와 거래 상태 변경이 이 잠금을 먼저 잡음 -->
+    <select id="selectRoomForUpdate" parameterType="long" resultMap="chatRoomResultMap">
+        SELECT C.OTO_CHAT_ROOM_SN
+             , C.PST_SN
+             , C.CTPT_MBR_SN
+             , C.CHAT_ROOM_STTS_CD
+             , C.REG_DT
+             , C.MDFCN_DT
+          FROM OTO_CHAT_ROOM C
+         WHERE C.OTO_CHAT_ROOM_SN = #{otoChatRoomSn}
+           FOR UPDATE
+    </select>
+
+    <select id="selectParticipant" resultMap="chatParticipantResultMap">
+        SELECT T.CHAT_PRTPNT_SN
+             , T.OTO_CHAT_ROOM_SN
+             , T.MBR_SN
+             , T.PTCP_STTS_CD
+             , T.LAST_PRSL_MSG_SEQ
+             , T.REG_DT
+             , T.MDFCN_DT
+          FROM CHAT_PRTPNT T
+         WHERE T.OTO_CHAT_ROOM_SN = #{otoChatRoomSn}
+           AND T.MBR_SN = #{mbrSn}
+    </select>
+
+    <update id="updateParticipantStatus">
+        UPDATE CHAT_PRTPNT
+           SET PTCP_STTS_CD = #{ptcpSttsCd}
+             , MDFCN_DT = NOW()
+         WHERE OTO_CHAT_ROOM_SN = #{otoChatRoomSn}
+           AND MBR_SN = #{mbrSn}
+    </update>
+
+    <select id="selectParticipantMbrSns" resultType="long">
+        SELECT T.MBR_SN
+          FROM CHAT_PRTPNT T
+         WHERE T.OTO_CHAT_ROOM_SN = #{otoChatRoomSn}
+           AND T.PTCP_STTS_CD = #{joinedCd}
+    </select>
+
+    <select id="selectOtherRoomSns" resultType="long">
+        SELECT C.OTO_CHAT_ROOM_SN
+          FROM OTO_CHAT_ROOM C
+         WHERE C.PST_SN = #{pstSn}
+           AND C.OTO_CHAT_ROOM_SN <![CDATA[<>]]> #{exceptRoomSn}
+         ORDER BY C.OTO_CHAT_ROOM_SN
+    </select>
+
+    <select id="selectList" resultMap="chatRoomSummaryResultMap">
+        SELECT C.OTO_CHAT_ROOM_SN
+             , C.CHAT_ROOM_STTS_CD
+             , C.PST_SN
+             , P.PST_TTL
+             , CASE WHEN P.MBR_SN = #{mbrSn} THEN C.CTPT_MBR_SN ELSE P.MBR_SN END AS CTPT_MBR_SN
+             , CASE WHEN P.MBR_SN = #{mbrSn} THEN A.MBR_NCNM ELSE O.MBR_NCNM END AS CTPT_MBR_NCNM
+             , CASE WHEN P.MBR_SN = #{mbrSn} THEN A.ATCH_FILE_SN ELSE O.ATCH_FILE_SN END AS CTPT_ATCH_FILE_SN
+             , CASE WHEN P.MBR_SN = #{mbrSn} THEN #{guardianRole} ELSE #{sitterRole} END AS MY_ROLE
+             , T.MTCH_DLNG_STTS_CD
+             , LM.MSG_TYPE_CD AS LAST_MSG_TYPE_CD
+             , LM.MSG_CN_ENC AS LAST_MSG_CN_ENC
+             , LM.REG_DT AS LAST_MSG_DT
+             , ( SELECT COUNT(*)
+                   FROM CHAT_MSG UM
+                  WHERE UM.OTO_CHAT_ROOM_SN = C.OTO_CHAT_ROOM_SN
+                    AND UM.MSG_SEQ <![CDATA[>]]> ME.LAST_PRSL_MSG_SEQ
+                    AND UM.MBR_SN IS NOT NULL
+                    AND UM.MBR_SN <![CDATA[<>]]> #{mbrSn} ) AS UNREAD_CNT
+          FROM OTO_CHAT_ROOM C
+          JOIN CHAT_PRTPNT ME
+            ON ME.OTO_CHAT_ROOM_SN = C.OTO_CHAT_ROOM_SN
+           AND ME.MBR_SN = #{mbrSn}
+           AND ME.PTCP_STTS_CD = #{joinedCd}
+          JOIN PST P
+            ON P.PST_SN = C.PST_SN
+          JOIN MBR O
+            ON O.MBR_SN = P.MBR_SN
+          JOIN MBR A
+            ON A.MBR_SN = C.CTPT_MBR_SN
+          LEFT JOIN PET_PRTC_MTCH T
+            ON T.OTO_CHAT_ROOM_SN = C.OTO_CHAT_ROOM_SN
+          LEFT JOIN CHAT_MSG LM
+            ON LM.OTO_CHAT_ROOM_SN = C.OTO_CHAT_ROOM_SN
+           AND LM.MSG_SEQ = ( SELECT MAX(M2.MSG_SEQ)
+                                FROM CHAT_MSG M2
+                               WHERE M2.OTO_CHAT_ROOM_SN = C.OTO_CHAT_ROOM_SN )
+         WHERE 1 = 1
+        <if test="cond.tab == 'MINE'">
+           AND P.MBR_SN = #{mbrSn}
+        </if>
+        <if test="cond.tab == 'APPLIED'">
+           AND C.CTPT_MBR_SN = #{mbrSn}
+        </if>
+        <if test="cond.pstSn != null">
+           AND C.PST_SN = #{cond.pstSn}
+        </if>
+        <if test="cond.unreadOnly">
+           AND EXISTS ( SELECT 1
+                          FROM CHAT_MSG UM2
+                         WHERE UM2.OTO_CHAT_ROOM_SN = C.OTO_CHAT_ROOM_SN
+                           AND UM2.MSG_SEQ <![CDATA[>]]> ME.LAST_PRSL_MSG_SEQ
+                           AND UM2.MBR_SN IS NOT NULL
+                           AND UM2.MBR_SN <![CDATA[<>]]> #{mbrSn} )
+        </if>
+         ORDER BY COALESCE(LM.REG_DT, C.REG_DT) DESC
+                , C.OTO_CHAT_ROOM_SN DESC
+    </select>
+
+    <select id="countUnread" resultType="int">
+        SELECT COUNT(*)
+          FROM CHAT_MSG UM
+          JOIN CHAT_PRTPNT ME
+            ON ME.OTO_CHAT_ROOM_SN = UM.OTO_CHAT_ROOM_SN
+           AND ME.MBR_SN = #{mbrSn}
+           AND ME.PTCP_STTS_CD = #{joinedCd}
+         WHERE UM.MSG_SEQ <![CDATA[>]]> ME.LAST_PRSL_MSG_SEQ
+           AND UM.MBR_SN IS NOT NULL
+           AND UM.MBR_SN <![CDATA[<>]]> #{mbrSn}
+    </select>
+
+    <update id="updateLastRead">
+        UPDATE CHAT_PRTPNT
+           SET LAST_PRSL_MSG_SEQ = LEAST(#{lastPrslMsgSeq}, ( SELECT COALESCE(MAX(M.MSG_SEQ), 0)
+                                                                FROM CHAT_MSG M
+                                                               WHERE M.OTO_CHAT_ROOM_SN = #{otoChatRoomSn} ))
+             , LAST_PRSL_DT = NOW()
+             , MDFCN_DT = NOW()
+         WHERE OTO_CHAT_ROOM_SN = #{otoChatRoomSn}
+           AND MBR_SN = #{mbrSn}
+           AND LAST_PRSL_MSG_SEQ <![CDATA[<]]> LEAST(#{lastPrslMsgSeq}, ( SELECT COALESCE(MAX(M3.MSG_SEQ), 0)
+                                                                            FROM CHAT_MSG M3
+                                                                           WHERE M3.OTO_CHAT_ROOM_SN = #{otoChatRoomSn} ))
+    </update>
+
+    <select id="existsPhoto" resultType="boolean">
+        SELECT EXISTS ( SELECT 1
+                          FROM CHAT_MSG_PHOTO PH
+                          JOIN CHAT_MSG M
+                            ON M.CHAT_MSG_SN = PH.CHAT_MSG_SN
+                         WHERE M.OTO_CHAT_ROOM_SN = #{otoChatRoomSn}
+                           AND PH.ATCH_FILE_SN = #{atchFileSn} )
+    </select>
 </mapper>

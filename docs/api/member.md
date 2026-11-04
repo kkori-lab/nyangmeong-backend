@@ -44,6 +44,10 @@
 | GET | /admin/admins | 탈퇴를 뺀 관리자 목록. 지정 최신순 20건씩, 지정 기록이 없으면 맨 뒤. 이메일은 마스킹. 일반 회원 403 ADMIN_ONLY | ADM-113-01 | LJS | - | PageResponse<AdminAccountSummary> |
 | POST | /admin/admins/{mbrSn} | 관리자 지정(권한 변경, 감사 로그). 대상 검색은 GET /admin/members?q=&status=USRC0001&role=USRC0004. 정지·탈퇴·이미 관리자 409 MEMBER_NOT_APPOINTABLE, 없는 회원 404 MEMBER_NOT_FOUND | ADM-113-02 | LJS | - | - |
 | DELETE | /admin/admins/{mbrSn} | 관리자 해제(권한 일반회원, 감사 로그). 세션은 폐기하지 않고 다음 요청부터 일반 회원이다. 본인·마지막 정상 관리자 409 ADMIN_NOT_RELEASABLE, 관리자 아님·탈퇴 409 ALREADY_PROCESSED, 없는 회원 404 MEMBER_NOT_FOUND | ADM-113-03 | LJS | - | - |
+| GET | /admin/terms | 관리자 약관 목록. 종류별 사용 중 버전 1행, 정렬순서대로. 관리 대상은 가입 약관 4종(`SERVICE`·`PRIVACY`·`AGE_14`·`MARKETING`). 기능별 동의 2종(펫돌봄 이용수칙·실종 개인정보 공개 동의)은 아직 `TRMS`에 없다. 일반 회원 403 ADMIN_ONLY | ADM-051-01·04 | LJS | - | List\<AdminTermsSummary\> |
+| GET | /admin/terms/history | 관리자 약관 버전 이력(`?trmsFixIdntfKey=`). 그 종류 모든 버전 최신순, 내용 제외. 없는 종류는 빈 목록, 키가 없으면 400 INVALID_INPUT_VALUE. 일반 회원 403 ADMIN_ONLY | ADM-051-03 | LJS | - | List\<AdminTermsSummary\> |
+| GET | /admin/terms/{trmsSn} | 관리자 약관 상세. 사용 안 함 버전도 내용(`trmsCn`) 포함. 없으면 404 TERMS_NOT_FOUND. 일반 회원 403 ADMIN_ONLY | ADM-051-03 | LJS | - | AdminTermsDetail |
+| POST | /admin/terms | 약관 새 버전 등록(201, 감사 로그). 같은 종류 이전 버전은 사용 안 함, 정렬순서는 이전 버전을 이어받는다. 기존 회원 동의는 그대로(재동의 없음, 공지로 안내). 새 종류는 만들지 않아 없는 종류 404 TERMS_NOT_FOUND, 같은 종류 같은 버전 409 DUPLICATE_TRMS_VER, 공백만이거나 글자 수 초과 400 INVALID_INPUT_VALUE. 일반 회원 403 ADMIN_ONLY | ADM-051-02·04·05 | LJS | AdminTermsCreateRequest | AdminTermsDetail |
 
 ## DTO
 
@@ -149,6 +153,41 @@
 | mbrNcnm | String | Y | | MBR.MBR_NCNM, ADM-113-01 |
 | maskedAcntEml | String | Y | 앞 3자 + `***` + @도메인 | MBR.ACNT_EML_ENC, ADM-113-01 |
 | apntDt | LocalDateTime | N | 지정일. 최근 "관리자 지정" 작업 로그 일시. 기록이 없으면 null | MNGR_TASK_LOG.REG_DT, SCR-ADM-113 |
+
+### AdminTermsSummary
+쓰는 API: GET /admin/terms, GET /admin/terms/history
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| trmsSn | Long | Y | 상세 경로 값 | TRMS.TRMS_SN, ADM-051-01 |
+| trmsFixIdntfKey | String | Y | 약관 종류. `SERVICE`·`PRIVACY`·`AGE_14`·`MARKETING` | TRMS.TRMS_FIX_IDNTF_KEY, ADM-051-04 |
+| trmsVerId | String | Y | | TRMS.TRMS_VER_ID, ADM-051-01 |
+| trmsTtl | String | Y | | TRMS.TRMS_TTL, ADM-051-01 |
+| esntlAgreYn | boolean | Y | 필수 약관 여부 | TRMS.ESNTL_AGRE_YN, ADM-051-01 |
+| useYn | boolean | Y | 목록은 모두 true, 이력의 지난 버전은 false | TRMS.USE_YN, ADM-051-01·03 |
+| regDt | LocalDateTime | Y | 등록일시 | TRMS.REG_DT, ADM-051-03 |
+
+### AdminTermsDetail
+쓰는 API: GET /admin/terms/{trmsSn}, POST /admin/terms
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| trmsSn | Long | Y | | TRMS.TRMS_SN |
+| trmsFixIdntfKey | String | Y | | TRMS.TRMS_FIX_IDNTF_KEY |
+| trmsVerId | String | Y | | TRMS.TRMS_VER_ID |
+| trmsTtl | String | Y | | TRMS.TRMS_TTL |
+| trmsCn | String | Y | | TRMS.TRMS_CN, ADM-051-03 |
+| esntlAgreYn | boolean | Y | | TRMS.ESNTL_AGRE_YN |
+| useYn | boolean | Y | | TRMS.USE_YN |
+| regDt | LocalDateTime | Y | | TRMS.REG_DT |
+
+### AdminTermsCreateRequest
+쓰는 API: POST /admin/terms
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| trmsFixIdntfKey | String | Y | 이미 있는 종류만. 없으면 404 TERMS_NOT_FOUND | TRMS.TRMS_FIX_IDNTF_KEY, ADM-051-02·04 |
+| trmsVerId | String | Y | 앞뒤 공백 지운 뒤 1~80자. 같은 종류에 있으면 409 DUPLICATE_TRMS_VER | TRMS.TRMS_VER_ID, ADM-051-02 |
+| trmsTtl | String | Y | 앞뒤 공백 지운 뒤 1~200자 | TRMS.TRMS_TTL, ADM-051-02 |
+| trmsCn | String | Y | 앞뒤 공백 지운 뒤 1~4000자 | TRMS.TRMS_CN, ADM-051-02 |
+| esntlAgreYn | Boolean | Y | 필수 약관 여부 | TRMS.ESNTL_AGRE_YN, ADM-051-02 |
 
 ### AdminMemberSuspendRequest
 쓰는 API: POST /admin/members/{mbrSn}/suspension

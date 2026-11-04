@@ -4,7 +4,7 @@ import lombok.Data;
 
 /**
  * [품종 VO]
- * - VRTY 1:1 (조회용 컬럼만)
+ * - VRTY 1:1
  */
 @Data
 public class Breed {
@@ -13,4 +13,7 @@ public class Breed {
     private String petSeCd;
     private String vrtyNm;
     private Integer sortSeq;
+    private String useYn;
+    private String rgtrId;
+    private String mdfrId;
 }
