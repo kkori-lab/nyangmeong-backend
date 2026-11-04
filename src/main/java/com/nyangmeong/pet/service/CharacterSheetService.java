@@ -55,8 +55,8 @@ public class CharacterSheetService {
      * 착용 시트 저장
      */
     @Transactional
-    public void saveItemSheet(Long mbrSn, Long pixelCharSn, Long itemSn, MultipartFile sheet) {
-        checkBakeTarget(mbrSn, pixelCharSn, itemSn);
+    public void saveItemSheet(Long mbrSn, boolean admin, Long pixelCharSn, Long itemSn, MultipartFile sheet) {
+        checkBakeTarget(mbrSn, admin, pixelCharSn, itemSn);
         byte[] content = readSheet(sheet);
         Long atchFileSn = fileStore.store(content, FileExtension.PNG,
                 "sheet-" + pixelCharSn + "-" + itemSn + ".png", String.valueOf(mbrSn));
@@ -67,8 +67,8 @@ public class CharacterSheetService {
      * 굽기 실패 표시
      */
     @Transactional
-    public void failItemSheet(Long mbrSn, Long pixelCharSn, Long itemSn) {
-        checkBakeTarget(mbrSn, pixelCharSn, itemSn);
+    public void failItemSheet(Long mbrSn, boolean admin, Long pixelCharSn, Long itemSn) {
+        checkBakeTarget(mbrSn, admin, pixelCharSn, itemSn);
         pixelCharacterMapper.upsertItemSheetFailure(pixelCharSn, itemSn);
     }
 
@@ -76,8 +76,8 @@ public class CharacterSheetService {
      * 합성용 시트 정보 조회
      */
     @Transactional(readOnly = true)
-    public CharacterSheetsResponse getSheets(Long mbrSn, Long pixelCharSn, List<Long> itemSns) {
-        PixelCharacter character = getPrimaryCharacter(mbrSn, pixelCharSn);
+    public CharacterSheetsResponse getSheets(Long mbrSn, boolean admin, Long pixelCharSn, List<Long> itemSns) {
+        PixelCharacter character = getPrimaryCharacter(mbrSn, admin, pixelCharSn);
         PetProfileSummary pet = pixelCharacterMapper.selectPetProfile(character.getPetSn());
         if (character.getBodySheetFileSn() == null || pet == null) {
             throw new CustomException(ErrorCode.PIXEL_CHARACTER_NOT_FOUND);
@@ -90,8 +90,8 @@ public class CharacterSheetService {
      * 시트 파일 조회
      */
     @Transactional(readOnly = true)
-    public StoredFile getSheetFile(Long mbrSn, Long pixelCharSn, Long atchFileSn) {
-        PixelCharacter character = getPrimaryCharacter(mbrSn, pixelCharSn);
+    public StoredFile getSheetFile(Long mbrSn, boolean admin, Long pixelCharSn, Long atchFileSn) {
+        PixelCharacter character = getPrimaryCharacter(mbrSn, admin, pixelCharSn);
         if (!atchFileSn.equals(character.getBodySheetFileSn())
                 && pixelCharacterMapper.countItemSheetFile(pixelCharSn, atchFileSn) == 0) {
             throw new CustomException(ErrorCode.FILE_NOT_FOUND);
@@ -140,8 +140,8 @@ public class CharacterSheetService {
     /**
      * 굽기 결과를 받을 수 있는 캐릭터·아이템인지 검사
      */
-    private void checkBakeTarget(Long mbrSn, Long pixelCharSn, Long itemSn) {
-        getPrimaryCharacter(mbrSn, pixelCharSn);
+    private void checkBakeTarget(Long mbrSn, boolean admin, Long pixelCharSn, Long itemSn) {
+        getPrimaryCharacter(mbrSn, admin, pixelCharSn);
         if (itemMapper.countBakeItem(itemSn) == 0) {
             throw new CustomException(ErrorCode.ITEM_NOT_FOUND);
         }
@@ -149,13 +149,16 @@ public class CharacterSheetService {
 
     /**
      * 주양육자 캐릭터 조회
+     * - 관리자는 전체 굽기(FN-ADM-070-02)로 남의 캐릭터 시트도 읽고 쓴다
      */
-    private PixelCharacter getPrimaryCharacter(Long mbrSn, Long pixelCharSn) {
+    private PixelCharacter getPrimaryCharacter(Long mbrSn, boolean admin, Long pixelCharSn) {
         PixelCharacter character = pixelCharacterMapper.selectPixelCharacter(pixelCharSn);
         if (character == null) {
             throw new CustomException(ErrorCode.PIXEL_CHARACTER_NOT_FOUND);
         }
-        petAuthorizer.checkPrimary(mbrSn, character.getPetSn());
+        if (!admin) {
+            petAuthorizer.checkPrimary(mbrSn, character.getPetSn());
+        }
         return character;
     }
 }

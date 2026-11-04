@@ -114,6 +114,7 @@ public enum ErrorCode {
     ITEM_NAME_DUPLICATED(HttpStatus.CONFLICT, "같은 이름의 아이템이 있습니다."),
     ITEM_REGION_LOCKED(HttpStatus.CONFLICT, "보유한 회원이 있는 아이템은 부위를 바꿀 수 없습니다."),
     POINT_NOT_ENOUGH(HttpStatus.BAD_REQUEST, "포인트가 부족합니다."),
+    EQUIPPED_ITEMS_CHANGED(HttpStatus.CONFLICT, "착용 아이템이 바뀌어 대표 이미지를 저장하지 않았습니다."),
 
     /** health */
     CARE_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "케어 항목을 찾을 수 없습니다."),
