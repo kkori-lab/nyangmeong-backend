@@ -37,6 +37,7 @@ import com.nyangmeong.pet.domain.CharacterPhoto;
 import com.nyangmeong.pet.domain.PhotoRole;
 import com.nyangmeong.pet.domain.PixelCharacter;
 import com.nyangmeong.pet.dto.CharacterJobResponse;
+import com.nyangmeong.pet.dto.EquippedImageSaveRequest;
 import com.nyangmeong.pet.dto.EquippedItemSaveRequest;
 import com.nyangmeong.pet.dto.HeldItemSummary;
 import com.nyangmeong.pet.dto.PetProfileSummary;
@@ -143,7 +144,34 @@ public class PixelCharacterService {
         if (!hldItemSns.isEmpty()) {
             pixelCharacterMapper.updateEquip(pixelCharSn, hldItemSns);
         }
+        /** 대표 이미지는 새 착용으로 Python이 다시 합성해 보낸다 */
+        pixelCharacterMapper.updateWearImage(pixelCharSn, null, String.valueOf(mbrSn));
         return toResponse(character);
+    }
+
+    /**
+     * 착용 모습 대표 이미지 저장
+     * - Python이 합성한 512 PNG, 합성에 쓴 아이템이 지금 착용과 같을 때만 저장 (늦게 끝난 옛 합성 차단)
+     */
+    @Transactional
+    public void saveEquippedImage(Long mbrSn, Long pixelCharSn, EquippedImageSaveRequest req) {
+        PixelCharacter character = getCharacterOrThrow(pixelCharSn);
+        petAuthorizer.checkPrimary(mbrSn, character.getPetSn());
+        byte[] image = CharacterSheetService.readBytes(req.image());
+        if (!CharacterSpec.matches(image)) {
+            throw new CustomException(ErrorCode.FILE_TYPE_NOT_ALLOWED);
+        }
+        Set<Long> equipped = pixelCharacterMapper.selectHeldItems(pixelCharSn).stream()
+                .filter(item -> Boolean.TRUE.equals(item.getEquipYn()))
+                .map(HeldItemSummary::getItemSn)
+                .collect(Collectors.toSet());
+        Set<Long> requested = req.itemSns() == null ? Set.of() : new HashSet<>(req.itemSns());
+        if (!equipped.equals(requested)) {
+            throw new CustomException(ErrorCode.EQUIPPED_ITEMS_CHANGED);
+        }
+        String actorId = String.valueOf(mbrSn);
+        Long atchFileSn = fileStore.storePublic(image, FileExtension.PNG, "wear-" + pixelCharSn + ".png", actorId);
+        pixelCharacterMapper.updateWearImage(pixelCharSn, atchFileSn, actorId);
     }
 
     /**
@@ -322,6 +350,9 @@ public class PixelCharacterService {
     private StoredFile currentImage(Long petSn) {
         PixelCharacter character = pixelCharacterMapper.selectByPetSn(petSn);
         if (character != null && !"Y".equals(character.getBscCharSbstYn())) {
+            if (character.getWearImgFileSn() != null) {
+                return fileStore.load(character.getWearImgFileSn());
+            }
             CharacterPhoto current = pixelCharacterMapper.selectCurrentPhoto(character.getPixelCharSn());
             if (current != null) {
                 return fileStore.load(current.getAtchFileSn());

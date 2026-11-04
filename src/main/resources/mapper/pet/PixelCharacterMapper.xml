@@ -19,6 +19,7 @@
         <result column="PET_SN"           property="petSn" />
         <result column="BSC_CHAR_SBST_YN" property="bscCharSbstYn" />
         <result column="BODY_SHEET_FILE_SN" property="bodySheetFileSn" />
+        <result column="WEAR_IMG_FILE_SN" property="wearImgFileSn" />
         <result column="SHEET_SCALE"      property="sheetScale" />
         <result column="SHEET_ORIGIN_X"   property="sheetOriginX" />
         <result column="SHEET_ORIGIN_Y"   property="sheetOriginY" />
@@ -89,6 +90,7 @@
              , PET_SN
              , BSC_CHAR_SBST_YN
              , BODY_SHEET_FILE_SN
+             , WEAR_IMG_FILE_SN
              , SHEET_SCALE
              , SHEET_ORIGIN_X
              , SHEET_ORIGIN_Y
@@ -206,6 +208,16 @@
              , SHEET_SCALE = #{sheetScale}
              , SHEET_ORIGIN_X = #{sheetOriginX}
              , SHEET_ORIGIN_Y = #{sheetOriginY}
+             , MDFR_ID = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE PIXEL_CHAR_SN = #{pixelCharSn}
+           AND DEL_YN = 'N'
+    </update>
+
+    <update id="updateWearImage">
+        /* 착용 모습 대표 이미지 저장·삭제 : NULL이면 삭제 */
+        UPDATE PIXEL_CHAR
+           SET WEAR_IMG_FILE_SN = #{wearImgFileSn}
              , MDFR_ID = #{actorId}
              , MDFCN_DT = NOW()
          WHERE PIXEL_CHAR_SN = #{pixelCharSn}

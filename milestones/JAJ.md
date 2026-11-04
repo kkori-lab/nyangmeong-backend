@@ -38,7 +38,7 @@
 - 기능: FN-HLT-002-01 반려동물 선택 탭, FN-HLT-002-09 건강기록 변화, FN-HLT-002-10 그래프 원칙 · 조회기간, FN-HLT-002-11 오늘 기록하기, FN-HLT-002-12 오늘의 기록, FN-HLT-002-13 최근 건강기록 (날짜별 표)
 - 기다리는 것: pet 프로필 체중 동기화 (SJM)
 - 완료 조건: 지표별 최근 기록 조회가 기록 시각 순으로 돌려준다. 하루 여러 건 기록이 날짜별 합계로 묶인다
-- 연결 남음: FN-HLT-002-01·09~13 (프론트 연결 건강 일지 반려동물 드롭다운·건강기록 변화 그래프·오늘의 기록 카드·[오늘 기록추가] 입력 영역·최근 건강기록 표·상세 기록 모달, 프론트 저장소에서 /start), 프로필 체중 동기화 `PetWeightFake`를 pet service 메서드로 바꾸기 (SJM)
+- 연결 남음: FN-HLT-002-01·09~13 (프론트 연결 건강 일지 반려동물 드롭다운·건강기록 변화 그래프·오늘의 기록 카드·[오늘 기록추가] 입력 영역·최근 건강기록 표·상세 기록 모달, 프론트 저장소에서 /start)
 
 ## SCR-HLT-002 건강 일지 (지속 관찰) — 끝
 - 기능: FN-HLT-002-15 관찰 항목 목록, FN-HLT-002-16 선택 항목 헤더, FN-HLT-002-17 회차별 사진 필름스트립, FN-HLT-002-18 크기 변화 그래프, FN-HLT-002-19 선택 회차 상세, FN-HLT-002-20 관찰 항목, FN-HLT-002-21 관찰 부위, FN-HLT-002-22 사진 촬영, FN-HLT-002-23 크기 · 변화, FN-HLT-002-24 메모, FN-HLT-002-25 취소 / 저장하기, FN-HLT-002-32 관찰일
@@ -97,17 +97,19 @@
 - 결정: 메인페이지 기능명세서 v0.10 FN-MAN-006이 표시 기준을 정해 YAY와 범위 결정을 명세로 갈음했다. 요약 API 1개 `GET /pets/{petSn}/health-indicators`로 둔다(issues.md 12번 2026-11-04 결정). AI 건강분석 리포트(LJS)·토탈 케어리스트·위젯 순서(YAY)는 범위 밖
 - 연결 남음: FN-MAN-005·006 (프론트 연결 메인 건강 대시보드 위젯 5종·기준일 표시, 프론트 저장소에서 /start, 화면 YAY)
 
-## SCR-HLT-002 건강 일지 · 프로필 체중 동기화 연결 — 대기
+## SCR-HLT-002 건강 일지 · 프로필 체중 동기화 연결 — 끝
 - 기능: 명세 기능 ID 추가 없음, FN-HLT-002-09~11 체중 기록(`dailyRcdIdctCd=HLTC0014`) 등록·수정·삭제 뒤 프로필 체중 동기화. `health/service/PetWeightFake`를 지우고 `PetService`를 주입해 `PetService.syncWeight(Long petSn, BigDecimal weight, Long actorMbrSn)`을 부른다. `actorMbrSn`은 체중 기록을 등록·수정·삭제한 회원의 mbrSn이다(`MDFR_ID`에 남는다). `DailyHealthRecordServiceTest`의 mock도 `PetService`로 바꾼다. 삭제된 반려동물이면 `PET_NOT_FOUND`(404)가 나서 같은 트랜잭션이 롤백된다(권한 검사에서 먼저 걸리는 게 정상이고, 이건 안전망). 자세한 건 SJM PR #137 본문 Breaking Changes
 - 기다리는 것: 없음 (SJM `syncWeight`는 PR #137로 develop에 병합됨)
 - 완료 조건: 체중 기록을 등록·수정·삭제하면 프로필 체중(`PET.PET_BDWG`)이 남은 기록 중 가장 최근 체중이 된다. 체중 기록이 하나도 안 남으면 프로필 체중을 바꾸지 않는다(`PET_BDWG`는 NOT NULL. 지금 `DailyHealthRecordService.syncWeight`도 그렇게 한다)
 
-## SCR-HLT-003 케어 캘린더 · 일정 뱃지 색상 — 대기
+## SCR-HLT-003 케어 캘린더 · 일정 뱃지 색상 — 끝
 - 기능: 명세 기능 ID 추가 없음, FN-HLT-003-36 일정 메모 · 뱃지 색상. HLTG21(캘린더뱃지색상) 하위 코드가 `db/` 공통코드에 없어(`insert_base_data` 설명 "코드 미확정") `SCHDL.CLDR_BADGE_COLR_CD`를 저장할 수 없다
-- 기다리는 것: 팀 결정 (색 이름·팔레트·일정 종류별 기본색. 화면설계서 목업은 무채색 칩 5개뿐). 정하면 `db/` 기준 SQL "변경" 절에 코드를 넣는다
+- 기다리는 것: 없음 (색 5개 팀 확정 2026-11-04: HLTC0079 보라·HLTC0080 초록·HLTC0081 빨강·HLTC0082 파랑·HLTC0083 회색, `db/` 변경 절 v0.12 (6), `docs/api/issues.md` 21번)
 - 완료 조건: HLTG21 코드로 일정을 등록·수정하면 색상이 저장되어 월간 조회에 나오고, 없는 코드는 400이다
+- 결과: 2026-11-04 검증 통과(사람 확인 항목만 남음), 사람 확인 끝
+- 연결 남음: FN-HLT-003-36 (프론트 연결 일정 등록·수정 모달 색 칩과 캘린더 칩 표시, 프론트 저장소에서 /start — 마일스톤 "SCR-HLT-003 케어 캘린더 · 일정 뱃지 색상 연결")
 
-## SCR-HLT-002 건강 일지 · 영수증 save-check 저장완료 409 — 대기
+## SCR-HLT-002 건강 일지 · 영수증 save-check 저장완료 409 — 끝
 - 기능: 명세 기능 ID 추가 없음, FN-HLT-002-44 가계부 중복 확인·002-46 가까운 예정 일정 확인(저장 전 확인)에 걸침. `POST /api/receipts/{recptSn}/save-check`도 이미 저장된(저장완료) 영수증이면 `save`와 같이 409 `RECEIPT_ALREADY_SAVED`를 준다. 지금은 `save`만 409를 준다
 - 기다리는 것: 없음 (프론트는 이미 `save-check` 409를 `save`와 같은 안내로 처리한다, 프론트 "SCR-HLT-002 건강 일지 · 영수증 일괄 저장 연결" 추가-2)
 - 완료 조건: 저장완료 영수증으로 `save-check`를 부르면 409 `RECEIPT_ALREADY_SAVED`, 저장 전 영수증은 지금처럼 200

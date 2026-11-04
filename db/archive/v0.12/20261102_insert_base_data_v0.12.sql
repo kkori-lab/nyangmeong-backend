@@ -1,7 +1,7 @@
 -- =====================================================================
 -- 냥멍케어 기준 데이터 v0.12 (2026-11-02)  |  공통코드 + 케어미션 마스터
 -- 대상 DDL : 20261102_create_tables_v0.12.sql  (테이블 COM_CD, CARE_MSN, AI_ROUT_MPNG, KWRD_DICT)
--- 범위     : [1] 공통코드 그룹 76개 전체 (310개 코드)  [2] 케어미션 마스터 21건  [3] AI 라우팅 매핑 45건  [4] 키워드 사전 60건
+-- 범위     : [1] 공통코드 그룹 76개 전체 (315개 코드)  [2] 케어미션 마스터 21건  [3] AI 라우팅 매핑 45건  [4] 키워드 사전 60건
 -- 원천     : 기준 데이터 v0.11(db/archive/v0.11/) 위에 아래 "v0.11 → v0.12 변경"을 더한 것
 --            새 코드는 기존 DB와 COM_CD_SN이 같도록 공용 DB에 실행한 순서대로 파일 끝에 둔다
 -- 채번 규칙: 그룹 = 도메인3자 + G + 2자리(ERD 그대로) / 코드 = 도메인3자 + C + 4자리
@@ -65,6 +65,15 @@
 --     ('AIMC0039','뉴스 카테고리','여행','호텔','카테고리 = 여행(CMUG06)','CMUC0021',190,'FN-CMU-003-06'),
 --     ('AIMC0039','뉴스 카테고리','여행','항공','카테고리 = 여행(CMUG06)','CMUC0021',190,'FN-CMU-003-06'),
 --     ('AIMC0039','뉴스 카테고리','여행','동반 출입','카테고리 = 여행(CMUG06)','CMUC0021',190,'FN-CMU-003-06');
+-- v0.12 (6) 캘린더 뱃지 색상 코드 (2026-11-04, JAJ, 근거: 건강기록_기능명세서 FN-HLT-003-36, 색 5개 팀 확정). 20261102_create_tables_v0.12.sql에는 짝이 되는 항목이 없다
+--   SET NAMES utf8mb4;
+--   UPDATE `COM_CD` SET `COM_CD_EXPLN`='사용 컬럼: SCHDL.CLDR_BADGE_COLR_CD / 사용자가 고르는 색 5개(팀 확정 2026-11-04, FN-HLT-003-36). DB에는 색 이름만 저장하고 색값은 프론트 디자인 토큰(nyangmung.css tone)이 맡는다', `MDFR_ID`='SYSTEM' WHERE `COM_CD`='HLTG21' AND `COM_CD_PRNT_SN` IS NULL;
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES
+--     ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG21') p),'HLTC0079','보라','정기검진 기본 톤',10),
+--     ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG21') p),'HLTC0080','초록','예방접종 기본 톤',20),
+--     ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG21') p),'HLTC0081','빨강','질병진료 기본 톤',30),
+--     ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG21') p),'HLTC0082','파랑','검사 기본 톤',40),
+--     ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG21') p),'HLTC0083','회색','기타 진료·그 밖의 일정 기본 톤',50);
 -- =====================================================================
 SET NAMES utf8mb4;
 START TRANSACTION;
@@ -247,7 +256,7 @@ INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG20') p),'HLTC0062','접종 증명서',NULL,20);
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG20') p),'HLTC0064','영상 사진','선택 시 영상종류(HLTG23)·촬영부위(HLTG24) 필수',40);
 -- HLTG21 캘린더뱃지색상
-INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES (NULL,'HLTG21','캘린더뱃지색상','사용 컬럼: SCHDL.CLDR_BADGE_COLR_CD / 코드 미확정 — 화면설계서 v0.9 목업은 무채색 칩 5개(#9e9e9e·#bdbdbd·#757575·#424242·#000)만 있고 색 이름·실제 팔레트·일정 종류별 기본색이 미정의. 확정 시 코드 추가',160);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES (NULL,'HLTG21','캘린더뱃지색상','사용 컬럼: SCHDL.CLDR_BADGE_COLR_CD / 사용자가 고르는 색 5개(팀 확정 2026-11-04, FN-HLT-003-36). DB에는 색 이름만 저장하고 색값은 프론트 디자인 토큰(nyangmung.css tone)이 맡는다',160);
 -- HLTG22 일정출처
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES (NULL,'HLTG22','일정출처','사용 컬럼: SCHDL.SCHDL_SRC_CD',170);
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG22') p),'HLTC0065','직접 등록','케어 캘린더 일정 모달',10);
@@ -577,6 +586,12 @@ INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='CMUG01') p),'CMUC0028','우리동네 펫돌봄','PET_PRTC_RCRT와 1:1인 게시글',40);
 -- v0.12 추가: 배치 구분 오늘의 한마디 선택 (v0.12 (4))
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0030','오늘의 한마디 선택','community/TodayPhraseSelectJob',80);
+-- v0.12 추가: 캘린더 뱃지 색상 (v0.12 (6))
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG21') p),'HLTC0079','보라','정기검진 기본 톤',10);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG21') p),'HLTC0080','초록','예방접종 기본 톤',20);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG21') p),'HLTC0081','빨강','질병진료 기본 톤',30);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG21') p),'HLTC0082','파랑','검사 기본 톤',40);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG21') p),'HLTC0083','회색','기타 진료·그 밖의 일정 기본 톤',50);
 
 -- =====================================================================
 -- [2] 케어미션 마스터 (CARE_MSN) — 20261027_02_update_care_msn_and_ckup_pnt 의 최종 상태
@@ -724,4 +739,4 @@ INSERT INTO `KWRD_DICT` (`DICT_USG_CD`,`KWRD_CLSF_NM`,`ARTCL_NM`,`KWRD_CN`,`INTR
   ('AIMC0040','뉴스 제외','부동산·광고','분양가,청약,아파트 분양,경품',NULL,NULL,230,'기사 제목에 하나라도 들면 수집하지 않음(영문 대소문자 무시). 관리자 SCR-ADM-050에서 편집. FN-CMU-003-06');
 
 COMMIT;
--- 합계: 공통코드 그룹 76건 + 코드 309건 = 385건, 케어미션 21건, AI 라우팅 매핑 45건, 키워드 사전 23건
+-- 합계: 공통코드 그룹 76건 + 코드 314건 = 390건, 케어미션 21건, AI 라우팅 매핑 45건, 키워드 사전 23건

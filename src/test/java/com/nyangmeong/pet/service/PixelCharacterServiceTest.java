@@ -13,12 +13,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.awt.image.BufferedImage;
 import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.mock.web.MockMultipartFile;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -38,6 +40,7 @@ import com.nyangmeong.pet.domain.CharacterJobStatus;
 import com.nyangmeong.pet.domain.CharacterPhoto;
 import com.nyangmeong.pet.domain.PhotoRole;
 import com.nyangmeong.pet.domain.PixelCharacter;
+import com.nyangmeong.pet.dto.EquippedImageSaveRequest;
 import com.nyangmeong.pet.dto.EquippedItemSaveRequest;
 import com.nyangmeong.pet.dto.CharacterJobResponse;
 import com.nyangmeong.pet.dto.HeldItemSummary;
@@ -426,5 +429,106 @@ class PixelCharacterServiceTest {
 
         assertThatThrownBy(() -> service.finishErrorCheck(CHAR, false))
                 .extracting("errorCode").isEqualTo(ErrorCode.ALREADY_PROCESSED);
+    }
+
+    private HeldItemSummary equipped(Long hldItemSn, Long itemSn, boolean equipYn) {
+        HeldItemSummary item = held(hldItemSn, "MYPC000" + hldItemSn);
+        item.setItemSn(itemSn);
+        item.setEquipYn(equipYn);
+        return item;
+    }
+
+    private MockMultipartFile png(int size) {
+        return new MockMultipartFile("image", CharacterSpec
+                .toPng(new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)));
+    }
+
+    @Test
+    void 착용을_저장하면_대표_이미지를_지운다() {
+        when(mapper.selectPixelCharacter(CHAR)).thenReturn(character("N"));
+        when(mapper.selectHeldItems(CHAR)).thenReturn(List.of(held(100L, "MYPC0001")));
+
+        service.saveEquippedItems(MBR, CHAR, new EquippedItemSaveRequest(List.of(100L)));
+
+        verify(mapper).updateWearImage(CHAR, null, String.valueOf(MBR));
+    }
+
+    @Test
+    void 지금_착용과_같은_아이템이면_대표_이미지를_저장한다() {
+        when(mapper.selectPixelCharacter(CHAR)).thenReturn(character("N"));
+        when(mapper.selectHeldItems(CHAR))
+                .thenReturn(List.of(equipped(1L, 7L, true), equipped(2L, 8L, true), equipped(3L, 9L, false)));
+        when(fileStore.storePublic(any(byte[].class), any(), anyString(), anyString())).thenReturn(70L);
+
+        service.saveEquippedImage(MBR, CHAR,
+                new EquippedImageSaveRequest(png(512), List.of(8L, 7L)));
+
+        verify(petAuthorizer).checkPrimary(MBR, PET);
+        verify(mapper).updateWearImage(CHAR, 70L, String.valueOf(MBR));
+    }
+
+    @Test
+    void 맨몸이면_itemSns_없이_저장한다() {
+        when(mapper.selectPixelCharacter(CHAR)).thenReturn(character("N"));
+        when(mapper.selectHeldItems(CHAR)).thenReturn(List.of(equipped(1L, 7L, false)));
+        when(fileStore.storePublic(any(byte[].class), any(), anyString(), anyString())).thenReturn(70L);
+
+        service.saveEquippedImage(MBR, CHAR, new EquippedImageSaveRequest(png(512), null));
+
+        verify(mapper).updateWearImage(CHAR, 70L, String.valueOf(MBR));
+    }
+
+    @Test
+    void 착용이_바뀌었으면_EQUIPPED_ITEMS_CHANGED이고_저장하지_않는다() {
+        when(mapper.selectPixelCharacter(CHAR)).thenReturn(character("N"));
+        when(mapper.selectHeldItems(CHAR)).thenReturn(List.of(equipped(1L, 7L, true), equipped(2L, 8L, true)));
+
+        assertThatThrownBy(() -> service.saveEquippedImage(MBR, CHAR,
+                new EquippedImageSaveRequest(png(512), List.of(7L))))
+                .extracting("errorCode").isEqualTo(ErrorCode.EQUIPPED_ITEMS_CHANGED);
+        verify(mapper, never()).updateWearImage(anyLong(), any(), anyString());
+    }
+
+    @Test
+    void 대표_이미지가_512_PNG가_아니면_FILE_TYPE_NOT_ALLOWED() {
+        when(mapper.selectPixelCharacter(CHAR)).thenReturn(character("N"));
+
+        assertThatThrownBy(() -> service.saveEquippedImage(MBR, CHAR,
+                new EquippedImageSaveRequest(png(256), null)))
+                .extracting("errorCode").isEqualTo(ErrorCode.FILE_TYPE_NOT_ALLOWED);
+    }
+
+    @Test
+    void 공동양육자는_대표_이미지를_저장할_수_없다() {
+        when(mapper.selectPixelCharacter(CHAR)).thenReturn(character("N"));
+        doThrow(new CustomException(ErrorCode.PET_PRIMARY_ONLY)).when(petAuthorizer).checkPrimary(2L, PET);
+
+        assertThatThrownBy(() -> service.saveEquippedImage(2L, CHAR,
+                new EquippedImageSaveRequest(png(512), null)))
+                .extracting("errorCode").isEqualTo(ErrorCode.PET_PRIMARY_ONLY);
+    }
+
+    @Test
+    void 대표_이미지가_있으면_결과_사진보다_먼저_준다() {
+        PixelCharacter character = character("N");
+        character.setWearImgFileSn(70L);
+        when(mapper.selectByPetSn(PET)).thenReturn(character);
+        StoredFile wear = new StoredFile(new byte[] {7}, "image/png", "wear-3.png");
+        when(fileStore.load(70L)).thenReturn(wear);
+
+        assertThat(service.getCharacterImage(MBR, PET, CharacterImagePart.FULL)).isSameAs(wear);
+        verify(mapper, never()).selectCurrentPhoto(anyLong());
+    }
+
+    @Test
+    void 오류_확인_중이면_대표_이미지가_있어도_기본_이미지를_준다() {
+        PixelCharacter character = character("Y");
+        character.setWearImgFileSn(70L);
+        when(mapper.selectByPetSn(PET)).thenReturn(character);
+        when(mapper.selectPetProfile(PET)).thenReturn(pet("PETC0001"));
+
+        assertThat(service.getCharacterImage(MBR, PET, CharacterImagePart.FULL).orgnlFileNm())
+                .isEqualTo("character/default-dog.png");
+        verify(fileStore, never()).load(anyLong());
     }
 }

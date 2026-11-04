@@ -86,7 +86,7 @@ class CharacterSheetServiceTest {
         when(itemMapper.countBakeItem(7L)).thenReturn(1);
         when(fileStore.store(any(byte[].class), eq(FileExtension.PNG), anyString(), eq("1"))).thenReturn(60L);
 
-        service.saveItemSheet(MBR, CHAR, 7L, sheet(1024));
+        service.saveItemSheet(MBR, false, CHAR, 7L, sheet(1024));
 
         verify(petAuthorizer).checkPrimary(MBR, PET);
         verify(mapper).upsertItemSheet(CHAR, 7L, 60L);
@@ -97,7 +97,7 @@ class CharacterSheetServiceTest {
         givenCharacter(50L);
         when(itemMapper.countBakeItem(7L)).thenReturn(1);
 
-        assertThatThrownBy(() -> service.saveItemSheet(MBR, CHAR, 7L, sheet(512)))
+        assertThatThrownBy(() -> service.saveItemSheet(MBR, false, CHAR, 7L, sheet(512)))
                 .extracting("errorCode").isEqualTo(ErrorCode.FILE_TYPE_NOT_ALLOWED);
         verify(mapper, never()).upsertItemSheet(anyLong(), anyLong(), anyLong());
     }
@@ -106,15 +106,15 @@ class CharacterSheetServiceTest {
     void 굽기_대상이_아닌_아이템은_ITEM_NOT_FOUND() {
         givenCharacter(50L);
 
-        assertThatThrownBy(() -> service.saveItemSheet(MBR, CHAR, 7L, sheet(1024)))
+        assertThatThrownBy(() -> service.saveItemSheet(MBR, false, CHAR, 7L, sheet(1024)))
                 .extracting("errorCode").isEqualTo(ErrorCode.ITEM_NOT_FOUND);
-        assertThatThrownBy(() -> service.failItemSheet(MBR, CHAR, 7L))
+        assertThatThrownBy(() -> service.failItemSheet(MBR, false, CHAR, 7L))
                 .extracting("errorCode").isEqualTo(ErrorCode.ITEM_NOT_FOUND);
     }
 
     @Test
     void 없는_캐릭터는_PIXEL_CHARACTER_NOT_FOUND() {
-        assertThatThrownBy(() -> service.failItemSheet(MBR, CHAR, 7L))
+        assertThatThrownBy(() -> service.failItemSheet(MBR, false, CHAR, 7L))
                 .extracting("errorCode").isEqualTo(ErrorCode.PIXEL_CHARACTER_NOT_FOUND);
     }
 
@@ -123,7 +123,7 @@ class CharacterSheetServiceTest {
         givenCharacter(50L);
         when(itemMapper.countBakeItem(7L)).thenReturn(1);
 
-        service.failItemSheet(MBR, CHAR, 7L);
+        service.failItemSheet(MBR, false, CHAR, 7L);
 
         verify(mapper).upsertItemSheetFailure(CHAR, 7L);
     }
@@ -133,7 +133,7 @@ class CharacterSheetServiceTest {
         givenCharacter(50L);
         doThrow(new CustomException(ErrorCode.PET_PRIMARY_ONLY)).when(petAuthorizer).checkPrimary(2L, PET);
 
-        assertThatThrownBy(() -> service.saveItemSheet(2L, CHAR, 7L, sheet(1024)))
+        assertThatThrownBy(() -> service.saveItemSheet(2L, false, CHAR, 7L, sheet(1024)))
                 .extracting("errorCode").isEqualTo(ErrorCode.PET_PRIMARY_ONLY);
     }
 
@@ -143,7 +143,7 @@ class CharacterSheetServiceTest {
         when(mapper.selectItemSheets(CHAR, List.of(7L, 8L, 9L)))
                 .thenReturn(List.of(itemSheet(8L, null, "Y"), itemSheet(7L, 60L, "N")));
 
-        CharacterSheetsResponse res = service.getSheets(MBR, CHAR, List.of(7L, 8L, 9L, 7L));
+        CharacterSheetsResponse res = service.getSheets(MBR, false, CHAR, List.of(7L, 8L, 9L, 7L));
 
         assertThat(res.petSeCd()).isEqualTo("PETC0001");
         assertThat(res.sheetFileSn()).isEqualTo(50L);
@@ -156,7 +156,7 @@ class CharacterSheetServiceTest {
     void 아이템을_안_고르면_맨몸_정보만_준다() {
         givenCharacter(50L);
 
-        CharacterSheetsResponse res = service.getSheets(MBR, CHAR, null);
+        CharacterSheetsResponse res = service.getSheets(MBR, false, CHAR, null);
 
         assertThat(res.items()).isEmpty();
         verify(mapper, never()).selectItemSheets(any(), any());
@@ -166,7 +166,7 @@ class CharacterSheetServiceTest {
     void 맨몸_시트가_없으면_PIXEL_CHARACTER_NOT_FOUND() {
         givenCharacter(null);
 
-        assertThatThrownBy(() -> service.getSheets(MBR, CHAR, List.of()))
+        assertThatThrownBy(() -> service.getSheets(MBR, false, CHAR, List.of()))
                 .extracting("errorCode").isEqualTo(ErrorCode.PIXEL_CHARACTER_NOT_FOUND);
     }
 
@@ -176,7 +176,7 @@ class CharacterSheetServiceTest {
         StoredFile file = new StoredFile(new byte[] {1}, "image/png", "sheet.png");
         when(fileStore.load(50L)).thenReturn(file);
 
-        assertThat(service.getSheetFile(MBR, CHAR, 50L)).isSameAs(file);
+        assertThat(service.getSheetFile(MBR, false, CHAR, 50L)).isSameAs(file);
     }
 
     @Test
@@ -186,14 +186,14 @@ class CharacterSheetServiceTest {
         when(mapper.countItemSheetFile(CHAR, 60L)).thenReturn(1);
         when(fileStore.load(60L)).thenReturn(file);
 
-        assertThat(service.getSheetFile(MBR, CHAR, 60L)).isSameAs(file);
+        assertThat(service.getSheetFile(MBR, false, CHAR, 60L)).isSameAs(file);
     }
 
     @Test
     void 그_캐릭터의_시트가_아니면_FILE_NOT_FOUND() {
         givenCharacter(50L);
 
-        assertThatThrownBy(() -> service.getSheetFile(MBR, CHAR, 99L))
+        assertThatThrownBy(() -> service.getSheetFile(MBR, false, CHAR, 99L))
                 .extracting("errorCode").isEqualTo(ErrorCode.FILE_NOT_FOUND);
         verify(fileStore, never()).load(anyLong());
     }
@@ -203,9 +203,26 @@ class CharacterSheetServiceTest {
         givenCharacter(50L);
         doThrow(new CustomException(ErrorCode.PET_PRIMARY_ONLY)).when(petAuthorizer).checkPrimary(2L, PET);
 
-        assertThatThrownBy(() -> service.getSheets(2L, CHAR, List.of()))
+        assertThatThrownBy(() -> service.getSheets(2L, false, CHAR, List.of()))
                 .extracting("errorCode").isEqualTo(ErrorCode.PET_PRIMARY_ONLY);
-        assertThatThrownBy(() -> service.getSheetFile(2L, CHAR, 50L))
+        assertThatThrownBy(() -> service.getSheetFile(2L, false, CHAR, 50L))
                 .extracting("errorCode").isEqualTo(ErrorCode.PET_PRIMARY_ONLY);
+    }
+
+    @Test
+    void 관리자는_남의_캐릭터_시트를_읽고_쓴다() {
+        givenCharacter(50L);
+        when(itemMapper.countBakeItem(7L)).thenReturn(1);
+        when(fileStore.store(any(byte[].class), any(), any(), any())).thenReturn(60L);
+        when(fileStore.load(50L)).thenReturn(new StoredFile(new byte[] {1}, "image/png", "sheet.png"));
+
+        service.saveItemSheet(9L, true, CHAR, 7L, sheet(1024));
+        service.failItemSheet(9L, true, CHAR, 7L);
+        service.getSheets(9L, true, CHAR, List.of());
+        service.getSheetFile(9L, true, CHAR, 50L);
+
+        verify(petAuthorizer, never()).checkPrimary(any(), any());
+        verify(mapper).upsertItemSheet(CHAR, 7L, 60L);
+        verify(mapper).upsertItemSheetFailure(CHAR, 7L);
     }
 }
