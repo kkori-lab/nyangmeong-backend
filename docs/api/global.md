@@ -7,7 +7,7 @@
 | 메서드 | 경로 | 설명 | 기능 ID | 담당 | 요청 DTO | 응답 DTO |
 | --- | --- | --- | --- | --- | --- | --- |
 | GET | /common-codes | 공통코드 하위 목록 조회 `?prntComCd=PETG03` *통합 때 추가* | MYP-003-03 | LJS | - | List<CommonCodeSummary> |
-| GET | /regions | 하위 지역 목록(`?upRgnSn=`, 없으면 시도). 시도 → 시군구 → 읍면동 연동 콤보박스 | CMU-002-03 (issues 14) | KSJ | - | List<RegionSummary> |
+| GET | /regions | 하위 지역 목록(`?upRgnSn=`, 없으면 시도). 시도 → 시군구 → 읍면동 연동 콤보박스. 서비스 지역이 전북특별자치도뿐이라 행정구역코드가 52로 시작하는 지역만 준다(시도는 전북 1곳, 전북 밖 `upRgnSn`은 빈 목록) | CMU-002-03 (issues 14) | KSJ | - | List<RegionSummary> |
 | GET | /files/public/{atchFileSn} | 공개 이미지 파일(게시글 사진·생성된 캐릭터 이미지). 로그인 없이 열린다. 공개가 아니거나 없는 번호는 404 `FILE_NOT_FOUND`. 응답의 `atchFileSn`을 그대로 `<img src="/api/files/public/{atchFileSn}">`에 쓴다 | 연결 작업(파일 저장 외부 디렉토리) | LJS | - | 이미지 파일 |
 | GET | /admin/settings | 운영 설정 조회. 회원·반려동물, 커뮤니티, 알림, AI, 파일 다섯 묶음과 수정일시·수정자. 관리자만(일반 회원 403, 비로그인 401) | ADM-110-01 | LJS | - | AdminSettingResponse |
 | PATCH | /admin/settings | 운영 설정 수정. 보낸 필드만 바꾸고 바뀐 항목의 전·후 값을 감사 로그(`MNGR_TASK_LOG`)에 남긴다. 바뀐 게 없으면 저장·로그 없이 현재 값을 돌려준다. 범위 밖은 400 `INVALID_INPUT_VALUE` | ADM-110-02·03·04 | LJS | AdminSettingUpdateRequest | AdminSettingResponse |

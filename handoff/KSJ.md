@@ -2,18 +2,23 @@
 
 ## 지금 하는 것
 
-SCR-CMU-002 실종센터 · 시드 게시판 코드 — 끝남 (승인 2026-11-04 12:46, 시작 2026-11-04 12:44, 검증 통과 1회차, 사람 확인 2026-11-04)
-기준: 기능 추가 없음(사람 요청 2026-11-04). 시드가 실종 제보(`LOST_TPOF`)와 연결된 `PST` 100행(`PST_SN` 801~900)을 `BBS_CD=CMUC0002`(펫이야기)로 넣어, 관리자 실종 목록(`CMUC0024` 필터)에 0건이고 펫이야기 목록에 섞여 보였다. 서버 코드(`BoardType.LOST = CMUC0024`)와 `LostReportMapper`는 맞았다
-- 한 일: `db/seed/20261028_seed_data.sql`의 `PST` insert에서 그 100행의 `BBS_CD`만 `CMUC0024`로 바꿨다(옛 파일과 비교해 다른 글자 200개, 다른 행·줄바꿈 변화 없음). 공용 DB는 사람이 2026-11-04에 같은 내용으로 먼저 고쳤고 시드는 다시 실행하지 않는다
-- 알려 둔 것: 로컬 `application.properties`에 디스코드로 설정을 받아 붙일 때 `app.security.permit-all-paths`의 `*`가 마크다운에 먹혀 사라지면 테스트 15건이 401로 실패한다. 설정 파일은 코드 블록으로 공유한다
+SCR-CMU-002 실종센터 · 전북 밖 좌표 거절 — 끝남 (승인 2026-11-04 14:47, 시작 2026-11-04 14:40, 검증 통과 2회차(1회차 실패는 본문 변경이 기획 밖이어서 추가-2로 풀림), 사람 확인 2026-11-04)
+기준: 기능 추가 없음. 걸치는 FN-CMU-002-10·11, FN-CMU-004-11(같은 `RegionService.findJeonbukRgnSn`을 쓴다)
+- 한 일: `KakaoRegionResolver`(신규, `app.region.client=kakao`일 때만. 행정동 H 우선·법정동 B 대체, 카카오 실패는 502 `EXTERNAL_API_ERROR`, 호출 로그 `KAKAO_LOCAL`), `RegionService`에 시(4자리) 단계(전주시 읍면동이 전북 도로 저장되던 문제), `application.properties.example`에 `kakao` 설명. 기본값은 `fake` 그대로
+- 시드: `db/seed/20261028_seed_data.sql`의 펫돌봄 100행·실종 100행을 전북 시군구 14곳으로(지역 번호·동네명·좌표·상세 주소 암호문·목격 장소명), 게시글 제목 200건·실종 본문 100건의 지역명도. 좌표 200개를 실제 카카오로 확인해 모두 의도한 시군구. 공용 DB는 사람이 UPDATE 400문장으로 2026-11-04에 반영했다(영향 행 400)
+- 추가 요청(사람 요청 2026-11-04): 추가-1 `GET /regions`가 전북(`ADMDST_CD` 52로 시작)만 준다(`RegionMapper.xml`·`RegionMapperSqlTest`·`docs/api/global.md`), 추가-2 실종 글 본문 지역명 변경
+- 확인: Postman으로 실종 제보·펫돌봄 서울역 400(`LOST_REPORT_REGION_NOT_ALLOWED`·`CARE_REGION_NOT_ALLOWED`), 전주시청 201(전주시 노송동), `GET /regions` 전북만. 확인용 글은 지웠다
+- 알려 둔 것: 카카오가 실패하면 실종·펫돌봄 등록이 502로 막힌다(전북 밖 글을 막는 쪽을 택함). 로컬에서 쓰려면 `app.region.client=kakao`와 `app.kakao-local.rest-api-key`
 새 의존성: 없음
 
 ## 지난 작업
 
-SCR-CMU-005 우리동네 펫돌봄 채팅 — 끝남 (2026-11-04, PR #139 병합). 채팅방·메시지·읽음 REST, 매칭 요청~수령 확인, STOMP `/ws`(구독 `/user/queue/chat`, 보냄 `/app/chat/view`). `CareMatchMapper`는 LJS의 관리자 조회(SCR-ADM-022)와 한 파일로 합쳤다. 이번에 안 한 것: 14일 무응답 자동 취소·종료 배치, 로그아웃·세션 폐기 때 소켓 끊기(LJS에 이벤트 요청), 새 메시지 알림, 알림 `mvmnPath`
+SCR-CMU-002 시드 게시판 코드 — 끝남 (2026-11-04, PR #147). 시드의 실종 글 100행 `BBS_CD`를 `CMUC0024`로, 공용 DB는 사람이 먼저 고쳤다. 디스코드로 설정을 받을 때 `permit-all-paths`의 `*`가 마크다운에 먹히면 테스트가 401로 실패한다
+SCR-CMU-005 우리동네 펫돌봄 채팅 — 끝남 (2026-11-04, PR #139). 채팅방·메시지·읽음 REST, 매칭 요청~수령 확인, STOMP `/ws`. 이번에 안 한 것은 아래 "다음에 할 것"
 
 ## 다음에 할 것
-- 다음 작업: SCR-CMU-002 실종센터 · 전북 밖 좌표 거절(`/start CMU-002 전북`). 원인: 거절 로직은 맞고 `app.region.client=fake`가 좌표와 무관하게 전주시를 줘서 서울역도 201이 났다. 카카오 역지오코딩 `KakaoRegionResolver`(YAY의 `KakaoLocalProperties`·키 사용)를 붙이고, 카카오가 주는 읍면동 10자리 코드가 지역 표(시군구까지)에 없을 때 `RegionService`가 시(4자리) 단계를 거치지 않으면 전주시가 전북 도로 저장되니 4자리 단계를 넣는다. 실패는 `EXTERNAL_API_ERROR`. 우선순위 낮음
+- 연결 남음: FN-CMU-002-03·FN-CMU-004-02 지역 콤보박스 (프론트 연결: `GET /regions`가 전북만 주므로 시도 콤보박스는 전북특별자치도 1곳, 자동 선택하거나 숨김, 시군구는 `?upRgnSn=`로 14곳, 프론트 저장소에서 /start)
+- 사람이 할 일: PR 병합 뒤 팀에 "공용 DB 펫돌봄·실종 시드 글 지역을 전북으로 바꿨고, `GET /regions`가 전북만 준다"고 알린다. 로컬 `app.region.client`는 `fake`로 되돌린다
 - 연결 남음: SCR-CMU-005 채팅 모달 목록·채팅방·거래 카드와 STOMP 연결 (프론트 저장소에서 /start)
 - 연결 남음: FN-CMU-005-05 주소 공유 모달 장소 검색 (YAY `GET /places`, 프론트 저장소에서 /start)
 - 연결 남음: FN-COM-002-11·FN-COM-009-17 헤더 채팅 아이콘·안 읽은 수 배지 (LJS 대기, 프론트 저장소에서 /start)

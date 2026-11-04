@@ -1,6 +1,7 @@
 package com.nyangmeong.global.code;
 
 import java.math.BigDecimal;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -34,7 +35,7 @@ public class RegionService {
 
     /**
      * 좌표의 전북 지역 번호 (전북 밖이거나 지역을 찾지 못하면 null)
-     * - 읍면동 코드가 지역 표에 없으면 시군구, 시도 순으로 올려 찾는다
+     * - 읍면동 코드가 지역 표에 없으면 시군구, 시(일반구가 있는 시), 시도 순으로 올려 찾는다
      */
     @Transactional(readOnly = true)
     public Long findJeonbukRgnSn(BigDecimal lat, BigDecimal lot) {
@@ -42,8 +43,9 @@ public class RegionService {
         if (admdstCd == null || admdstCd.length() != 10 || !admdstCd.startsWith(JEONBUK_PREFIX)) {
             return null;
         }
-        for (String candidate : List.of(admdstCd, admdstCd.substring(0, 5) + "00000",
-                admdstCd.substring(0, 2) + "00000000")) {
+        /** 전주시처럼 일반구(완산구·덕진구)가 있는 시는 표에 구 행이 없어 4자리 시 코드까지 올라가야 도로 잘못 저장되지 않는다 */
+        for (String candidate : new LinkedHashSet<>(List.of(admdstCd, admdstCd.substring(0, 5) + "00000",
+                admdstCd.substring(0, 4) + "000000", admdstCd.substring(0, 2) + "00000000"))) {
             Long rgnSn = regionMapper.selectRgnSnByAdmdstCd(candidate);
             if (rgnSn != null) {
                 return rgnSn;
