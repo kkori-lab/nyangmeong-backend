@@ -16,6 +16,43 @@
         <result column="SORT_SEQ"                 property="sortSeq" />
     </resultMap>
 
+    <resultMap id="healthCreatininePointResultMap" type="com.nyangmeong.health.dto.HealthCreatininePoint">
+        <result column="SCHDL_DT"      property="schdlDt" />
+        <result column="RSLT_NVL"      property="rsltNvl" />
+        <result column="UNIT_NM"       property="unitNm" />
+        <result column="REF_LLMT_NVL"  property="refLlmtNvl" />
+        <result column="REF_UPLMT_NVL" property="refUplmtNvl" />
+    </resultMap>
+
+    <select id="selectCreatininePoints" resultMap="healthCreatininePointResultMap">
+        /* 메인 건강 지표 크레아티닌 점 조회(최근 N회를 검진 일정일시 오름차순), 직접입력 항목 제외 */
+        SELECT T.SCHDL_DT
+             , T.RSLT_NVL
+             , T.UNIT_NM
+             , T.REF_LLMT_NVL
+             , T.REF_UPLMT_NVL
+          FROM (SELECT S.SCHDL_DT
+                     , V.INSP_NVL_SN
+                     , V.RSLT_NVL
+                     , V.UNIT_NM
+                     , V.REF_LLMT_NVL
+                     , V.REF_UPLMT_NVL
+                  FROM INSP_NVL V
+                  JOIN CKUP_RCD C
+                    ON C.CKUP_RCD_SN = V.CKUP_RCD_SN
+                  JOIN SCHDL S
+                    ON S.SCHDL_SN = C.SCHDL_SN
+                 WHERE S.PET_SN = #{petSn}
+                   AND V.INSP_ARTCL_CD = #{creaCd}
+                   AND V.INSP_ARTCL_DRCT_INPT_NM = ''
+                   AND V.DEL_YN = 'N'
+                   AND C.DEL_YN = 'N'
+                   AND S.DEL_YN = 'N'
+                 ORDER BY S.SCHDL_DT DESC, V.INSP_NVL_SN DESC
+                 LIMIT #{size}) T
+         ORDER BY T.SCHDL_DT, T.INSP_NVL_SN
+    </select>
+
     <select id="selectList" resultMap="inspectionValueSummaryResultMap">
         /* 검사 수치 목록 조회(정렬순서·등록순), 직접입력 항목은 항목명 없음 */
         SELECT V.INSP_NVL_SN

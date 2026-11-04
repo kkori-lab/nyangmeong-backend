@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import com.nyangmeong.health.domain.InspectionValue;
+import com.nyangmeong.health.dto.HealthCreatininePoint;
 import com.nyangmeong.health.dto.InspectionValueSearchCond;
 import com.nyangmeong.health.dto.InspectionValueSummary;
 
@@ -15,6 +16,12 @@ import com.nyangmeong.health.dto.InspectionValueSummary;
  */
 @Mapper
 public interface InspectionValueMapper {
+
+    /**
+     * 메인 건강 지표 크레아티닌 점 조회(최근 N회, 검진 일정일시 오름차순)
+     */
+    List<HealthCreatininePoint> selectCreatininePoints(@Param("petSn") Long petSn,
+            @Param("creaCd") String creaCd, @Param("size") int size);
 
     /**
      * 검사 수치 목록 조회
