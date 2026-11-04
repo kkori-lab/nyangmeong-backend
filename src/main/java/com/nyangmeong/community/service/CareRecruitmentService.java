@@ -25,6 +25,7 @@ import com.nyangmeong.community.domain.CareRecruitmentShape;
 import com.nyangmeong.community.domain.CareRecruitmentStatus;
 import com.nyangmeong.community.domain.CareRecruitmentStatusHistory;
 import com.nyangmeong.community.domain.CareShape;
+import com.nyangmeong.community.domain.ChatParticipantStatus;
 import com.nyangmeong.community.domain.PetSize;
 import com.nyangmeong.community.domain.Post;
 import com.nyangmeong.community.domain.PostImage;
@@ -37,6 +38,7 @@ import com.nyangmeong.community.dto.CareRecruitmentResponse;
 import com.nyangmeong.community.dto.CareRecruitmentSearchCond;
 import com.nyangmeong.community.dto.CareRecruitmentSummary;
 import com.nyangmeong.community.dto.CareRecruitmentUpdateRequest;
+import com.nyangmeong.community.dto.MinimumWageResponse;
 import com.nyangmeong.community.dto.PostImageSummary;
 import com.nyangmeong.community.mapper.CareRecruitmentMapper;
 import com.nyangmeong.community.mapper.PostMapper;
@@ -48,6 +50,7 @@ import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.response.PageResponse;
 import com.nyangmeong.global.security.crypto.FieldCryptoService;
+import com.nyangmeong.global.setting.SystemSetting;
 import com.nyangmeong.global.setting.SystemSettingService;
 import com.nyangmeong.pet.domain.PetSe;
 import com.nyangmeong.pet.service.BreedService;
@@ -112,6 +115,15 @@ public class CareRecruitmentService {
         PageInfo<CareRecruitmentSummary> pageInfo = new PageInfo<>(rows);
         fillChildren(rows);
         return PageResponse.of(pageInfo);
+    }
+
+    /**
+     * 최저시급 조회 (관리자 설정을 매번 읽어 바꾸면 바로 반영)
+     */
+    @Transactional(readOnly = true)
+    public MinimumWageResponse getMinimumWage() {
+        SystemSetting setting = systemSettingService.get();
+        return new MinimumWageResponse(setting.getLowstHrwgAplcnYr(), setting.getLowstHrwgAmt());
     }
 
     /**
@@ -201,8 +213,13 @@ public class CareRecruitmentService {
                 : "Y".equals(detail.getSchdlCnsltnPsbltyYn());
         String cstUnitCd = req.cstUnitCd() != null ? req.cstUnitCd() : detail.getCstUnitCd();
         Integer cstAmt = req.cstAmt() != null ? req.cstAmt() : detail.getCstAmt();
-        LocalDateTime bgngDt = req.prtcBgngDt() != null ? req.prtcBgngDt() : detail.getPrtcBgngDt();
-        LocalDateTime endDt = req.prtcEndDt() != null ? req.prtcEndDt() : detail.getPrtcEndDt();
+        /** 일정 협의 가능을 보내면서 일정을 둘 다 보내지 않으면 기존 일정을 비움(일정 미정으로 바꾸기) */
+        boolean clearSchedule = Boolean.TRUE.equals(req.schdlCnsltnPsbltyYn()) && req.prtcBgngDt() == null
+                && req.prtcEndDt() == null;
+        LocalDateTime bgngDt = clearSchedule ? null
+                : req.prtcBgngDt() != null ? req.prtcBgngDt() : detail.getPrtcBgngDt();
+        LocalDateTime endDt = clearSchedule ? null
+                : req.prtcEndDt() != null ? req.prtcEndDt() : detail.getPrtcEndDt();
         checkCost(cstUnitCd, cstAmt);
         checkSchedule(schdlCnsltn, bgngDt, endDt);
         List<CareRecruitmentPet> pets = req.pets() == null ? null : toPets(req.pets());
@@ -421,7 +438,21 @@ public class CareRecruitmentService {
         List<PostImageSummary> imgs = postMapper.selectImages(detail.getPstSn()).stream()
                 .map(PostImageSummary::from).toList();
         return CareRecruitmentResponse.of(detail, pets, shapes, imgs, postMapper.existsLike(detail.getPstSn(), mbrSn),
-                mbrSn.equals(detail.getMbrSn()));
+                mbrSn.equals(detail.getMbrSn()),
+                careRecruitmentMapper.existsChatting(detail.getPstSn(), mbrSn, ChatParticipantStatus.JOINED.getCode()),
+                matchedSitterNcnm(detail));
+    }
+
+    /**
+     * 매칭 완료·거래 완료인 모집글의 확정된 돌보미 닉네임 (그 밖에는 null)
+     */
+    private String matchedSitterNcnm(CareRecruitmentDetail detail) {
+        boolean matched = CareRecruitmentStatus.MATCHED.is(detail.getRcrtSttsCd())
+                || CareRecruitmentStatus.COMPLETED.is(detail.getRcrtSttsCd());
+        if (!matched || detail.getCfmtnPetPrtcMtchSn() == null) {
+            return null;
+        }
+        return careRecruitmentMapper.selectMatchedSitterNcnm(detail.getCfmtnPetPrtcMtchSn());
     }
 
     private void insertPostHistory(Long pstSn, Long mbrSn, PostStatus before, PostStatus after) {
