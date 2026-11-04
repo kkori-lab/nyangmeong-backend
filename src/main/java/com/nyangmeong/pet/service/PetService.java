@@ -1,5 +1,6 @@
 package com.nyangmeong.pet.service;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -334,6 +335,19 @@ public class PetService {
     @Transactional(readOnly = true)
     public List<Long> searchCaregiverMbrSns(Long petSn) {
         return petMapper.selectCaregiverMbrSns(petSn);
+    }
+
+    /**
+     * 프로필 체중 동기화
+     * - PET_BDWG만 바꾼다 (정상·목표 체중 범위는 그대로)
+     * - 권한 검사는 하지 않는다. 호출하는 쪽(건강기록)이 먼저 검사하고, 그 트랜잭션 안에서 부를 것
+     * - 삭제됐거나 없는 반려동물이면 404 (호출하는 쪽 트랜잭션도 롤백)
+     */
+    @Transactional
+    public void syncWeight(Long petSn, BigDecimal weight, Long actorMbrSn) {
+        if (petMapper.updatePetWeight(petSn, weight, String.valueOf(actorMbrSn)) == 0) {
+            throw new CustomException(ErrorCode.PET_NOT_FOUND);
+        }
     }
 
     /**

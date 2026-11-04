@@ -612,6 +612,25 @@ class PetServiceTest {
         verify(domainEvents, never()).publishEvent(any(Object.class));
     }
 
+    @Test
+    void 체중_동기화는_펫_체중과_수정자를_그대로_mapper에_넘긴다() {
+        BigDecimal weight = new BigDecimal("5.250");
+        when(mapper.updatePetWeight(PET, weight, "7")).thenReturn(1);
+
+        service.syncWeight(PET, weight, 7L);
+
+        verify(mapper).updatePetWeight(PET, weight, "7");
+        verify(authorizer, never()).checkCaregiver(anyLong(), anyLong());
+    }
+
+    @Test
+    void 체중_동기화는_삭제됐거나_없는_반려동물이면_404() {
+        BigDecimal weight = new BigDecimal("5.250");
+        when(mapper.updatePetWeight(PET, weight, "7")).thenReturn(0);
+
+        assertCode(() -> service.syncWeight(PET, weight, 7L), ErrorCode.PET_NOT_FOUND);
+    }
+
     private void assertCode(Runnable action, ErrorCode code) {
         assertThatThrownBy(action::run).isInstanceOf(CustomException.class)
                 .satisfies(e -> assertThat(((CustomException) e).getErrorCode()).isEqualTo(code));

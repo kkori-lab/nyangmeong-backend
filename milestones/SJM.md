@@ -132,6 +132,14 @@
 - 기다리는 것: 없음(영수증 저장은 이미 `ExpenseService.create(ExpenseCreateCommand)`를 부른다)
 - 완료 조건: `ExpenseService.create(ExpenseCreateCommand)`가 `expndYmd`가 오늘(KST)보다 뒤면 400(`INVALID_INPUT_VALUE`)을 던지고, 영수증 저장 전체가 롤백된다
 
+## SCR-HLT-002 건강 일지 · SJM 몫(PetService.syncWeight) — 끝
+
+- 기능: 명세 기능 ID 추가 없음. FN-HLT-002-09~11 체중 기록 등록·수정·삭제 뒤 프로필 체중 동기화(화면은 SCR-HLT-002, JAJ). `PetService.syncWeight(Long petSn, BigDecimal weight, Long actorMbrSn)`를 더한다
+- 기다리는 것: 없음
+- 프론트 연결: 없음(서버 내부 호출). JAJ가 `PetWeightFake`를 이 메서드로 바꾼다(JAJ 마일스톤 SCR-HLT-002 · 프로필 체중 동기화 연결)
+- 완료 조건: `PetService.syncWeight`가 `PET_BDWG`만 `MDFR_ID`·`MDFCN_DT`와 함께 갱신하고, 삭제됐거나 없는 반려동물이면 404 `PET_NOT_FOUND`를 던진다. 권한 검사는 하지 않는다(호출하는 쪽 담당). 단위 테스트와 `./gradlew build -q`가 통과한다
+- 연결 남음: FN-HLT-002-09~11 (`PetWeightFake`를 `PetService.syncWeight`로 바꾸기, JAJ)
+
 ## 제외
 
 - FN-MYP-001-02·05: 화면만 있다(더보기 펼침, 0마리 안내)
