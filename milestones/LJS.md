@@ -485,10 +485,14 @@
 - 완료 조건 결과: 검증 `통과`(2026-11-04, 1회차, 8082에서 API로 확인), 사람 확인 2026-11-04
 - 연결 남음: FN-ADM-101-01 (프론트 연결 `features/adminBreed/api.js` 품종 목록·[품종 추가]·[수정] 모달, 프론트 저장소에서 /start)
 
-## SCR-ADM-051 약관 · 프론트 연결 관리자 약관 API — 대기
+## SCR-ADM-051 약관 · 프론트 연결 관리자 약관 API — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-051-01·02·03·04
 - 기다리는 것: 프론트 SCR-ADM-051(끝, 가짜 응답 `features/adminTerms/api.js`, 종류 키는 `features/adminTerms/termsKinds.js` 가정 값 SERVICE·PRIVACY·AGE·MARKETING·CARE_RULE·LOST_PRIVACY)
 - 완료 조건: `GET /api/admin/terms`(종류별 사용 중 버전 `[{ trmsSn, trmsFixIdntfKey, trmsVerId, trmsTtl, esntlAgreYn, useYn, regDt }]`), `GET /api/admin/terms/history?trmsFixIdntfKey=`(그 종류 모든 버전 최신순, 내용 제외), `GET /api/admin/terms/{trmsSn}`(내용 `trmsCn` 포함), `POST /api/admin/terms` `{ trmsFixIdntfKey, trmsVerId, trmsTtl, trmsCn, esntlAgreYn }` → 등록 행, 같은 종류 이전 버전 `useYn=N`, 같은 종류 같은 버전이면 409 `DUPLICATE_TRMS_VER`. 등록일 필드 이름(`regDt` 가정)과 종류 키 실제 값을 프론트에 알린다
+- 결정: 가입 약관 4종(`SERVICE`·`PRIVACY`·`AGE_14`·`MARKETING`)만 관리한다(사람 2026-11-04). 기능별 동의 2종은 `TRMS`에 넣으면 가입 쪽 쿼리에 섞이고 지금 읽는 곳도 없어 넣지 않았다. 새 `AdminTermsService`(기존 `TermsService`는 그대로), 없는 종류 404 `TERMS_NOT_FOUND`, 같은 종류 같은 버전 409 `DUPLICATE_TRMS_VER`, 새 버전은 이전 버전 정렬순서를 이어받는다. `useYn`·`esntlAgreYn`은 true/false. DB 변경 없음
+- 완료 조건 결과: 검증 `통과`(2026-11-04, 1회차, 8082에서 API로 확인), 사람 확인 2026-11-04
+- 연결 남음: FN-ADM-051-01·02·03 (프론트 연결 `features/adminTerms/api.js` 약관 목록·새 버전 등록·[이력] 모달, `termsKinds.js`, 프론트 저장소에서 /start)
+- 남김: FN-ADM-051-04 기능별 동의 2종(`CARE_RULE`·`LOST_PRIVACY`). 커뮤니티가 동의 문구를 `TRMS`에서 읽게 될 때(KSJ)
 
 ## SCR-ADM-071 케어미션 · 프론트 연결 관리자 케어미션 API — 대기
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-071-01·02
@@ -517,6 +521,21 @@
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-081-01·02·03
 - 기다리는 것: 프론트 SCR-ADM-081(끝, 가짜 응답 `features/adminAiKeyword/api.js`)
 - 완료 조건: `GET /api/admin/ai/keywords?dictUsgCd=&kwrdClsfNm=`(용도·분류가 같은 행, `sortSeq`·`kwrdDictSn` 순, 한 줄은 `KWRD_DICT` 필드 `kwrdDictSn`·`dictUsgCd`·`kwrdClsfNm`·`artclNm`·`kwrdCn`·`intrpRsltCn`·`mpngCd`·`sortSeq`·`rmrkCn`·`useYn`), `POST /api/admin/ai/keywords`(본문 `dictUsgCd`·`kwrdClsfNm`·`artclNm`·`kwrdCn`·`intrpRsltCn`·`mpngCd`·`rmrkCn`, 새 행 `sortSeq`는 프론트 가정 그 탭 맨 아래), `PATCH`·`DELETE /api/admin/ai/keywords/{kwrdDictSn}`, 감사 로그. 프론트 탭은 AIMC0037의 등록 동사·날짜·주기·일정 종류·검진유형(판정 규칙·시간 행은 뺌)과 AIMC0038 "가계부 카테고리". 가계부 분류(AIMC0038) 초기 키워드 INSERT. AI 서버·대화창용 조회 API: 예시 문구 형식 차이: AI 서버 `ai/data/register_dict.yaml`은 정규식(`(잡아|등록해)(줘|주|줄)`·`\d+일후`), DB `KWRD_CN`은 부록 B 예시 문구(`잡아줘, 등록해줘`·`○일 후`)라 그대로 못 쓴다. 사전에 정규식을 저장할지, 예시를 정규식으로 바꾸는 규칙을 둘지 정한다
+
+## SCR-ADM-082 처리 현황 · 영수증 OCR 현황 API — 대기
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-082-01
+- 기다리는 것: 프론트 SCR-ADM-082(가짜 응답으로 완료, `features/adminProcessing/api.js`)
+- 완료 조건: `GET /api/admin/processing/receipts?fromYmd=&toYmd=&ocrRqstSrcCd=&ocrPrcsSttsCd=&page=&size=`가 기간·출처 기준 summary(`totCnt`·`scsCnt`·`failCnt`·`prcsCnt`, 상태 필터와 무관)와 상태까지 건 목록(`recptSn`·`mbrSn`·`mbrNcnm`·`ocrRqstSrcCd`·`ocrPrcsSttsCd`·`frstRegDt`)을 준다. `GET /api/admin/processing/receipts/{recptSn}/image`가 비공개 원본 이미지를 준다. 가계부 출처 코드를 정한다
+
+## SCR-ADM-082 처리 현황 · 캐릭터 생성 현황 API — 대기
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-082-02
+- 기다리는 것: 프론트 SCR-ADM-082(가짜 응답으로 완료)
+- 완료 조건: `GET /api/admin/processing/character-jobs?jobSttsCd=&page=&size=`가 상태별 건수 `sttsCnts`([{ jobSttsCd, cnt }])와 목록(`charCrtJobSn`·`mbrNcnm`·`jobSttsCd`·`failRsn`·`otoInqrySn`·`frstRegDt`)을 준다. 결과 이미지는 주지 않는다. CHAR_CRT_JOB 상태 공통코드를 정한다
+
+## SCR-ADM-082 처리 현황 · 검사결과지 분석 현황 API — 대기
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-082-03
+- 기다리는 것: 프론트 SCR-ADM-082(가짜 응답으로 완료)
+- 완료 조건: Python→Java 통지 내부 API로 EXTL_API_CALL_LOG에 PDF 분석 호출이 쌓인다(검사결과지가 아닌 파일은 제외). `GET /api/admin/processing/pdf-analyses?fromYmd=&toYmd=&page=&size=`가 summary(`totCnt`·`scsCnt`·`tmotCnt`·`errCnt`)와 실패 목록(`extlApiCallLogSn`·`callRsltCd`·`failRsn`·`callDt`)을 준다. 분석 결과 내용은 주지 않는다
 
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)

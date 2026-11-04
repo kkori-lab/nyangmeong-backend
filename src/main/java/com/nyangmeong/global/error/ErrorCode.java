@@ -71,6 +71,7 @@ public enum ErrorCode {
     PASSWORD_RESET_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "비밀번호 재설정 권한이 만료되었거나 이미 사용되었습니다."),
     REQUIRED_TERMS_NOT_AGREED(HttpStatus.BAD_REQUEST, "필수 약관에 동의해야 합니다."),
     TERMS_NOT_FOUND(HttpStatus.NOT_FOUND, "약관을 찾을 수 없습니다."),
+    DUPLICATE_TRMS_VER(HttpStatus.CONFLICT, "같은 종류에 이미 있는 약관 버전입니다."),
     WITHDRAW_PHRASE_MISMATCH(HttpStatus.BAD_REQUEST, "탈퇴 확인 문구가 일치하지 않습니다."),
     MEMBER_RECOVERY_EXPIRED(HttpStatus.BAD_REQUEST, "복구 가능 기간이 지난 계정입니다."),
     MEMBER_RECOVERY_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "복구 확인 시간이 지났습니다. 이메일 인증을 다시 진행해 주세요."),
