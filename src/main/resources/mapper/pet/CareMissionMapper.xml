@@ -25,8 +25,52 @@
          ORDER BY CARE_MSN_SN
     </select>
 
+    <select id="selectAdminMissions" resultMap="careMsnResultMap">
+        /* 관리자 케어미션 목록(사용 중지 포함, 번호순) */
+        SELECT CARE_MSN_SN
+             , MSN_POOL_CD
+             , MSN_NM
+             , CMPN_PNT
+             , ACHV_CRTR_NMTM
+             , MVMN_PATH
+             , USE_YN
+          FROM CARE_MSN
+        <where>
+            <if test="msnPoolCd != null">
+               MSN_POOL_CD = #{msnPoolCd}
+            </if>
+        </where>
+         ORDER BY CARE_MSN_SN
+    </select>
+
+    <select id="selectMission" resultMap="careMsnResultMap">
+        /* 번호로 케어미션 조회(사용 중지 포함) */
+        SELECT CARE_MSN_SN
+             , MSN_POOL_CD
+             , MSN_NM
+             , CMPN_PNT
+             , ACHV_CRTR_NMTM
+             , MVMN_PATH
+             , USE_YN
+          FROM CARE_MSN
+         WHERE CARE_MSN_SN = #{careMsnSn}
+    </select>
+
+    <update id="updateMission" parameterType="com.nyangmeong.pet.domain.CareMsn">
+        /* 케어미션 보상·달성 기준·사용 여부 수정(보낸 칸만) */
+        UPDATE CARE_MSN
+        <set>
+            <if test="cmpnPnt != null">CMPN_PNT = #{cmpnPnt},</if>
+            <if test="achvCrtrNmtm != null">ACHV_CRTR_NMTM = #{achvCrtrNmtm},</if>
+            <if test="useYn != null">USE_YN = #{useYn},</if>
+            MDFR_ID = #{mdfrId},
+            MDFCN_DT = NOW()
+        </set>
+         WHERE CARE_MSN_SN = #{careMsnSn}
+    </update>
+
     <select id="selectMissionByName" resultMap="careMsnResultMap">
-        /* 미션명으로 사용 중 케어미션 조회 */
+        /* 미션명으로 케어미션 조회(진행 반영용, 사용 중지 미션도 오늘 출제분은 진행) */
         SELECT CARE_MSN_SN
              , MSN_POOL_CD
              , MSN_NM
@@ -36,7 +80,6 @@
              , USE_YN
           FROM CARE_MSN
          WHERE MSN_NM = #{msnNm}
-           AND USE_YN = 'Y'
     </select>
 
     <resultMap id="missionTargetSummaryResultMap" type="com.nyangmeong.pet.dto.MissionTargetSummary">
@@ -78,6 +121,7 @@
              , MBR_SN
              , MSN_CRTR_YMD
              , SCOR_PNT
+             , ACHV_CRTR_NMTM
              , REG_DT
              , MDFCN_DT
              )
@@ -87,6 +131,7 @@
              , #{mbrSn}
              , #{msnCrtrYmd}
              , #{scorPnt}
+             , #{achvCrtrNmtm}
              , NOW()
              , NOW()
              )
@@ -102,6 +147,7 @@
         <result column="PRGRS_NMTM"     property="prgrsNmtm" />
         <result column="GIVE_PNT"       property="givePnt" />
         <result column="SCOR_PNT"       property="scorPnt" />
+        <result column="ACHV_CRTR_NMTM" property="achvCrtrNmtm" />
         <result column="CMPTN_DT"       property="cmptnDt" />
         <result column="CMPTN_YN"       property="cmptnYn" />
         <result column="CLCLN_CFMTN_YN" property="clclnCfmtnYn" />
@@ -117,6 +163,7 @@
              , D.PRGRS_NMTM
              , D.GIVE_PNT
              , D.SCOR_PNT
+             , D.ACHV_CRTR_NMTM
              , D.CMPTN_DT
              , D.CMPTN_YN
              , D.CLCLN_CFMTN_YN
@@ -224,7 +271,7 @@
              , M.MSN_NM
              , D.SCOR_PNT
              , D.PRGRS_NMTM
-             , M.ACHV_CRTR_NMTM
+             , D.ACHV_CRTR_NMTM
              , CASE WHEN D.CMPTN_YN = 'Y' OR D.CLCLN_CFMTN_YN = 'Y' THEN D.GIVE_PNT END AS GIVE_PNT
              , CASE WHEN D.CMPTN_YN = 'Y' THEN TRUE ELSE FALSE END AS CMPTN_YN
           FROM DAY_MSN D

@@ -25,7 +25,22 @@ public interface CareMissionMapper {
     List<CareMsn> selectMissions();
 
     /**
-     * 미션명으로 사용 중 케어미션 조회
+     * 관리자 케어미션 목록 (풀이 null이면 전체)
+     */
+    List<CareMsn> selectAdminMissions(@Param("msnPoolCd") String msnPoolCd);
+
+    /**
+     * 번호로 케어미션 조회 (없으면 null)
+     */
+    CareMsn selectMission(@Param("careMsnSn") Long careMsnSn);
+
+    /**
+     * 케어미션 수정 (null 칸은 그대로)
+     */
+    int updateMission(CareMsn careMsn);
+
+    /**
+     * 미션명으로 케어미션 조회 (사용 중지 포함)
      */
     CareMsn selectMissionByName(@Param("msnNm") String msnNm);
 

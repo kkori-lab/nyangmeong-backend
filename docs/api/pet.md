@@ -11,6 +11,8 @@
 | GET | /admin/breeds | 관리자 품종 목록. 사용 안 함 포함, 종·정렬 순서·번호순, 페이지 없음. 쿼리 `petSeCd`(PETG01) 없거나 공백이면 전체. 모르는 종 코드 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-101-01 | LJS | - | List<AdminBreedSummary> |
 | POST | /admin/breeds | 품종 추가(201, 감사 로그). 품종 코드는 서버가 매긴다(강아지 `DOGV`·고양이 `CATV` + 그 접두 최대 번호 + 1, 네 자리). 이름 1~50자(앞뒤 공백 지운 뒤)가 아니거나 종 코드가 틀리면 400 INVALID_INPUT_VALUE, 같은 종에 같은 이름(공백 무시, 사용 안 함 포함) 409 DUPLICATE_VRTY_NM | ADM-101-01 | LJS | AdminBreedCreateRequest | AdminBreedSummary |
 | PATCH | /admin/breeds/{vrtySn} | 품종 수정(보낸 칸만, 종·코드는 안 바꿈, 감사 로그). 사용을 끄면 공용 `GET /breeds`와 새 반려동물·실종제보·펫돌봄 등록 선택에서 빠지고, 이미 등록된 반려동물의 품종 이름은 그대로 보인다. 아무 칸도 없거나 형식이 틀리면 400 INVALID_INPUT_VALUE, 없는 품종 404 BREED_NOT_FOUND, 자기 말고 같은 종 같은 이름 409 DUPLICATE_VRTY_NM | ADM-101-01 | LJS | AdminBreedUpdateRequest | AdminBreedSummary |
+| GET | /admin/care-missions | 관리자 케어미션 목록. 사용 안 함 포함, 번호순, 페이지 없음. 쿼리 `msnPoolCd`(MYPG04: MYPC0010 일상케어·MYPC0011 활동기반) 없거나 공백이면 전체. 모르는 풀 코드 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-071-01 | LJS | - | List<AdminCareMissionSummary> |
+| PATCH | /admin/care-missions/{careMsnSn} | 케어미션 수정(보상 포인트·달성 기준 횟수·사용 여부 중 보낸 칸만, 미션명·풀·이동 경로는 안 바꿈, 감사 로그). 추가·삭제 API 없음(미션은 코드의 활동과 짝). 바꾼 값은 다음 날 00:00 출제부터 반영하고, 이미 출제된 미션은 출제 때 복사한 배점(`DAY_MSN.SCOR_PNT`)·달성 기준(`DAY_MSN.ACHV_CRTR_NMTM`)으로 진행·정산한다. 사용을 꺼도 이미 출제된 미션은 진행된다. 아무 칸도 없거나 범위 밖이면 400 INVALID_INPUT_VALUE, 없는 미션 404 CARE_MISSION_NOT_FOUND | ADM-071-02·03 | LJS | AdminCareMissionUpdateRequest | AdminCareMissionSummary |
 | GET | /breeds | 반려동물 구분별 품종 마스터 목록(`?petSeCd=`) | CMU-002-13, CMU-004-06·13, MYP-003-02 (기능 분배 3.1절 10번) | KSJ | - | List<BreedSummary> |
 | GET | /caregiver-invitations | 내가 보낸 공동양육 초대 목록(계정 전체) | MYP-005-03 | SJM | - | List<CaregiverInvitationSummary> |
 | GET | /caregiver-invitations/{jntBrupInvtnSn} | 받은 초대 상세. 로그인 회원 누구나. 대기중이고 로그인 이메일이 초대 이메일과 같을 때만 초대한 사람·대상 반려동물 카드, 아니면 상태와 가린 이메일만(만료·처리 여부를 이메일보다 먼저 판단) | MYP-005-05·09·10 | SJM | - | CaregiverInvitationResponse |
@@ -151,6 +153,26 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 | vrtyNm | String | N | 앞뒤 공백 지운 뒤 1~50자 | VRTY.VRTY_NM |
 | sortSeq | Integer | N | 0 이상 정수 | VRTY.SORT_SEQ |
 | useYn | Boolean | N | false면 사용 안 함 | VRTY.USE_YN |
+
+### AdminCareMissionSummary
+쓰는 API: GET /admin/care-missions, PATCH /admin/care-missions/{careMsnSn}
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| careMsnSn | Long | Y | | CARE_MSN.CARE_MSN_SN, ADM-071-01 |
+| msnPoolCd | String | Y | 공통코드 MYPG04 | CARE_MSN.MSN_POOL_CD, ADM-071-01 |
+| msnNm | String | Y | | CARE_MSN.MSN_NM, ADM-071-01 |
+| cmpnPnt | Integer | Y | 보상 포인트 | CARE_MSN.CMPN_PNT, ADM-071-01 |
+| achvCrtrNmtm | Integer | Y | 달성 기준 횟수 | CARE_MSN.ACHV_CRTR_NMTM, ADM-071-01 |
+| mvmnPath | String | N | 이동 경로 | CARE_MSN.MVMN_PATH, ADM-071-01 |
+| useYn | boolean | Y | 사용 중이면 true | CARE_MSN.USE_YN, ADM-071-01 |
+
+### AdminCareMissionUpdateRequest
+보낸 칸만 바뀐다. 미션명·풀·이동 경로는 바꾸지 않는다
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| cmpnPnt | Integer | N | 1~1000 정수 | CARE_MSN.CMPN_PNT, ADM-071-02 |
+| achvCrtrNmtm | Integer | N | 1~10 정수 | CARE_MSN.ACHV_CRTR_NMTM, ADM-071-02 |
+| useYn | Boolean | N | false면 다음 출제부터 내지 않음 | CARE_MSN.USE_YN, ADM-071-02 |
 
 ### AdminItemSummary
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
@@ -332,7 +354,7 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 | msnNm | String | Y | | CARE_MSN.MSN_NM, MYP-020-04 |
 | scorPnt | Integer | Y | 배점 | DAY_MSN.SCOR_PNT, MYP-020-04·05 |
 | prgrsNmtm | Integer | Y | 진행 횟수 | DAY_MSN.PRGRS_NMTM, MYP-020-04 |
-| achvCrtrNmtm | Integer | Y | 달성 기준 횟수(진행률 분모) | CARE_MSN.ACHV_CRTR_NMTM, MYP-020-05 |
+| achvCrtrNmtm | Integer | Y | 달성 기준 횟수(진행률 분모) | DAY_MSN.ACHV_CRTR_NMTM(출제 때 CARE_MSN 값 복사, ADM-071-03), MYP-020-05 |
 | givePnt | Integer | N | 지급 포인트. 완료도 자정 정산도 안 됐으면 null, 그 밖에는 값(0 포함) | DAY_MSN.GIVE_PNT, MYP-020-04·05 |
 | cmptnYn | boolean | Y | 완료/미완료 | DAY_MSN.CMPTN_YN, MYP-020-04 |
 
