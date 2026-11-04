@@ -494,10 +494,13 @@
 - 연결 남음: FN-ADM-051-01·02·03 (프론트 연결 `features/adminTerms/api.js` 약관 목록·새 버전 등록·[이력] 모달, `termsKinds.js`, 프론트 저장소에서 /start)
 - 남김: FN-ADM-051-04 기능별 동의 2종(`CARE_RULE`·`LOST_PRIVACY`). 커뮤니티가 동의 문구를 `TRMS`에서 읽게 될 때(KSJ)
 
-## SCR-ADM-071 케어미션 · 프론트 연결 관리자 케어미션 API — 대기
+## SCR-ADM-071 케어미션 · 프론트 연결 관리자 케어미션 API — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-071-01·02
 - 기다리는 것: 프론트 SCR-ADM-071(끝, 가짜 응답 `features/adminCareMission/api.js`, 처음 값은 `db/` 기준 데이터 v0.12의 CARE_MSN 21행)
 - 완료 조건: `GET /api/admin/care-missions?msnPoolCd=`(없으면 전체, 번호순 `[{ careMsnSn, msnPoolCd, msnNm, cmpnPnt, achvCrtrNmtm, mvmnPath, useYn }]`, `useYn`은 'Y'/'N' 가정), `PATCH /api/admin/care-missions/{careMsnSn}` `{ cmpnPnt, achvCrtrNmtm, useYn }`(미션명·풀·경로는 안 바꿈, 없는 미션 404). 허용 범위를 정해 프론트에 알린다(프론트 가정: 1 이상 정수, 보상 1000P·횟수 10회 이하). 출제 배치 `CareMissionJob`이 `CARE_MSN`의 `useYn`·`cmpnPnt`·`achvCrtrNmtm`을 다음 날 00:00 출제부터 읽고 이미 낸 미션은 그대로인지 확인한다(FN-ADM-071-03)
+- 결정: `useYn`은 true/false(프론트 가정 'Y'/'N'과 다름), `cmpnPnt` 1~1000·`achvCrtrNmtm` 1~10(프론트 가정 그대로), 없는 미션 404 `CARE_MISSION_NOT_FOUND`, 추가·삭제 API 없음. 출제 때 달성 기준을 `DAY_MSN.ACHV_CRTR_NMTM`에 복사하고(DB v0.12 (7), 공용 DB 반영됨) 진행·정산·회원 목록은 그 값을 쓴다. 진행 반영은 사용 여부와 상관없이 미션을 찾는다
+- 완료 조건 결과: 검증 `통과`(2026-11-04, 3회차. 1회차 공용 DB에 v0.12 (7) 미실행, 2회차 공용 DB 쓰기 막힘·오늘 출제분 없음으로 화면 확인 못 함), 사람 확인 2026-11-04
+- 연결 남음: FN-ADM-071-01·02 (프론트 연결 `features/adminCareMission/api.js` 케어미션 목록·수정 모달, 프론트 저장소에서 /start)
 
 ## SCR-ADM-072 포인트 · 프론트 연결 관리자 포인트 API — 대기
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-072-01·02·03
@@ -536,6 +539,16 @@
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-082-03
 - 기다리는 것: 프론트 SCR-ADM-082(가짜 응답으로 완료)
 - 완료 조건: Python→Java 통지 내부 API로 EXTL_API_CALL_LOG에 PDF 분석 호출이 쌓인다(검사결과지가 아닌 파일은 제외). `GET /api/admin/processing/pdf-analyses?fromYmd=&toYmd=&page=&size=`가 summary(`totCnt`·`scsCnt`·`tmotCnt`·`errCnt`)와 실패 목록(`extlApiCallLogSn`·`callRsltCd`·`failRsn`·`callDt`)을 준다. 분석 결과 내용은 주지 않는다
+
+## SCR-ADM-001 대시보드 · 운영 현황·처리 대기 API — 대기
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-001-02·03
+- 기다리는 것: 프론트 SCR-ADM-001(끝, 가짜 응답 `features/adminDashboard/api.js`)
+- 완료 조건: `GET /api/admin/dashboard`(기간 무관)가 운영 현황 `totMbrCnt`·`nrmlMbrCnt`·`stopMbrCnt`·`todayJoinCnt`·`weekJoinCnt`·`totPstCnt`, 최근 가입 회원 5명 `recentMbrs`[`mbrSn`·`mbrNcnm`·`regDt`], 최근 게시글 5건 `recentPsts`[`pstSn`·`bbsCd`·`bbsNm`·`pstTtl`·`regDt`], 처리 대기 `dclrRcptCnt`(CMUC0015)·`unansInqryCnt`(CSCC0012)·`pixelInqryCnt`(그중 CSCC0006)·`charFailCnt`·`ocrFailCnt`(AIMC0004)·`notiFailCnt`(AIMC0019, 최근 24시간)·`btchFailCnt`를 준다. 처리 대기 건수는 각 목록 화면 필터 건수와 같다. 일반 회원은 403
+
+## SCR-ADM-001 대시보드 · 이용 통계 API — 대기
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-001-04·05
+- 기다리는 것: 프론트 SCR-ADM-001(끝, 가짜 응답 `features/adminDashboard/api.js`)
+- 완료 조건: `GET /api/admin/dashboard/stats?fromYmd=&toYmd=`(양끝 포함, 최대 90일)가 `daily`[`ymd`·`joinCnt`·`whdwlCnt`·`aiChatCnt`·`ocrRqstCnt`](날짜 순서대로 빠짐없이, 없는 날은 0), `pstCntByBbs`[`bbsCd`·`bbsNm`·`cnt`], `expnsCntByCtgry`[`ctgryCd`·`ctgryNm`·`cnt`], `petDstrb`[`petSeNm`·`vrtyNm`·`cnt`], `fvrtPlcs`[`plcSn`·`plcNm`·`cnt`]를 준다. 기간이 잘못되면 400
 
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)

@@ -219,8 +219,10 @@ class CareMissionServiceTest {
         done.setCareMsnSn(masters.get(0).getCareMsnSn());
         DayMsn twoOfThree = day(2L, 2, 15, "N");
         twoOfThree.setCareMsnSn(901L);
+        twoOfThree.setAchvCrtrNmtm(3);
         DayMsn oneOfTwo = day(3L, 1, 10, "N");
         oneOfTwo.setCareMsnSn(902L);
+        oneOfTwo.setAchvCrtrNmtm(2);
         LocalDate yesterday = TODAY.minusDays(1);
         when(mapper.selectUnsettledDayMissions(yesterday)).thenReturn(List.of(done, twoOfThree, oneOfTwo), List.of());
 
@@ -232,6 +234,61 @@ class CareMissionServiceTest {
         verify(mapper).updateDayMissionSettled(3L, 0);
         verify(pointService, times(1)).earnMission(PRIMARY, 2L, 10, "뭉치 · 세 번 미션");
         verify(pointService, times(1)).earnMission(any(), any(), anyInt(), any());
+    }
+
+    @Test
+    void 출제는_배점과_달성_기준을_그날_미션에_복사한다() {
+        masters.forEach(m -> m.setAchvCrtrNmtm(2));
+        target(PetSe.CAT, false);
+
+        service.issue(TODAY, Set.of());
+
+        Map<Long, CareMsn> bySn = masters.stream().collect(Collectors.toMap(CareMsn::getCareMsnSn, Function.identity()));
+        assertThat(inserted()).hasSize(8).allSatisfy(d -> {
+            assertThat(d.getScorPnt()).isEqualTo(bySn.get(d.getCareMsnSn()).getCmpnPnt());
+            assertThat(d.getAchvCrtrNmtm()).isEqualTo(2);
+        });
+    }
+
+    @Test
+    void 출제_뒤_마스터를_바꿔도_진행과_완료_지급은_출제_때_값() {
+        CareMsn master = masterOf(CareMission.MEAL_RECORD, 1);
+        master.setCmpnPnt(100);
+        master.setUseYn("N");
+        DayMsn issued = day(77L, 1, 15, "N");
+        issued.setAchvCrtrNmtm(3);
+        when(mapper.selectMissionByName(CareMission.MEAL_RECORD.getMsnNm())).thenReturn(master);
+        when(mapper.selectDayMissionForUpdate(PET, TODAY, master.getCareMsnSn())).thenReturn(issued);
+
+        service.reflect(PET, CareMission.MEAL_RECORD, PRIMARY, TODAY);
+
+        verify(mapper).updateDayMissionProgress(77L, 2);
+        verify(mapper, never()).updateDayMissionComplete(anyLong(), anyInt(), any(), anyInt());
+
+        DayMsn last = day(78L, 2, 15, "N");
+        last.setAchvCrtrNmtm(3);
+        when(mapper.selectDayMissionForUpdate(PET, TODAY, master.getCareMsnSn())).thenReturn(last);
+
+        service.reflect(PET, CareMission.MEAL_RECORD, PRIMARY, TODAY);
+
+        verify(mapper).updateDayMissionComplete(78L, 3, PRIMARY, 15);
+        verify(pointService).earnMission(PRIMARY, 78L, 15, "뭉치 · 식사량 기록하기");
+    }
+
+    @Test
+    void 출제_뒤_마스터_달성_기준을_바꿔도_정산은_출제_때_기준() {
+        CareMsn master = master(903L, "세 번 미션", CareMissionPool.DAILY, 15, 1, "N");
+        masters.add(master);
+        DayMsn twoOfThree = day(5L, 2, 15, "N");
+        twoOfThree.setCareMsnSn(903L);
+        twoOfThree.setAchvCrtrNmtm(3);
+        LocalDate yesterday = TODAY.minusDays(1);
+        when(mapper.selectUnsettledDayMissions(yesterday)).thenReturn(List.of(twoOfThree));
+
+        service.settle(yesterday);
+
+        verify(mapper).updateDayMissionSettled(5L, 10);
+        verify(pointService).earnMission(PRIMARY, 5L, 10, "뭉치 · 세 번 미션");
     }
 
     @Test
@@ -282,6 +339,9 @@ class CareMissionServiceTest {
     private void reflectable(CareMission mission, int achvCrtrNmtm, DayMsn dayMsn) {
         CareMsn master = masterOf(mission, achvCrtrNmtm);
         when(mapper.selectMissionByName(mission.getMsnNm())).thenReturn(master);
+        if (dayMsn != null) {
+            dayMsn.setAchvCrtrNmtm(achvCrtrNmtm);
+        }
         when(mapper.selectDayMissionForUpdate(PET, TODAY, master.getCareMsnSn())).thenReturn(dayMsn);
     }
 
@@ -330,6 +390,7 @@ class CareMissionServiceTest {
         day.setMbrSn(PRIMARY);
         day.setPrgrsNmtm(prgrsNmtm);
         day.setScorPnt(scorPnt);
+        day.setAchvCrtrNmtm(1);
         day.setCmptnYn(cmptnYn);
         day.setClclnCfmtnYn("N");
         return day;

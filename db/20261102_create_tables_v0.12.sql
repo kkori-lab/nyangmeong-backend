@@ -118,6 +118,9 @@
 --     UNIQUE KEY `UK_AI_HLTH_RPT_1` (`PET_SN`)
 --   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='AI건강리포트';
 --   ALTER TABLE `AI_HLTH_RPT` ADD CONSTRAINT `FK_AI_HLTH_RPT_PET` FOREIGN KEY (`PET_SN`) REFERENCES `PET` (`PET_SN`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+-- v0.12 (7) 일별미션 출제 때 달성 기준 횟수 복사 (2026-11-04, LJS, 근거: 관리자_기능명세서 FN-ADM-071-02·03). 관리자가 CARE_MSN의 달성 기준을 바꿔도 이미 출제된 미션은 출제 때 값을 쓴다. 기존 행은 지금 CARE_MSN 값으로 채운다
+--   ALTER TABLE `DAY_MSN` ADD COLUMN `ACHV_CRTR_NMTM` decimal(4,0) NOT NULL DEFAULT '1' COMMENT '달성기준횟수' AFTER `SCOR_PNT`;
+--   UPDATE `DAY_MSN` D JOIN `CARE_MSN` M ON M.`CARE_MSN_SN` = D.`CARE_MSN_SN` SET D.`ACHV_CRTR_NMTM` = M.`ACHV_CRTR_NMTM`;
 -- =====================================================================
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -900,6 +903,7 @@ CREATE TABLE `DAY_MSN` (
   `PRGRS_NMTM` decimal(10,0) NOT NULL DEFAULT '0' COMMENT '진행횟수',
   `GIVE_PNT` decimal(10,0) NOT NULL DEFAULT '0' COMMENT '지급포인트',
   `SCOR_PNT` decimal(10,0) NOT NULL COMMENT '배점포인트',
+  `ACHV_CRTR_NMTM` decimal(4,0) NOT NULL DEFAULT '1' COMMENT '달성기준횟수',
   `CMPTN_DT` datetime NULL COMMENT '완료일시',
   `CMPTN_YN` char(1) NOT NULL DEFAULT 'N' COMMENT '완료여부',
   `CLCLN_CFMTN_YN` char(1) NOT NULL DEFAULT 'N' COMMENT '정산확정여부',
