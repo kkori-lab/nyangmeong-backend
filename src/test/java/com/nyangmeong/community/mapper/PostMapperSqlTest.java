@@ -96,7 +96,15 @@ class PostMapperSqlTest {
 
     @Test
     void 실종_상세는_작성자_사진_번호를_고른다() {
-        assertThat(sql("LostReportMapper.selectDetail")).contains("M.ATCH_FILE_SN AS MBR_ATCH_FILE_SN")
-                .doesNotContain("MBR_STTS_CD");
+        assertThat(sql("LostReportMapper.selectDetail")).contains(PURGED_PHOTO + " AS MBR_ATCH_FILE_SN")
+                .contains(PURGED_NCNM + " AS MBR_NCNM");
+    }
+
+    @Test
+    void 관리자_실종_목록은_원래_닉네임을_그대로_준다() {
+        Map<String, Object> param = new HashMap<>();
+        String sql = configuration.getMappedStatement("com.nyangmeong.community.mapper.LostReportMapper.selectAdminList")
+                .getBoundSql(param).getSql().replaceAll("\\s+", " ");
+        assertThat(sql).doesNotContain("탈퇴한 회원");
     }
 }
