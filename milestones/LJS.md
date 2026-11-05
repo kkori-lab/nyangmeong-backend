@@ -536,10 +536,12 @@
 - 완료 조건 결과: 검증 `통과`(2026-11-05, 1회차), 사람 확인 2026-11-05. 정한 것: 필드·파라미터 이름은 DB 컬럼대로 `ocrDmndSrcCd`·`regDt`(가정 `ocrRqstSrcCd`·`frstRegDt`와 다름), 가계부 출처 `AIMC0027`, summary는 현재 상태 기준 `scsCnt`(AIMC0002·0003·0007)·`failCnt`(AIMC0004)·`prcsCnt`(AIMC0001)에 `errCnt`(AIMC0005) 추가, 모르는 출처·상태 코드와 `fromYmd > toYmd`는 400. 계약은 `docs/api/receipt.md` `/admin/processing/receipts` 두 행
 - 연결 남음: FN-ADM-082-01 (프론트 연결 `features/adminProcessing/api.js` `getAdminReceipts`·`processingLabels.js` 출처·상태 코드·`ReceiptImageModal.jsx`, 프론트 저장소에서 /start)
 
-## SCR-ADM-082 처리 현황 · 캐릭터 생성 현황 API — 대기
+## SCR-ADM-082 처리 현황 · 캐릭터 생성 현황 API — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-082-02
 - 기다리는 것: 프론트 SCR-ADM-082(가짜 응답으로 완료)
 - 완료 조건: `GET /api/admin/processing/character-jobs?jobSttsCd=&page=&size=`가 상태별 건수 `sttsCnts`([{ jobSttsCd, cnt }])와 목록(`charCrtJobSn`·`mbrNcnm`·`jobSttsCd`·`failRsn`·`otoInqrySn`·`frstRegDt`)을 준다. 결과 이미지는 주지 않는다. CHAR_CRT_JOB 상태 공통코드를 정한다
+- 완료 조건 결과: 검증 `통과`(2026-11-05, 1회차), 사람 확인 2026-11-05. 정한 것: 필드·파라미터 이름은 DB 컬럼대로 `crtJobSttsCd`·`regDt`(가정 `jobSttsCd`·`frstRegDt`와 다름), 행에 `mbrSn` 포함, 상태 코드는 기존 CHRG01(CHRC0001 요청·0002 생성 중·0003 생성 완료·0004 생성 실패, 새 공통코드 없음), `sttsCnts`는 네 상태를 순서대로 늘 주고 없는 상태 0, 모르는 상태 코드 400. 계약은 `docs/api/pet.md` `/admin/processing/character-jobs` 행
+- 연결 남음: FN-ADM-082-02 (프론트 연결 `features/adminProcessing/api.js` `getAdminCharacterJobs`·`processingLabels.js` `CHAR_JOB_STTS`·`CharacterJobTable.jsx`, 프론트 저장소에서 /start)
 
 ## SCR-ADM-082 처리 현황 · 검사결과지 분석 현황 API — 대기
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-082-03
