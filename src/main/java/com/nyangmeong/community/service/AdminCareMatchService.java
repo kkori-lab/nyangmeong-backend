@@ -19,6 +19,8 @@ import com.nyangmeong.community.mapper.CareMatchMapper;
 import com.nyangmeong.community.mapper.CareRecruitmentMapper;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.file.FileStore;
+import com.nyangmeong.global.file.StoredFile;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.response.PageResponse;
 
@@ -27,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 /**
  * [관리자 펫돌봄 거래 서비스]
  * - SCR-ADM-022 모집글 목록·매칭 상세 (거래 이력만, 채팅 내용 없음 : 결정 14·26)
+ * - 완료 사진 열람 : 비공개 저장이라 이 모집글 완료 요청 회차 사진만 관리자에게 준다
  */
 @Service
 @RequiredArgsConstructor
@@ -34,6 +37,7 @@ public class AdminCareMatchService {
 
     private final CareRecruitmentMapper careRecruitmentMapper;
     private final CareMatchMapper careMatchMapper;
+    private final FileStore fileStore;
 
     /**
      * 목록 조회 (정상 게시글만, 최신순)
@@ -66,6 +70,22 @@ public class AdminCareMatchService {
         }
         detail.setMtchs(mtchs);
         return detail;
+    }
+
+    /**
+     * 완료 사진 조회 (이 모집글 매칭의 완료 요청 회차 사진만, 그 밖의 파일은 있는지도 알리지 않고 404)
+     */
+    @Transactional(readOnly = true)
+    public StoredFile getImage(Long petPrtcRcrtSn, Long atchFileSn) {
+        if (careRecruitmentMapper.selectAdminDetail(petPrtcRcrtSn, PostStatus.DELETED.getCode()) == null) {
+            throw new CustomException(ErrorCode.CARE_RECRUITMENT_NOT_FOUND);
+        }
+        boolean attached = careMatchMapper.selectAdminCompletionPhotos(petPrtcRcrtSn).stream()
+                .anyMatch(photo -> photo.getAtchFileSn().equals(atchFileSn));
+        if (!attached) {
+            throw new CustomException(ErrorCode.FILE_NOT_FOUND);
+        }
+        return fileStore.load(atchFileSn);
     }
 
     /**

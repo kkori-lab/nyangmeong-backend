@@ -2,23 +2,24 @@
 
 ## 지금 하는 것
 
-SCR-CMU-004 우리동네 펫돌봄 · 상세 채팅 여부·최저시급·일정 비우기·시드 읍면동 — 끝남 (승인 2026-11-04 16:15, 시작 2026-11-04 16:06, 검증 통과 1회차(확인 못 함 = 프론트 연결), 사람 확인 2026-11-04)
-기준: 기능 추가 없음. 대기 네 절을 한 작업으로 묶었다(사람 요청 2026-11-04). 실종 시드 읍면동은 사람 요청으로 기획에 포함
-- 일정 비우기(FN-CMU-004-07·11): `PATCH`에서 `schdlCnsltnPsbltyYn=true`이고 일정 둘 다 없으면 기존 일정을 null로. 협의 여부를 안 보낸 수정은 일정 유지, 일정 하나만 보내면 저장값과 합쳐 검사
-- 상세(FN-CMU-004-05): 응답에 `chatting`(나가지 않은 참여 방 중 메시지가 오간 방, 지원자 수와 같은 기준)·`mtchSitterNcnm`(매칭·거래 완료일 때 돌보미 닉네임). 목록 응답은 그대로. 기존 6인자 `CareRecruitmentResponse.of`는 컨트롤러 테스트 때문에 남겼다
-- 최저시급(FN-CMU-004-08): `GET /api/care-recruitments/minimum-wage`(로그인 필요, `MinimumWageResponse{lowstHrwgAplcnYr, lowstHrwgAmt}`, 설정을 매번 읽음)
-- 시드: 펫돌봄·실종 100행씩을 전북 읍면동 단위로(지역 번호·「시(+구) 읍면동」 동네명·상세 주소 암호문·목격 장소명), 제목 200건·실종 본문 100건. 좌표는 그대로이고 카카오로 200개 모두 지정한 읍면동으로 확인. 공용 DB는 사람이 두 번째 UPDATE 400문장으로 2026-11-04에 반영(지역 번호 100/100, 제목·본문 확인)
-- 확인: Postman으로 일정 비우기·저장·400·제목만 수정, 상세 필드, 최저시급 401·200. 모집 1번은 원래 값으로 복구했다
+SCR-ADM-022 관리자 펫돌봄 매칭 · 완료 사진 관리자 열람 — 끝남 (승인 2026-11-05 10:23, 시작 2026-11-05 09:24, 검증 통과 1회차(확인 못 함 = 프론트 연결), 사람 확인 2026-11-05)
+기준: 명세 기능 ID 추가 없음(사람 결정 2026-11-04). 관리자 매칭 상세가 주는 완료 사진 번호를 관리자 프론트가 공개 주소로 불러 404였다. 완료 사진은 비공개 저장이라 관리자 전용 경로를 만들었다
+- 한 일: `GET /api/admin/care-matches/{petPrtcRcrtSn}/images/{atchFileSn}`(관리자만, `AdminCareMatchController.getImage`·`AdminCareMatchService.getImage`). 이 모집글 매칭의 완료 요청 회차 사진(`selectAdminCompletionPhotos`)이 아니면 파일을 읽지 않고 404 `FILE_NOT_FOUND`, 없거나 삭제된 모집글은 404 `CARE_RECRUITMENT_NOT_FOUND`. 저장 위치(비공개)는 그대로. `docs/api/community.md` 행 추가, 서비스 테스트 4건
+- 알려 둔 것: 시드는 `ATCH_FILE` 행만 있고 이미지 파일은 `uploads/seed/care/`(`app.file.root-dir=uploads`)에 있는 것만 열린다. 시드 완료 사진 93장 중 파일이 있는 것은 15장(예: 모집 5의 3555~3557)이고 78장은 404다. 파일을 채우는 것은 이 작업과 별개다
+- 확인: 새 경로는 서버를 재시작해야 보인다(옛 서버는 일반 `NOT_FOUND`를 준다). 로컬 `application.properties`에 빠진 키 이름이 값 없이 붙어 있으면 앱 컨텍스트 테스트가 실패한다
 새 의존성: 없음
 
 ## 지난 작업
 
+SCR-ADM-022 관리자 완료 사진 열람 — 끝남 (2026-11-05). 위 "지금 하는 것"에서 옮김
 SCR-CMU-004 펫돌봄 대기 4건 — 끝남 (2026-11-04). 위 "지금 하는 것"에서 옮김: 일정 비우기, 상세 `chatting`·`mtchSitterNcnm`, 최저시급 조회, 시드 읍면동(공용 DB 반영 완료)
 SCR-CMU-002 전북 밖 좌표 거절 — 끝남 (2026-11-04, PR #154). 카카오 역지오코딩 `KakaoRegionResolver`(`app.region.client=kakao`, 실패는 502), `RegionService` 시(4자리) 단계, `GET /regions` 전북만, 시드 펫돌봄·실종 글 전북 시군구화(공용 DB는 사람이 UPDATE 반영)
 SCR-CMU-002 시드 게시판 코드 — 끝남 (2026-11-04, PR #147). 실종 글 100행 `BBS_CD`를 `CMUC0024`로(공용 DB는 사람이 먼저 고침)
 SCR-CMU-005 우리동네 펫돌봄 채팅 — 끝남 (2026-11-04, PR #139). 채팅방·메시지·읽음 REST, 매칭 요청~수령 확인, STOMP `/ws`. 이번에 안 한 것은 아래 "다음에 할 것"
 
 ## 다음에 할 것
+- 연결 남음: SCR-ADM-022 관리자 매칭 상세 완료 사진 (프론트 연결: LJS `CareMatchDetailModal.jsx`의 `publicFileUrl`을 `useFileImage` + `GET /api/admin/care-matches/{petPrtcRcrtSn}/images/{atchFileSn}`로 교체, 프론트 저장소에서 /start)
+- 사람이 할 일: 시드 완료 사진 78장의 이미지 파일을 `uploads/seed/care/{ATCH_FILE_SN}.jpg`로 채울지 정한다(진짜 JPG, `uploads/`는 git 제외). 저장소 루트의 추적하지 않는 `3293.jpg`는 커밋하지 말고 지우거나 옮긴다
 - 연결 남음: FN-CMU-004-05 상세의 [채팅하기]·「채팅 중」, 매칭 돌보미 표시 (프론트 연결: 상세 응답 `chatting`·`mtchSitterNcnm`, 프론트 저장소에서 /start)
 - 연결 남음: FN-CMU-004-08 등록·수정 화면의 시급 안내 (프론트 연결: `GET /api/care-recruitments/minimum-wage`, 프론트 저장소에서 /start)
 - 연결 남음: FN-CMU-002-03·FN-CMU-004-02 지역 콤보박스 (프론트 연결: `GET /regions`가 전북만 주므로 시도 콤보박스는 전북특별자치도 1곳, 자동 선택하거나 숨김, 시군구는 `?upRgnSn=`로 14곳, 프론트 저장소에서 /start)
