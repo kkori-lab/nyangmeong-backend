@@ -24,6 +24,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 	// 채팅 실시간(global/config/WebSocketConfig). STOMP over WebSocket, 내장 브로커
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+	// 인증번호 메일 SMTP 발송(global/mail/SmtpMailSender). app.mail.client=smtp 일 때만 쓰고, 버전은 Boot 관리
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:4.1.0'
 	implementation 'com.github.pagehelper:pagehelper-spring-boot-starter:4.1.1'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1'
