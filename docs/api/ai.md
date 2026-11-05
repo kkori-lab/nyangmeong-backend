@@ -1,6 +1,6 @@
 # AI 대화(ai) 내부 API·DTO
 
-공통 규칙(응답 껍데기, `Yn` 필드, 정본)은 `docs/api/README.md`에 있다. 이 파일은 Python AI 서버가 호출하는 대화 저장·조회, AI 설정값 조회, AI 건강분석 리포트 입력·저장 내부 API만 담는다. 구현된 API의 정본은 Swagger(`/swagger-ui.html`)다.
+공통 규칙(응답 껍데기, `Yn` 필드, 정본)은 `docs/api/README.md`에 있다. 이 파일은 Python AI 서버가 호출하는 대화 저장·조회, AI 설정값 조회, AI 건강분석 리포트 입력·저장, 라우팅 매핑표 조회 내부 API와 관리자 라우팅 매핑표 API(SCR-ADM-080)를 담는다. 구현된 API의 정본은 Swagger(`/swagger-ui.html`)다.
 
 ## 호출 규칙
 
@@ -26,10 +26,22 @@
 | GET | /internal/ai/register-context | 등록 카드 컨텍스트. 쿠키 회원이 양육하는 반려동물 전부(공동양육 포함)와 각자의 케어 항목 이름. 반려동물이 없으면 빈 배열. 반려동물 목록은 외부 AI에 보내지 않는다 | AIM-012-04·08 | LJS | - | List<RegisterContextPet> |
 | GET | /internal/ai/pets/{petSn}/health-report-input?baseYmd= | AI 건강분석 리포트(메인 위젯 MANC0007)의 분석 입력과 저장본. 쿠키 회원이 양육하는 반려동물만(남의 반려동물 403 `PET_ACCESS_DENIED`, 없는 반려동물 404 `PET_NOT_FOUND`). `baseYmd`(KST 오늘, 필수, 없거나 형식이 틀리면 400 `BAD_REQUEST`) 포함 14일 일상기록과 `baseYmd` 이전 가장 최근 완료(HLTC0006) 검진 1회의 참고 범위 밖 검사 수치. `rfrshPsblYn`은 저장본이 없거나 저장 기준일이 `baseYmd`와 다르거나 그날 새로고침 0회면 true, `autoRgnrPsblYn`은 저장본이 없거나 저장 기준일이 다르거나 그날 자동 재생성 5회 미만이면 true. 명세 밖 추가 요청(ai 저장소 `docs/api/healthreport.md`) | MAN-006 | LJS | - | HealthReportContextResponse |
 | PUT | /internal/ai/pets/{petSn}/health-report | AI 건강분석 리포트 저장. 반려동물당 1행 덮어쓰기(`AI_HLTH_RPT`). 저장본이 없거나 기준일이 바뀌면 두 횟수를 0부터 센다. `rfrshYn: true`면 새로고침 횟수 +1(그날 이미 1회면 409 `HEALTH_REPORT_REFRESH_LIMIT`), 같은 기준일에 `rfrshYn: false`면 자동 재생성 횟수 +1(그날 이미 5회면 409 `HEALTH_REPORT_AUTO_LIMIT`). 그날 첫 생성은 세지 않는다. 저장본보다 이른 기준일·형식 오류는 400 `INVALID_INPUT_VALUE`. 응답 200 data 없음. `X-Requested-With` 필요 | MAN-006 | LJS | HealthReportSaveRequest | - |
+| GET | /internal/ai/routes | 라우팅 매핑표(FN-AIM-004-09에서 쓰는 지시어 → 화면). 사용 중(`USE_YN='Y'`) 행만 `prrtSeq`·`aiRoutMpngSn` 순. 이동 방식이 라우팅 대상 아님·제외·보류(AIMC0034~0036)인 행도 준다(Python이 이동하지 않는 행으로 거른다). 관리자가 바꾸면 다음 호출부터 반영(캐시 없음). Python은 DB에 붙지 않아 `data/routing.yaml` 대신 이 API를 쓴다(연결은 ai 저장소) | ADM-080-04 | LJS | - | List<AiRouteResponse> |
 
 탈퇴 회원 대화 파기(AIM-011-19)는 API가 아니라 `scheduler/AiConversationPurgeJob`이 매일 03:00 KST에 한다. Python의 `DELETE /internal/v1/members/{mbrSn}/conversations`는 쓰지 않는다.
 
 미완료(`cmptnYn=false`) 메시지를 완료로 바꾸는 API는 두지 않는다. [다시 생성]은 새 메시지를 덧붙이고, Python이 미완료 메시지를 AI 컨텍스트에서 뺀다(2026-10-28 ai 세션 합의, FN-AIM-002-07).
+
+## 관리자 API
+
+관리자 쿠키로 부른다(`/api` 접두어, 아래 경로는 `/api` 뒤). 일반 회원은 403 `ADMIN_ONLY`. 등록·수정·삭제는 `X-Requested-With` 필요, 감사 로그(`MNGR_TASK_LOG`, 대상 `AI_ROUT_MPNG`)를 남긴다. 우선순위 `prrtSeq`는 삭제 안 된 행 전체에서 1부터 빈틈없이 매기고, 등록·수정·삭제 때마다 다시 매긴다(기준 데이터의 No×10은 첫 저장 때 1~N으로 바뀐다). 같은 길이로 일치하면 위쪽 행이 먼저다(FN-ADM-080-03). 화면 ID 선택지는 서버가 주지 않는다(프론트 `docs/routes.md` 기준 목록). 초기 데이터는 기준 데이터 `[3] AI 라우팅 매핑`(부록 A, FN-ADM-080-05)
+
+| 메서드 | 경로 | 설명 | 기능 ID | 담당 | 요청 DTO | 응답 DTO |
+| --- | --- | --- | --- | --- | --- | --- |
+| GET | /admin/ai/routes?q= | 라우팅 매핑표. 사용 안 함 포함, `prrtSeq`·`aiRoutMpngSn` 순, 페이지 없음. `q`는 공백을 뺀 값이 공백을 뺀 지시어(`instKwrdCn`)에 들어 있는 행, 없거나 공백뿐이면 전체 | ADM-080-01 | LJS | - | List<AdminAiRouteSummary> |
+| POST | /admin/ai/routes | 매핑 등록(201). `prrtSeq` 자리에 넣고 나머지를 한 칸씩 민다(없으면 맨 아래, 행 수보다 크면 맨 아래). `domnNm`은 서버가 `scrnId`의 `SCR-` 뒤 세 글자로 정한다(없거나 모양이 다르면 `ETC`). 형식이 틀리면 400 `INVALID_INPUT_VALUE` | ADM-080-02·03 | LJS | AdminAiRouteSaveRequest | AdminAiRouteCreateResponse |
+| PATCH | /admin/ai/routes/{aiRoutMpngSn} | 매핑 수정(보낸 칸만). `prrtSeq`를 보내면 그 자리로 옮기고 나머지를 민다. 아무 칸도 없거나 형식이 틀리면 400 `INVALID_INPUT_VALUE`, 없는·삭제된 행 404 `AI_ROUTE_NOT_FOUND` | ADM-080-02·03 | LJS | AdminAiRouteSaveRequest | AdminAiRouteSummary |
+| DELETE | /admin/ai/routes/{aiRoutMpngSn} | 매핑 삭제(`DEL_YN='Y'`), 뒤 순위를 한 칸씩 당긴다. 응답 200 data 없음. 없는·이미 삭제된 행 404 `AI_ROUTE_NOT_FOUND` | ADM-080-02 | LJS | - | - |
 
 ## DTO
 
@@ -165,3 +177,53 @@
 | tips | List<String> | Y | 1~3개, 각 1~40자 | AI_HLTH_RPT.ANLS_CN |
 | inputHash | String | Y | 16진 64자(SHA-256), 소문자로 저장 | AI_HLTH_RPT.INPT_HASH |
 | rfrshYn | Boolean | Y | 새로고침으로 만든 리포트인가 | AI_HLTH_RPT.RFRSH_NMTM |
+
+### AiRouteResponse
+쓰는 API: GET /internal/ai/routes
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| aiRoutMpngSn | Long | Y | | AI_ROUT_MPNG.AI_ROUT_MPNG_SN |
+| trgtScrnNm | String | Y | | AI_ROUT_MPNG.TRGT_SCRN_NM |
+| scrnId | String | N | | AI_ROUT_MPNG.SCRN_ID |
+| scrnParamCn | String | N | 예 `cat=hospital` | AI_ROUT_MPNG.SCRN_PARAM_CN |
+| instKwrds | List<String> | Y | 지시어를 쉼표로 나눠 앞뒤 공백을 뺀 배열, 빈 값 제외. 지시어가 없으면 빈 배열 | AI_ROUT_MPNG.INST_KWRD_CN |
+| mvmnMthdCd | String | Y | AIMG09: AIMC0032 화면 이동, AIMC0033 모달 열기, AIMC0034 라우팅 대상 아님, AIMC0035 제외, AIMC0036 보류 | AI_ROUT_MPNG.MVMN_MTHD_CD |
+| rprsChipYn | boolean | Y | 대표 칩 | AI_ROUT_MPNG.RPRS_CHIP_YN |
+| prrtSeq | Integer | Y | 작을수록 먼저 | AI_ROUT_MPNG.PRRT_SEQ |
+
+### AdminAiRouteSummary
+쓰는 API: GET /admin/ai/routes, PATCH /admin/ai/routes/{aiRoutMpngSn}
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| aiRoutMpngSn | Long | Y | | AI_ROUT_MPNG.AI_ROUT_MPNG_SN, ADM-080-01 |
+| domnNm | String | Y | 서버가 화면 ID로 정함 | AI_ROUT_MPNG.DOMN_NM |
+| trgtScrnNm | String | Y | | AI_ROUT_MPNG.TRGT_SCRN_NM |
+| scrnId | String | N | | AI_ROUT_MPNG.SCRN_ID |
+| scrnParamCn | String | N | | AI_ROUT_MPNG.SCRN_PARAM_CN |
+| instKwrdCn | String | N | 쉼표 구분 한 줄 | AI_ROUT_MPNG.INST_KWRD_CN |
+| mvmnMthdCd | String | Y | AIMG09 | AI_ROUT_MPNG.MVMN_MTHD_CD |
+| rprsChipYn | boolean | Y | | AI_ROUT_MPNG.RPRS_CHIP_YN |
+| prrtSeq | Integer | Y | 1부터 | AI_ROUT_MPNG.PRRT_SEQ, ADM-080-03 |
+| rmrkCn | String | N | | AI_ROUT_MPNG.RMRK_CN |
+| useYn | boolean | Y | | AI_ROUT_MPNG.USE_YN |
+| mdfcnDt | LocalDateTime | Y | | AI_ROUT_MPNG.MDFCN_DT |
+
+### AdminAiRouteSaveRequest
+쓰는 API: POST /admin/ai/routes, PATCH /admin/ai/routes/{aiRoutMpngSn}
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| trgtScrnNm | String | 등록 Y | 100자, 공백만이면 400 | AI_ROUT_MPNG.TRGT_SCRN_NM |
+| scrnId | String | N | 100자. 이동 방식이 AIMC0032·AIMC0033이면 필수. 모양은 검사하지 않는다(제외 행에 `SCR-ACC-001 / 002` 같은 값이 있음). 수정에서 빈 문자열은 비움 | AI_ROUT_MPNG.SCRN_ID |
+| scrnParamCn | String | N | 200자. 수정에서 빈 문자열은 비움 | AI_ROUT_MPNG.SCRN_PARAM_CN |
+| instKwrdCn | String | N | 1000자, 쉼표 구분 한 줄. 이동 방식이 AIMC0032·AIMC0033이면 필수. 수정에서 빈 문자열은 비움 | AI_ROUT_MPNG.INST_KWRD_CN |
+| mvmnMthdCd | String | 등록 Y | AIMG09 다섯 값, 아니면 400 | AI_ROUT_MPNG.MVMN_MTHD_CD |
+| rprsChipYn | Boolean | N | 등록 기본 false | AI_ROUT_MPNG.RPRS_CHIP_YN |
+| prrtSeq | Integer | N | 1 이상. 등록 기본 맨 아래, 수정에서 없으면 순위 그대로 | AI_ROUT_MPNG.PRRT_SEQ, ADM-080-03 |
+| rmrkCn | String | N | 1000자. 수정에서 빈 문자열은 비움 | AI_ROUT_MPNG.RMRK_CN |
+| useYn | Boolean | N | 등록 기본 true | AI_ROUT_MPNG.USE_YN |
+
+### AdminAiRouteCreateResponse
+쓰는 API: POST /admin/ai/routes
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| aiRoutMpngSn | Long | Y | 등록한 매핑 번호 | AI_ROUT_MPNG.AI_ROUT_MPNG_SN |

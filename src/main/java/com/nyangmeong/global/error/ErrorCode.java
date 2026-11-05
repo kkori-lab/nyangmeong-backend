@@ -34,6 +34,8 @@ public enum ErrorCode {
     ALREADY_PROCESSED(HttpStatus.CONFLICT, "이미 처리된 요청입니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."),
     EXTERNAL_API_ERROR(HttpStatus.BAD_GATEWAY, "외부 서비스 호출에 실패했습니다. 잠시 후 다시 시도해 주세요."),
+    /** 인증번호 메일 발송 실패 : 화면이 메일 재시도를 안내하도록 EXTERNAL_API_ERROR 와 따로 둠 */
+    MAIL_SEND_FAILED(HttpStatus.BAD_GATEWAY, "메일을 보내지 못했습니다. 잠시 후 다시 시도해 주세요."),
     BATCH_ALREADY_RUNNING(HttpStatus.CONFLICT, "이미 실행 중인 배치입니다."),
     BATCH_NOT_AVAILABLE(HttpStatus.CONFLICT, "이 서버에서 실행할 수 없는 배치입니다."),
 
@@ -209,6 +211,7 @@ public enum ErrorCode {
     /** ai */
     HEALTH_REPORT_REFRESH_LIMIT(HttpStatus.CONFLICT, "오늘은 이미 새로고침했어요. 내일 다시 시도해 주세요."),
     HEALTH_REPORT_AUTO_LIMIT(HttpStatus.CONFLICT, "오늘은 리포트를 더 만들 수 없어요."),
+    AI_ROUTE_NOT_FOUND(HttpStatus.NOT_FOUND, "매핑을 찾을 수 없어요."),
 
     /** support */
     NOTICE_NOT_FOUND(HttpStatus.NOT_FOUND, "공지사항을 찾을 수 없습니다."),

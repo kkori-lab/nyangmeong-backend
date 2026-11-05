@@ -130,4 +130,68 @@
          ORDER BY RECPT_STTS_HSTRY_SN DESC
          LIMIT 1
     </select>
+
+    <sql id="adminReceiptScope">
+        <if test="cond.fromYmd != null">
+            AND R.REG_DT &gt;= #{cond.fromYmd}
+        </if>
+        <if test="cond.toYmd != null">
+            AND R.REG_DT &lt; DATE_ADD(#{cond.toYmd}, INTERVAL 1 DAY)
+        </if>
+        <if test="cond.ocrDmndSrcCd != null">
+            AND R.OCR_DMND_SRC_CD = #{cond.ocrDmndSrcCd}
+        </if>
+    </sql>
+
+    <select id="selectAdminReceiptSummary" resultType="com.nyangmeong.expense.dto.AdminReceiptSummary">
+        /* 관리자 OCR 현황 건수 묶음(현재 상태 기준, 상태 필터와 무관) */
+        SELECT COUNT(*) AS totCnt
+             , COALESCE(SUM(CASE WHEN R.OCR_PRCS_STTS_CD IN
+                   <foreach collection="scsCds" item="cd" open="(" separator="," close=")">#{cd}</foreach>
+                   THEN 1 ELSE 0 END), 0) AS scsCnt
+             , COALESCE(SUM(CASE WHEN R.OCR_PRCS_STTS_CD = #{failCd} THEN 1 ELSE 0 END), 0) AS failCnt
+             , COALESCE(SUM(CASE WHEN R.OCR_PRCS_STTS_CD = #{prcsCd} THEN 1 ELSE 0 END), 0) AS prcsCnt
+             , COALESCE(SUM(CASE WHEN R.OCR_PRCS_STTS_CD = #{errCd} THEN 1 ELSE 0 END), 0) AS errCnt
+          FROM RECPT R
+        <where>
+            <include refid="adminReceiptScope" />
+        </where>
+    </select>
+
+    <resultMap id="adminReceiptRowMap" type="com.nyangmeong.expense.dto.AdminReceiptRow">
+        <id     column="RECPT_SN"         property="recptSn" />
+        <result column="MBR_SN"           property="mbrSn" />
+        <result column="MBR_NCNM"         property="mbrNcnm" />
+        <result column="OCR_DMND_SRC_CD"  property="ocrDmndSrcCd" />
+        <result column="OCR_PRCS_STTS_CD" property="ocrPrcsSttsCd" />
+        <result column="REG_DT"           property="regDt" />
+    </resultMap>
+
+    <select id="selectAdminReceiptList" resultMap="adminReceiptRowMap">
+        /* 관리자 OCR 현황 목록(기간·출처·상태, 최신순, OCR 응답 미조회) */
+        SELECT R.RECPT_SN
+             , R.MBR_SN
+             , M.MBR_NCNM
+             , R.OCR_DMND_SRC_CD
+             , R.OCR_PRCS_STTS_CD
+             , R.REG_DT
+          FROM RECPT R
+          JOIN MBR M
+            ON M.MBR_SN = R.MBR_SN
+        <where>
+            <include refid="adminReceiptScope" />
+            <if test="cond.ocrPrcsSttsCd != null">
+                AND R.OCR_PRCS_STTS_CD = #{cond.ocrPrcsSttsCd}
+            </if>
+        </where>
+         ORDER BY R.REG_DT DESC
+                , R.RECPT_SN DESC
+    </select>
+
+    <select id="selectAtchFileSn" resultType="long">
+        /* 관리자 원본 보기용 첨부파일 번호(회원 소유 검사 없음) */
+        SELECT ATCH_FILE_SN
+          FROM RECPT
+         WHERE RECPT_SN = #{recptSn}
+    </select>
 </mapper>

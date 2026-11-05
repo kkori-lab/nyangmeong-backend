@@ -91,6 +91,73 @@
                 , G.PNT_GNLGR_SN DESC
     </select>
 
+    <resultMap id="adminPointLedgerRowResultMap" type="com.nyangmeong.pet.dto.AdminPointLedgerRow">
+        <id     column="PNT_GNLGR_SN"        property="pntGnlgrSn" />
+        <result column="MBR_SN"              property="mbrSn" />
+        <result column="MBR_NCNM"            property="mbrNcnm" />
+        <result column="PNT_DLNG_TYPE_CD"    property="pntDlngTypeCd" />
+        <result column="PNT_DLNG_TYPE_CD_NM" property="pntDlngTypeCdNm" />
+        <result column="DLNG_PNT"            property="dlngPnt" />
+        <result column="DLNG_AFTR_BLNC_PNT"  property="dlngAftrBlncPnt" />
+        <result column="MEMO_CN"             property="memoCn" />
+        <result column="REG_DT"              property="regDt" />
+    </resultMap>
+
+    <sql id="adminLedgerRowColumns">
+        SELECT G.PNT_GNLGR_SN
+             , G.MBR_SN
+             , M.MBR_NCNM
+             , G.PNT_DLNG_TYPE_CD
+             , C.COM_CD_NM AS PNT_DLNG_TYPE_CD_NM
+             , G.DLNG_PNT
+             , G.DLNG_AFTR_BLNC_PNT
+             , G.MEMO_CN
+             , G.REG_DT
+          FROM PNT_GNLGR G
+          JOIN MBR M
+            ON M.MBR_SN = G.MBR_SN
+          JOIN COM_CD C
+            ON C.COM_CD = G.PNT_DLNG_TYPE_CD
+    </sql>
+
+    <select id="selectAdminAllLedgerList" parameterType="com.nyangmeong.pet.dto.AdminPointSearchCond"
+            resultMap="adminPointLedgerRowResultMap">
+        /* 관리자 포인트 원장 검색(최신순) */
+        <include refid="adminLedgerRowColumns" />
+        <where>
+            <if test="mbrSn != null">
+                AND G.MBR_SN = #{mbrSn}
+            </if>
+            <if test="mbrNcnm != null">
+                AND M.MBR_NCNM LIKE CONCAT('%', #{mbrNcnm}, '%')
+            </if>
+            <if test="pntDlngTypeCd != null">
+                AND G.PNT_DLNG_TYPE_CD = #{pntDlngTypeCd}
+            </if>
+            <if test="fromDt != null">
+                AND G.REG_DT &gt;= #{fromDt}
+            </if>
+            <if test="toDt != null">
+                AND G.REG_DT &lt; DATE_ADD(#{toDt}, INTERVAL 1 DAY)
+            </if>
+        </where>
+         ORDER BY G.REG_DT DESC
+                , G.PNT_GNLGR_SN DESC
+    </select>
+
+    <select id="selectAdminLedgerRow" resultMap="adminPointLedgerRowResultMap">
+        /* 관리자 포인트 원장 한 줄 */
+        <include refid="adminLedgerRowColumns" />
+         WHERE G.PNT_GNLGR_SN = #{pntGnlgrSn}
+    </select>
+
+    <select id="selectMemberSttsCd" resultType="java.lang.String">
+        /* 회원 상태 조회 */
+        SELECT MBR_STTS_CD
+          FROM MBR
+         WHERE MBR_SN = #{mbrSn}
+    </select>
+
     <select id="selectLedgerList" resultMap="pointLedgerSummaryResultMap">
         /* 기간 포인트 내역 조회(최신순) */
         SELECT G.PNT_GNLGR_SN

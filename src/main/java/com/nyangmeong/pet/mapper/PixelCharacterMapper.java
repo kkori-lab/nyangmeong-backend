@@ -10,6 +10,9 @@ import com.nyangmeong.pet.domain.CharacterItemSheet;
 import com.nyangmeong.pet.domain.CharacterJobStatusHistory;
 import com.nyangmeong.pet.domain.CharacterPhoto;
 import com.nyangmeong.pet.domain.PixelCharacter;
+import com.nyangmeong.pet.dto.AdminCharacterJobRow;
+import com.nyangmeong.pet.dto.AdminCharacterJobSearchCond;
+import com.nyangmeong.pet.dto.AdminCharacterJobStatusCount;
 import com.nyangmeong.pet.dto.HeldItemSummary;
 import com.nyangmeong.pet.dto.PetProfileSummary;
 import com.nyangmeong.pet.dto.PixelCharacterSummary;
@@ -213,4 +216,14 @@ public interface PixelCharacterMapper {
      * 캐릭터 생성용 반려동물 정보 조회
      */
     PetProfileSummary selectPetProfile(Long petSn);
+
+    /**
+     * 관리자 캐릭터 생성 작업 상태별 건수 (있는 상태만, SCR-ADM-082)
+     */
+    List<AdminCharacterJobStatusCount> selectAdminJobStatusCounts();
+
+    /**
+     * 관리자 캐릭터 생성 작업 목록 (상태 필터, 최신순, SCR-ADM-082)
+     */
+    List<AdminCharacterJobRow> selectAdminJobList(@Param("cond") AdminCharacterJobSearchCond cond);
 }
