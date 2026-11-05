@@ -41,5 +41,6 @@ public class SecurityPathProperties {
             "/api/members/me/nickname",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/v3/api-docs/**");
+            "/v3/api-docs/**",
+            "/internal/ai/tools");
 }

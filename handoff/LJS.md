@@ -2,15 +2,21 @@
 
 ## 지금 하는 것
 
-SCR-ADM-001 대시보드 · 운영 현황·처리 대기 API — 끝 (2026-11-05). `admin` 패키지에 `AdminDashboardController`(`GET /api/admin/dashboard`)·`AdminDashboardService`·`AdminDashboardResponse`, 도메인 service 건수 메서드 8개(member·community·support·pet·expense·notification·global batch)와 Mapper 쿼리, `docs/api/admin.md` 새 파일. 검증 2회차 통과, 사람 확인 2026-11-05. SCR-ADM-060 장소는 화면을 없애(사람 결정 2026-11-04) 마일스톤 제외로 옮겼다
+SCR-AIM-012 AI 일정 생성 확인 · 도구 목록 내부 API — 끝 (2026-11-05). `global/aitool`에 `@AiTool`·`@AiCode`·`@AiRequiredIf`·`@AiOneOf`, `AiToolCatalogService`(핸들러 매핑과 요청 DTO 검증 어노테이션을 읽어 도구 목록·SHA-256 `version`·`structureVersion`), `GET /internal/ai/tools`(쿠키 없이, `SecurityPathProperties` 기본값과 `.example`에 열린 경로 추가), health 일정·케어 항목 등록에 `draft_schedule`·`draft_care_item` 표시, `docs/api/ai.md` 행·DTO. 검증 1회차 통과, 사람 확인 2026-11-05
 
 ### 추가 요청
 
-| 추가-1 | `build.gradle`(`tasks.named('test')`에 `maxParallelForks`) | 명령: `./gradlew build -q` 0을 연속 2회, 병렬 전 대비 빌드 시간 단축 | 요청 2026-11-05 15:27 "PR 생성(빌드)이 3분 넘게 걸림. CI도 오래 걸려 고치려 했음. 효과가 가장 큰 것부터 여기서 적용" |
+| 추가-1 | 로컬 `src/main/resources/application.properties`(git 제외) `app.security.permit-all-paths`에 `/api/auth/sns-login`·`/internal/ai/tools` | 명령: `./gradlew build -q` 0 | 요청 2026-11-05 "sns-login 목록이랑 같이 넣어줘"(로컬 목록에 sns-login이 없어 AuthLoginControllerTest 5개가 변경 전부터 401) |
 
-- 추가-1 결과: `maxParallelForks` = 코어 절반·최대 4(CI 2개, `-PtestForks=N`으로 바꿈). `./gradlew clean build -q` 연속 2회 0. 로컬은 다른 Java 프로세스로 CPU 67% 사용 중이라 시간 비교가 흔들렸다(포크 1개 102~172초, 병렬 63~191초). 효과는 PR #168 CI Build 단계(병렬 전 110초)와 비교한다. 사람이 PR #168에 넣기로 함(2026-11-05)
+- 추가-1 결과: 로컬 파일에 두 경로가 들어갔고 `./gradlew build -q` 0. 변경 전 실패하던 `AuthLoginControllerTest` SNS 로그인 5개도 통과
 
 ## 다음에 할 것
+
+- 다음 백엔드 작업(분리, 2026-11-05 사람 결정): 서비스 검사 `INVALID_INPUT_VALUE`에 칸 이름 담기(`CustomException`·`GlobalExceptionHandler`, ai 설계 `tool-catalog.md` 3-3절). 응답 모양은 지금의 `data: [{field, message}]`. 예: 정기관리 케어 항목에 `careCycleCd` 없이 보내면 400인데 칸 이름이 없다
+- SCR-AIM-012 도구 목록 연결 남음: FN-AIM-012-05·06·07·13 (ai 저장소 가짜 응답 → `GET /internal/ai/tools`, ai `docs/api/internal.md` 행 확정, 설계 8절 3번, ai 세션)
+- ai-50에 보낸다(PR 뒤): PR 번호와 실제 `GET /internal/ai/tools` 응답 JSON 한 벌(ai가 스냅샷으로 씀). 가짜와 다른 4곳(`cldrBadgeColrCd`·`schdlSrcCd` code, `codes` 목록, `min`·`max`)은 이미 알림(2026-11-05)
+- 디스코드 공유 `application.properties`(사람): `app.security.permit-all-paths`에 `/api/auth/sns-login`·`/internal/ai/tools`. 팀에 알린다: 각자 로컬 목록에도 넣지 않으면 `GET /internal/ai/tools`가 401
+- JAJ에게 알린다(PR 전, SCR-AIM-012 도구 목록): `CareScheduleController`·`CareItemController`의 `create`와 `CareScheduleCreateRequest`·`CareItemCreateRequest`에 AI 도구 표시 어노테이션만 붙였다(동작 그대로). DTO 검증·조건부 필수를 바꾸면 `@AiRequiredIf`도 같이 고친다. 시드 `CARE_ARTCL` 2번 빗질하기가 일상관리(HLTC0036)인데 주기 HLTC0038이 있다(`db/seed/20261028_seed_data.sql:88`, 등록 API로는 생기지 않는 조합)
 
 - SCR-ADM-001 연결 남음: FN-ADM-001-02·03 (프론트 연결 `features/adminDashboard/api.js` `getAdminDashboard`, 프론트 저장소에서 /start). 프론트 마일스톤에 절 넣음(`SCR-ADM-001 대시보드 · 운영 현황·처리 대기 API 연결`). 프론트에 알릴 것: 필드는 가짜 그대로, 게시글 수·최근 게시글은 삭제 글 포함(관리자 게시글 목록과 같음), 회원 수는 관리자 계정 제외, 계약은 `docs/api/admin.md`
 - 다음 백엔드 작업: `SCR-ADM-001 대시보드 · 이용 통계 API`(FN-ADM-001-04·05, `GET /api/admin/dashboard/stats`)

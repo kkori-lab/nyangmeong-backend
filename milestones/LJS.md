@@ -622,3 +622,11 @@
 - AI매니저 v0.10 SCR-AIM-013(v0.9 신설): 명세 9 = 마일스톤 3 + 제외 6
 - 건강기록: 명세 86 = 마일스톤 13 + 제외 73
 - 관리자: 명세 135 = 마일스톤 123 + 제외 12 (FN-ADM-100-01~04 공통코드 화면, 2026-11-01 사람 결정: 코드 변경이 드물어 SQL로 처리 / FN-ADM-023-07·050-04·073-01, 2026-10-30 결정, 구현 계획 B-3·B-4·B-5 / FN-ADM-060-01~05 장소 화면, 2026-11-04 사람 결정). 기능명세서 v0.4 사본 기준, DMS 업로드 전
+
+## SCR-AIM-012 AI 일정 생성 확인 · 도구 목록 내부 API — 끝
+- 기능: 명세 기능 ID 추가 없음(설계 `nyangmeong-ai` `docs/design/tool-catalog.md` 8절 2번, 8절 0번 기능 ID 추가 전. ai-50 요청 2026-11-05), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 기다리는 것: 없음(ai 저장소 8절 1번은 가짜 Java 응답으로 진행 중)
+- 완료 조건: 쿠키 없이 `GET /internal/ai/tools`가 200으로 `version`·`structureVersion`·`tools`를 주고, `tools`에 `draft_schedule`(`POST /api/pets/{petSn}/care-schedules`)·`draft_care_item`(`POST /api/pets/{petSn}/care-items`)이 `kind: CARD`로 칸·필수·조건부 규칙·공통코드 값과 함께 있다
+- 완료 조건 결과: 검증 `통과`(2026-11-05, 1회차), 사람 확인 2026-11-05(Postman: 쿠키 없이 `GET /internal/ai/tools` 200·두 도구 응답, 등록 API 두 개의 빈 본문 400 칸이 도구 목록 `required`와 같음). 정한 것: 어노테이션·수집·API는 `global/aitool`(health 2층이 붙이므로 ai 3층에 두지 않음), 400 오류 모양은 기존 `data: [{field, message}]` 유지, 칸 type에 `datetime`, `@Min`·`@Max` → `min`·`max`, 응답은 `ApiResponse`로 감쌈·도구 이름순, 해시는 `TokenHashUtil`(SHA-256), 열린 경로는 `SecurityPathProperties` 기본값과 `.example`(설정 방식 유지). 계약은 `docs/api/ai.md`
+- 추가: 추가-1 로컬 `application.properties`(git 제외) 열린 경로에 `/api/auth/sns-login`·`/internal/ai/tools`
+- 연결 남음: 걸치는 기능 FN-AIM-012-05·06·07·13 (ai 저장소 가짜 응답 `data/tools.snapshot.json` → 실제 `GET /internal/ai/tools`, ai `docs/api/internal.md` 행 확정, 설계 8절 3번, ai 세션)
