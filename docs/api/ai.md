@@ -131,14 +131,14 @@
 쓰는 API: GET /internal/ai/tools
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| name | String | Y | Python 설명과 짝짓는 키(예: `draft_schedule`, `draft_care_item`, `list_care_schedules`). 건강 READ 13개: `list_care_schedules`·`list_care_items`·`list_care_completions`·`list_daily_health_records`·`list_checkups`·`get_checkup`·`list_prescriptions`·`list_inspection_values`·`list_etc_inspections`·`list_repeat_preventions`·`get_health_indicators`·`list_observation_items`·`list_observation_cycles`. 읽기 결과 자르기는 Java가 기존 `size`·페이지 상한 그대로, 그 밖은 Python 요약(tool-catalog.md 9절) | `@AiTool.name` |
-| domain | String | Y | 예: `health` | `@AiTool.domain` |
+| name | String | Y | Python 설명과 짝짓는 키(예: `draft_schedule`, `draft_care_item`, `list_care_schedules`). 건강 READ 13개: `list_care_schedules`·`list_care_items`·`list_care_completions`·`list_daily_health_records`·`list_checkups`·`get_checkup`·`list_prescriptions`·`list_inspection_values`·`list_etc_inspections`·`list_repeat_preventions`·`get_health_indicators`·`list_observation_items`·`list_observation_cycles`. 가계부 READ 6개: `list_expenses`·`get_expense_total`·`list_expense_months`·`get_expense_statistics`·`list_expense_pets`·`get_receipt`. 반려동물 READ 10개: `list_pets`·`get_pet`·`list_caregivers`·`list_sent_caregiver_invitations`(보낸 초대)·`list_daily_missions`·`get_points`·`list_point_ledgers`·`list_pixel_characters`·`get_pixel_character`·`list_shop_items`(보유 여부 `hldYn`, 보유 아이템 GET이 따로 없다). 커뮤니티 READ 8개: `list_posts`·`list_health_tips`·`get_popular_photo`·`get_post`·`list_comments`·`list_lost_reports`·`list_care_recruitments`·`list_news`. 플레이스 READ 2개: `list_places`·`list_place_bookmarks`. 고객센터 READ 1개: `list_faqs`. 알림·1:1 채팅은 도구가 아니다. 읽기 결과 자르기는 Java가 기존 `size`·페이지 상한 그대로, 그 밖은 Python 요약(tool-catalog.md 9절) | `@AiTool.name` |
+| domain | String | Y | `health`·`expense`·`pet`·`community`·`place`·`support` | `@AiTool.domain` |
 | kind | String | Y | `READ`(Python이 바로 실행)·`CARD`(확인 카드) | `@AiTool.kind` |
 | call | Object | Y | `{method, path}`. path는 `{petSn}` 같은 경로 변수 그대로 | 컨트롤러 매핑 |
 | params | Map<String, Param> | Y | 키는 칸 이름. 값은 아래 Param. 값이 없는 속성은 키째 없다 | |
 | rules | List<Rule> | Y | `{requiredIf: {field, when, equals}}` 또는 `{oneOf: [칸…]}`. 조건 값이 여럿이면 값마다 한 줄. 없으면 빈 배열 | `@AiRequiredIf`·`@AiOneOf` |
 
-Param: `in`(`path`·`query`·`body`), `type`(`string`·`long`·`int`·`decimal`·`boolean`·`date`·`time`·`datetime`·`code`), `group`(코드 그룹), `required`(true일 때만), `minLength`·`maxLength`, `min`·`max`, `positive`, `pattern`, `precision`·`scale`, `codes`(`[{cd, nm}]`, `code` 칸만).
+Param: `in`(`path`·`query`·`body`), `type`(`string`·`long`·`int`·`decimal`·`boolean`·`date`·`time`·`datetime`·`code`), `group`(코드 그룹), `required`(true일 때만), `minLength`·`maxLength`, `min`·`max`, `positive`, `pattern`(`YearMonth` 칸은 `string` + `^\d{4}-(0[1-9]|1[0-2])$`), `precision`·`scale`, `codes`(`[{cd, nm}]`, `code` 칸만).
 
 ### HealthReportContextResponse
 쓰는 API: GET /internal/ai/pets/{petSn}/health-report-input

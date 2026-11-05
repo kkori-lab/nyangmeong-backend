@@ -2,6 +2,8 @@ package com.nyangmeong.place.dto;
 
 import java.math.BigDecimal;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -18,6 +20,7 @@ import lombok.Data;
 @Data
 public class PlaceSearchCond {
     @NotBlank
+    @AiCode("PLCG01")
     private String plcClsfCd;
     @Size(max = 100)
     private String keyword;

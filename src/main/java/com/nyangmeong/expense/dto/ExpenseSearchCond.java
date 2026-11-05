@@ -2,6 +2,8 @@ package com.nyangmeong.expense.dto;
 
 import java.time.LocalDate;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import lombok.Data;
 
 /**
@@ -16,5 +18,6 @@ public class ExpenseSearchCond {
     private LocalDate endYmd;
     private Long petSn;
     private Boolean common;
+    @AiCode("MYPG05")
     private String expndClsfCd;
 }

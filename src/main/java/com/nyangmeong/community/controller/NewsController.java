@@ -2,6 +2,7 @@ package com.nyangmeong.community.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -10,6 +11,8 @@ import com.nyangmeong.community.dto.NewsResponse;
 import com.nyangmeong.community.dto.NewsSearchCond;
 import com.nyangmeong.community.dto.NewsSummary;
 import com.nyangmeong.community.service.NewsService;
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.response.PageResponse;
@@ -29,8 +32,10 @@ public class NewsController {
     private final NewsService newsService;
 
     @Operation(summary = "펫뉴스 목록 (카테고리·제목/내용 검색, 최신순)")
+    @AiTool(name = "list_news", domain = "community", kind = AiToolKind.READ)
     @GetMapping
-    public ResponseEntity<ApiResponse<PageResponse<NewsSummary>>> search(NewsSearchCond cond, PageQuery pq) {
+    public ResponseEntity<ApiResponse<PageResponse<NewsSummary>>> search(
+            @ModelAttribute NewsSearchCond cond, PageQuery pq) {
         return ResponseEntity.ok(ApiResponse.success(newsService.search(cond, pq)));
     }
 

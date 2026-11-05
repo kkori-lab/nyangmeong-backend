@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.response.PageResponse;
@@ -31,6 +33,7 @@ public class PlaceController {
     private final PlaceService placeService;
 
     @Operation(summary = "장소 검색 (카테고리·키워드·지도 범위, 추천·거리·이름순, 15건씩)")
+    @AiTool(name = "list_places", domain = "place", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<PlaceSummary>>> search(@AuthenticationPrincipal LoginMember me,
             @Valid @ModelAttribute PlaceSearchCond cond, PageQuery pq) {
