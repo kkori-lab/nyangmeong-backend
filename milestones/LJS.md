@@ -512,10 +512,13 @@
 - 완료 조건 결과: 검증 `통과`(2026-11-05. 1회차 실패는 기획과 다른 서비스 분리 → 루프를 버리고 추가-1로 받아 재검증), 사람 확인 2026-11-05. 위 `## SCR-ADM-072 포인트 — 대기` 절의 FN-ADM-072-01~03도 이 절로 끝냈다(절 정리는 사람). 정한 것: 현재 잔액은 `GET /api/admin/members/{mbrSn}`의 `hldPnt`, 상한 ±100,000·사유 1~200자(가정 그대로), 잔액 부족 400 `POINT_NOT_ENOUGH`, 탈퇴 회원 404 `MEMBER_NOT_FOUND`, 멱등 ID 서버 `ADJ-<UUID>`. 추가-1: 검증·감사 로그·검색은 새 `AdminPointService`, `PointService.adjustByAdmin`은 원장 기록만(기존 `PointServiceTest` 생성자 보존)
 - 연결 남음: FN-ADM-072-01·02 (프론트 연결 `features/adminPoint/api.js` 원장 목록·조정 모달·현재 잔액 `hldPnt`, 프론트 저장소에서 /start)
 
-## SCR-ADM-080 라우팅 매핑표 · 프론트 연결 관리자 매핑표 API — 대기
+## SCR-ADM-080 라우팅 매핑표 · 프론트 연결 관리자 매핑표 API — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-080-01·02·03·04·05
 - 기다리는 것: 프론트 SCR-ADM-080(끝, 가짜 응답 `features/adminAiRoute/api.js`)
 - 완료 조건: `GET /api/admin/ai/routes?q=`(우선순위 순 전체 목록, `q`는 지시어 공백 무시 부분 일치, 한 줄은 `AI_ROUT_MPNG` 필드 `aiRoutMpngSn`·`domnNm`·`trgtScrnNm`·`scrnId`·`scrnParamCn`·`instKwrdCn`·`mvmnMthdCd`(AIMG09)·`rprsChipYn`·`prrtSeq`·`rmrkCn`·`useYn`·`mdfcnDt`), `POST /api/admin/ai/routes`·`PATCH /api/admin/ai/routes/{aiRoutMpngSn}`(본문에 `prrtSeq`를 받으면 그 자리에 넣고 나머지를 한 칸씩 밀어 1부터 빈틈없이, 등록 기본값은 맨 아래), `DELETE /api/admin/ai/routes/{aiRoutMpngSn}`(뒤 순위를 당김), 감사 로그. 지시어 저장 형식(프론트 가정: 쉼표 구분 한 줄)과 `domnNm` 정하는 규칙(프론트 가정: 화면 ID 가운데 세 글자), 화면 ID 선택지 출처를 정해 프론트에 알린다. AI 서버·대화창용 조회 API(FN-ADM-080-04)와 부록 A 초기 데이터 INSERT(FN-ADM-080-05). 나중에 우선순위를 지시어별로 둘지(프론트 후속 메모) 함께 본다
+- 완료 조건 결과: 검증 `확인 못 함 있음`(2026-11-05, 1회차. 내 몫 확인 못 함 없음, 남은 것은 연결뿐), 사람 확인 2026-11-05. 정한 것: `ai` 도메인 `/api/admin/ai/routes` 네 개와 `/internal/ai/routes`(사용 중 행, `instKwrds` 배열), 계약은 `docs/api/ai.md`. 지시어는 쉼표 구분 한 줄(프론트 가정 그대로), `domnNm`은 서버가 `scrnId`의 `SCR-` 뒤 세 글자(없으면 `ETC`), 화면 ID 선택지는 서버 API 없이 프론트 목록, `rprsChipYn`·`useYn`은 true/false, 없는 행 404 `AI_ROUTE_NOT_FOUND`. 초기 데이터는 기준 데이터 v0.13 `[3]` 45행 그대로(공용 DB `PRRT_SEQ`는 첫 저장으로 1~45로 다시 매겨짐). 지시어별 우선순위는 하지 않음
+- 연결 남음: FN-ADM-080-01·02·03 (프론트 연결 `features/adminAiRoute/api.js` 목록·등록/수정 모달·삭제, `routeLabels.js` 'Y'/'N' 비교, 프론트 저장소에서 /start)
+- 연결 남음: FN-ADM-080-04 (ai 연결 `app/chat/rules.py` `routing_table()`이 `data/routing.yaml` 대신 `GET /internal/ai/routes`를 읽게, ai 저장소에서 /start)
 
 ## SCR-MAN-001 메인 · AI 건강분석 리포트 내부 API — 끝
 - 기능: 명세 기능 ID 추가 없음(명세 밖 추가 요청, ai-f2 2026-11-04), 걸치는 기능 FN-MAN-006(AI 건강분석 리포트 위젯 MANC0007)
