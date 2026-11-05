@@ -175,6 +175,11 @@
 - 기다리는 것: 없음(공통 조각 `MemberDisplay`는 develop에 있음)
 - 완료 조건: `GET /api/care-recruitments` 목록과 `GET /api/care-recruitments/{petPrtcRcrtSn}` 상세에서 파기된 회원(상태 탈퇴 + 이메일 HMAC `PURGED`)이 쓴 글의 `mbrNcnm`이 「탈퇴한 회원」, `mbrAtchFileSn`이 null이다. 상세 `mtchSitterNcnm`도 돌보미가 파기 회원이면 「탈퇴한 회원」. 탈퇴했지만 파기 전인 회원은 원래 닉네임. 관리자 매칭 조회는 그대로
 
+## SCR-CMU-005 우리동네 펫돌봄 채팅 · 탈퇴 회원 표시 — 끝
+- 기능: 명세 기능 ID 추가 없음(SCR-CMU-001 펫이야기 · 탈퇴 회원 표시의 후속, 사람 요청 2026-11-05). 걸치는 기능 FN-CMU-005-02 내 채팅 목록, FN-CMU-005-01·04 채팅방 조회
+- 기다리는 것: 없음(공통 조각 `MemberDisplay`는 develop에 있음)
+- 완료 조건: `GET /api/chat-rooms` 목록과 `GET /api/chat-rooms/{otoChatRoomSn}` 조회에서 채팅 상대가 파기된 회원(상태 탈퇴 + 이메일 HMAC `PURGED`)이면 `ctptMbrNcnm`이 「탈퇴한 회원」, `ctptProfileAtchFileSn`이 null이다. 탈퇴했지만 파기 전인 회원은 원래 닉네임. 관리자 매칭 조회는 그대로
+
 ## 제외
 - FN-CMU-001-12: 화면만 있다(공유하기)
 - FN-CMU-003-05: 화면만 있다(공유하기)
