@@ -652,8 +652,8 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | pstTtl | String | Y | | PST.PST_TTL, CMU-004-04 |
 | pstCn | String | Y | | PST.PST_CN, CMU-004-04 |
 | mbrSn | Long | Y | 작성자 | PST.MBR_SN, CMU-004-04 |
-| mbrNcnm | String | Y | 작성자 | MBR.MBR_NCNM, CMU-004-04 |
-| mbrAtchFileSn | Long | N | 작성자 프로필 사진. 없으면 null | MBR.ATCH_FILE_SN, CMU-004-04 |
+| mbrNcnm | String | Y | 작성자. 파기된 회원(이메일 HMAC `PURGED`)은 「탈퇴한 회원」(탈퇴했지만 파기 전이면 원래 닉네임) | MBR.MBR_NCNM, CMU-004-04 |
+| mbrAtchFileSn | Long | N | 작성자 프로필 사진. 없으면 null. 파기된 회원이면 null | MBR.ATCH_FILE_SN, CMU-004-04 |
 | regDt | LocalDateTime | Y | 작성일 | 공통 감사 컬럼 REG_DT, CMU-004-04 |
 | inqCnt | Integer | Y | 조회수. 같은 회원은 하루 한 번 | PST.INQ_CNT, CMU-004-04 |
 | rcrtSttsCd | String | Y | 공통코드 PCAG01(모집중·매칭완료·거래완료) | PET_PRTC_RCRT.RCRT_STTS_CD, CMU-004-04 |
@@ -672,7 +672,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | liked | Boolean | Y | 내가 좋아요했는지 | PST_RCMDTN.USE_YN, CMU-004-12 |
 | owner | Boolean | Y | 작성자 본인인지(수정·삭제 버튼) | PST.MBR_SN, CMU-004-11 |
 | chatting | Boolean | Y | 내가 이 글로 채팅 중인지. 나가지 않은 참여 방 중 메시지가 1건 이상 오간 방이 있으면 true(지원자 수 `aplcntCnt`와 같은 기준, 작성자도 같은 규칙). 목록 응답에는 없다 | OTO_CHAT_ROOM.PST_SN, CHAT_PRTPNT.PTCP_STTS_CD, CMU-004-05 |
-| mtchSitterNcnm | String | N | 매칭 완료·거래 완료일 때 확정된 매칭의 돌보미(채팅을 건 지원자) 닉네임. 모집중이거나 확정 매칭이 없으면 null. 상세를 보는 로그인 회원 모두에게 보인다 | PET_PRTC_RCRT.CFMTN_PET_PRTC_MTCH_SN, MBR.MBR_NCNM, CMU-004-05 |
+| mtchSitterNcnm | String | N | 매칭 완료·거래 완료일 때 확정된 매칭의 돌보미(채팅을 건 지원자) 닉네임. 모집중이거나 확정 매칭이 없으면 null. 돌보미가 파기된 회원(이메일 HMAC `PURGED`)이면 「탈퇴한 회원」. 상세를 보는 로그인 회원 모두에게 보인다 | PET_PRTC_RCRT.CFMTN_PET_PRTC_MTCH_SN, MBR.MBR_NCNM, CMU-004-05 |
 
 #### CareRecruitmentPetItem (응답 record, 쓰는 DTO: CareRecruitmentResponse)
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
@@ -691,8 +691,8 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | pstTtl | String | Y | 1행 말줄임 | PST.PST_TTL, CMU-004-01 |
 | pstCn | String | Y | 설명 2행 말줄임 | PST.PST_CN, CMU-004-01 |
 | thumbnailAtchFileSn | Long | N | 첫 번째 사진. 없으면 null | PST_IMG.ATCH_FILE_SN, CMU-004-01 |
-| mbrNcnm | String | Y | 작성자 | MBR.MBR_NCNM, CMU-004-01 |
-| mbrAtchFileSn | Long | N | 작성자 프로필 사진. 없으면 null | MBR.ATCH_FILE_SN, CMU-004-01 |
+| mbrNcnm | String | Y | 작성자. 파기된 회원(이메일 HMAC `PURGED`)은 「탈퇴한 회원」(탈퇴했지만 파기 전이면 원래 닉네임) | MBR.MBR_NCNM, CMU-004-01 |
+| mbrAtchFileSn | Long | N | 작성자 프로필 사진. 없으면 null. 파기된 회원이면 null | MBR.ATCH_FILE_SN, CMU-004-01 |
 | rlsRgnNm | String | Y | 지역 | PET_PRTC_RCRT.RLS_RGN_NM, CMU-004-01 |
 | cstUnitCd | String | Y | 공통코드 PCAG02 | PET_PRTC_RCRT.CST_UNIT_CD, CMU-004-01 |
 | cstAmt | Integer | Y | 보수 | PET_PRTC_RCRT.CST_AMT, CMU-004-01 |

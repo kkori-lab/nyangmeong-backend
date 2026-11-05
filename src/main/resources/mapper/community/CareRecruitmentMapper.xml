@@ -107,8 +107,8 @@
     <sql id="careRecruitmentDetailSelect">
         SELECT <include refid="careRecruitmentColumns" />
              , P.MBR_SN
-             , M.MBR_NCNM
-             , M.ATCH_FILE_SN AS MBR_ATCH_FILE_SN
+             , <include refid="com.nyangmeong.global.mapper.MemberDisplay.ncnm"><property name="alias" value="M" /></include> AS MBR_NCNM
+             , <include refid="com.nyangmeong.global.mapper.MemberDisplay.atchFileSn"><property name="alias" value="M" /></include> AS MBR_ATCH_FILE_SN
              , P.PST_STTS_CD
              , P.PST_TTL
              , P.PST_CN
@@ -134,8 +134,8 @@
                    AND I.DEL_YN = 'N'
                  ORDER BY I.SORT_SEQ, I.PST_IMG_SN
                  LIMIT 1) AS THUMBNAIL_ATCH_FILE_SN
-             , M.MBR_NCNM
-             , M.ATCH_FILE_SN AS MBR_ATCH_FILE_SN
+             , <include refid="com.nyangmeong.global.mapper.MemberDisplay.ncnm"><property name="alias" value="M" /></include> AS MBR_NCNM
+             , <include refid="com.nyangmeong.global.mapper.MemberDisplay.atchFileSn"><property name="alias" value="M" /></include> AS MBR_ATCH_FILE_SN
              , R.RLS_RGN_NM
              , R.CST_UNIT_CD
              , R.CST_AMT
@@ -229,7 +229,7 @@
 
     <!-- 확정된 매칭의 돌보미(채팅을 건 지원자) 닉네임, 없으면 null -->
     <select id="selectMatchedSitterNcnm" resultType="string">
-        SELECT M.MBR_NCNM
+        SELECT <include refid="com.nyangmeong.global.mapper.MemberDisplay.ncnm"><property name="alias" value="M" /></include>
           FROM PET_PRTC_MTCH T
           JOIN OTO_CHAT_ROOM C
             ON C.OTO_CHAT_ROOM_SN = T.OTO_CHAT_ROOM_SN
