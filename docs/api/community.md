@@ -918,8 +918,8 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | lostTpofSn | Long | Y | | LOST_TPOF.LOST_TPOF_SN |
 | pstSn | Long | Y | 좋아요·댓글·신고에 쓴다 | LOST_TPOF.PST_SN |
 | mbrSn | Long | N | 작성자 회원 번호(댓글 「작성자」 배지). 찾았어요로 닫힌 응답은 null | PST.MBR_SN, CMU-002-07, 추가 요청 2026-10-30 |
-| mbrNcnm | String | N | 작성자 닉네임(화면 "토리맘 · 등록일시") | MBR.MBR_NCNM, 화면설계서 SCR-CMU-002-02 |
-| mbrAtchFileSn | Long | N | 작성자 프로필 사진 번호(`GET /files/public/{번호}`). 사진이 없거나 찾았어요로 닫힌 응답이면 null | MBR.ATCH_FILE_SN, 추가 요청 2026-10-30 |
+| mbrNcnm | String | N | 작성자 닉네임(화면 "토리맘 · 등록일시"). 파기된 회원(이메일 HMAC `PURGED`)은 「탈퇴한 회원」(탈퇴했지만 파기 전이면 원래 닉네임) | MBR.MBR_NCNM, 화면설계서 SCR-CMU-002-02 |
+| mbrAtchFileSn | Long | N | 작성자 프로필 사진 번호(`GET /files/public/{번호}`). 사진이 없거나 찾았어요로 닫힌 응답이면 null. 파기된 회원이면 null | MBR.ATCH_FILE_SN, 추가 요청 2026-10-30 |
 | regDt | LocalDateTime | N | 게시글 등록 일시 | PST.REG_DT, 화면설계서 SCR-CMU-002-02 |
 | pstTtl | String | Y | | PST.PST_TTL, CMU-002-09 |
 | lostTpofSttsCd | String | Y | 공통코드 CMUG03(실종·찾았어요) | LOST_TPOF.LOST_TPOF_STTS_CD, CMU-002-09 |
