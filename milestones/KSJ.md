@@ -157,6 +157,11 @@
 - 연결 남음: SCR-ADM-022 관리자 매칭 상세 완료 사진 (LJS `CareMatchDetailModal.jsx`를 새 경로로, 프론트 저장소에서 /start)
 - 완료 조건: 관리자 전용 `GET /api/admin/care-matches/{…}/images/{atchFileSn}`가 관리자이고 그 사진이 해당 모집글 완료 요청 회차 사진(`selectAdminCompletionPhotos`와 같은 조건)일 때만 이미지를 준다. 아니면 404. 채팅 사진은 비공개 저장(`fileStore.store`) 그대로. 방식은 `AdminInquiryController` `/{otoInqrySn}/images/{atchFileSn}`와 같게. `docs/api/`에 적고, 관리자 프론트(LJS `CareMatchDetailModal.jsx`의 `publicFileUrl` → `useFileImage`)에 경로를 알린다
 
+## SCR-CMU-001 펫이야기 · 탈퇴 회원 표시 — 진행
+- 기능: 명세 기능 ID 추가 없음(팀장 요청 2026-11-04, 사람 결정 2026-11-05). 걸치는 기능 FN-CMU-001-01 게시글 목록 조회, FN-CMU-001-04 게시글 상세 조회, FN-CMU-001-06 인기 포토, FN-CMU-001-07 건강팁, FN-CMU-001-11 댓글 조회
+- 기다리는 것: 없음
+- 완료 조건: 파기된 회원(상태 탈퇴 + 이메일 HMAC `PURGED` 표시)이 쓴 글·댓글의 `mbrNcnm`이 「탈퇴한 회원」, `mbrAtchFileSn`이 null로 온다. 탈퇴했지만 파기 전인 회원은 원래 닉네임 그대로. 응답에 탈퇴 여부 필드는 넣지 않는다. 관리자 응답은 그대로. 공통 SQL 조각을 이 화면에서 만들고 실종센터·펫돌봄·채팅·문의 화면은 같은 조각을 쓰는 후속 절로 나눈다
+
 ## 제외
 - FN-CMU-001-12: 화면만 있다(공유하기)
 - FN-CMU-003-05: 화면만 있다(공유하기)

@@ -34,8 +34,8 @@
              , CASE WHEN C.DEL_YN = 'Y' THEN 1 ELSE 0 END AS DEL_FLAG
              , CASE WHEN C.DEL_YN = 'Y' THEN NULL ELSE C.CMNT_CN END AS CMNT_CN
              , CASE WHEN C.DEL_YN = 'Y' THEN NULL ELSE C.MBR_SN END AS MBR_SN
-             , CASE WHEN C.DEL_YN = 'Y' THEN NULL ELSE M.MBR_NCNM END AS MBR_NCNM
-             , CASE WHEN C.DEL_YN = 'Y' THEN NULL ELSE M.ATCH_FILE_SN END AS MBR_ATCH_FILE_SN
+             , CASE WHEN C.DEL_YN = 'Y' THEN NULL ELSE <include refid="com.nyangmeong.global.mapper.MemberDisplay.ncnm"><property name="alias" value="M" /></include> END AS MBR_NCNM
+             , CASE WHEN C.DEL_YN = 'Y' THEN NULL ELSE <include refid="com.nyangmeong.global.mapper.MemberDisplay.atchFileSn"><property name="alias" value="M" /></include> END AS MBR_ATCH_FILE_SN
              , CASE WHEN C.SYS_AUTO_CRT_YN = 'Y' THEN 1 ELSE 0 END AS SYS_AUTO_CRT_FLAG
              , CASE WHEN C.DEL_YN = 'N' AND C.MBR_SN = #{mbrSn} THEN 1 ELSE 0 END AS OWNER_FLAG
              , C.REG_DT
