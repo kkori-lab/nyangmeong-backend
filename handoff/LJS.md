@@ -2,10 +2,12 @@
 
 ## 지금 하는 것
 
-SCR-ADM-081 키워드 사전 · 프론트 연결 관리자 키워드 사전 API — 끝 (2026-11-05). `ai`에 `AdminAiKeywordController`·`AdminAiKeywordService`(`/api/admin/ai/keywords` 조회·등록·수정·삭제, 분류 허용 목록 `AiKeywordClass`, 감사 로그)와 `AiKeywordController`(`GET /internal/ai/keywords`), 가계부 분류 초기 데이터 v0.13 (2), `docs/api/ai.md` 다섯 행·DTO 절. 검증 2회차(내 몫 확인 못 함 없음), 사람 확인 2026-11-05
+SCR-ADM-082 처리 현황 · 검사결과지 분석 현황 API — 끝 (2026-11-05). `global/external`에 `AdminPdfAnalysisController`(`GET /api/admin/processing/pdf-analyses`, PDF 분석 SYSC0025 건수 묶음·실패 목록)와 DTO 4개, `ExternalApiUsageService.searchPdfAnalyses`, Mapper 쿼리 2개, `docs/api/global.md` 행·DTO 절. 검증 1회차 통과, 사람 확인 2026-11-05
 
 ## 다음에 할 것
 
+- SCR-ADM-082 연결 남음: FN-ADM-082-03 (프론트 연결 `features/adminProcessing/api.js` `getAdminPdfAnalyses` 검사결과지 분석 탭, 프론트 저장소에서 /start). 프론트 마일스톤에 절 넣음(`SCR-ADM-082 처리 현황 · 검사결과지 분석 현황 API 연결`). 프론트에 알릴 것: 경로·필드는 가짜 그대로, 검사결과지가 아닌 파일은 서버가 따로 빼지 않고 Python이 성공으로 통지해 `scsCnt`·`totCnt`에 들어가고 실패 목록에는 없다, 계약은 `docs/api/global.md` `/admin/processing/pdf-analyses` 행
+- SCR-ADM-082 연결 남음: FN-ADM-082-03 (ai 연결 `app/checkup` PDF 분석 호출마다 `POST /internal/ai/external-api-calls` `{ extlApiSeCd: "SYSC0025", callRsltCd, rspnsMs, httpSttsVl, failRsn }` 통지, 검사결과지 아님 판정은 SYSC0021(성공), 시간초과 SYSC0023, API 오류 SYSC0022, ai 저장소에서 /start). 지금 ai 저장소는 이 통지를 보내지 않는다
 - SCR-ADM-081 연결 남음: FN-ADM-081-01·02 (프론트 연결 `features/adminAiKeyword/api.js` 목록·등록/수정 모달·삭제, 프론트 저장소에서 /start). 프론트 마일스톤에 절 넣음(`SCR-ADM-081 키워드 사전 · 관리자 키워드 사전 API 연결`). 프론트에 알릴 것: `useYn`은 true/false, 행에 `mpngCdNm` 추가, 404 `AI_KEYWORD_NOT_FOUND`(가짜 `KEYWORD_NOT_FOUND` 아님), 서버가 `kwrdClsfNm`을 글자 그대로 검사하므로 쉬운 말 바꾸기는 화면 표시만, 계약은 `docs/api/ai.md` "관리자 API" 절
 - SCR-ADM-081 연결 남음: FN-ADM-081-01 내부 제공 (ai 연결 `app/chat/rules.py`가 `data/register_dict.yaml` 대신 `GET /internal/ai/keywords?dictUsgCd=AIMC0037`을 읽게, ai 저장소에서 /start). ai에 알릴 것: 응답 행 `{ kwrdDictSn, kwrdClsfNm, artclNm, kwrdCn, intrpRsltCn, mpngCd }`, 사용 중 행만 `sortSeq` 순, '판정 규칙'·'시간' 행도 온다, `kwrdCn`은 예시 문구(`○일 후` 등)라 정규식 변환 규칙은 ai가 정한다(결정 ① 추천안). 가계부 분류(AIMC0038)를 누가 쓸지(OCR 분류 등)도 함께 정한다
 - 공용 DB(사람, 기록만): v0.13 (2) 가계부 분류 6건(71~76)은 2026-11-05 실행함. PR 본문에 "DB 변경 있음 v0.13 (2), 공용 DB 실행함"을 적고 팀에 각자 로컬 DB에 실행하라고 알린다. 검증으로 `KWRD_DICT` 69·70·77번(`DEL_YN='Y'`)과 감사 로그 270번 이후 행이 남는다. 그대로 둬도 된다
@@ -50,7 +52,7 @@ SCR-ADM-081 키워드 사전 · 프론트 연결 관리자 키워드 사전 API 
 - SCR-ADM-023 연결 남음: FN-ADM-023-01·02·04·06 (프론트 연결 `features/adminCommunity/api.js` 노출 콘텐츠 절 건강팁 표·지정 모달·오늘의 한마디 탭·AI 코멘트 탭, 프론트 저장소에서 /start). 프론트에 알릴 것: 후보 문구 필드 이름은 가정 그대로 `todayPhrsSn`·`phrsCn`(200자), `todayPhrs`는 오늘 노출 문구(없으면 null, 같은 문구 후보가 없으면 `todayPhrsSn` null), 건강팁 지정 모달의 글 검색은 기존 `GET /api/admin/posts?bbsCd=CMUC0001`
 - ERDCloud·표준사전(사람): 새 테이블 `TODAY_PHRS`(오늘의한마디후보: `TODAY_PHRS_SN`·`PHRS_CN` varchar(200)·`USE_YN`·`REG_DT`·`MDFCN_DT`·`RGTR_ID`·`MDFR_ID`)를 추가하고 물리명(TODAY·PHRS)을 표준사전에 맞춘다
 - 공용 DB 정리(사람): SCR-ADM-023 검증 데이터. `DELETE FROM TODAY_PHRS WHERE TODAY_PHRS_SN = 1;`("[verify] test phrase"), `DELETE FROM CMNTY_AI_CMTRY WHERE CMNTY_AI_CMTRY_SN = 31;`(2026-11-03 행, 사용 안 함). 글 8 블라인드·복구 상태 이력, 배치 이력 382·383, 감사 로그는 남겨도 된다. 사람 확인으로 등록한 후보 문구도 같은 방식
-- SCR-ADM-082 정리(팀장 결정 2026-11-04): FN-ADM-082-03 PDF 분석 실패 집계는 LJS가 `EXTL_API_CALL_LOG`(SYSC0025, Python 통지) 기준으로 직접 센다. JAJ 집계 service·검사결과지 첨부 수는 필요 없다. `milestones/LJS.md` SCR-ADM-082 "기다리는 것"은 고침(2026-11-04). 남은 것: `docs/admin/implementation-plan.md` 협의 표 JAJ 082 줄("PDF 분석 실패 집계용 조회 service") 삭제(다음 SCR-ADM-082 작업 때), "검사결과지가 아닌 파일" 결과 구분은 아직 미정
+- SCR-ADM-082 정리 남은 것(사람 또는 다음 관리자 작업): `docs/admin/implementation-plan.md` 협의 표 JAJ 082 줄("PDF 분석 실패 집계용 조회 service")을 지운다(팀장 결정 2026-11-04로 필요 없음)
 - JAJ에게 답한다(AI 등록 케어 항목 출처): 명세상 저장하지 않아도 된다(FN-AIM-012-13은 일정 출처만, FN-AIM-012-17 출처 배지 없음, 관리자 명세에도 쓰는 곳 없음). `CARE_ARTCL` 컬럼은 추가하지 않고 닫는다
 - SCR-ADM-022 연결 남음: FN-ADM-022-01·02 (프론트 연결 `features/adminCommunity/api.js` 펫돌봄 목록·매칭 상세 모달, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트 가짜와 다른 점: 조건 버전·완료 요청이 목록(`cndVers`·`cmptnDmnds`), 매칭 거래 상태 PCAG05(PCAC0012~0018)·보호자 확인 결과 PCAG06(PCAC0019·0020) 공통코드
 - SCR-ADM-022 연결 남음: FN-ADM-022-02 완료 사진 보기. `/api/files/public/{atchFileSn}`은 `public/` 경로 파일만 열어 지금 완료 사진(시드 3543·3544)은 404다. 완료 사진 업로드가 아직 없어(KSJ) 저장 경로를 정할 때 관리자가 볼 방법(공개 경로 또는 관리자 이미지 API)을 같이 정한다

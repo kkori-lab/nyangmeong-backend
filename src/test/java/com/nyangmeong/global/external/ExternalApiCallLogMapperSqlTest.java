@@ -46,6 +46,41 @@ class ExternalApiCallLogMapperSqlTest {
         return configuration.getMappedStatement(NAMESPACE + id).getBoundSql(param).getSql().replaceAll("\\s+", " ");
     }
 
+    private String pdfSql(String id, LocalDate fromYmd, LocalDate toYmd) {
+        PdfAnalysisSearchCond cond = new PdfAnalysisSearchCond();
+        cond.setFromYmd(fromYmd);
+        cond.setToYmd(toYmd);
+        Map<String, Object> param = new HashMap<>();
+        param.put("cond", cond);
+        param.put("pdfCd", "SYSC0025");
+        param.put("successCd", "SYSC0021");
+        param.put("timeoutCd", "SYSC0023");
+        param.put("failCd", "SYSC0022");
+        return configuration.getMappedStatement(NAMESPACE + id).getBoundSql(param).getSql().replaceAll("\\s+", " ");
+    }
+
+    @Test
+    void 검사결과지_분석_건수는_PDF_코드만_결과별로_세고_끝_날짜를_포함한다() {
+        String sql = pdfSql("selectPdfAnalysisSummary", LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 5));
+
+        assertThat(sql).contains("WHERE EXTL_API_SE_CD = ?");
+        assertThat(sql).contains("COUNT(*) AS TOT_CNT");
+        assertThat(sql).contains("COALESCE(SUM(CASE WHEN CALL_RSLT_CD = ? THEN 1 ELSE 0 END), 0) AS SCS_CNT");
+        assertThat(sql).contains("AS TMOT_CNT");
+        assertThat(sql).contains("AS ERR_CNT");
+        assertThat(sql).contains("AND CALL_DT >= ? AND CALL_DT < DATE_ADD(?, INTERVAL 1 DAY)");
+    }
+
+    @Test
+    void 검사결과지_분석_실패_목록은_성공을_빼고_최신순이며_기간이_없으면_걸지_않는다() {
+        String sql = pdfSql("selectPdfAnalysisFailures", null, null);
+
+        assertThat(sql).contains("WHERE EXTL_API_SE_CD = ? AND CALL_RSLT_CD <> ?");
+        assertThat(sql).doesNotContain("CALL_DT >=");
+        assertThat(sql).doesNotContain("DATE_ADD");
+        assertThat(sql).contains("ORDER BY CALL_DT DESC, EXTL_API_CALL_LOG_SN DESC");
+    }
+
     @Test
     void 종류별_사용량은_성공이_아닌_호출을_실패로_세고_끝_날짜를_포함한다() {
         String sql = sql("selectUsage", null);
