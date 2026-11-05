@@ -7,6 +7,9 @@ import org.apache.ibatis.annotations.Param;
 
 import com.nyangmeong.expense.domain.Receipt;
 import com.nyangmeong.expense.domain.ReceiptStatusHistory;
+import com.nyangmeong.expense.dto.AdminReceiptRow;
+import com.nyangmeong.expense.dto.AdminReceiptSearchCond;
+import com.nyangmeong.expense.dto.AdminReceiptSummary;
 
 /**
  * [영수증 Mapper]
@@ -57,4 +60,21 @@ public interface ReceiptMapper {
      * 마지막 상태 이력의 변경 사유
      */
     String selectLastChgRsn(@Param("recptSn") Long recptSn);
+
+    /**
+     * 관리자 OCR 현황 건수 묶음 : 기간·출처만 건다 (SCR-ADM-082)
+     */
+    AdminReceiptSummary selectAdminReceiptSummary(@Param("cond") AdminReceiptSearchCond cond,
+            @Param("scsCds") List<String> scsCds, @Param("failCd") String failCd, @Param("prcsCd") String prcsCd,
+            @Param("errCd") String errCd);
+
+    /**
+     * 관리자 OCR 현황 목록 : 기간·출처·상태, 최신순 (SCR-ADM-082)
+     */
+    List<AdminReceiptRow> selectAdminReceiptList(@Param("cond") AdminReceiptSearchCond cond);
+
+    /**
+     * 관리자 원본 보기용 첨부파일 번호 (회원 소유 검사 없음, SCR-ADM-082)
+     */
+    Long selectAtchFileSn(@Param("recptSn") Long recptSn);
 }

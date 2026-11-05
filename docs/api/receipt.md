@@ -15,6 +15,8 @@
 | POST | /receipts/{recptSn}/checkups?petSn= | 영수증 인식 실패·일시 오류 뒤 [직접 입력] 검진기록 등록. 영수증 상태 저장완료(인식성공·부분인식·미인식·일시오류에서), 검진기록에 이 영수증 연결(출처 직접 입력), 가계부 없음. 일정 연결은 직접 등록과 같다. 201. 오류: `RECEIPT_ALREADY_SAVED`·`RECEIPT_ALREADY_CANCELED`·`RECEIPT_ANALYZING`·`ALREADY_PROCESSED`(409), `RECEIPT_NOT_FOUND`(404) | HLT-002-31 | JAJ | ReceiptCheckupCreateRequest | CheckupResponse(`docs/api/health.md`) |
 | POST | /internal/ai/receipts | Python AI 서버가 분석 전에 원본을 저장한다(2026-10-29 결정 (나): React → Python `POST /ai/receipts`가 분석 중심). multipart, 확장자·파일 시그니처 검증, 쿠키 회원·`X-Requested-With`. 원본 파일(ATCH_FILE)과 RECPT(상태 분석중, 출처)를 만들고 201 `recptSn`. 분석이 실패해도 원본은 남는다. 오류: `FILE_TYPE_NOT_ALLOWED`·`FILE_TOO_LARGE`·`INVALID_INPUT_VALUE`(400), `PET_ACCESS_DENIED`(양육하지 않는 반려동물, 가계부 출처는 검사하지 않음) | AIM-008-09, AIM-010-06, AIM-013-08, MYP-031-03 | LJS | ReceiptOriginalRequest | ReceiptOriginalResponse |
 | POST | /internal/ai/receipts/{recptSn}/result | Python AI 서버가 분석 결과·상태를 보고한다. 분석중인 본인 영수증만. `RECOGNIZED`는 Java가 OCR 응답과 영수증 출처로 인식 성공·부분 인식·인식 실패를 나누고(병원명·사용처·날짜·금액·품목·약품이 모두 없으면 인식 실패. 인식 성공은 가계부 출처면 사용처·결제일·금액이 있고 품목명·약품이 빠짐없음(품목 0개 허용), 그 밖의 출처면 병원명·검진일·금액과 품목 1개 이상·품목명·약품이 빠짐없음, 나머지는 부분 인식), `TIMEOUT`·`API_ERROR`는 일시 오류로 두고 사유를 상태 이력에 남긴다. 200. 오류: `INVALID_INPUT_VALUE`(400, `ocrRslt` 없음·`RECOGNIZED`인데 `ocr` 없음), `BAD_REQUEST`(400, `ocrRslt` 허용값 밖), `RECEIPT_NOT_FOUND`(404), `RECEIPT_ALREADY_CANCELED`·`RECEIPT_ALREADY_SAVED`·`ALREADY_PROCESSED`(409, 분석중이 아님) | AIM-010-01, AIM-013-04 | LJS | ReceiptReportRequest | ReceiptReportResponse |
+| GET | /admin/processing/receipts?fromYmd=&toYmd=&ocrDmndSrcCd=&ocrPrcsSttsCd=&page=&size=20 | 관리자 처리 현황 영수증 OCR 탭. 건수 묶음 `summary`(현재 상태 기준, 기간·출처만 걸고 상태 필터와 무관)와 상태까지 건 목록(`REG_DT` 최신순, 같으면 `RECPT_SN` 내림차순). 기간은 등록일 양끝 포함, 모두 생략 가능. 분석 결과 내용(OCR 응답)은 주지 않는다(결정 26). 관리자만(일반 회원 403). 오류: `INVALID_INPUT_VALUE`(400, `fromYmd`가 `toYmd`보다 뒤, 모르는 출처·상태 코드) | ADM-082-01 | LJS | AdminReceiptSearchCond | AdminReceiptListResponse |
+| GET | /admin/processing/receipts/{recptSn}/image | 관리자 영수증 원본 이미지(비공개). 회원 소유와 관계없이 연다. 관리자만(일반 회원 403). 오류: `RECEIPT_NOT_FOUND`(404, 없는 영수증) | ADM-082-01 | LJS | - | 이미지 파일 |
 
 ## DTO
 
@@ -126,3 +128,41 @@ Java `global/external/ReceiptOcrResponse`, ai 저장소 `docs/api/internal.md` R
 | --- | --- | --- | --- | --- |
 | recptSn | Long | Y | | RECPT.RECPT_SN |
 | ckupRcds | List<CheckupRecord> | Y | 만든 검진기록. `petSn`·`ckupRcdSn` | CKUP_RCD.CKUP_RCD_SN |
+
+### AdminReceiptSearchCond
+쓰는 API: GET /admin/processing/receipts (쿼리 파라미터, 모두 선택)
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| fromYmd | LocalDate | N | `yyyy-MM-dd`, 등록일 이 날부터 | RECPT.REG_DT |
+| toYmd | LocalDate | N | `yyyy-MM-dd`, 등록일 이 날까지(포함). `fromYmd`보다 앞이면 400 | RECPT.REG_DT |
+| ocrDmndSrcCd | String | N | AIMG07(`AIMC0026` 건강기록·`AIMC0027` 가계부·`AIMC0031` AI 대화창), 그 밖은 400. 빈 값은 전체 | RECPT.OCR_DMND_SRC_CD |
+| ocrPrcsSttsCd | String | N | AIMG01, 목록에만 건다(summary 무관). 그 밖은 400. 빈 값은 전체 | RECPT.OCR_PRCS_STTS_CD |
+| page·size | Integer | N | 1부터, 기본 20·최대 50 | |
+
+### AdminReceiptListResponse
+쓰는 API: GET /admin/processing/receipts. `{ summary, content, page, size, totalElements, totalPages, hasNext }`
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| summary | AdminReceiptSummary | Y | 아래 | |
+| content | List<AdminReceiptRow> | Y | 아래 | |
+| page·size·totalElements·totalPages·hasNext | | Y | 공통 목록 응답과 같다 | |
+
+#### AdminReceiptSummary (AdminReceiptListResponse.summary)
+현재 상태 기준. 기간·출처만 걸고 상태 필터와 무관. 실패율은 화면이 `failCnt / totCnt`로 계산한다
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| totCnt | long | Y | 전체(취소 포함) | RECPT |
+| scsCnt | long | Y | 인식성공·부분인식·저장완료(AIMC0002·0003·0007). 인식 실패 뒤 직접 입력으로 저장완료된 건도 들어간다 | RECPT.OCR_PRCS_STTS_CD |
+| failCnt | long | Y | 인식실패(AIMC0004). 대시보드 `ocrFailCnt`·목록 상태 필터 건수와 같다 | RECPT.OCR_PRCS_STTS_CD |
+| prcsCnt | long | Y | 분석중(AIMC0001) | RECPT.OCR_PRCS_STTS_CD |
+| errCnt | long | Y | 일시오류(AIMC0005) | RECPT.OCR_PRCS_STTS_CD |
+
+#### AdminReceiptRow (AdminReceiptListResponse.content)
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| recptSn | Long | Y | | RECPT.RECPT_SN |
+| mbrSn | Long | Y | 올린 회원 | RECPT.MBR_SN |
+| mbrNcnm | String | Y | | MBR.MBR_NCNM |
+| ocrDmndSrcCd | String | Y | AIMG07 | RECPT.OCR_DMND_SRC_CD |
+| ocrPrcsSttsCd | String | Y | AIMG01 | RECPT.OCR_PRCS_STTS_CD |
+| regDt | LocalDateTime | Y | 요청 일시 | RECPT.REG_DT |

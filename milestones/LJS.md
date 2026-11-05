@@ -529,10 +529,12 @@
 - 기다리는 것: 프론트 SCR-ADM-081(끝, 가짜 응답 `features/adminAiKeyword/api.js`)
 - 완료 조건: `GET /api/admin/ai/keywords?dictUsgCd=&kwrdClsfNm=`(용도·분류가 같은 행, `sortSeq`·`kwrdDictSn` 순, 한 줄은 `KWRD_DICT` 필드 `kwrdDictSn`·`dictUsgCd`·`kwrdClsfNm`·`artclNm`·`kwrdCn`·`intrpRsltCn`·`mpngCd`·`sortSeq`·`rmrkCn`·`useYn`), `POST /api/admin/ai/keywords`(본문 `dictUsgCd`·`kwrdClsfNm`·`artclNm`·`kwrdCn`·`intrpRsltCn`·`mpngCd`·`rmrkCn`, 새 행 `sortSeq`는 프론트 가정 그 탭 맨 아래), `PATCH`·`DELETE /api/admin/ai/keywords/{kwrdDictSn}`, 감사 로그. 프론트 탭은 AIMC0037의 등록 동사·날짜·주기·일정 종류·검진유형(판정 규칙·시간 행은 뺌)과 AIMC0038 "가계부 카테고리". 가계부 분류(AIMC0038) 초기 키워드 INSERT. AI 서버·대화창용 조회 API: 예시 문구 형식 차이: AI 서버 `ai/data/register_dict.yaml`은 정규식(`(잡아|등록해)(줘|주|줄)`·`\d+일후`), DB `KWRD_CN`은 부록 B 예시 문구(`잡아줘, 등록해줘`·`○일 후`)라 그대로 못 쓴다. 사전에 정규식을 저장할지, 예시를 정규식으로 바꾸는 규칙을 둘지 정한다
 
-## SCR-ADM-082 처리 현황 · 영수증 OCR 현황 API — 대기
+## SCR-ADM-082 처리 현황 · 영수증 OCR 현황 API — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-082-01
 - 기다리는 것: 프론트 SCR-ADM-082(가짜 응답으로 완료, `features/adminProcessing/api.js`)
 - 완료 조건: `GET /api/admin/processing/receipts?fromYmd=&toYmd=&ocrRqstSrcCd=&ocrPrcsSttsCd=&page=&size=`가 기간·출처 기준 summary(`totCnt`·`scsCnt`·`failCnt`·`prcsCnt`, 상태 필터와 무관)와 상태까지 건 목록(`recptSn`·`mbrSn`·`mbrNcnm`·`ocrRqstSrcCd`·`ocrPrcsSttsCd`·`frstRegDt`)을 준다. `GET /api/admin/processing/receipts/{recptSn}/image`가 비공개 원본 이미지를 준다. 가계부 출처 코드를 정한다
+- 완료 조건 결과: 검증 `통과`(2026-11-05, 1회차), 사람 확인 2026-11-05. 정한 것: 필드·파라미터 이름은 DB 컬럼대로 `ocrDmndSrcCd`·`regDt`(가정 `ocrRqstSrcCd`·`frstRegDt`와 다름), 가계부 출처 `AIMC0027`, summary는 현재 상태 기준 `scsCnt`(AIMC0002·0003·0007)·`failCnt`(AIMC0004)·`prcsCnt`(AIMC0001)에 `errCnt`(AIMC0005) 추가, 모르는 출처·상태 코드와 `fromYmd > toYmd`는 400. 계약은 `docs/api/receipt.md` `/admin/processing/receipts` 두 행
+- 연결 남음: FN-ADM-082-01 (프론트 연결 `features/adminProcessing/api.js` `getAdminReceipts`·`processingLabels.js` 출처·상태 코드·`ReceiptImageModal.jsx`, 프론트 저장소에서 /start)
 
 ## SCR-ADM-082 처리 현황 · 캐릭터 생성 현황 API — 대기
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-082-02
