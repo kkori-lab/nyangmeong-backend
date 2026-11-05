@@ -27,6 +27,7 @@ import com.nyangmeong.support.dto.AdminInquiryAnswerRequest;
 import com.nyangmeong.support.dto.AdminInquiryResponse;
 import com.nyangmeong.support.dto.AdminInquirySearchCond;
 import com.nyangmeong.support.dto.AdminInquirySummary;
+import com.nyangmeong.support.dto.AdminUnansweredInquiryCountResponse;
 import com.nyangmeong.support.dto.InquiryImageSummary;
 import com.nyangmeong.support.mapper.InquiryMapper;
 
@@ -237,5 +238,15 @@ public class AdminInquiryService {
 
     private String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.strip();
+    }
+
+    /**
+     * 미답변 문의 수 조회
+     */
+    @Transactional(readOnly = true)
+    public AdminUnansweredInquiryCountResponse countUnanswered() {
+        String sttsCd = InquiryStatus.RECEIVED.getCode();
+        return new AdminUnansweredInquiryCountResponse(inquiryMapper.countByStatus(sttsCd, null),
+                inquiryMapper.countByStatus(sttsCd, InquiryType.PIXEL_CHARACTER.getCode()));
     }
 }

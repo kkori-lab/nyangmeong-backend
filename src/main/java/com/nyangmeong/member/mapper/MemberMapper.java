@@ -8,9 +8,11 @@ import org.apache.ibatis.annotations.Param;
 
 import com.nyangmeong.member.domain.Member;
 import com.nyangmeong.member.dto.AdminAccountSummary;
+import com.nyangmeong.member.dto.AdminDashboardMemberSummary;
 import com.nyangmeong.member.dto.AdminMemberSearchCond;
 import com.nyangmeong.member.dto.AdminMemberStatusHistorySummary;
 import com.nyangmeong.member.dto.AdminMemberSummary;
+import com.nyangmeong.member.dto.AdminRecentMemberSummary;
 import com.nyangmeong.member.dto.AdminSuspensionSummary;
 import com.nyangmeong.member.dto.AdminWithdrawnMemberSummary;
 
@@ -94,6 +96,12 @@ public interface MemberMapper {
      * 비밀번호 해시 변경, 탈퇴 회원은 바꾸지 않는다
      */
     int updatePassword(@Param("mbrSn") Long mbrSn, @Param("pswdHash") String pswdHash,
+            @Param("withdrawnSttsCd") String withdrawnSttsCd, @Param("actorId") String actorId);
+
+    /**
+     * 정상 → 탈퇴, 정상 회원만 바뀐다 (0이면 이미 탈퇴·정지). 탈퇴 시각을 30일 보관 기준으로 남긴다
+     */
+    int updateWithdraw(@Param("mbrSn") Long mbrSn, @Param("normalSttsCd") String normalSttsCd,
             @Param("withdrawnSttsCd") String withdrawnSttsCd, @Param("actorId") String actorId);
 
     /**
@@ -208,4 +216,16 @@ public interface MemberMapper {
      * 상태별 회원 수 조회
      */
     int countByStatus(String mbrSttsCd);
+
+    /**
+     * 관리자 대시보드 회원 건수 조회
+     */
+    AdminDashboardMemberSummary selectDashboardCounts(@Param("mbrAuthrtCd") String mbrAuthrtCd,
+            @Param("nrmlSttsCd") String nrmlSttsCd, @Param("stopSttsCd") String stopSttsCd);
+
+    /**
+     * 관리자 대시보드 최근 가입 회원 조회
+     */
+    List<AdminRecentMemberSummary> selectRecentMembers(@Param("mbrAuthrtCd") String mbrAuthrtCd,
+            @Param("mbrSttsCds") List<String> mbrSttsCds, @Param("limit") int limit);
 }

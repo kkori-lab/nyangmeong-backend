@@ -1,5 +1,6 @@
 package com.nyangmeong.notification.mapper;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
@@ -32,4 +33,9 @@ public interface NotificationSendingLogMapper {
      * - 알림 본문은 읽지 않는다
      */
     List<AdminNotificationLogSummary> selectAdminList(AdminNotificationLogSearchCond cond);
+
+    /**
+     * 발송 결과별 기준 일시 이후 발송 수 조회
+     */
+    long countByResultSince(@Param("sndngRsltCd") String sndngRsltCd, @Param("sinceDt") LocalDateTime sinceDt);
 }

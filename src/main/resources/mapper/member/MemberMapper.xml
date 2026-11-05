@@ -222,6 +222,17 @@
            AND MBR_STTS_CD != #{withdrawnSttsCd}
     </update>
 
+    <update id="updateWithdraw">
+        /* 회원탈퇴 : 정상 회원만 탈퇴로, 탈퇴 시각이 30일 보관의 기준 */
+        UPDATE MBR
+           SET MBR_STTS_CD = #{withdrawnSttsCd}
+             , WHDWL_DT = NOW()
+             , MDFR_ID = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE MBR_SN = #{mbrSn}
+           AND MBR_STTS_CD = #{normalSttsCd}
+    </update>
+
     <update id="updateRecover">
         /* 탈퇴 보관 회원 복구 : 보관 기간 안일 때만 정상으로 */
         UPDATE MBR
@@ -510,5 +521,45 @@
         SELECT COUNT(*)
           FROM MBR
          WHERE MBR_STTS_CD = #{mbrSttsCd}
+    </select>
+    <resultMap id="adminDashboardMemberResultMap" type="com.nyangmeong.member.dto.AdminDashboardMemberSummary">
+        <result column="TOT_MBR_CNT"    property="totMbrCnt" />
+        <result column="NRML_MBR_CNT"   property="nrmlMbrCnt" />
+        <result column="STOP_MBR_CNT"   property="stopMbrCnt" />
+        <result column="TODAY_JOIN_CNT" property="todayJoinCnt" />
+        <result column="WEEK_JOIN_CNT"  property="weekJoinCnt" />
+    </resultMap>
+
+    <select id="selectDashboardCounts" resultMap="adminDashboardMemberResultMap">
+        /* 관리자 대시보드 회원 건수 : 가입 수는 상태 무관, 최근 7일은 오늘 포함 */
+        SELECT COALESCE(SUM(CASE WHEN MBR_STTS_CD IN (#{nrmlSttsCd}, #{stopSttsCd}) THEN 1 ELSE 0 END), 0) AS TOT_MBR_CNT
+             , COALESCE(SUM(CASE WHEN MBR_STTS_CD = #{nrmlSttsCd} THEN 1 ELSE 0 END), 0) AS NRML_MBR_CNT
+             , COALESCE(SUM(CASE WHEN MBR_STTS_CD = #{stopSttsCd} THEN 1 ELSE 0 END), 0) AS STOP_MBR_CNT
+             , COALESCE(SUM(CASE WHEN REG_DT &gt;= CURDATE() THEN 1 ELSE 0 END), 0) AS TODAY_JOIN_CNT
+             , COALESCE(SUM(CASE WHEN REG_DT &gt;= DATE_SUB(CURDATE(), INTERVAL 6 DAY) THEN 1 ELSE 0 END), 0) AS WEEK_JOIN_CNT
+          FROM MBR
+         WHERE MBR_AUTHRT_CD = #{mbrAuthrtCd}
+    </select>
+
+    <resultMap id="adminRecentMemberResultMap" type="com.nyangmeong.member.dto.AdminRecentMemberSummary">
+        <id     column="MBR_SN"   property="mbrSn" />
+        <result column="MBR_NCNM" property="mbrNcnm" />
+        <result column="REG_DT"   property="regDt" />
+    </resultMap>
+
+    <select id="selectRecentMembers" resultMap="adminRecentMemberResultMap">
+        /* 관리자 대시보드 최근 가입 회원 */
+        SELECT MBR_SN
+             , MBR_NCNM
+             , REG_DT
+          FROM MBR
+         WHERE MBR_AUTHRT_CD = #{mbrAuthrtCd}
+           AND MBR_STTS_CD IN
+        <foreach collection="mbrSttsCds" item="mbrSttsCd" open="(" separator="," close=")">
+            #{mbrSttsCd}
+        </foreach>
+         ORDER BY REG_DT DESC
+                , MBR_SN DESC
+         LIMIT #{limit}
     </select>
 </mapper>

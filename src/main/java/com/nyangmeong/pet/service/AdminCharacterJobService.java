@@ -56,4 +56,15 @@ public class AdminCharacterJobService {
         List<AdminCharacterJobRow> rows = pixelCharacterMapper.selectAdminJobList(c);
         return AdminCharacterJobListResponse.of(sttsCnts, PageResponse.of(new PageInfo<>(rows)));
     }
+
+    /**
+     * 생성 실패 작업 수 조회
+     */
+    @Transactional(readOnly = true)
+    public long countFailed() {
+        return pixelCharacterMapper.selectAdminJobStatusCounts().stream()
+                .filter(count -> CharacterJobStatus.FAILED.is(count.getCrtJobSttsCd()))
+                .mapToLong(AdminCharacterJobStatusCount::getCnt)
+                .sum();
+    }
 }

@@ -83,4 +83,15 @@ public class AdminReceiptService {
     private static String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
     }
+
+    /**
+     * 인식 실패 영수증 수 조회
+     */
+    @Transactional(readOnly = true)
+    public long countOcrFailed() {
+        AdminReceiptSummary summary = receiptMapper.selectAdminReceiptSummary(new AdminReceiptSearchCond(),
+                SUCCESS_CDS, ReceiptStatus.NOT_RECOGNIZED.getCode(), ReceiptStatus.ANALYZING.getCode(),
+                ReceiptStatus.TEMPORARY_ERROR.getCode());
+        return summary == null ? 0 : summary.getFailCnt();
+    }
 }

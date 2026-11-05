@@ -326,11 +326,6 @@
 - 기다리는 것: 약관 2종 코드 migration, `member` 약관 협의 (YAY)
 - 완료 조건: 새 버전을 등록하면 이전 버전은 이력으로 남고 가입 화면은 새 버전을 보여 준다
 
-## SCR-ADM-060 장소 — 대기
-- 기능: FN-ADM-060-01 장소 목록 조회, FN-ADM-060-02 장소 노출 설정, FN-ADM-060-03 place_url 수동 매칭, FN-ADM-060-04 공공데이터 수집 실행, FN-ADM-060-05 장소 직접 등록 제외
-- 기다리는 것: `place` 협의 (YAY)
-- 완료 조건: 노출을 끈 장소는 사용자 장소 검색에서 빠진다
-
 ## SCR-ADM-071 케어미션 — 대기
 - 기능: FN-ADM-071-01 케어미션 목록 조회, FN-ADM-071-02 케어미션 수정, FN-ADM-071-03 변경 반영 시점
 - 기다리는 것: `pet` 케어미션 협의 (SJM)
@@ -557,10 +552,12 @@
 - 연결 남음: FN-ADM-082-03 (프론트 연결 `features/adminProcessing/api.js` `getAdminPdfAnalyses` 검사결과지 분석 탭, 프론트 저장소에서 /start)
 - 연결 남음: FN-ADM-082-03 (ai 연결 `app/checkup` PDF 분석 호출마다 SYSC0025 통지, 검사결과지 아님 판정은 SYSC0021, ai 저장소에서 /start)
 
-## SCR-ADM-001 대시보드 · 운영 현황·처리 대기 API — 대기
+## SCR-ADM-001 대시보드 · 운영 현황·처리 대기 API — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-001-02·03
 - 기다리는 것: 프론트 SCR-ADM-001(끝, 가짜 응답 `features/adminDashboard/api.js`)
 - 완료 조건: `GET /api/admin/dashboard`(기간 무관)가 운영 현황 `totMbrCnt`·`nrmlMbrCnt`·`stopMbrCnt`·`todayJoinCnt`·`weekJoinCnt`·`totPstCnt`, 최근 가입 회원 5명 `recentMbrs`[`mbrSn`·`mbrNcnm`·`regDt`], 최근 게시글 5건 `recentPsts`[`pstSn`·`bbsCd`·`bbsNm`·`pstTtl`·`regDt`], 처리 대기 `dclrRcptCnt`(CMUC0015)·`unansInqryCnt`(CSCC0012)·`pixelInqryCnt`(그중 CSCC0006)·`charFailCnt`·`ocrFailCnt`(AIMC0004)·`notiFailCnt`(AIMC0019, 최근 24시간)·`btchFailCnt`를 준다. 처리 대기 건수는 각 목록 화면 필터 건수와 같다. 일반 회원은 403
+- 완료 조건 결과: 검증 `통과`(2026-11-05, 2회차. 1회차는 게시글 수가 삭제 글을 빼 관리자 게시글 목록과 달라 실패), 사람 확인 2026-11-05. 정한 것: `admin` 패키지 `GET /api/admin/dashboard`, 회원 수는 일반 회원(USRC0004)만·가입 수는 상태 무관, 게시글은 관리자 게시글 목록 기본 조건(삭제 글 포함), 배치 실패는 마지막 실행이 실패한 배치 수, 알림 실패는 지금-24시간. 계약은 `docs/api/admin.md`
+- 연결 남음: FN-ADM-001-02·03 (프론트 연결 `features/adminDashboard/api.js` `getAdminDashboard` 운영 현황·처리 대기 카드, 프론트 저장소에서 /start)
 
 ## SCR-ADM-001 대시보드 · 이용 통계 API — 대기
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-001-04·05
@@ -616,6 +613,7 @@
 - FN-AIM-013-01·02·03·05·07: 대화창 화면과 Python AI 서버(첨부 버튼·분기·반려동물 되묻기·결과 카드·실패 안내). 파일 검증과 결과 데이터는 SCR-AIM-008 `POST /receipts` 그대로
 - FN-AIM-013-09: 요약 메시지 작성은 Python AI 서버, 저장은 SCR-AIM-011 대화 저장 내부 API 그대로
 - FN-HLT-002-01·05·06·09~33, FN-HLT-003-01·12·13·21~24·29~40, FN-HLT-005-01~05·11~15, FN-HLT-007-01~06, FN-HLT-011-01~10: 건강기록은 JAJ(영수증 결과 확인인 002-34~46만 LJS)
+- FN-ADM-060-01~05: 장소 화면은 사람 결정 2026-11-04로 없앴다(사용자 장소는 카카오 로컬 검색을 바로 쓴다. 프론트 메뉴·`docs/routes.md` 행 삭제). 기능명세서·화면설계서에서 빼는 것은 문서 담당이 DMS에서 한다
 
 ## 대조
 - 공통레이아웃: 명세 117 = 마일스톤 35 + 제외 82
@@ -623,4 +621,4 @@
 - 마이페이지: 명세 112 = 마일스톤 23 + 제외 89
 - AI매니저 v0.10 SCR-AIM-013(v0.9 신설): 명세 9 = 마일스톤 3 + 제외 6
 - 건강기록: 명세 86 = 마일스톤 13 + 제외 73
-- 관리자: 명세 135 = 마일스톤 128 + 제외 7 (FN-ADM-100-01~04 공통코드 화면, 2026-11-01 사람 결정: 코드 변경이 드물어 SQL로 처리 / FN-ADM-023-07·050-04·073-01, 2026-10-30 결정, 구현 계획 B-3·B-4·B-5). 기능명세서 v0.4 사본 기준, DMS 업로드 전
+- 관리자: 명세 135 = 마일스톤 123 + 제외 12 (FN-ADM-100-01~04 공통코드 화면, 2026-11-01 사람 결정: 코드 변경이 드물어 SQL로 처리 / FN-ADM-023-07·050-04·073-01, 2026-10-30 결정, 구현 계획 B-3·B-4·B-5 / FN-ADM-060-01~05 장소 화면, 2026-11-04 사람 결정). 기능명세서 v0.4 사본 기준, DMS 업로드 전

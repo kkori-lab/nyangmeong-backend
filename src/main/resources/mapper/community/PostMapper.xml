@@ -523,4 +523,39 @@
          ORDER BY H.REG_DT DESC
                 , H.PST_STTS_HSTRY_SN DESC
     </select>
+
+    <select id="countAll" resultType="long">
+        /* 전체 게시글 수 : 관리자 게시글 목록 기본 조건과 같게 삭제 글 포함 */
+        SELECT COUNT(*)
+          FROM PST P
+          JOIN MBR M
+            ON M.MBR_SN = P.MBR_SN
+    </select>
+
+    <resultMap id="adminRecentPostResultMap" type="com.nyangmeong.community.dto.AdminRecentPostSummary">
+        <id     column="PST_SN"  property="pstSn" />
+        <result column="BBS_CD"  property="bbsCd" />
+        <result column="BBS_NM"  property="bbsNm" />
+        <result column="PST_TTL" property="pstTtl" />
+        <result column="REG_DT"  property="regDt" />
+    </resultMap>
+
+    <select id="selectRecentPosts" resultMap="adminRecentPostResultMap">
+        /* 관리자 대시보드 최근 게시글 : 관리자 게시글 목록 기본 조건과 같게 삭제 글 포함 */
+        SELECT P.PST_SN
+             , P.BBS_CD
+             , C.COM_CD_NM AS BBS_NM
+             , P.PST_TTL
+             , P.REG_DT
+          FROM PST P
+          JOIN MBR M
+            ON M.MBR_SN = P.MBR_SN
+          LEFT JOIN COM_CD C
+            ON C.COM_CD = P.BBS_CD
+           AND C.COM_CD_PRNT_SN IS NOT NULL
+         ORDER BY P.REG_DT DESC
+                , P.PST_SN DESC
+         LIMIT #{limit}
+    </select>
+
 </mapper>
