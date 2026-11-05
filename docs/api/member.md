@@ -8,7 +8,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | GET | /auth/login-attempt-limits | 입력 아이디 기준 실패 횟수·캡챠 요구 상태 조회(`?email=`, 가입 여부 비공개) | ACC-002-03·22 | YAY | - | LoginAttemptLimitResponse |
 | GET | /members/me | 회원정보 수정 화면 조회. 이메일·닉네임·휴대전화·프로필 사진·가입 경로·연동 SNS | MYP-040-02·03·08·09 | SJM | - | MemberResponse |
-| GET | /members/me/dashboard-widgets | 메인 건강 지표 위젯의 표시 여부·순서 조회 | MAN-006·007 | YAY | - | List<DashboardWidgetSummary> |
+| GET | /members/me/dashboard-widgets | 메인 건강 지표 위젯 순서 조회. 저장한 적 없으면 공통코드 기본 순서 | MAN-006·007 | YAY | - | List<DashboardWidgetSummary> |
 | POST | /members/recovery-info | 복구 대상 이메일·닉네임·남은 복구 기간·필요 동의·가린 보관 번호 조회. 로그인 없이 부르고, 토큰이 URL(로그)에 남지 않도록 본문 `MemberRecoveryInfoRequest`의 복구 확인 권한 토큰으로 본인확인한다. 권한 없음·만료·사용 완료·무효화·틀린 토큰은 이유를 가리지 않고 400 MEMBER_RECOVERY_NOT_AVAILABLE | ACC-001-44 | YAY | MemberRecoveryInfoRequest | MemberRecoveryResponse |
 | GET | /auth/me | 로그인한 회원 요약(회원 번호·권한·닉네임·프로필 사진·마스킹 이메일). 구현은 `auth` 도메인(nct-backend `nct.auth`와 같은 자리) | COM-002-15, COM-005-02 | LJS | - | AuthMeResponse |
 | GET | /internal/auth/check | 서버 간 내부 인증 확인(Python 미들웨어가 `/ai/**` 요청마다 사용자 쿠키를 넘겨 호출). `/api` 접두어 없음, 서버 간 키 없음(사용자 인증만). 세션 폐기 401 `UNAUTHORIZED`, 정지·탈퇴 403 `MEMBER_INACTIVE`(쿠키 삭제 `Set-Cookie`) | - (2026-10-26 사람 결정) | LJS | - | InternalAuthCheckResponse |
@@ -29,7 +29,7 @@
 | POST | /members/me/password-verification | 현재 비밀번호 확인(회원정보 수정 진입 전 본인 확인). 서버에 상태를 남기지 않고 맞으면 200, 틀리면 400 CURRENT_PASSWORD_MISMATCH, 비밀번호 없는 SNS 회원은 400 SNS_ONLY_MEMBER, 정지·탈퇴 회원은 403 MEMBER_INACTIVE *통합 때 추가* | MYP-040-01 | YAY | PasswordVerifyRequest | - |
 | POST | /members/recovery | 30일 이내 탈퇴 회원 기존 정보 복구 실행(탈퇴 → 정상, 상태 이력 "재가입 복구" 한 번). 로그인 없이 부르고 본문의 복구 확인 권한 토큰으로 본인확인하며 성공해도 로그인 쿠키를 만들지 않는다. 권한 문제는 400 MEMBER_RECOVERY_NOT_AVAILABLE, 보관 기간 지남은 400 MEMBER_RECOVERY_EXPIRED, 빠진 필수 약관 미동의는 400 REQUIRED_TERMS_NOT_AGREED, 번호는 INVALID_PHONE_NUMBER·409 PHONE_ALREADY_USED. 이미 쓴 권한이라도 그 회원이 지금 정상이면 바꾸는 것 없이 200(중복 클릭·응답 유실) | ACC-001-45 | YAY | MemberRecoverRequest | - |
 | POST | /members/me/withdraw | 회원탈퇴(상태·이력 반영, 모든 로그인·인증 권한 종료, 30일 보관) | ACC-020-03·14·16, AIM-011-19, MYP-002-08 (기능 분배 3.1절 5번) | YAY | MemberWithdrawRequest | - |
-| PUT | /members/me/dashboard-widgets | 메인 건강 지표 위젯 표시 여부·순서 전체 저장 | MAN-007 | YAY | DashboardWidgetSaveRequest | List<DashboardWidgetSummary> |
+| PUT | /members/me/dashboard-widgets | 메인 건강 지표 위젯 순서 전체 저장. 코드를 전부 한 번씩 담지 않으면 400 `INVALID_INPUT_VALUE` | MAN-007 | YAY | DashboardWidgetSaveRequest | List<DashboardWidgetSummary> |
 | PATCH | /members/me | 회원정보 수정. 휴대전화(저장 시 중복 재검사)·프로필 사진 | MYP-040-02·05·08·11 | SJM | MemberUpdateRequest | MemberResponse |
 | PATCH | /members/me/nickname | 닉네임 설정 확정(로그인 회원 또는 가입 직후 받은 `ncnm_setup` 쿠키, 둘 다 없으면 401), 설정 완료 여부 반영 | ACC-001-26 | YAY | MemberNicknameUpdateRequest | MemberResponse |
 | PATCH | /members/me/password | 로그인 상태에서 비밀번호 변경. 현재 비밀번호를 같은 요청에서 다시 검사(틀리면 400 CURRENT_PASSWORD_MISMATCH), `pswd`와 `pswdCnfrm` 불일치 400 PASSWORD_MISMATCH, SNS 회원 400 SNS_ONLY_MEMBER. 성공하면 모든 기기의 로그인을 끝내고 요청한 기기에는 새 로그인 쿠키를 다시 준다 *통합 때 추가* | MYP-040-06 | YAY | PasswordChangeRequest | - |
@@ -215,19 +215,11 @@
 | --- | --- | --- | --- | --- |
 | captchaImg | String | Y | 영문 대문자·숫자 각 1개 이상, 총 6글자를 그린 이미지. PNG를 Base64 data URI(`data:image/png;base64,...`)로 준다. 코드 원문은 주지 않는다 | ACC-002-18 |
 
-### DashboardWidgetSaveItem
-쓰는 API: PUT /members/me/dashboard-widgets (DashboardWidgetSaveRequest.widgets의 요소. 입력 목록 밖의 중첩 record, issues 2)
-| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
-| --- | --- | --- | --- | --- |
-| dshbdWdgtCd | String | Y | MANG01 공통코드, 8자 | MBR_DSHBD_WDGT.DSHBD_WDGT_CD |
-| indctYn | Boolean | Y | | MBR_DSHBD_WDGT.INDCT_YN, MAN-006 |
-| sortSeq | Integer | Y | 최대 10자리 | MBR_DSHBD_WDGT.SORT_SEQ, MAN-007 |
-
 ### DashboardWidgetSaveRequest
 쓰는 API: PUT /members/me/dashboard-widgets
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| widgets | List<DashboardWidgetSaveItem> | Y | 위젯 전체 목록(PUT, 빠진 항목은 지워짐). `indctYn=true`는 최대 5개 | MAN-006·007 |
+| dshbdWdgtCds | List<String> | Y | 보일 순서대로 늘어놓은 MANG01 위젯 코드 전부(각 8자 이하, 한 번씩). 표시 여부·개수 제한 없음(명세 v0.10) | MBR_DSHBD_WDGT.DSHBD_WDGT_CD, MAN-007 |
 
 ### DashboardWidgetSummary
 쓰는 API: GET /members/me/dashboard-widgets; PUT /members/me/dashboard-widgets (응답 행)
@@ -235,8 +227,7 @@
 | --- | --- | --- | --- | --- |
 | dshbdWdgtCd | String | Y | MANG01 공통코드 | MBR_DSHBD_WDGT.DSHBD_WDGT_CD |
 | dshbdWdgtCdNm | String | Y | 위젯 카드 이름(체중·식사량 등) | COM_CD.COM_CD_NM, MAN-006 (추가) |
-| indctYn | boolean | Y | | MBR_DSHBD_WDGT.INDCT_YN, MAN-006 |
-| sortSeq | Integer | Y | | MBR_DSHBD_WDGT.SORT_SEQ, MAN-007 |
+| sortSeq | Integer | Y | 정렬 순서(작은 값이 먼저) | MBR_DSHBD_WDGT.SORT_SEQ, MAN-007 |
 
 ### EmailCertificationCreateRequest
 쓰는 API: POST /email-certifications

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nyangmeong.member.mapper.DashboardWidgetMapper">
+
+    <resultMap id="dashboardWidgetSummaryResultMap" type="com.nyangmeong.member.dto.DashboardWidgetSummary">
+        <id     column="COM_CD"    property="dshbdWdgtCd" />
+        <result column="COM_CD_NM" property="dshbdWdgtCdNm" />
+        <result column="SORT_SEQ"  property="sortSeq" />
+    </resultMap>
+
+    <!-- 저장한 순서가 있는 코드가 먼저, 없는 코드는 공통코드 기본 순서로 뒤에. 조회만으로 행을 만들지 않는다 -->
+    <select id="selectWidgetList" resultMap="dashboardWidgetSummaryResultMap">
+        /* 회원 메인 위젯 순서 조회 */
+        SELECT C.COM_CD
+             , C.COM_CD_NM
+             , COALESCE(W.SORT_SEQ, C.SORT_SEQ) AS SORT_SEQ
+          FROM COM_CD C
+          JOIN COM_CD P
+            ON P.COM_CD_SN = C.COM_CD_PRNT_SN
+           AND P.COM_CD = #{prntComCd}
+          LEFT JOIN MBR_DSHBD_WDGT W
+            ON W.DSHBD_WDGT_CD = C.COM_CD
+           AND W.MBR_SN = #{mbrSn}
+         WHERE C.USE_YN = 'Y'
+         ORDER BY (W.SORT_SEQ IS NULL), COALESCE(W.SORT_SEQ, C.SORT_SEQ), C.SORT_SEQ
+    </select>
+
+    <insert id="upsertWidgetSort">
+        /* 회원 메인 위젯 순서 저장 */
+        INSERT INTO MBR_DSHBD_WDGT (MBR_SN, DSHBD_WDGT_CD, SORT_SEQ)
+        VALUES (#{mbrSn}, #{dshbdWdgtCd}, #{sortSeq})
+        ON DUPLICATE KEY UPDATE SORT_SEQ = VALUES(SORT_SEQ)
+    </insert>
+
+</mapper>
