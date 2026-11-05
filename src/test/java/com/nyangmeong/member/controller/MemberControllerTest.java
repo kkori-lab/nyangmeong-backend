@@ -60,6 +60,7 @@ import com.nyangmeong.member.dto.MemberUpdateRequest;
 import com.nyangmeong.member.dto.MemberWithdrawRequest;
 import com.nyangmeong.member.dto.PasswordChangeRequest;
 import com.nyangmeong.member.dto.PasswordVerifyRequest;
+import com.nyangmeong.member.service.DashboardWidgetService;
 import com.nyangmeong.member.service.MemberJoinService;
 import com.nyangmeong.member.service.MemberPasswordService;
 import com.nyangmeong.member.service.MemberRecoveryService;
@@ -109,6 +110,9 @@ class MemberControllerTest {
 
     @MockitoBean
     MemberWithdrawService memberWithdrawService;
+
+    @MockitoBean
+    DashboardWidgetService dashboardWidgetService;
 
     @MockitoBean
     LoginSessionManager loginSessionManager;
