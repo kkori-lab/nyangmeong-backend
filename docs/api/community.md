@@ -808,8 +808,8 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | petPrtcRcrtSn | Long | Y | | PET_PRTC_RCRT.PET_PRTC_RCRT_SN |
 | rcrtSttsCd | String | Y | 공통코드 PCAG01 | PET_PRTC_RCRT.RCRT_STTS_CD, CMU-005-07 |
 | ctptMbrSn | Long | Y | 상대 회원 | OTO_CHAT_ROOM.CTPT_MBR_SN |
-| ctptMbrNcnm | String | Y | | MBR.MBR_NCNM, CMU-005-04 |
-| ctptProfileAtchFileSn | Long | N | 상대 메시지 왼쪽 프로필 | MBR.ATCH_FILE_SN, CMU-005-04 |
+| ctptMbrNcnm | String | Y | 상대가 파기된 회원(이메일 HMAC `PURGED`)이면 「탈퇴한 회원」(탈퇴했지만 파기 전이면 원래 닉네임) | MBR.MBR_NCNM, CMU-005-04 |
+| ctptProfileAtchFileSn | Long | N | 상대 메시지 왼쪽 프로필. 상대가 파기된 회원이면 null | MBR.ATCH_FILE_SN, CMU-005-04 |
 | myRole | String | Y | 이 방에서 내 역할. `GUARDIAN`(게시글 작성자) 또는 `SITTER`(지원자). 실행 버튼 결정 | CMU-005-11 |
 | petPrtcMtchSn | Long | N | 이 방의 매칭. 요청 전이면 null | PET_PRTC_MTCH.PET_PRTC_MTCH_SN, CMU-005-11 |
 | mtchDlngSttsCd | String | N | 매칭 진행 상태. 공통코드 PCAG05 | PET_PRTC_MTCH.MTCH_DLNG_STTS_CD, CMU-005-11 |
@@ -824,8 +824,8 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | pstSn | Long | Y | 초안 그대로 | OTO_CHAT_ROOM.PST_SN |
 | pstTtl | String | Y | 초안 그대로. 1행 말줄임 | PST.PST_TTL |
 | ctptMbrSn | Long | Y | 초안 그대로 | OTO_CHAT_ROOM.CTPT_MBR_SN |
-| ctptMbrNcnm | String | Y | 초안 그대로 | MBR.MBR_NCNM |
-| ctptProfileAtchFileSn | Long | N | 초안 그대로 | MBR.ATCH_FILE_SN |
+| ctptMbrNcnm | String | Y | 초안 그대로. 상대가 파기된 회원(이메일 HMAC `PURGED`)이면 「탈퇴한 회원」(탈퇴했지만 파기 전이면 원래 닉네임) | MBR.MBR_NCNM |
+| ctptProfileAtchFileSn | Long | N | 초안 그대로. 상대가 파기된 회원이면 null | MBR.ATCH_FILE_SN |
 | myRole | String | Y | 내 역할 `GUARDIAN`·`SITTER`(닉네임 옆 「돌보미/보호자」 표시는 상대 역할이므로 반대로 그린다) | CMU-005-02 |
 | mtchDlngSttsCd | String | N | 거래 상태 배지. 매칭 전이면 null. 공통코드 PCAG05 | PET_PRTC_MTCH.MTCH_DLNG_STTS_CD, CMU-005-02 |
 | lastMsgTypeCd | String | N | 마지막 메시지 유형. 없으면 null. 공통코드 CHTG03 | CHAT_MSG.MSG_TYPE_CD |
