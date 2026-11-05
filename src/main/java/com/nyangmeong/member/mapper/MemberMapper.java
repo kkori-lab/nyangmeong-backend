@@ -99,6 +99,12 @@ public interface MemberMapper {
             @Param("withdrawnSttsCd") String withdrawnSttsCd, @Param("actorId") String actorId);
 
     /**
+     * 정상 → 탈퇴, 정상 회원만 바뀐다 (0이면 이미 탈퇴·정지). 탈퇴 시각을 30일 보관 기준으로 남긴다
+     */
+    int updateWithdraw(@Param("mbrSn") Long mbrSn, @Param("normalSttsCd") String normalSttsCd,
+            @Param("withdrawnSttsCd") String withdrawnSttsCd, @Param("actorId") String actorId);
+
+    /**
      * 탈퇴 → 정상 복구, 보관 기간 안의 탈퇴 회원만 바뀐다 (0이면 기간 경과나 이미 복구)
      */
     int updateRecover(@Param("mbrSn") Long mbrSn, @Param("normalSttsCd") String normalSttsCd,

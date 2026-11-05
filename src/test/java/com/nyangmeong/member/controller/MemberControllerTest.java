@@ -57,12 +57,15 @@ import com.nyangmeong.member.dto.MemberRecoveryInfoRequest;
 import com.nyangmeong.member.dto.MemberRecoveryResponse;
 import com.nyangmeong.member.dto.MemberResponse;
 import com.nyangmeong.member.dto.MemberUpdateRequest;
+import com.nyangmeong.member.dto.MemberWithdrawRequest;
 import com.nyangmeong.member.dto.PasswordChangeRequest;
 import com.nyangmeong.member.dto.PasswordVerifyRequest;
+import com.nyangmeong.member.service.DashboardWidgetService;
 import com.nyangmeong.member.service.MemberJoinService;
 import com.nyangmeong.member.service.MemberPasswordService;
 import com.nyangmeong.member.service.MemberRecoveryService;
 import com.nyangmeong.member.service.MemberService;
+import com.nyangmeong.member.service.MemberWithdrawService;
 import com.nyangmeong.member.service.NicknameSetupTokenManager;
 
 import jakarta.servlet.http.Cookie;
@@ -104,6 +107,12 @@ class MemberControllerTest {
 
     @MockitoBean
     MemberPasswordService memberPasswordService;
+
+    @MockitoBean
+    MemberWithdrawService memberWithdrawService;
+
+    @MockitoBean
+    DashboardWidgetService dashboardWidgetService;
 
     @MockitoBean
     LoginSessionManager loginSessionManager;
@@ -614,5 +623,49 @@ class MemberControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("BAD_REQUEST"))
                 .andExpect(header().doesNotExist("Set-Cookie"));
+    }
+
+    private MockHttpServletRequestBuilder withdraw(String body) {
+        return post("/api/members/me/withdraw")
+                .header("X-Requested-With", "XMLHttpRequest")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body);
+    }
+
+    @Test
+    @WithMockLoginMember(id = 5L)
+    void 회원탈퇴는_탈퇴한_뒤_요청한_기기의_쿠키를_지운다() throws Exception {
+        mockMvc.perform(withdraw("{\"noticeConfirmed\":true,\"confirmPhrase\":\"정말로 탈퇴하겠습니다.\"}"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<MemberWithdrawRequest> captor = ArgumentCaptor.forClass(MemberWithdrawRequest.class);
+        org.mockito.InOrder order = org.mockito.Mockito.inOrder(memberWithdrawService, loginSessionManager);
+        order.verify(memberWithdrawService).withdraw(eq(5L), captor.capture());
+        order.verify(loginSessionManager).revoke(any(), any());
+        assertThat(captor.getValue().confirmPhrase()).isEqualTo("정말로 탈퇴하겠습니다.");
+    }
+
+    @Test
+    @WithMockLoginMember(id = 5L)
+    void 회원탈퇴는_유의사항_확인이_없거나_false면_400이다() throws Exception {
+        mockMvc.perform(withdraw("{\"noticeConfirmed\":false,\"confirmPhrase\":\"정말로 탈퇴하겠습니다.\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT_VALUE"));
+        mockMvc.perform(withdraw("{\"confirmPhrase\":\"정말로 탈퇴하겠습니다.\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT_VALUE"));
+        mockMvc.perform(withdraw("{\"noticeConfirmed\":true}"))
+                .andExpect(status().isBadRequest());
+
+        verify(memberWithdrawService, never()).withdraw(any(), any());
+        verify(loginSessionManager, never()).revoke(any(), any());
+    }
+
+    @Test
+    void 회원탈퇴는_로그인하지_않으면_401이다() throws Exception {
+        mockMvc.perform(withdraw("{\"noticeConfirmed\":true,\"confirmPhrase\":\"정말로 탈퇴하겠습니다.\"}"))
+                .andExpect(status().isUnauthorized());
+
+        verify(memberWithdrawService, never()).withdraw(any(), any());
     }
 }
