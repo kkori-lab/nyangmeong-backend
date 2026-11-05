@@ -157,6 +157,23 @@ class CareScheduleServiceTest {
     }
 
     @Test
+    void 서비스_검사_400은_틀린_칸_이름을_담는다() {
+        assertInvalidField(() -> service.create(MBR, PET, hospital(null, "튼튼동물병원", true)), "ckupTypeCd");
+        assertInvalidField(() -> service.create(MBR, PET, hospital("HLTC9999", "튼튼동물병원", true)), "ckupTypeCd");
+        assertInvalidField(() -> service.create(MBR, PET, hospital(CHECKUP_TYPE, " ", true)), "hsptlNm");
+        assertInvalidField(() -> service.create(MBR, PET, grooming(" ", null, null)), "schdlNm");
+        assertInvalidField(() -> service.create(MBR, PET, grooming("미용", "HLTC9999", null)), "schdlSrcCd");
+        assertInvalidField(() -> service.create(MBR, PET, grooming("미용", null, "HLTC9999")), "cldrBadgeColrCd");
+    }
+
+    private void assertInvalidField(Runnable call, String field) {
+        assertThatThrownBy(call::run).isInstanceOfSatisfying(CustomException.class, e -> {
+            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+            assertThat(e.getFields()).containsExactly(field);
+        });
+    }
+
+    @Test
     void 병원_외_일정은_일정명이_필수이고_병원_필드를_비운다() {
         assertInvalid(() -> service.create(MBR, PET, grooming(null, null, null)));
 

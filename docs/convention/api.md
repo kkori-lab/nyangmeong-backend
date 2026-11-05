@@ -54,7 +54,7 @@
 
 - null 필드는 JSON에서 빠진다. 성공 응답에는 `path`·`code`가 없고, `data`가 없는 성공(삭제·상태 변경)에는 `data`도 없다.
 - 응답의 `code`는 `ErrorCode` 상수 이름(`errorCode.name()`)이다. `message`는 문구가 바뀔 수 있으므로 프론트는 `code`로만 분기한다. 자바의 `ErrorCode.code()`는 HTTP 상태 숫자(400)라 응답 `code`와 뜻이 다르다. 응답을 만들 때는 `ApiResponse.error(errorCode, path)`를 쓰고 두 값을 손으로 조합하지 않는다.
-- 입력값 검증 오류(`INVALID_INPUT_VALUE`)만 `data`에 `[{"field":"...","message":"..."}]`를 담는다.
+- 입력값 검증 오류(`INVALID_INPUT_VALUE`)만 `data`에 `[{"field":"...","message":"..."}]`를 담는다. 서비스 검사에서 틀린 칸이 정해지면 `new CustomException(ErrorCode.INVALID_INPUT_VALUE, "careCycleCd")`처럼 칸 이름(요청 camelCase)을 넘긴다. 이때 `message`는 `ErrorCode` 문구다. 칸이 없는 상태 검사는 지금처럼 `data` 없이 던진다.
 - 컨트롤러는 `ResponseEntity<ApiResponse<T>>`를 돌려준다(`ResponseEntity.ok(ApiResponse.success(data))`, 생성은 `ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(data))`). 실패 응답은 `GlobalExceptionHandler`와 `global/security`의 응답기가 만들며 컨트롤러가 직접 만들지 않는다.
 - 인증 토큰(Access·Refresh)은 httpOnly 쿠키로만 오간다. 응답 본문에 토큰을 넣지 않는다. 토큰이 만료되면 401 `TOKEN_EXPIRED`가 오고 프론트가 `POST /auth/refresh`로 재발급한 뒤 다시 보낸다.
 - 상태를 바꾸는 요청(GET·HEAD·OPTIONS가 아닌 요청)은 `X-Requested-With: XMLHttpRequest` 헤더가 없으면 403이 된다. 프론트는 모든 요청에 이 헤더를 붙인다. Swagger UI는 이 헤더를 미리 채운다(`OpenApiConfig`). curl로 시험할 때 403이 나오면 이 헤더부터 확인한다.
