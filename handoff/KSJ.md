@@ -2,7 +2,7 @@
 
 ## 지금 하는 것
 
-SCR-CMU-001 펫이야기 · 탈퇴 회원 표시 — 진행 중 (승인 2026-11-05 11:44, 시작 2026-11-05 11:00, 검증 2회차 실패로 보관, 사람 확인 2026-11-05)
+SCR-CMU-001 펫이야기 · 탈퇴 회원 표시 — 끝남 (승인 2026-11-05 11:44, 시작 2026-11-05 11:00, 검증 2회차 실패 뒤 루프를 사람이 버림 2026-11-05, 사람 확인 2026-11-05)
 기준: 명세 기능 ID 추가 없음(팀장 요청 2026-11-04, 사람 결정 2026-11-05). 파기 회원(`MemberPurgeService`가 닉네임 `탈퇴회원#번호`, 이메일 HMAC `PURGED…`로 바꾼 회원)을 사용자 화면에서 「탈퇴한 회원」·사진 null로 준다. 탈퇴했지만 파기 전인 회원은 그대로. 응답에 탈퇴 여부 필드는 넣지 않는다. 관리자 쿼리는 건드리지 않는다
 - 파기 판단: 닉네임 접두어가 아니라 `MBR_STTS_CD`=탈퇴(`MemberStatus.WITHDRAWN`) AND `ACNT_EML_HMAC LIKE 'PURGED%'`(`MemberMapper.updatePurge`·`MemberPurgeService`). 사진은 파기 때 이미 null이지만 조각이 한 번 더 null로 막는다
 - 공통 SQL 조각: 닉네임·사진 두 컬럼을 만드는 `<sql>`을 한 곳에 둔다(후보: `mapper/global/` 아래 조각 전용 XML, 안 되면 `PostMapper.xml`에 두고 다른 community Mapper가 `refid="…PostMapper.xxx"`로 include). 「탈퇴한 회원」 문구와 `PURGED` 접두어 상수는 한 곳(조각)에만 둔다. 구현할 때 `mapper-locations`(`mapper/**/*.xml`)로 로드되는지 확인한다
@@ -22,8 +22,9 @@ SCR-CMU-001 펫이야기 · 탈퇴 회원 표시 — 진행 중 (승인 2026-11-
 SCR-ADM-022 완료 사진 열람(2026-11-05), SCR-CMU-004 펫돌봄 대기 4건(2026-11-04), SCR-CMU-002 전북 밖 좌표 거절(PR #154)·시드 게시판 코드(PR #147), SCR-CMU-005 펫돌봄 채팅(PR #139) — 모두 끝남
 
 ## 다음에 할 것
-- 검증 루프 2회차 실패로 보관 중. 기획은 고치지 않는다. 루프를 버리려면 `! sh scripts/verify-loop.sh clear`. 1회차: 파기 판단에 상태 탈퇴 조건 빠짐(고침), 세 회원(파기·파기 전·정상) 결과 테스트 없음. 2회차: 첫 실패 뒤 기준 파일 `PostMapperSqlTest.java`를 고침(제가 고친 것, 기존 `doesNotContain("MBR_STTS_CD")`가 2026-11-02 결정을 굳히고 있어 새 결정과 안 맞았음), 세 회원 결과 테스트 여전히 없음(DB 테스트 환경·의존성 없음, 기획은 새 의존성 없음). 로컬 DB로 `GET /api/posts/146` 등을 사람이 확인함(2026-11-05)
-- 한 일: `mapper/global/MemberDisplay.xml` 공통 조각(상태 탈퇴 `USRC0003` AND HMAC `PURGED%`), `PostMapper.xml` `summaryColumns`·`selectAuthor`, `CommentMapper.xml` `selectList`에 적용, `docs/api/community.md` 설명, `PostMapperSqlTest` 보강. 이 마일스톤은 `진행`. 끝내려면 DB 테스트 추가(H2 등 의존성, 사람 결정) 또는 사람이 이 한계를 받아들이고 루프를 `clear`한 뒤 `/end`
+- 닫은 이유(사람 결정 2026-11-05): 마지막 검증 판정 `실패`(2회차)지만 사람 확인을 거쳤고 DB 테스트는 별도로 넘긴다. 남은 실패: 세 회원(파기·파기 전·정상) 결과 DB 테스트 없음, 1회차 뒤 기준 파일 `PostMapperSqlTest.java`를 고침(기존 `doesNotContain("MBR_STTS_CD")`가 2026-11-02 결정을 굳히고 있었음)
+- 한 일: `mapper/global/MemberDisplay.xml` 공통 조각(상태 탈퇴 `USRC0003` AND HMAC `PURGED%`)을 `PostMapper.xml` `summaryColumns`·`selectAuthor`, `CommentMapper.xml` `selectList`에 적용(실종센터 글의 댓글도 같은 쿼리라 포함), `docs/api/community.md` 설명, `PostMapperSqlTest` 보강
+- 다음 작업: 후속 화면에 같은 조각 적용(실종센터 작성자·펫돌봄·채팅·문의·신고·회원 요약). 세 회원 결과 DB 테스트는 H2 등 새 의존성이 필요해 팀 합의 뒤 별도 기획
 - 사람이 할 일: 프론트에 「작성자를 눌러 이동하는 곳이 있나, 탈퇴 회원을 막아야 하나」를 묻는다(필요하면 후속으로 그 응답에만 탈퇴 여부 필드. 상세·댓글 응답에는 `mbrSn`이 그대로 나간다). LJS에게 `PostMapper.xml`·`CommentMapper.xml` 관리자 쿼리 병합 충돌을 미리 알린다
 - 다음 작업: 실종센터·펫돌봄·채팅·문의·신고(사용자 화면)·회원 요약에 같은 조각 적용(후속 절)
 - 연결 남음: SCR-ADM-022 관리자 매칭 상세 완료 사진 (프론트 연결: LJS `CareMatchDetailModal.jsx`의 `publicFileUrl`을 `useFileImage` + `GET /api/admin/care-matches/{petPrtcRcrtSn}/images/{atchFileSn}`로 교체, 프론트 저장소에서 /start)
