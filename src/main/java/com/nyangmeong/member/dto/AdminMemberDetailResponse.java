@@ -9,5 +9,5 @@ import java.util.List;
  */
 public record AdminMemberDetailResponse(Long mbrSn, String mbrNcnm, String maskedAcntEml, String maskedMblTelno,
         String joinPathCd, List<MemberSnsAccountSummary> snsLinks, LocalDateTime regDt, LocalDateTime lastLgnDt,
-        Integer hldPnt, String mbrSttsCd, LocalDateTime suspnEndDt) {
+        Integer hldPnt, String mbrAuthrtCd, String mbrSttsCd, LocalDateTime suspnEndDt) {
 }
