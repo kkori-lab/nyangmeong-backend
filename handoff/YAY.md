@@ -20,7 +20,8 @@ SCR-ACC-001 회원가입 (이메일) · 실제 메일 발송(SMTP) — 끝남 (�
 ## 다음에 할 것
 
 - 연결 남음: FN-ACC-001-04·41, 비밀번호 찾기 발송 (프론트 연결 이메일 단계의 502 `MAIL_SEND_FAILED` 안내, 회원가입 문구 "인증번호를 보내지 못했습니다…"만 서버 문구로 맞추기, 프론트 저장소에서 /start). 프론트 YAY 마일스톤에 "SCR-ACC-001 회원가입 (이메일) · 메일 발송 실패(502) 안내" 절을 넣었다
-- 팀 결정(메일): 보내는 계정. 지금은 개인 네이버 계정으로 로컬에서만 확인했다(디스코드 공유 안 함). 팀 전용 계정(또는 SES 등 발송 서비스)을 정하면 `app.mail.from`·`spring.mail.*`을 디스코드 파일로 공유하고 배포 설정에 `app.mail.client=smtp`를 둔다
+- 팀 메일 계정(2026-11-05 정함): `nyangmeongcare@gmail.com`. 로컬에서 Gmail SMTP(`smtp.gmail.com:587`, 앱 비밀번호) 실제 발송 확인함(3통 발송, 응답 3.8~7.3초). 남은 일: 디스코드 설정 파일 메일 칸을 채워 첨부로 공유(팀원 로컬은 `app.mail.client=log` 권장) → 배포 설정에 `smtp` → 개인 네이버 앱 비밀번호 삭제
+- 배포 전(메일 스팸): 새 Gmail 계정으로 보낸 인증 메일이 받는 쪽에서 모두 스팸함으로 갔다(발송 이력 없음·같은 제목 짧은 본문 반복·도메인 인증 없음). 개발·시연은 받는 계정에서 "스팸 아님"과 주소록 추가로 넘긴다. 배포 전에 도메인과 발송 서비스(SES·SendGrid·네이버 클라우드 Outbound Mailer 등, SPF·DKIM)를 정하고, 필요하면 메일 본문(HTML·안내 문구)을 새로 기획한다. 코드는 `spring.mail.*` 설정만 바꾸면 된다
 - 알림(SJM): 공동양육 초대 메일도 `CertificationMailEvent`라 발송 실패 시 초대가 저장되지 않고 502 `MAIL_SEND_FAILED`가 된다(전에는 저장되고 메일만 빠짐)
 - 알림(LJS): `app.mail.client=smtp`를 켜면 케어 일정 알림 메일(`CareScheduleAlarmService`)도 실제로 나간다. 그쪽은 `MailSender`를 직접 불러 동작은 바뀌지 않았다
 - 알림(프론트, 2026-11-05 확인): 비밀번호 재설정 API(`POST /email-certifications/{emlCertSn}/password-reset`)는 이미 develop에 있다. 프론트 SCR-ACC-012 연결은 기다릴 것 없음
