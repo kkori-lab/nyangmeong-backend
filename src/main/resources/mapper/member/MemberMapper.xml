@@ -222,6 +222,17 @@
            AND MBR_STTS_CD != #{withdrawnSttsCd}
     </update>
 
+    <update id="updateWithdraw">
+        /* 회원탈퇴 : 정상 회원만 탈퇴로, 탈퇴 시각이 30일 보관의 기준 */
+        UPDATE MBR
+           SET MBR_STTS_CD = #{withdrawnSttsCd}
+             , WHDWL_DT = NOW()
+             , MDFR_ID = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE MBR_SN = #{mbrSn}
+           AND MBR_STTS_CD = #{normalSttsCd}
+    </update>
+
     <update id="updateRecover">
         /* 탈퇴 보관 회원 복구 : 보관 기간 안일 때만 정상으로 */
         UPDATE MBR

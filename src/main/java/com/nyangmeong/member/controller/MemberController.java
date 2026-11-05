@@ -30,12 +30,14 @@ import com.nyangmeong.member.dto.MemberRecoveryInfoRequest;
 import com.nyangmeong.member.dto.MemberRecoveryResponse;
 import com.nyangmeong.member.dto.MemberResponse;
 import com.nyangmeong.member.dto.MemberUpdateRequest;
+import com.nyangmeong.member.dto.MemberWithdrawRequest;
 import com.nyangmeong.member.dto.PasswordChangeRequest;
 import com.nyangmeong.member.dto.PasswordVerifyRequest;
 import com.nyangmeong.member.service.MemberJoinService;
 import com.nyangmeong.member.service.MemberPasswordService;
 import com.nyangmeong.member.service.MemberRecoveryService;
 import com.nyangmeong.member.service.MemberService;
+import com.nyangmeong.member.service.MemberWithdrawService;
 import com.nyangmeong.member.service.NicknameSetupTokenManager;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -51,6 +53,7 @@ import lombok.RequiredArgsConstructor;
  * - 위는 모두 로그인 없이 열려 있고, 닉네임 설정과 닉네임 중복확인의 본인은 로그인 회원 또는 가입 직후 쿠키(ncnm_setup)로 가린다
  * - 회원정보 수정 조회·저장(GET·PATCH /api/members/me, SCR-MYP-040)은 로그인 회원만
  * - 현재 비밀번호 확인·변경(POST /api/members/me/password-verification, PATCH /api/members/me/password)도 로그인 회원만
+ * - 회원탈퇴(POST /api/members/me/withdraw)도 로그인 회원만, 성공하면 요청한 기기의 쿠키도 지운다
  */
 @RestController
 @RequiredArgsConstructor
@@ -61,6 +64,7 @@ public class MemberController {
     private final MemberJoinService memberJoinService;
     private final MemberRecoveryService memberRecoveryService;
     private final MemberPasswordService memberPasswordService;
+    private final MemberWithdrawService memberWithdrawService;
     private final LoginSessionManager loginSessionManager;
     private final NicknameSetupTokenManager nicknameSetupTokenManager;
 
@@ -126,6 +130,16 @@ public class MemberController {
             HttpServletResponse response, @Valid @RequestBody PasswordChangeRequest req) {
         memberPasswordService.change(me.id(), req);
         loginSessionManager.issue(me.id(), response);
+        return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    @Operation(summary = "회원탈퇴")
+    @PostMapping("/me/withdraw")
+    public ResponseEntity<ApiResponse<Void>> withdraw(@AuthenticationPrincipal LoginMember me,
+            HttpServletRequest request, HttpServletResponse response,
+            @Valid @RequestBody MemberWithdrawRequest req) {
+        memberWithdrawService.withdraw(me.id(), req);
+        loginSessionManager.revoke(request, response);
         return ResponseEntity.ok(ApiResponse.success());
     }
 
