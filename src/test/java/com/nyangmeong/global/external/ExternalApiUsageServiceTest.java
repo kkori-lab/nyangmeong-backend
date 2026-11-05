@@ -122,6 +122,55 @@ class ExternalApiUsageServiceTest {
     }
 
     @Test
+    void 검사결과지_분석은_PDF_코드로_건수와_실패_목록을_돌려준다() {
+        PdfAnalysisSearchCond cond = new PdfAnalysisSearchCond();
+        cond.setFromYmd(LocalDate.of(2026, 11, 1));
+        cond.setToYmd(LocalDate.of(2026, 11, 5));
+        PdfAnalysisSummary summary = new PdfAnalysisSummary();
+        summary.setTotCnt(3);
+        summary.setScsCnt(1);
+        summary.setTmotCnt(1);
+        summary.setErrCnt(1);
+        PdfAnalysisFailureRow row = new PdfAnalysisFailureRow();
+        row.setExtlApiCallLogSn(11L);
+        row.setCallRsltCd("SYSC0023");
+        when(mapper.selectPdfAnalysisSummary(cond, "SYSC0025", SUCCESS, "SYSC0023", "SYSC0022")).thenReturn(summary);
+        when(mapper.selectPdfAnalysisFailures(cond, "SYSC0025", SUCCESS)).thenReturn(List.of(row));
+
+        PdfAnalysisListResponse result = service.searchPdfAnalyses(cond, new PageQuery(null, null, null));
+        PageHelper.clearPage();
+
+        assertThat(result.summary()).isSameAs(summary);
+        assertThat(result.content()).containsExactly(row);
+    }
+
+    @Test
+    void 검사결과지_분석은_기간이_없어도_조회한다() {
+        PdfAnalysisSearchCond cond = new PdfAnalysisSearchCond();
+        when(mapper.selectPdfAnalysisSummary(cond, "SYSC0025", SUCCESS, "SYSC0023", "SYSC0022"))
+                .thenReturn(new PdfAnalysisSummary());
+        when(mapper.selectPdfAnalysisFailures(cond, "SYSC0025", SUCCESS)).thenReturn(List.of());
+
+        service.searchPdfAnalyses(cond, new PageQuery(null, null, null));
+        PageHelper.clearPage();
+
+        assertThat(cond.getFromYmd()).isNull();
+        assertThat(cond.getToYmd()).isNull();
+    }
+
+    @Test
+    void 검사결과지_분석_시작일이_종료일보다_뒤면_INVALID_INPUT_VALUE() {
+        PdfAnalysisSearchCond cond = new PdfAnalysisSearchCond();
+        cond.setFromYmd(LocalDate.of(2026, 11, 5));
+        cond.setToYmd(LocalDate.of(2026, 11, 4));
+
+        assertThatThrownBy(() -> service.searchPdfAnalyses(cond, new PageQuery(null, null, null)))
+                .isInstanceOfSatisfying(CustomException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT_VALUE));
+        verifyNoInteractions(mapper);
+    }
+
+    @Test
     void 통지를_회원과_함께_저장한다() {
         service.record(5L, new ExternalApiCallRequest("SYSC0015", "SYSC0021", null, 2100L, 200, 120L, 80L, null));
 
