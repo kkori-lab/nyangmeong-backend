@@ -1,5 +1,7 @@
 package com.nyangmeong.health.dto;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import lombok.Data;
 
 /**
@@ -12,5 +14,6 @@ public class InspectionValueSearchCond {
     /** 검진기록일련번호 */
     private Long ckupRcdSn;
     /** 검사항목공통코드(HLTG12) */
+    @AiCode("HLTG12")
     private String inspArtclCd;
 }

@@ -1,5 +1,7 @@
 package com.nyangmeong.health.dto;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import lombok.Data;
 
 /**
@@ -12,5 +14,6 @@ public class PrescriptionSearchCond {
     /** 검진기록일련번호 */
     private Long ckupRcdSn;
     /** 처방상태공통코드(HLTG06) */
+    @AiCode("HLTG06")
     private String prscSttsCd;
 }

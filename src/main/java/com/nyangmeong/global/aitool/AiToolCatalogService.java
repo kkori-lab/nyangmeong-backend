@@ -2,6 +2,7 @@ package com.nyangmeong.global.aitool;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.RecordComponent;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -35,6 +36,7 @@ import com.nyangmeong.global.aitool.AiToolResponse.Param;
 import com.nyangmeong.global.aitool.AiToolResponse.RequiredIf;
 import com.nyangmeong.global.aitool.AiToolResponse.Rule;
 import com.nyangmeong.global.code.CommonCodeService;
+import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.security.crypto.TokenHashUtil;
 
 import jakarta.validation.constraints.Digits;
@@ -54,6 +56,7 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * [AI 매니저 도구 목록]
  * - @AiTool 컨트롤러 메서드의 매핑·인자·요청 DTO 검증 어노테이션 -> 도구 목록
+ * - 쿼리 칸 : @RequestParam, @ModelAttribute 검색 조건 필드, PageQuery(page·size)
  * - 지원하지 않는 칸(목록·중첩 객체 등)이 있는 도구는 빼고 WARN 로그
  */
 @Slf4j
@@ -136,8 +139,15 @@ public class AiToolCatalogService {
 
         Map<String, Param> params = new LinkedHashMap<>();
         List<Rule> rules = new ArrayList<>();
+        Set<String> pathNames = new HashSet<>();
         for (MethodParameter parameter : handlerMethod.getMethodParameters()) {
-            String skipReason = addParameter(parameter, params, rules);
+            PathVariable pathVariable = parameter.getParameterAnnotation(PathVariable.class);
+            if (pathVariable != null) {
+                pathNames.add(nameOf(pathVariable.name(), parameter));
+            }
+        }
+        for (MethodParameter parameter : handlerMethod.getMethodParameters()) {
+            String skipReason = addParameter(parameter, params, rules, pathNames);
             if (skipReason != null) {
                 return ToolDraft.skip(skipReason);
             }
@@ -155,7 +165,8 @@ public class AiToolCatalogService {
     /**
      * 컨트롤러 인자 하나 반영
      */
-    private String addParameter(MethodParameter parameter, Map<String, Param> params, List<Rule> rules) {
+    private String addParameter(MethodParameter parameter, Map<String, Param> params, List<Rule> rules,
+            Set<String> pathNames) {
         PathVariable pathVariable = parameter.getParameterAnnotation(PathVariable.class);
         if (pathVariable != null) {
             String name = nameOf(pathVariable.name(), parameter);
@@ -172,10 +183,66 @@ public class AiToolCatalogService {
             return addBody(parameter.getParameterType(), params, rules);
         }
         if (parameter.hasParameterAnnotation(ModelAttribute.class)) {
-            return "@ModelAttribute 미지원: " + parameter.getParameterType().getSimpleName();
+            return addModelAttribute(parameter.getParameterType(), params, pathNames);
+        }
+        if (parameter.getParameterType() == PageQuery.class) {
+            return addPageQuery(params);
         }
         /** 로그인 회원 등 요청 칸이 아닌 인자 */
         return null;
+    }
+
+    /**
+     * 검색 조건 필드 -> 쿼리 칸
+     * - 경로 변수와 이름이 같은 필드는 서비스가 경로 값으로 덮어쓰므로 뺌
+     */
+    private String addModelAttribute(Class<?> condType, Map<String, Param> params, Set<String> pathNames) {
+        for (Field field : queryFieldsOf(condType)) {
+            if (pathNames.contains(field.getName())) {
+                continue;
+            }
+            String skipReason = put(params, field.getName(), toParam(QUERY, field.getType(), field, false));
+            if (skipReason != null) {
+                return skipReason;
+            }
+        }
+        return null;
+    }
+
+    private static List<Field> queryFieldsOf(Class<?> condType) {
+        List<Field> fields = new ArrayList<>();
+        if (condType.isRecord()) {
+            for (RecordComponent component : condType.getRecordComponents()) {
+                try {
+                    fields.add(condType.getDeclaredField(component.getName()));
+                } catch (NoSuchFieldException e) {
+                    /** record 칸은 같은 이름의 필드가 항상 있음 */
+                    throw new IllegalStateException("record 필드를 찾을 수 없습니다: " + component.getName(), e);
+                }
+            }
+            return fields;
+        }
+        for (Class<?> type = condType; type != null && type != Object.class; type = type.getSuperclass()) {
+            for (Field field : type.getDeclaredFields()) {
+                if (!Modifier.isStatic(field.getModifiers()) && !field.isSynthetic()) {
+                    fields.add(field);
+                }
+            }
+        }
+        return fields;
+    }
+
+    /**
+     * 페이지 조건 -> page·size 쿼리 칸 (sort는 싣지 않음)
+     */
+    private String addPageQuery(Map<String, Param> params) {
+        String skipReason = put(params, "page", new ParamDraft(new Param(QUERY, "int", null, null, null, null,
+                (long) PageQuery.DEFAULT_PAGE, null, null, null, null, null, null), null));
+        if (skipReason != null) {
+            return skipReason;
+        }
+        return put(params, "size", new ParamDraft(new Param(QUERY, "int", null, null, null, null, 1L,
+                (long) PageQuery.MAX_SIZE, null, null, null, null, null), null));
     }
 
     private String addBody(Class<?> bodyType, Map<String, Param> params, List<Rule> rules) {
