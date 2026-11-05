@@ -47,9 +47,19 @@ public class GlobalExceptionHandler {
      * 업무 예외 처리 핸들러 메소드
      */
     @ExceptionHandler(BaseException.class)
-    public ResponseEntity<ApiResponse<Void>> handleBase(BaseException e, HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<List<FieldErrorResponse>>> handleBase(BaseException e,
+            HttpServletRequest request) {
         logException(e);
-        return respond(e.getErrorCode(), request);
+        ErrorCode errorCode = e.getErrorCode();
+        if (e.getFields().isEmpty()) {
+            return ResponseEntity.status(errorCode.status()).body(ApiResponse.error(errorCode, path(request)));
+        }
+        log.warn("[Validation] path={} fields={}", path(request), String.join(",", e.getFields()));
+        List<FieldErrorResponse> fields = e.getFields().stream()
+                .map(field -> new FieldErrorResponse(field, errorCode.message()))
+                .toList();
+        return ResponseEntity.status(errorCode.status())
+                .body(ApiResponse.errorWithData(errorCode, path(request), fields));
     }
 
     /**

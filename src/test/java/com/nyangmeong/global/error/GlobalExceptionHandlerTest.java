@@ -51,6 +51,11 @@ class GlobalExceptionHandlerTest {
             throw new CustomException(ErrorCode.PET_LIMIT_EXCEEDED);
         }
 
+        @GetMapping("/test/business-field")
+        String businessField() {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "careCycleCd");
+        }
+
         @PostMapping("/test/valid")
         String valid(@Valid @RequestBody NameRequest req) {
             return "ok";
@@ -89,6 +94,23 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.code").value("PET_LIMIT_EXCEEDED"))
                 .andExpect(jsonPath("$.message").value(ErrorCode.PET_LIMIT_EXCEEDED.message()))
                 .andExpect(jsonPath("$.path").value("/test/business"));
+    }
+
+    @Test
+    void 칸을_실은_CustomException은_data에_칸_이름과_ErrorCode_문구가_나간다() throws Exception {
+        mockMvc.perform(get("/test/business-field"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT_VALUE"))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].field").value("careCycleCd"))
+                .andExpect(jsonPath("$.data[0].message").value(ErrorCode.INVALID_INPUT_VALUE.message()));
+    }
+
+    @Test
+    void 칸이_없는_CustomException은_data가_없다() throws Exception {
+        mockMvc.perform(get("/test/business"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.data").doesNotExist());
     }
 
     @Test

@@ -2,20 +2,14 @@
 
 ## 지금 하는 것
 
-SCR-AIM-012 AI 일정 생성 확인 · 도구 목록 내부 API — 끝 (2026-11-05). `global/aitool`에 `@AiTool`·`@AiCode`·`@AiRequiredIf`·`@AiOneOf`, `AiToolCatalogService`(핸들러 매핑과 요청 DTO 검증 어노테이션을 읽어 도구 목록·SHA-256 `version`·`structureVersion`), `GET /internal/ai/tools`(쿠키 없이, `SecurityPathProperties` 기본값과 `.example`에 열린 경로 추가), health 일정·케어 항목 등록에 `draft_schedule`·`draft_care_item` 표시, `docs/api/ai.md` 행·DTO. 검증 1회차 통과, 사람 확인 2026-11-05
-
-### 추가 요청
-
-| 추가-1 | 로컬 `src/main/resources/application.properties`(git 제외) `app.security.permit-all-paths`에 `/api/auth/sns-login`·`/internal/ai/tools` | 명령: `./gradlew build -q` 0 | 요청 2026-11-05 "sns-login 목록이랑 같이 넣어줘"(로컬 목록에 sns-login이 없어 AuthLoginControllerTest 5개가 변경 전부터 401) |
-
-- 추가-1 결과: 로컬 파일에 두 경로가 들어갔고 `./gradlew build -q` 0. 변경 전 실패하던 `AuthLoginControllerTest` SNS 로그인 5개도 통과
+SCR-AIM-012 AI 일정 생성 확인 · 서비스 검사 오류 칸 이름 — 끝 (2026-11-06). `BaseException`·`CustomException`에 칸 이름 목록(`(ErrorCode, String... fields)`), `GlobalExceptionHandler.handleBase`가 칸이 있으면 `data: [{field, message}]`(문구는 `ErrorCode`), 일정 등록(`schdlDt`·`hsptlNm`·`ckupTypeCd`·`schdlNm`·`cldrBadgeColrCd`·`schdlSrcCd`)·케어 항목 등록·수정(`careZoneCd`·`careCycleCd`·`cycleDrctInptDayCnt`·`careArtclNm`) 서비스 검사에 칸, `docs/convention/api.md`·`docs/api/ai.md`. 검증 1회차 통과, 사람 확인 2026-11-06
 
 ## 다음에 할 것
 
-- 다음 백엔드 작업(분리, 2026-11-05 사람 결정): 서비스 검사 `INVALID_INPUT_VALUE`에 칸 이름 담기(`CustomException`·`GlobalExceptionHandler`, ai 설계 `tool-catalog.md` 3-3절). 응답 모양은 지금의 `data: [{field, message}]`. 예: 정기관리 케어 항목에 `careCycleCd` 없이 보내면 400인데 칸 이름이 없다
 - SCR-AIM-012 도구 목록 연결 남음: FN-AIM-012-05·06·07·13 (ai 저장소 가짜 응답 → `GET /internal/ai/tools`, ai `docs/api/internal.md` 행 확정, 설계 8절 3번, ai 세션)
 - ai-50에 보낸다(PR 뒤): PR 번호와 실제 `GET /internal/ai/tools` 응답 JSON 한 벌(ai가 스냅샷으로 씀). 가짜와 다른 4곳(`cldrBadgeColrCd`·`schdlSrcCd` code, `codes` 목록, `min`·`max`)은 이미 알림(2026-11-05)
 - 디스코드 공유 `application.properties`(사람): `app.security.permit-all-paths`에 `/api/auth/sns-login`·`/internal/ai/tools`. 팀에 알린다: 각자 로컬 목록에도 넣지 않으면 `GET /internal/ai/tools`가 401
+- JAJ에게 알린다(PR 전, SCR-AIM-012 서비스 검사 오류 칸 이름): `CareScheduleService`·`CareItemService`의 `invalid()`에 칸 이름 인자만 넣었다(동작 그대로, 병원 일정 `hsptlNm`·`ckupTypeCd` 묶음 조건은 칸별로 나눔). 400 응답에 `data: [{field, message}]`가 새로 붙는다. 검사를 더하면 `invalid("칸")`으로 던진다
 - JAJ에게 알린다(PR 전, SCR-AIM-012 도구 목록): `CareScheduleController`·`CareItemController`의 `create`와 `CareScheduleCreateRequest`·`CareItemCreateRequest`에 AI 도구 표시 어노테이션만 붙였다(동작 그대로). DTO 검증·조건부 필수를 바꾸면 `@AiRequiredIf`도 같이 고친다. 시드 `CARE_ARTCL` 2번 빗질하기가 일상관리(HLTC0036)인데 주기 HLTC0038이 있다(`db/seed/20261028_seed_data.sql:88`, 등록 API로는 생기지 않는 조합)
 
 - SCR-ADM-001 연결 남음: FN-ADM-001-02·03 (프론트 연결 `features/adminDashboard/api.js` `getAdminDashboard`, 프론트 저장소에서 /start). 프론트 마일스톤에 절 넣음(`SCR-ADM-001 대시보드 · 운영 현황·처리 대기 API 연결`). 프론트에 알릴 것: 필드는 가짜 그대로, 게시글 수·최근 게시글은 삭제 글 포함(관리자 게시글 목록과 같음), 회원 수는 관리자 계정 제외, 계약은 `docs/api/admin.md`
@@ -86,7 +80,7 @@ SCR-AIM-012 AI 일정 생성 확인 · 도구 목록 내부 API — 끝 (2026-11
 - SCR-ADM-090 연결 남음: FN-ADM-090-03 (SJM이 만든 `PetService.searchCaregiverMbrSns(petSn)`로 `scheduler/CaregiverFake`를 바꾼 뒤(2026-11-03 메서드 있음 확인), 실제 케어 일정 알림에 등록한 템플릿이 쓰이고 `useYn=false`면 기본 문구인지 확인)
 - SCR-ADM-090 연결 남음: FN-ADM-090-01·02 (프론트 연결 `features/adminNotificationTemplate/api.js` 목록·등록·수정, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트 가짜와 다른 점: `useYn`이 `'Y'|'N'`이 아니라 true/false, 케어 일정 외 유형은 등록 400(화면은 "기본 문구"만)
 - 공용 DB 정리(사람): SCR-ADM-090 사람 확인으로 만든 템플릿은 삭제 API가 없다. `DELETE FROM NOTI_TMPLT WHERE NOTI_TMPLT_SN=<번호>;`(관리자 작업 로그 `TRGT_TBL_NM='NOTI_TMPLT'`는 남거나 같이 지운다)
-- 정리(판단 필요): 핸드오프가 60줄을 넘는다(2026-11-04 SCR-ADM-051 /end 때 약 145줄, 저장소로 끝났다고 확인되는 항목이 없어 지우지 않음. 2026-11-04 SCR-MAN-001 /end 때 146줄, ai-f2 요청 항목은 끝나 지움. 2026-11-04 /end 때 144줄, 저장소로 끝났다고 확인되는 항목이 없어 지우지 않음. 2026-11-03 /end 때 143줄. 펫돌봄 게시판 필터 항목은 `BoardType.CARE`(CMUC0028)가 생겨 지웠다. 2026-11-03 공용 DB에 반영된 것을 확인한 v0.12 (1)·v0.11 (5) 실행 항목 2건은 지웠다). 2026-11-04 SCR-ADM-071 /end(중간 저장) 때 약 162줄, 끝났다고 확인되는 항목이 없어 지우지 않음. 2026-11-04 SCR-MYP-010 /end(중간 저장) 때 약 163줄, 이번 작업으로 옮긴 ai-f2 요청·병합된 PR #145의 v0.12 (7) 항목·실행 확인된 v0.12 (5) 항목 3건을 지웠다. 대부분 알림·사람 할 일이라 끝났는지 코드로 판단할 수 없어 남겼다. 2026-11-05 SCR-ADM-011 /end 때 약 161줄, 이번 작업으로 끝난 백엔드 연결 항목과 "할 것 없음" 확인 항목 2건을 지웠다. 2026-11-05 SCR-ADM-072 /end 때 약 160줄, 이번 작업으로 낡은 SCR-ADM-072 재사용 메모 한 문장만 지웠다(나머지는 알림·사람 할 일이라 끝났는지 코드로 판단할 수 없음). 2026-11-05 SCR-ADM-082 /end 때 기획 절을 한 줄로 줄여 약 161줄, 저장소로 끝났다고 확인되는 항목이 없어 지우지 않음. 2026-11-05 SCR-ADM-080 /end 때 기획 절을 한 줄로 줄이고 이번 작업으로 끝난 SCR-ADM-080 "잘못 온 요청" 정하기 항목을 지워 약 165줄. 끝난 알림·정리 항목을 사람이 지운다
+- 정리(판단 필요): 핸드오프가 60줄을 넘는다(2026-11-06 SCR-AIM-012 오류 칸 이름 /end 때 약 180줄, 이번 작업으로 옮긴 "다음 백엔드 작업" 1건만 지움. 2026-11-04 SCR-ADM-051 /end 때 약 145줄, 저장소로 끝났다고 확인되는 항목이 없어 지우지 않음. 2026-11-04 SCR-MAN-001 /end 때 146줄, ai-f2 요청 항목은 끝나 지움. 2026-11-04 /end 때 144줄, 저장소로 끝났다고 확인되는 항목이 없어 지우지 않음. 2026-11-03 /end 때 143줄. 펫돌봄 게시판 필터 항목은 `BoardType.CARE`(CMUC0028)가 생겨 지웠다. 2026-11-03 공용 DB에 반영된 것을 확인한 v0.12 (1)·v0.11 (5) 실행 항목 2건은 지웠다). 2026-11-04 SCR-ADM-071 /end(중간 저장) 때 약 162줄, 끝났다고 확인되는 항목이 없어 지우지 않음. 2026-11-04 SCR-MYP-010 /end(중간 저장) 때 약 163줄, 이번 작업으로 옮긴 ai-f2 요청·병합된 PR #145의 v0.12 (7) 항목·실행 확인된 v0.12 (5) 항목 3건을 지웠다. 대부분 알림·사람 할 일이라 끝났는지 코드로 판단할 수 없어 남겼다. 2026-11-05 SCR-ADM-011 /end 때 약 161줄, 이번 작업으로 끝난 백엔드 연결 항목과 "할 것 없음" 확인 항목 2건을 지웠다. 2026-11-05 SCR-ADM-072 /end 때 약 160줄, 이번 작업으로 낡은 SCR-ADM-072 재사용 메모 한 문장만 지웠다(나머지는 알림·사람 할 일이라 끝났는지 코드로 판단할 수 없음). 2026-11-05 SCR-ADM-082 /end 때 기획 절을 한 줄로 줄여 약 161줄, 저장소로 끝났다고 확인되는 항목이 없어 지우지 않음. 2026-11-05 SCR-ADM-080 /end 때 기획 절을 한 줄로 줄이고 이번 작업으로 끝난 SCR-ADM-080 "잘못 온 요청" 정하기 항목을 지워 약 165줄. 끝난 알림·정리 항목을 사람이 지운다
 - ai-47에 알린다: 굽기 계약 구현 끝(SCR-ADM-070). `bake-items` 응답 `{itemSn, regnCd, bakeHint}`(판매 중이고 지시 있음 30개), `GET /internal/ai/items/{itemSn}/bake-targets?page=`(관리자 쿠키, 100개씩 `{pixelCharSns, last}`, 아니면 403 `ADMIN_ONLY`, 굽기 대상 아님 404). 굽기 지시가 바뀌면 그 아이템 착용 시트를 지워 다시 굽기 대상이 된다. 시드에만 있던 6개(빨간 리본·작은 왕관·털모자·줄무늬 티셔츠·꼬까 한복·곰돌이 후드티)의 지시 문장은 LJS 초안이라 검토를 부탁한다. 백엔드 PR이 AI PR보다 먼저 병합돼야 한다
 - 공용 DB 정리(사람): SCR-ADM-070 사람 확인으로 만든 아이템(예: "확인용 가방")은 삭제 API가 없다. `DELETE FROM MNGR_TASK_LOG WHERE TRGT_TBL_NM='ITEM' AND TRGT_SN=<번호>; DELETE FROM ITEM WHERE ITEM_SN=<번호>;` 또는 판매 중지. 바꾼 순서·판매 여부·굽기 지시를 되돌린다
 - SCR-ADM-070 연결 남음: FN-ADM-070-01~04 (프론트 연결 `features/adminItem/api.js` 목록·등록·수정·순서 저장, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
