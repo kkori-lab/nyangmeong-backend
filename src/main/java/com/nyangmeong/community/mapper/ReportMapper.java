@@ -91,4 +91,9 @@ public interface ReportMapper {
     int updateProcessed(@Param("dclrSn") Long dclrSn, @Param("beforeCd") String beforeCd,
             @Param("afterCd") String afterCd, @Param("dclrActnCd") String dclrActnCd,
             @Param("prcsMbrSn") Long prcsMbrSn);
+
+    /**
+     * 처리 상태별 신고 수 조회
+     */
+    long countByStatus(@Param("dclrPrcsSttsCd") String dclrPrcsSttsCd);
 }

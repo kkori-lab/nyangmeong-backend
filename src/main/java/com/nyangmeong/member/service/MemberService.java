@@ -23,6 +23,7 @@ import com.nyangmeong.global.validation.PhoneNumberNormalizer;
 import com.nyangmeong.member.domain.JoinPath;
 import com.nyangmeong.member.domain.Member;
 import com.nyangmeong.member.dto.AdminMemberDetailResponse;
+import com.nyangmeong.member.dto.AdminDashboardMemberSummary;
 import com.nyangmeong.member.dto.AdminMemberSearchCond;
 import com.nyangmeong.member.dto.AdminMemberStatusHistorySummary;
 import com.nyangmeong.member.dto.AdminMemberSummary;
@@ -54,6 +55,7 @@ public class MemberService {
     private static final String SIGNUP_REASON = "회원가입";
     private static final String RECOVERY_REASON = "재가입 복구";
     private static final int MASK_VISIBLE_LENGTH = 3;
+    private static final int DASHBOARD_RECENT_LIMIT = 5;
 
     private final MemberMapper memberMapper;
     private final FieldCryptoService fieldCryptoService;
@@ -486,5 +488,21 @@ public class MemberService {
     @Transactional(readOnly = true)
     public int countNormalMembers() {
         return memberMapper.countByStatus(MemberStatus.NORMAL.getCode());
+    }
+
+    /**
+     * 관리자 대시보드 회원 현황 조회
+     */
+    @Transactional(readOnly = true)
+    public AdminDashboardMemberSummary getDashboardSummary() {
+        String userCd = MemberAuthority.USER.getCode();
+        AdminDashboardMemberSummary summary = memberMapper.selectDashboardCounts(userCd,
+                MemberStatus.NORMAL.getCode(), MemberStatus.SUSPENDED.getCode());
+        if (summary == null) {
+            summary = new AdminDashboardMemberSummary();
+        }
+        summary.setRecentMbrs(memberMapper.selectRecentMembers(userCd,
+                List.of(MemberStatus.NORMAL.getCode(), MemberStatus.SUSPENDED.getCode()), DASHBOARD_RECENT_LIMIT));
+        return summary;
     }
 }

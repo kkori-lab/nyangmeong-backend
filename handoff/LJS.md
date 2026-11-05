@@ -2,10 +2,14 @@
 
 ## 지금 하는 것
 
-SCR-ADM-082 처리 현황 · 검사결과지 분석 현황 API — 끝 (2026-11-05). `global/external`에 `AdminPdfAnalysisController`(`GET /api/admin/processing/pdf-analyses`, PDF 분석 SYSC0025 건수 묶음·실패 목록)와 DTO 4개, `ExternalApiUsageService.searchPdfAnalyses`, Mapper 쿼리 2개, `docs/api/global.md` 행·DTO 절. 검증 1회차 통과, 사람 확인 2026-11-05
+SCR-ADM-001 대시보드 · 운영 현황·처리 대기 API — 끝 (2026-11-05). `admin` 패키지에 `AdminDashboardController`(`GET /api/admin/dashboard`)·`AdminDashboardService`·`AdminDashboardResponse`, 도메인 service 건수 메서드 8개(member·community·support·pet·expense·notification·global batch)와 Mapper 쿼리, `docs/api/admin.md` 새 파일. 검증 2회차 통과, 사람 확인 2026-11-05. SCR-ADM-060 장소는 화면을 없애(사람 결정 2026-11-04) 마일스톤 제외로 옮겼다
 
 ## 다음에 할 것
 
+- SCR-ADM-001 연결 남음: FN-ADM-001-02·03 (프론트 연결 `features/adminDashboard/api.js` `getAdminDashboard`, 프론트 저장소에서 /start). 프론트 마일스톤에 절 넣음(`SCR-ADM-001 대시보드 · 운영 현황·처리 대기 API 연결`). 프론트에 알릴 것: 필드는 가짜 그대로, 게시글 수·최근 게시글은 삭제 글 포함(관리자 게시글 목록과 같음), 회원 수는 관리자 계정 제외, 계약은 `docs/api/admin.md`
+- 다음 백엔드 작업: `SCR-ADM-001 대시보드 · 이용 통계 API`(FN-ADM-001-04·05, `GET /api/admin/dashboard/stats`)
+- 판단 필요(SCR-ADM-001): 대시보드 전체 게시글 수에 삭제 글을 넣을지. 지금은 기획 완료 조건(관리자 게시글 목록 기본 건수와 같게)대로 넣는다. 빼려면 `PostMapper.countAll`·`selectRecentPosts`에 상태 조건을 넣고 `docs/api/admin.md`를 고친다
+- YAY·KSJ·SJM에게 알린다(PR 전, SCR-ADM-001): 대시보드용 조회 메서드만 추가했다(기존 동작 그대로). `MemberService.getDashboardSummary`·`MemberMapper` 쿼리 2개(YAY), `AdminPostService.getDashboardSummary`·`AdminReportService.countReceived`·`PostMapper.countAll`·`selectRecentPosts`·`ReportMapper.countByStatus`(KSJ 영역의 관리자 클래스)
 - SCR-ADM-082 연결 남음: FN-ADM-082-03 (프론트 연결 `features/adminProcessing/api.js` `getAdminPdfAnalyses` 검사결과지 분석 탭, 프론트 저장소에서 /start). 프론트 마일스톤에 절 넣음(`SCR-ADM-082 처리 현황 · 검사결과지 분석 현황 API 연결`). 프론트에 알릴 것: 경로·필드는 가짜 그대로, 검사결과지가 아닌 파일은 서버가 따로 빼지 않고 Python이 성공으로 통지해 `scsCnt`·`totCnt`에 들어가고 실패 목록에는 없다, 계약은 `docs/api/global.md` `/admin/processing/pdf-analyses` 행
 - SCR-ADM-082 연결 남음: FN-ADM-082-03 (ai 연결 `app/checkup` PDF 분석 호출마다 `POST /internal/ai/external-api-calls` `{ extlApiSeCd: "SYSC0025", callRsltCd, rspnsMs, httpSttsVl, failRsn }` 통지, 검사결과지 아님 판정은 SYSC0021(성공), 시간초과 SYSC0023, API 오류 SYSC0022, ai 저장소에서 /start). 지금 ai 저장소는 이 통지를 보내지 않는다
 - SCR-ADM-081 연결 남음: FN-ADM-081-01·02 (프론트 연결 `features/adminAiKeyword/api.js` 목록·등록/수정 모달·삭제, 프론트 저장소에서 /start). 프론트 마일스톤에 절 넣음(`SCR-ADM-081 키워드 사전 · 관리자 키워드 사전 API 연결`). 프론트에 알릴 것: `useYn`은 true/false, 행에 `mpngCdNm` 추가, 404 `AI_KEYWORD_NOT_FOUND`(가짜 `KEYWORD_NOT_FOUND` 아님), 서버가 `kwrdClsfNm`을 글자 그대로 검사하므로 쉬운 말 바꾸기는 화면 표시만, 계약은 `docs/api/ai.md` "관리자 API" 절

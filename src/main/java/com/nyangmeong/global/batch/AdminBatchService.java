@@ -95,4 +95,16 @@ public class AdminBatchService {
     private boolean hasJob(BatchType type) {
         return batchJobs.stream().anyMatch(job -> job.type() == type);
     }
+
+    /**
+     * 마지막 실행이 실패한 배치 수 조회
+     */
+    @Transactional(readOnly = true)
+    public long countLastFailed() {
+        return batchExecutionMapper.selectLatestList().stream()
+                .filter(execution -> Arrays.stream(BatchType.values())
+                        .anyMatch(type -> type.is(execution.getBtchSeCd())))
+                .filter(execution -> BatchExecutionResult.FAIL.is(execution.getExcnRsltCd()))
+                .count();
+    }
 }

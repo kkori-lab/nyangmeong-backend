@@ -1,5 +1,6 @@
 package com.nyangmeong.notification.service;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -59,5 +60,13 @@ public class AdminNotificationLogService {
 
     private static boolean hasText(String value) {
         return value != null && !value.isBlank();
+    }
+
+    /**
+     * 최근 발송 실패 수 조회
+     */
+    @Transactional(readOnly = true)
+    public long countFailedSince(LocalDateTime sinceDt) {
+        return notificationSendingLogMapper.countByResultSince(SendingResult.FAIL.getCode(), sinceDt);
     }
 }

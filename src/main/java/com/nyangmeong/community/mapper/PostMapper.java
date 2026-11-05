@@ -11,6 +11,7 @@ import com.nyangmeong.community.domain.PostStatusHistory;
 import com.nyangmeong.community.dto.AdminPostSearchCond;
 import com.nyangmeong.community.dto.AdminPostStatusHistorySummary;
 import com.nyangmeong.community.dto.AdminPostSummary;
+import com.nyangmeong.community.dto.AdminRecentPostSummary;
 import com.nyangmeong.community.dto.HealthTipDesignation;
 import com.nyangmeong.community.dto.PostAuthor;
 import com.nyangmeong.community.dto.PostSummary;
@@ -183,4 +184,14 @@ public interface PostMapper {
      * 게시글 상태 이력 조회 (최신순)
      */
     List<AdminPostStatusHistorySummary> selectAdminStatusHistories(Long pstSn);
+
+    /**
+     * 전체 게시글 수 조회
+     */
+    long countAll();
+
+    /**
+     * 관리자 대시보드 최근 게시글 조회
+     */
+    List<AdminRecentPostSummary> selectRecentPosts(@Param("limit") int limit);
 }
