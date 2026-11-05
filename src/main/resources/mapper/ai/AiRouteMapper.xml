@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nyangmeong.ai.mapper.AiRouteMapper">
+
+    <resultMap id="routeResultMap" type="com.nyangmeong.ai.domain.AiRoutMpng">
+        <id     column="AI_ROUT_MPNG_SN" property="aiRoutMpngSn" />
+        <result column="DOMN_NM"         property="domnNm" />
+        <result column="TRGT_SCRN_NM"    property="trgtScrnNm" />
+        <result column="SCRN_ID"         property="scrnId" />
+        <result column="SCRN_PARAM_CN"   property="scrnParamCn" />
+        <result column="INST_KWRD_CN"    property="instKwrdCn" />
+        <result column="MVMN_MTHD_CD"    property="mvmnMthdCd" />
+        <result column="RPRS_CHIP_YN"    property="rprsChipYn" />
+        <result column="PRRT_SEQ"        property="prrtSeq" />
+        <result column="RMRK_CN"         property="rmrkCn" />
+        <result column="USE_YN"          property="useYn" />
+        <result column="MDFCN_DT"        property="mdfcnDt" />
+    </resultMap>
+
+    <sql id="routeColumns">
+        SELECT AI_ROUT_MPNG_SN
+             , DOMN_NM
+             , TRGT_SCRN_NM
+             , SCRN_ID
+             , SCRN_PARAM_CN
+             , INST_KWRD_CN
+             , MVMN_MTHD_CD
+             , RPRS_CHIP_YN
+             , PRRT_SEQ
+             , RMRK_CN
+             , USE_YN
+             , MDFCN_DT
+          FROM AI_ROUT_MPNG
+    </sql>
+
+    <select id="selectAdminRoutes" resultMap="routeResultMap">
+        /* 관리자 매핑표 : 사용 안 함 포함, 지시어 공백 무시 부분 일치 */
+        <include refid="routeColumns" />
+         WHERE DEL_YN = 'N'
+        <if test="q != null">
+           AND REPLACE(INST_KWRD_CN, ' ', '') LIKE CONCAT('%', #{q}, '%')
+        </if>
+         ORDER BY PRRT_SEQ, AI_ROUT_MPNG_SN
+    </select>
+
+    <select id="selectRoute" parameterType="long" resultMap="routeResultMap">
+        /* 매핑 한 행 */
+        <include refid="routeColumns" />
+         WHERE AI_ROUT_MPNG_SN = #{aiRoutMpngSn}
+           AND DEL_YN = 'N'
+    </select>
+
+    <select id="selectRouteOrderForUpdate" resultMap="routeResultMap">
+        /* 순서 다시 매기기 : 삭제 안 된 행 전부 잠금 */
+        SELECT AI_ROUT_MPNG_SN
+             , PRRT_SEQ
+          FROM AI_ROUT_MPNG
+         WHERE DEL_YN = 'N'
+         ORDER BY PRRT_SEQ, AI_ROUT_MPNG_SN
+           FOR UPDATE
+    </select>
+
+    <select id="selectActiveRoutes" resultMap="routeResultMap">
+        /* AI 서버용 : 사용 중 행만 */
+        <include refid="routeColumns" />
+         WHERE USE_YN = 'Y'
+           AND DEL_YN = 'N'
+         ORDER BY PRRT_SEQ, AI_ROUT_MPNG_SN
+    </select>
+
+    <insert id="insertRoute" useGeneratedKeys="true" keyProperty="route.aiRoutMpngSn" keyColumn="AI_ROUT_MPNG_SN">
+        /* 매핑 등록 : 우선순위는 이어서 다시 매긴다 */
+        INSERT INTO AI_ROUT_MPNG (DOMN_NM, TRGT_SCRN_NM, SCRN_ID, SCRN_PARAM_CN, INST_KWRD_CN, MVMN_MTHD_CD,
+                                  RPRS_CHIP_YN, PRRT_SEQ, RMRK_CN, USE_YN, RGTR_ID, MDFR_ID)
+        VALUES (#{route.domnNm}, #{route.trgtScrnNm}, #{route.scrnId}, #{route.scrnParamCn}, #{route.instKwrdCn},
+                #{route.mvmnMthdCd}, #{route.rprsChipYn}, #{route.prrtSeq}, #{route.rmrkCn}, #{route.useYn},
+                #{actorId}, #{actorId})
+    </insert>
+
+    <update id="updateRoute">
+        /* 매핑 수정 */
+        UPDATE AI_ROUT_MPNG
+           SET DOMN_NM       = #{route.domnNm}
+             , TRGT_SCRN_NM  = #{route.trgtScrnNm}
+             , SCRN_ID       = #{route.scrnId}
+             , SCRN_PARAM_CN = #{route.scrnParamCn}
+             , INST_KWRD_CN  = #{route.instKwrdCn}
+             , MVMN_MTHD_CD  = #{route.mvmnMthdCd}
+             , RPRS_CHIP_YN  = #{route.rprsChipYn}
+             , RMRK_CN       = #{route.rmrkCn}
+             , USE_YN        = #{route.useYn}
+             , MDFR_ID       = #{actorId}
+         WHERE AI_ROUT_MPNG_SN = #{route.aiRoutMpngSn}
+           AND DEL_YN = 'N'
+    </update>
+
+    <update id="updatePrrtSeq">
+        /* 우선순위 변경 */
+        UPDATE AI_ROUT_MPNG
+           SET PRRT_SEQ = #{prrtSeq}
+             , MDFR_ID  = #{actorId}
+         WHERE AI_ROUT_MPNG_SN = #{aiRoutMpngSn}
+           AND DEL_YN = 'N'
+    </update>
+
+    <update id="deleteRoute">
+        /* 매핑 삭제 */
+        UPDATE AI_ROUT_MPNG
+           SET DEL_YN  = 'Y'
+             , MDFR_ID = #{actorId}
+         WHERE AI_ROUT_MPNG_SN = #{aiRoutMpngSn}
+           AND DEL_YN = 'N'
+    </update>
+</mapper>
