@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
 import com.nyangmeong.health.dto.CareCompletionCreateRequest;
@@ -53,6 +55,7 @@ public class CareItemController {
     }
 
     @Operation(summary = "케어 항목 추가")
+    @AiTool(name = "draft_care_item", domain = "health", kind = AiToolKind.CARD)
     @PostMapping("/care-items")
     public ResponseEntity<ApiResponse<CareItemResponse>> create(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @Valid @RequestBody CareItemCreateRequest req) {

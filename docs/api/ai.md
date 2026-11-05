@@ -28,6 +28,7 @@
 | PUT | /internal/ai/pets/{petSn}/health-report | AI 건강분석 리포트 저장. 반려동물당 1행 덮어쓰기(`AI_HLTH_RPT`). 저장본이 없거나 기준일이 바뀌면 두 횟수를 0부터 센다. `rfrshYn: true`면 새로고침 횟수 +1(그날 이미 1회면 409 `HEALTH_REPORT_REFRESH_LIMIT`), 같은 기준일에 `rfrshYn: false`면 자동 재생성 횟수 +1(그날 이미 5회면 409 `HEALTH_REPORT_AUTO_LIMIT`). 그날 첫 생성은 세지 않는다. 저장본보다 이른 기준일·형식 오류는 400 `INVALID_INPUT_VALUE`. 응답 200 data 없음. `X-Requested-With` 필요 | MAN-006 | LJS | HealthReportSaveRequest | - |
 | GET | /internal/ai/routes | 라우팅 매핑표(FN-AIM-004-09에서 쓰는 지시어 → 화면). 사용 중(`USE_YN='Y'`) 행만 `prrtSeq`·`aiRoutMpngSn` 순. 이동 방식이 라우팅 대상 아님·제외·보류(AIMC0034~0036)인 행도 준다(Python이 이동하지 않는 행으로 거른다). 관리자가 바꾸면 다음 호출부터 반영(캐시 없음). Python은 DB에 붙지 않아 `data/routing.yaml` 대신 이 API를 쓴다(연결은 ai 저장소) | ADM-080-04 | LJS | - | List<AiRouteResponse> |
 | GET | /internal/ai/keywords?dictUsgCd= | 키워드 사전(일정 등록 판정·가계부 분류). `dictUsgCd`는 AIMC0037·AIMC0038만(뉴스 용도 AIMC0039·0040·모르는 값은 400 `INVALID_INPUT_VALUE`, 없으면 400 `BAD_REQUEST`). 사용 중(`USE_YN='Y'`) 행만 `sortSeq`·`kwrdDictSn` 순, '판정 규칙'·'시간' 행도 준다. `kwrdCn`은 관리자가 쓴 예시 문구 그대로(정규식 아님, 바꾸는 규칙은 ai 저장소가 정한다). 관리자가 바꾸면 다음 호출부터 반영(캐시 없음) | ADM-081-01 | LJS | - | List<AiKeywordResponse> |
+| GET | /internal/ai/tools | AI 매니저 도구 목록. `@AiTool`을 붙인 컨트롤러 메서드의 호출 경로·칸(경로 변수·쿼리·요청 본문 camelCase)·필수·검증(`@Size`→`minLength`·`maxLength`, `@Min`·`@Max`→`min`·`max`, `@Positive`→`positive`, `@Pattern`→`pattern`, `@Digits`→`precision`·`scale`)·조건부 규칙(`@AiRequiredIf`·`@AiOneOf`)·공통코드 값(`@AiCode`, 사용 중 코드만). **쿠키 없이** 부른다(`app.security.permit-all-paths`, Python 기동 때 호출). 목록·중첩 객체·`@ModelAttribute` 칸이 있는 도구는 빼고 WARN 로그. `version`은 코드 값 포함, `structureVersion`은 코드 값 제외 SHA-256. 400 오류 모양은 기존 그대로(`data: [{field, message}]`). 일정·케어 항목 등록의 서비스 검사(공통코드 값·조건부 필수)도 `data`에 칸 이름을 담는다. 명세 기능 ID 추가 전(ai 저장소 `docs/design/tool-catalog.md` 3절) | AIM-012-05·06·07·13 | LJS | - | AiToolCatalogResponse |
 
 탈퇴 회원 대화 파기(AIM-011-19)는 API가 아니라 `scheduler/AiConversationPurgeJob`이 매일 03:00 KST에 한다. Python의 `DELETE /internal/v1/members/{mbrSn}/conversations`는 쓰지 않는다.
 
@@ -117,6 +118,27 @@
 | petSn | Long | Y | | PET.PET_SN, AIM-012-04 |
 | petNm | String | Y | 문장 속 이름과 대조 | PET.PET_NM, AIM-012-04 |
 | careArtclNms | List<String> | Y | 그 반려동물의 케어 항목 이름(삭제 제외, 등록순). 없으면 빈 배열. 케어 항목 목록 service(JAJ) 연결 전까지 빈 배열 | CARE_ARTCL.CARE_ARTCL_NM, AIM-012-08 |
+
+### AiToolCatalogResponse
+쓰는 API: GET /internal/ai/tools
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| version | String | Y | 도구 목록(코드 값 포함) 키 정렬 JSON의 SHA-256(64자) | tool-catalog.md 3-2 |
+| structureVersion | String | Y | 코드 값을 뺀 같은 해시. 스냅샷 비교용 | tool-catalog.md 3-2 |
+| tools | List<AiToolResponse> | Y | 도구 이름순 | |
+
+### AiToolResponse
+쓰는 API: GET /internal/ai/tools
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| name | String | Y | Python 설명과 짝짓는 키(예: `draft_schedule`, `draft_care_item`) | `@AiTool.name` |
+| domain | String | Y | 예: `health` | `@AiTool.domain` |
+| kind | String | Y | `READ`(Python이 바로 실행)·`CARD`(확인 카드) | `@AiTool.kind` |
+| call | Object | Y | `{method, path}`. path는 `{petSn}` 같은 경로 변수 그대로 | 컨트롤러 매핑 |
+| params | Map<String, Param> | Y | 키는 칸 이름. 값은 아래 Param. 값이 없는 속성은 키째 없다 | |
+| rules | List<Rule> | Y | `{requiredIf: {field, when, equals}}` 또는 `{oneOf: [칸…]}`. 조건 값이 여럿이면 값마다 한 줄. 없으면 빈 배열 | `@AiRequiredIf`·`@AiOneOf` |
+
+Param: `in`(`path`·`query`·`body`), `type`(`string`·`long`·`int`·`decimal`·`boolean`·`date`·`time`·`datetime`·`code`), `group`(코드 그룹), `required`(true일 때만), `minLength`·`maxLength`, `min`·`max`, `positive`, `pattern`, `precision`·`scale`, `codes`(`[{cd, nm}]`, `code` 칸만).
 
 ### HealthReportContextResponse
 쓰는 API: GET /internal/ai/pets/{petSn}/health-report-input
