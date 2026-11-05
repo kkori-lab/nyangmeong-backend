@@ -1,27 +1,26 @@
 # SJM 핸드오프
 
 ## 지금 하는 것
-SCR-HLT-002 건강 일지 · SJM 몫(PetService.syncWeight) — 끝남 (승인 2026-11-04 09:25, 시작 2026-11-04 09:23). 검증 통과 1회차, 사람 확인 완료(`PetServiceTest`·`PetMapperXmlTest` 통과)
+SCR-MYP-003 반려동물 등록/수정 · 종에 맞지 않는 털색 코드 거절 — 끝남 (승인 2026-11-05 23:16, 시작 2026-11-05 23:08). 검증 통과 1회차, 사람 확인 완료(Swagger 대신 브라우저 콘솔: 강아지+PETC0014·고양이+PETC0011 등록 400, 고양이+PETC0017·PETC0005 등록 201, 강아지→고양이 수정 400, 테스트 동물 3마리 삭제 후 8마리 유지)
 
-JAJ 요청. 체중 기록 등록·수정·삭제 뒤 프로필 체중을 맞추는 `PetService` 메서드를 더한다. 기획은 사람이 이 대화에서 승인했다(결정 1·2 포함). 기록 확인 뒤 `/impl`로 간다.
+등록(`POST /api/pets`)·수정(`PATCH /api/pets/{petSn}`)에서 반려동물 구분과 맞지 않는 털색 코드를 거절한다. 명세 FN-MYP-003-03은 "구분에 따라 선택지가 분기"라고만 적고 서버 검증은 없다. 프론트 수정 모달은 이미 막는다(끝남).
 
 | 기능 | 바꿀 파일 | 완료 조건 |
 | --- | --- | --- |
-| FN-HLT-002-09~11 프로필 체중 동기화(화면은 SCR-HLT-002, JAJ) | `pet/mapper/PetMapper.java`, `mapper/pet/PetMapper.xml`, `pet/service/PetService.java`, `pet/service/PetServiceTest.java` | 명령: `./gradlew build -q` 통과(`ArchitectureTest` 포함). 화면: 없음(서버 내부 호출) |
+| FN-MYP-003-03 털색 선택(등록·수정 서버 검증) | `pet/domain/PetColor.java`, `pet/service/PetService.java`, `pet/service/PetServiceTest.java` | 명령: `./gradlew build -q` 통과. 화면: Swagger로 강아지(`PETC0001`)+`PETC0014` 등록 → 400 `INVALID_INPUT_VALUE`, 고양이(`PETC0002`)+`PETC0011` 등록 → 400, 고양이+`PETC0017`(직접 입력)·`PETC0005`(공통) → 201. 수정에서 `petSeCd`만 고양이로 바꿔 기존 강아지 전용 털색과 어긋나면 400 |
 
-- 결정 1: 시그니처는 `syncWeight(Long petSn, BigDecimal weight, Long actorMbrSn)`. `MDFR_ID = String.valueOf(actorMbrSn)`, `MDFCN_DT = NOW()`. 요청서의 인자 2개에서 3개로 바꾼 이유는 `MDFR_ID`로 누가 바꿨는지 추적하기 위해서다(`"SYSTEM"`은 배치 전용, `mapper.md`)
-- 결정 2: `PET_BDWG`만 갱신한다. `MIN_BDWG`·`MAX_BDWG`·`GOAL_BDWG`는 건드리지 않는다
-- Mapper: `int updatePetWeight(@Param("petSn") Long petSn, @Param("weight") BigDecimal weight, @Param("actorId") String actorId)`. `UPDATE PET SET PET_BDWG = #{weight}, MDFR_ID = #{actorId}, MDFCN_DT = NOW() WHERE PET_SN = #{petSn} AND DEL_YN = 'N'`
-- Service: `@Transactional public void syncWeight(...)`. 영향 행이 0이면 `PET_NOT_FOUND`(404). 권한 검사는 하지 않는다(호출하는 쪽 담당). 호출하는 쪽 트랜잭션 안에서 실행한다. Javadoc에 둘 다 적는다
-- 테스트(`PetServiceTest`, mapper mock): 정상이면 `petSn`·`weight`·`actorId`가 mapper에 그대로 넘어간다 / 영향 행 0이면 `PET_NOT_FOUND`. `PetMapperSqlTest`가 있으면 SQL에 `DEL_YN = 'N'`과 `PET_BDWG`만 갱신하는지 검사를 더한다(없으면 만들지 않는다)
-- 층 규칙: `health`(2층)가 `pet`(1층) service를 부른다. 허용된다
-- 이번엔 안 함: JAJ 코드 `health/service/PetWeightFake`, `DailyHealthRecordService`와 그 테스트는 이 세션에서 고치지 않는다
-- JAJ 전환 방법(구현 뒤 "다음에 할 것"에 남긴다): `PetWeightFake`를 지우고 `PetService`를 주입한다. `DailyHealthRecordService.syncWeight`의 `petWeightFake.sync(petSn, latest)`를 `petService.syncWeight(petSn, latest, mbrSn)`로 바꾸고, 이를 위해 `syncWeight`에 `mbrSn` 인자를 더한다(`create`·`update`·`delete`가 넘긴다). `DailyHealthRecordServiceTest`의 mock도 `PetService`로 바꾼다. 시그니처가 요청서와 달리 인자 3개인 이유는 `MDFR_ID` 추적이다
-- 프론트 연결: 없음
+- 부를 API: 없음(공통코드 그룹 검사는 기존 `checkCode` 그대로). 경로·DTO 변경 없음, `docs/api/` 초안 수정 없음
+- 결정 1(종별 목록 위치): `PetColor` enum에 `DOG_ONLY`(PETC0010·0011·0012·0028·0029·0030·0031), `CAT_ONLY`(PETC0014·0015·0016·0032·0033·0034) 코드 집합과 `static boolean fits(String petSeCd, String colrCd)`를 둔다. 나머지(PETC0005~0009·0013·0017)는 공통으로 어느 종에서나 받는다. `COM_CD_EXPLN`("강아지 전용") 글자를 읽어 판단하지 않는다(설명 문구는 바뀔 수 있어 조용히 틀어진다)
+- 결정 2(명세와 DB 차이): 명세의 강아지 목록에는 "얼룩"(PETC0011)이 없지만 DB 기준 데이터는 `강아지 전용`이다. DB와 마일스톤 완료 조건대로 PETC0011을 강아지 전용으로 둔다(고양이에는 거절)
+- 결정 3(오류 코드): 기존 털색 검증처럼 `INVALID_INPUT_VALUE`(400)를 쓴다. 새 `ErrorCode`를 만들지 않는다(프론트가 이미 막으므로 화면 문구가 따로 필요 없다)
+- 결정 4(검사 시점): `checkPet`에서 `checkCode(COLOR)` 다음에 저장 직전 최종 값(구분+털색)으로 검사한다. 그래서 수정 요청에 `petSeCd`나 `colrCd` 중 하나만 와도 합친 결과가 어긋나면 거절한다. 시드의 고양이+PETC0011 55마리는 털색을 바꾸지 않고 다른 항목만 고쳐도 거절된다. 프론트 수정 모달이 털색을 다시 고르게 하므로 그대로 두고, 데이터 정리는 대기 중인 "털색 데이터 정리" 마일스톤에서 한다
+- 테스트(`PetServiceTest`): 등록 — 강아지+고양이 전용 거절 / 고양이+강아지 전용(PETC0011) 거절 / 고양이+직접 입력·공통 통과. 수정 — `petSeCd`만 바꿔 기존 털색과 어긋나면 거절 / 털색만 바꿔 기존 구분과 어긋나면 거절. 거절이면 `insertPet`·`updatePet`을 부르지 않는다
+- 프론트 연결: 없음(수정 모달 막기는 이미 끝남)
 
 새 의존성: 없음
 
 ## 다음에 할 것
+- 정리(이 파일): 아래 "프론트 저장소에서 /start" 연결 남음 줄이 대부분 이미 연결된 것으로 보인다. 프론트 코드(`../nyangmeong-frontend`)와 대조해 연결된 줄은 지우고, 안 된 것만 남긴다
 - 연결 남음(SCR-MYP-030, FN-MYP-030-18·19·21): 프론트 SCR-MYP-030 편집 모드에서 전체 선택 뒤 해제한 번호를 `excludeExpndSn`으로 보내고 `expectedCnt`를 "조건 건수 − 해제한 수"로 바꾸기. 409 `EXPENSE_BULK_DELETE_CHANGED`면 목록을 다시 불러오게 안내(프론트 저장소에서 /start)
 - 연결 남음(SCR-MYP-002 목록 응답 보강): 프론트 SCR-MYP-002 슬라이드의 "(중성화 완료)"·"정상 a~bkg"를 상세 조회 대신 `GET /pets`의 `nutrYn`·`minBdwg`·`maxBdwg`로 채우기(프론트 저장소에서 /start)
 - Postman 컬렉션: 3번 회원이 정지(`MEMBER_INACTIVE`)라 그 회원을 쓰는 변수(`mbrSnB`·`emailB`·`delCoMbrSn`·`delCoEmail`·`invReceiverMbrSn`·`infoOtherMbrSn`)가 있는 폴더는 403. 돌릴 때 정상 회원으로 바꾼다(이메일은 `GET /members/me`의 `acntEml`)

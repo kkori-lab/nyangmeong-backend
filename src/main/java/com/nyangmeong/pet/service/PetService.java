@@ -393,6 +393,9 @@ public class PetService {
         checkCode(PetCodeGroup.PET_SE, pet.getPetSeCd());
         checkCode(PetCodeGroup.GENDER, pet.getPetGndrCd());
         checkCode(PetCodeGroup.COLOR, pet.getColrCd());
+        if (!PetColor.fits(pet.getPetSeCd(), pet.getColrCd())) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
 
         if ((pet.getVrtySn() == null) == (pet.getVrtyDrctInptNm() == null)) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
