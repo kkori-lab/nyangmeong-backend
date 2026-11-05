@@ -504,11 +504,13 @@
 - 완료 조건 결과: 검증 `통과`(2026-11-04, 3회차. 1회차 공용 DB에 v0.12 (7) 미실행, 2회차 공용 DB 쓰기 막힘·오늘 출제분 없음으로 화면 확인 못 함), 사람 확인 2026-11-04
 - 연결 남음: FN-ADM-071-01·02 (프론트 연결 `features/adminCareMission/api.js` 케어미션 목록·수정 모달, 프론트 저장소에서 /start)
 
-## SCR-ADM-072 포인트 · 프론트 연결 관리자 포인트 API — 대기
+## SCR-ADM-072 포인트 · 프론트 연결 관리자 포인트 API — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-072-01·02·03
 - 기다리는 것: 프론트 SCR-ADM-072(끝, 가짜 응답 `features/adminPoint/api.js`)
 - 완료 조건: `GET /api/admin/points?mbrSn=&mbrNcnm=&pntDlngTypeCd=&fromDt=&toDt=&page=&size=`(최신순 `PageResponse`, 한 줄은 `AdminPointLedgerSummary` 필드 + 회원 `mbrSn`·`mbrNcnm`, 닉네임 부분 일치, 기간은 YYYY-MM-DD), `POST /api/admin/points/adjustments` `{ mbrSn, dlngPnt(지급 +, 차감 -), memoCn(사유 필수) }`(거래 유형 MYPC0009, 보유 포인트 갱신, 차감 후 잔액 0 미만이면 거절, 감사 로그). 조정 화면의 현재 잔액을 줄 필드(회원 보유 포인트)를 정한다. 상한을 정해 프론트에 알린다(프론트 가정: 1회 100,000P, 사유 200자). 회원 포인트 내역(FN-MYP-020)에 "관리자 조정"으로 보이는지 확인한다(FN-ADM-072-03)
 - 이미 바뀐 것: 회원 한 명 원장 `GET /api/admin/members/{mbrSn}/point-ledgers`(`AdminPointController`, SCR-ADM-011)
+- 완료 조건 결과: 검증 `통과`(2026-11-05. 1회차 실패는 기획과 다른 서비스 분리 → 루프를 버리고 추가-1로 받아 재검증), 사람 확인 2026-11-05. 위 `## SCR-ADM-072 포인트 — 대기` 절의 FN-ADM-072-01~03도 이 절로 끝냈다(절 정리는 사람). 정한 것: 현재 잔액은 `GET /api/admin/members/{mbrSn}`의 `hldPnt`, 상한 ±100,000·사유 1~200자(가정 그대로), 잔액 부족 400 `POINT_NOT_ENOUGH`, 탈퇴 회원 404 `MEMBER_NOT_FOUND`, 멱등 ID 서버 `ADJ-<UUID>`. 추가-1: 검증·감사 로그·검색은 새 `AdminPointService`, `PointService.adjustByAdmin`은 원장 기록만(기존 `PointServiceTest` 생성자 보존)
+- 연결 남음: FN-ADM-072-01·02 (프론트 연결 `features/adminPoint/api.js` 원장 목록·조정 모달·현재 잔액 `hldPnt`, 프론트 저장소에서 /start)
 
 ## SCR-ADM-080 라우팅 매핑표 · 프론트 연결 관리자 매핑표 API — 대기
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-080-01·02·03·04·05
