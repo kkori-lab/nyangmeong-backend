@@ -111,6 +111,7 @@ class MemberServiceTest {
     void 관리자_회원_상세는_이메일과_번호를_마스킹한다() {
         Member member = stored(7L, MemberStatus.NORMAL.getCode(), "나비집사", "Y");
         member.setHldPnt(1250);
+        member.setMbrAuthrtCd(MemberAuthority.ADMIN.getCode());
         when(memberMapper.selectBySn(7L)).thenReturn(member);
         when(memberMapper.selectSnsOffrCds(7L)).thenReturn(List.of("USRC0100"));
 
@@ -119,6 +120,7 @@ class MemberServiceTest {
         assertThat(response.maskedAcntEml()).isEqualTo("new***@example.com");
         assertThat(response.maskedMblTelno()).isEqualTo("010-****-5678");
         assertThat(response.hldPnt()).isEqualTo(1250);
+        assertThat(response.mbrAuthrtCd()).isEqualTo("USRC0005");
         assertThat(response.snsLinks()).hasSize(1);
     }
 

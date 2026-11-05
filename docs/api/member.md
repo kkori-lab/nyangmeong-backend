@@ -89,6 +89,7 @@
 | regDt | LocalDateTime | Y | 가입일 | MBR.REG_DT, ADM-011-01 |
 | lastLgnDt | LocalDateTime | N | 최근 로그인 | MBR.LAST_LGN_DT, ADM-011-01 |
 | hldPnt | Integer | Y | 보유 포인트 | MBR.HLD_PNT, ADM-011-01 |
+| mbrAuthrtCd | String | Y | 회원 권한(USRG02). 관리자면 프론트가 [정지]를 숨긴다 | MBR.MBR_AUTHRT_CD, ADM-011-01 |
 | mbrSttsCd | String | Y | 회원상태공통코드 | MBR.MBR_STTS_CD, ADM-011-01 |
 | suspnEndDt | LocalDateTime | N | 정지 종료 일시. 영구 정지·정상은 null | MBR.SUSPN_END_DT, ADM-011-01 |
 

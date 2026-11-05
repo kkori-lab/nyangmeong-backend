@@ -116,7 +116,7 @@ public class MemberService {
                 maskEmail(fieldCryptoService.decrypt(member.getAcntEmlEnc())),
                 mblTelnoEnc == null ? null : maskPhone(fieldCryptoService.decrypt(mblTelnoEnc)),
                 member.getJoinPathCd(), snsLinks, member.getRegDt(), member.getLastLgnDt(), member.getHldPnt(),
-                member.getMbrSttsCd(), member.getSuspnEndDt());
+                member.getMbrAuthrtCd(), member.getMbrSttsCd(), member.getSuspnEndDt());
     }
 
     /**
