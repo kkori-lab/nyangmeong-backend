@@ -157,6 +157,14 @@
 - 연결 남음: SCR-ADM-022 관리자 매칭 상세 완료 사진 (LJS `CareMatchDetailModal.jsx`를 새 경로로, 프론트 저장소에서 /start)
 - 완료 조건: 관리자 전용 `GET /api/admin/care-matches/{…}/images/{atchFileSn}`가 관리자이고 그 사진이 해당 모집글 완료 요청 회차 사진(`selectAdminCompletionPhotos`와 같은 조건)일 때만 이미지를 준다. 아니면 404. 채팅 사진은 비공개 저장(`fileStore.store`) 그대로. 방식은 `AdminInquiryController` `/{otoInqrySn}/images/{atchFileSn}`와 같게. `docs/api/`에 적고, 관리자 프론트(LJS `CareMatchDetailModal.jsx`의 `publicFileUrl` → `useFileImage`)에 경로를 알린다
 
+## SCR-CMU-001 펫이야기 · 탈퇴 회원 표시 — 끝
+- 기능: 명세 기능 ID 추가 없음(팀장 요청 2026-11-04, 사람 결정 2026-11-05). 걸치는 기능 FN-CMU-001-01 게시글 목록 조회, FN-CMU-001-04 게시글 상세 조회, FN-CMU-001-06 인기 포토, FN-CMU-001-07 건강팁, FN-CMU-001-11 댓글 조회
+- 기다리는 것: 없음
+- 완료 조건: 파기된 회원(상태 탈퇴 + 이메일 HMAC `PURGED` 표시)이 쓴 글·댓글의 `mbrNcnm`이 「탈퇴한 회원」, `mbrAtchFileSn`이 null로 온다. 탈퇴했지만 파기 전인 회원은 원래 닉네임 그대로. 응답에 탈퇴 여부 필드는 넣지 않는다. 관리자 응답은 그대로. 공통 SQL 조각을 이 화면에서 만들고 실종센터·펫돌봄·채팅·문의 화면은 같은 조각을 쓰는 후속 절로 나눈다
+- 닫은 이유: 마지막 검증 판정은 `실패`(2회차)이나 사람 확인을 거쳤고(2026-11-05, 4번 파기·10번 파기 전 탈퇴·3번 정상으로 `GET /api/posts/146` 등 확인), 남은 실패는 세 회원 결과를 보는 DB 테스트(저장소에 DB 테스트 환경 없음)이며 별도 마일스톤으로 넘긴다는 사람 결정(2026-11-05). 1회차 뒤에 기준 파일 `PostMapperSqlTest.java`를 고쳤다(기존 `doesNotContain("MBR_STTS_CD")`가 2026-11-02 결정을 굳히고 있었음)
+- 연결 남음: 후속 화면 적용(실종센터·펫돌봄·채팅·문의·신고·회원 요약, 같은 조각 `MemberDisplay`), 세 회원 결과 DB 테스트(H2 등 새 의존성, 새 기획·팀 합의), 프론트에 작성자 클릭 이동·탈퇴 회원 차단 여부 질문(필요하면 응답에만 탈퇴 여부 필드)
+
+
 ## 제외
 - FN-CMU-001-12: 화면만 있다(공유하기)
 - FN-CMU-003-05: 화면만 있다(공유하기)
