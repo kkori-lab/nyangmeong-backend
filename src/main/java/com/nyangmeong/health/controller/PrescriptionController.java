@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
 import com.nyangmeong.health.dto.PrescriptionCreateRequest;
@@ -40,6 +42,7 @@ public class PrescriptionController {
     private final PrescriptionService prescriptionService;
 
     @Operation(summary = "처방약 목록")
+    @AiTool(name = "list_prescriptions", domain = "health", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<List<PrescriptionSummary>>> search(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @Valid @ModelAttribute PrescriptionSearchCond cond) {

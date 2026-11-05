@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.file.StoredFile;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
@@ -49,6 +51,7 @@ public class ObservationController {
     private final ObservationService observationService;
 
     @Operation(summary = "관찰 항목 목록")
+    @AiTool(name = "list_observation_items", domain = "health", kind = AiToolKind.READ)
     @GetMapping("/observation-items")
     public ResponseEntity<ApiResponse<List<ObservationItemSummary>>> searchItems(
             @AuthenticationPrincipal LoginMember me, @PathVariable Long petSn,
@@ -73,6 +76,7 @@ public class ObservationController {
     }
 
     @Operation(summary = "관찰 회차 목록")
+    @AiTool(name = "list_observation_cycles", domain = "health", kind = AiToolKind.READ)
     @GetMapping("/observation-cycles")
     public ResponseEntity<ApiResponse<List<ObservationCycleSummary>>> searchCycles(
             @AuthenticationPrincipal LoginMember me, @PathVariable Long petSn,

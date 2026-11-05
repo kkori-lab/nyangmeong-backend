@@ -48,6 +48,7 @@ public class CareItemController {
     private final CareItemService careItemService;
 
     @Operation(summary = "케어 항목 목록(토탈 케어리스트)")
+    @AiTool(name = "list_care_items", domain = "health", kind = AiToolKind.READ)
     @GetMapping("/care-items")
     public ResponseEntity<ApiResponse<List<CareItemSummary>>> search(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @ModelAttribute CareItemSearchCond cond) {
@@ -86,6 +87,7 @@ public class CareItemController {
     }
 
     @Operation(summary = "케어 완료 기록 목록")
+    @AiTool(name = "list_care_completions", domain = "health", kind = AiToolKind.READ)
     @GetMapping("/care-completions")
     public ResponseEntity<ApiResponse<List<CareCompletionSummary>>> searchCompletions(
             @AuthenticationPrincipal LoginMember me, @PathVariable Long petSn,

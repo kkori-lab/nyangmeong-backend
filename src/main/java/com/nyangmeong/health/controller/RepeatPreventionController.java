@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
 import com.nyangmeong.health.dto.RepeatPreventionCreateRequest;
@@ -38,6 +40,7 @@ public class RepeatPreventionController {
     private final RepeatPreventionService repeatPreventionService;
 
     @Operation(summary = "반복 예방 목록")
+    @AiTool(name = "list_repeat_preventions", domain = "health", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<List<RepeatPreventionSummary>>> search(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @Valid @ModelAttribute RepeatPreventionSearchCond cond) {

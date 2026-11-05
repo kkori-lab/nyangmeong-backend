@@ -1,5 +1,7 @@
 package com.nyangmeong.health.dto;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import lombok.Data;
 
 /**
@@ -12,5 +14,6 @@ public class ObservationItemSearchCond {
     /** 반려동물일련번호 (경로에서 채움) */
     private Long petSn;
     /** 관찰상태공통코드(HLTG18) */
+    @AiCode("HLTG18")
     private String obsrvSttsCd;
 }

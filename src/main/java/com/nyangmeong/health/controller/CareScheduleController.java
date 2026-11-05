@@ -42,6 +42,7 @@ public class CareScheduleController {
     private final CareScheduleService careScheduleService;
 
     @Operation(summary = "케어 캘린더 일정 목록")
+    @AiTool(name = "list_care_schedules", domain = "health", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<List<CareScheduleSummary>>> search(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @Valid @ModelAttribute CareScheduleSearchCond cond) {

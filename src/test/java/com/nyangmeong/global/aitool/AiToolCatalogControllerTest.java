@@ -156,9 +156,17 @@ class AiToolCatalogControllerTest {
         givenCodes("나");
         mockMvc.perform(get(PATH))
                 .andExpect(jsonPath("$.data.tools[*].name", not(hasItem("list_fake"))))
-                .andExpect(jsonPath("$.data.tools[*].name", not(hasItem("search_fake"))))
                 .andExpect(jsonPath("$.data.tools[*].name", not(hasItem("bad_rule_fake"))))
-                .andExpect(jsonPath("$.data.tools.length()").value(2));
+                .andExpect(jsonPath("$.data.tools.length()").value(3));
+    }
+
+    @Test
+    void ModelAttribute_검색_조건_칸은_쿼리_칸으로_싣는다() throws Exception {
+        givenCodes("나");
+        mockMvc.perform(get(PATH))
+                .andExpect(jsonPath("$.data.tools[?(@.name == 'search_fake')].kind").value("READ"))
+                .andExpect(jsonPath("$.data.tools[?(@.name == 'search_fake')].params.q.in").value("query"))
+                .andExpect(jsonPath("$.data.tools[?(@.name == 'search_fake')].params.q.type").value("string"));
     }
 
     @Test
