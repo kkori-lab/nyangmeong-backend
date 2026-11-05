@@ -121,4 +121,9 @@ public interface InquiryMapper {
      */
     int updateCharErrResult(@Param("otoInqrySn") Long otoInqrySn,
             @Param("charErrPrcsRsltCd") String charErrPrcsRsltCd);
+
+    /**
+     * 처리 상태별 문의 수 조회
+     */
+    long countByStatus(@Param("inqryPrcsSttsCd") String inqryPrcsSttsCd, @Param("inqryTypeCd") String inqryTypeCd);
 }

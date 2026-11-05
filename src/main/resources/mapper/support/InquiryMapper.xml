@@ -390,4 +390,16 @@
            AND CHAR_ERR_PRCS_RSLT_CD IS NULL
            AND DEL_YN = 'N'
     </update>
+
+    <select id="countByStatus" resultType="long">
+        /* 처리 상태별 문의 수 : 유형은 선택 */
+        SELECT COUNT(*)
+          FROM OTO_INQRY I
+         WHERE I.DEL_YN = 'N'
+           AND I.INQRY_PRCS_STTS_CD = #{inqryPrcsSttsCd}
+        <if test="inqryTypeCd != null">
+           AND I.INQRY_TYPE_CD = #{inqryTypeCd}
+        </if>
+    </select>
+
 </mapper>

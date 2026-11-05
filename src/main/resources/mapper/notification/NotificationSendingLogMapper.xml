@@ -94,4 +94,12 @@
                 , L.NOTI_SNDNG_LOG_SN DESC
     </select>
 
+    <select id="countByResultSince" resultType="long">
+        /* 발송 결과별 기준 일시 이후 발송 수 */
+        SELECT COUNT(*)
+          FROM NOTI_SNDNG_LOG L
+         WHERE L.SNDNG_RSLT_CD = #{sndngRsltCd}
+           AND L.SNDNG_DT &gt;= #{sinceDt}
+    </select>
+
 </mapper>

@@ -12,6 +12,7 @@ import com.nyangmeong.community.domain.BoardType;
 import com.nyangmeong.community.domain.Post;
 import com.nyangmeong.community.domain.PostStatus;
 import com.nyangmeong.community.domain.PostStatusHistory;
+import com.nyangmeong.community.dto.AdminDashboardPostResponse;
 import com.nyangmeong.community.dto.AdminPostDetailResponse;
 import com.nyangmeong.community.dto.AdminPostSearchCond;
 import com.nyangmeong.community.dto.AdminPostStatusChangeRequest;
@@ -37,6 +38,7 @@ import lombok.RequiredArgsConstructor;
 public class AdminPostService {
 
     private static final String TARGET_TABLE = "PST";
+    private static final int DASHBOARD_RECENT_LIMIT = 5;
 
     private final PostMapper postMapper;
     private final ReportMapper reportMapper;
@@ -134,5 +136,14 @@ public class AdminPostService {
      */
     private String escapeLike(String keyword) {
         return keyword.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+    }
+
+    /**
+     * 관리자 대시보드 게시글 현황 조회
+     */
+    @Transactional(readOnly = true)
+    public AdminDashboardPostResponse getDashboardSummary() {
+        return new AdminDashboardPostResponse(postMapper.countAll(),
+                postMapper.selectRecentPosts(DASHBOARD_RECENT_LIMIT));
     }
 }
