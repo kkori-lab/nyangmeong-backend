@@ -15,7 +15,7 @@
 | 장소(place) | [`place.md`](place.md) | 4 | 4 | YAY 4 |
 | 알림(notification) | [`notification.md`](notification.md) | 5 | 4 | LJS 5 |
 | 가계부(expense) | [`expense.md`](expense.md) | 10 | 10 | SJM 10 |
-| 영수증(expense 도메인) | [`receipt.md`](receipt.md) | 6 | 10 | LJS 6 |
+| 영수증(expense 도메인) | [`receipt.md`](receipt.md) | 8 | 14 | LJS 8 |
 | 커뮤니티(community) | [`community.md`](community.md) | 41 | 35 | KSJ 41 |
 | 고객센터(support) | [`support.md`](support.md) | 13 | 14 | KSJ 7, LJS 6 |
 | AI 대화(ai, 내부 API) | [`ai.md`](ai.md) | 5 | 5 | LJS 5 |

@@ -6,6 +6,7 @@ import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -140,13 +141,30 @@ public class PointService {
     }
 
     /**
-     * 포인트 증감과 원장 기록
+     * 관리자 포인트 조정 (SCR-ADM-072, 잔액이 음수가 되면 POINT_NOT_ENOUGH)
+     * - 요청 검증·감사 로그는 AdminPointService
+     * @return 등록한 원장 번호
+     */
+    @Transactional
+    public Long adjustByAdmin(Long actorSn, Long mbrSn, int delta, String memoCn) {
+        return recordLedger(mbrSn, delta, PointDealType.ADMIN_ADJUST, null, memoCn, "ADJ-" + UUID.randomUUID(),
+                String.valueOf(actorSn)).getPntGnlgrSn();
+    }
+
+    /**
+     * 포인트 증감과 원장 기록 (같은 멱등 요청 ID가 있으면 건너뜀)
      */
     private boolean record(Long mbrSn, int delta, PointDealType type, Long dayMsnSn, String memoCn,
             String idmptDmndId, String actorId) {
         if (pointMapper.existsLedger(idmptDmndId)) {
             return false;
         }
+        recordLedger(mbrSn, delta, type, dayMsnSn, memoCn, idmptDmndId, actorId);
+        return true;
+    }
+
+    private PointLedger recordLedger(Long mbrSn, int delta, PointDealType type, Long dayMsnSn, String memoCn,
+            String idmptDmndId, String actorId) {
         if (pointMapper.updateHldPnt(mbrSn, delta, actorId) == 0) {
             throw new CustomException(ErrorCode.POINT_NOT_ENOUGH);
         }
@@ -159,6 +177,6 @@ public class PointService {
         ledger.setMemoCn(memoCn);
         ledger.setIdmptDmndId(idmptDmndId);
         pointMapper.insertLedger(ledger);
-        return true;
+        return ledger;
     }
 }
