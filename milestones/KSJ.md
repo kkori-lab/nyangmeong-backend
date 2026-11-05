@@ -151,9 +151,10 @@
 - 기다리는 것: 프론트 SCR-CMU-004 우리동네 펫돌봄 · API 연결(끝, 2026-11-04)
 - 완료 조건: `db/seed/20261028_seed_data.sql`의 `PET_PRTC_RCRT` 행이 전북 지역이다: `RGN_SN`(전북 읍·면·동), `RLS_RGN_NM`(「전주시 완산구 효자동」 형태), `PRTC_PLC_LAT`·`PRTC_PLC_LOT`(전북 안), `PRTC_PLC_DADDR_ENC`(백엔드 암호화로 다시 만든 전북 주소). 공용 DB도 같은 값으로 `UPDATE`(사람). 프론트 지역 필터 「전주시」에 글이 나오고 상세 지도가 그려진다
 
-## SCR-ADM-022 관리자 펫돌봄 매칭 · 완료 사진 관리자 열람 — 대기
+## SCR-ADM-022 관리자 펫돌봄 매칭 · 완료 사진 관리자 열람 — 끝
 - 기능: 명세 기능 ID 추가 없음(사람 결정 2026-11-04). 걸치는 기능 FN-CMU-005-09 돌봄 완료 요청, 관리자 펫돌봄 매칭 상세(LJS 화면)
 - 기다리는 것: 없음(관리자 매칭 상세 API `AdminCareMatchService`는 develop에 있음)
+- 연결 남음: SCR-ADM-022 관리자 매칭 상세 완료 사진 (LJS `CareMatchDetailModal.jsx`를 새 경로로, 프론트 저장소에서 /start)
 - 완료 조건: 관리자 전용 `GET /api/admin/care-matches/{…}/images/{atchFileSn}`가 관리자이고 그 사진이 해당 모집글 완료 요청 회차 사진(`selectAdminCompletionPhotos`와 같은 조건)일 때만 이미지를 준다. 아니면 404. 채팅 사진은 비공개 저장(`fileStore.store`) 그대로. 방식은 `AdminInquiryController` `/{otoInqrySn}/images/{atchFileSn}`와 같게. `docs/api/`에 적고, 관리자 프론트(LJS `CareMatchDetailModal.jsx`의 `publicFileUrl` → `useFileImage`)에 경로를 알린다
 
 ## 제외
