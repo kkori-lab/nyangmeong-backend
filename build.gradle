@@ -47,6 +47,8 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	/** 테스트 JVM을 코어 절반(최대 4개)만큼 나눠 실행 : CI(4코어)는 2개, -PtestForks=N으로 바꿈 */
+	maxParallelForks = (findProperty('testForks') ?: Math.min(4, Math.max(1, Runtime.runtime.availableProcessors().intdiv(2)))) as int
 }
 
 tasks.withType(JavaCompile).configureEach {
