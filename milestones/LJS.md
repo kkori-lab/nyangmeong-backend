@@ -527,10 +527,13 @@
 - 결정: 하루 값은 체중 그날 마지막 기록·식사량·음수량·산책 그날 합계·배변 기록마다 한 줄, 검진은 `baseYmd` 이전 가장 최근 완료(HLTC0006) 1회, `ageMm`·`tips` 이름 유지. 초안에 더한 것: PUT 새로고침 두 번째·자동 재생성 6회째 409(`HEALTH_REPORT_REFRESH_LIMIT`·`HEALTH_REPORT_AUTO_LIMIT`), 저장본보다 이른 기준일 400. DB v0.12 (6) `AI_HLTH_RPT`(공용 DB 실행함 2026-11-04)
 - 완료 조건 결과: 검증 `통과`(2026-11-04, 2회차. 1회차는 공용 DB에 `AI_HLTH_RPT` 미반영으로 화면 확인 못 함 → 사람이 v0.12 (6) SQL 실행 뒤 재검증, 문서 400 코드 `BAD_REQUEST`로 고침), 사람 확인 2026-11-04
 
-## SCR-ADM-081 키워드 사전 · 프론트 연결 관리자 키워드 사전 API — 대기
+## SCR-ADM-081 키워드 사전 · 프론트 연결 관리자 키워드 사전 API — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-081-01·02·03
 - 기다리는 것: 프론트 SCR-ADM-081(끝, 가짜 응답 `features/adminAiKeyword/api.js`)
 - 완료 조건: `GET /api/admin/ai/keywords?dictUsgCd=&kwrdClsfNm=`(용도·분류가 같은 행, `sortSeq`·`kwrdDictSn` 순, 한 줄은 `KWRD_DICT` 필드 `kwrdDictSn`·`dictUsgCd`·`kwrdClsfNm`·`artclNm`·`kwrdCn`·`intrpRsltCn`·`mpngCd`·`sortSeq`·`rmrkCn`·`useYn`), `POST /api/admin/ai/keywords`(본문 `dictUsgCd`·`kwrdClsfNm`·`artclNm`·`kwrdCn`·`intrpRsltCn`·`mpngCd`·`rmrkCn`, 새 행 `sortSeq`는 프론트 가정 그 탭 맨 아래), `PATCH`·`DELETE /api/admin/ai/keywords/{kwrdDictSn}`, 감사 로그. 프론트 탭은 AIMC0037의 등록 동사·날짜·주기·일정 종류·검진유형(판정 규칙·시간 행은 뺌)과 AIMC0038 "가계부 카테고리". 가계부 분류(AIMC0038) 초기 키워드 INSERT. AI 서버·대화창용 조회 API: 예시 문구 형식 차이: AI 서버 `ai/data/register_dict.yaml`은 정규식(`(잡아|등록해)(줘|주|줄)`·`\d+일후`), DB `KWRD_CN`은 부록 B 예시 문구(`잡아줘, 등록해줘`·`○일 후`)라 그대로 못 쓴다. 사전에 정규식을 저장할지, 예시를 정규식으로 바꾸는 규칙을 둘지 정한다
+- 완료 조건 결과: 검증 `확인 못 함 있음`(2026-11-05, 2회차. 1회차는 공용 DB에 v0.13 (2) 미실행 → 사람이 실행 뒤 재검증, 내 몫 확인 못 함 없음), 사람 확인 2026-11-05. 정한 것: `useYn`은 true/false, 행에 `mpngCdNm` 추가, 404 `AI_KEYWORD_NOT_FOUND`, 다루는 분류는 AIMC0037 등록 동사·날짜·주기·일정 종류·검진유형과 AIMC0038 가계부 카테고리('판정 규칙'·'시간'은 목록에 없고 수정·삭제 404, 그 분류로 등록하면 400), 새 행 `sortSeq`는 탭 최댓값+1(빈 탭 10), 가계부 분류 초기 데이터 6건(v0.13 (2), 기타 없음). AI 서버용 `GET /internal/ai/keywords?dictUsgCd=`는 사용 중 행을 예시 문구 그대로 준다(결정 ① 추천안). 계약은 `docs/api/ai.md`
+- 연결 남음: FN-ADM-081-01·02 (프론트 연결 `features/adminAiKeyword/api.js` 목록·등록/수정 모달·삭제, 프론트 저장소에서 /start)
+- 연결 남음: FN-ADM-081-01 내부 제공 (ai 연결 `app/chat/rules.py`가 `register_dict.yaml` 대신 `GET /internal/ai/keywords`를 읽게, 정규식 변환 규칙은 ai가 정함, ai 저장소에서 /start)
 
 ## SCR-ADM-082 처리 현황 · 영수증 OCR 현황 API — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-082-01

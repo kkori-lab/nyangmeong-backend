@@ -212,6 +212,7 @@ public enum ErrorCode {
     HEALTH_REPORT_REFRESH_LIMIT(HttpStatus.CONFLICT, "오늘은 이미 새로고침했어요. 내일 다시 시도해 주세요."),
     HEALTH_REPORT_AUTO_LIMIT(HttpStatus.CONFLICT, "오늘은 리포트를 더 만들 수 없어요."),
     AI_ROUTE_NOT_FOUND(HttpStatus.NOT_FOUND, "매핑을 찾을 수 없어요."),
+    AI_KEYWORD_NOT_FOUND(HttpStatus.NOT_FOUND, "키워드를 찾을 수 없어요."),
 
     /** support */
     NOTICE_NOT_FOUND(HttpStatus.NOT_FOUND, "공지사항을 찾을 수 없습니다."),

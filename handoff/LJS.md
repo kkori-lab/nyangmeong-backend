@@ -2,10 +2,13 @@
 
 ## 지금 하는 것
 
-SCR-ADM-080 라우팅 매핑표 · 프론트 연결 관리자 매핑표 API — 끝 (2026-11-05). `ai`에 `AdminAiRouteController`·`AdminAiRouteService`(`/api/admin/ai/routes` 조회·등록·수정·삭제, 우선순위 1부터 빈틈없이 다시 매김, 감사 로그)와 `AiRouteController`(`GET /internal/ai/routes`), `docs/api/ai.md` 다섯 행·DTO 절. 검증 1회차(내 몫 확인 못 함 없음), 사람 확인 2026-11-05
+SCR-ADM-081 키워드 사전 · 프론트 연결 관리자 키워드 사전 API — 끝 (2026-11-05). `ai`에 `AdminAiKeywordController`·`AdminAiKeywordService`(`/api/admin/ai/keywords` 조회·등록·수정·삭제, 분류 허용 목록 `AiKeywordClass`, 감사 로그)와 `AiKeywordController`(`GET /internal/ai/keywords`), 가계부 분류 초기 데이터 v0.13 (2), `docs/api/ai.md` 다섯 행·DTO 절. 검증 2회차(내 몫 확인 못 함 없음), 사람 확인 2026-11-05
 
 ## 다음에 할 것
 
+- SCR-ADM-081 연결 남음: FN-ADM-081-01·02 (프론트 연결 `features/adminAiKeyword/api.js` 목록·등록/수정 모달·삭제, 프론트 저장소에서 /start). 프론트 마일스톤에 절 넣음(`SCR-ADM-081 키워드 사전 · 관리자 키워드 사전 API 연결`). 프론트에 알릴 것: `useYn`은 true/false, 행에 `mpngCdNm` 추가, 404 `AI_KEYWORD_NOT_FOUND`(가짜 `KEYWORD_NOT_FOUND` 아님), 서버가 `kwrdClsfNm`을 글자 그대로 검사하므로 쉬운 말 바꾸기는 화면 표시만, 계약은 `docs/api/ai.md` "관리자 API" 절
+- SCR-ADM-081 연결 남음: FN-ADM-081-01 내부 제공 (ai 연결 `app/chat/rules.py`가 `data/register_dict.yaml` 대신 `GET /internal/ai/keywords?dictUsgCd=AIMC0037`을 읽게, ai 저장소에서 /start). ai에 알릴 것: 응답 행 `{ kwrdDictSn, kwrdClsfNm, artclNm, kwrdCn, intrpRsltCn, mpngCd }`, 사용 중 행만 `sortSeq` 순, '판정 규칙'·'시간' 행도 온다, `kwrdCn`은 예시 문구(`○일 후` 등)라 정규식 변환 규칙은 ai가 정한다(결정 ① 추천안). 가계부 분류(AIMC0038)를 누가 쓸지(OCR 분류 등)도 함께 정한다
+- 공용 DB(사람, 기록만): v0.13 (2) 가계부 분류 6건(71~76)은 2026-11-05 실행함. PR 본문에 "DB 변경 있음 v0.13 (2), 공용 DB 실행함"을 적고 팀에 각자 로컬 DB에 실행하라고 알린다. 검증으로 `KWRD_DICT` 69·70·77번(`DEL_YN='Y'`)과 감사 로그 270번 이후 행이 남는다. 그대로 둬도 된다
 - SCR-ADM-080 연결 남음: FN-ADM-080-01·02·03 (프론트 연결 `features/adminAiRoute/api.js` 목록·등록/수정 모달·삭제, `routeLabels.js` 'Y'/'N' 비교, 프론트 저장소에서 /start). 프론트 마일스톤에 절 넣음(`SCR-ADM-080 라우팅 매핑표 · 관리자 매핑표 API 연결`). 프론트에 알릴 것: `rprsChipYn`·`useYn`은 true/false, `domnNm`은 보내지 않음, 수정에서 비우려면 빈 문자열, 계약은 `docs/api/ai.md` "관리자 API" 절
 - SCR-ADM-080 연결 남음: FN-ADM-080-04 (ai 연결 `app/chat/rules.py` `routing_table()`이 `data/routing.yaml` 대신 `GET /internal/ai/routes`를 읽게, ai 저장소에서 /start). ai에 알릴 것: 응답 행 `{ aiRoutMpngSn, trgtScrnNm, scrnId, scrnParamCn, instKwrds[], mvmnMthdCd, rprsChipYn, prrtSeq }`, 사용 중 행만 우선순위 순, AIMC0034~0036 행도 온다(이동하지 않는 행으로 거름). 연결 전에 정할 것(초기 데이터와 `routing.yaml`이 다름): 파라미터 `cat=hospital` vs `?cat=hospital`, No.3 지시어 `플레이스, 미용, 용품, 호텔, 동반`(같은 길이면 위쪽 행 우선이라 탭 행을 가림) vs `플레이스`, No.12 `데일리케어(구 명칭)`. 고친다면 기준 데이터 변경 절에 UPDATE를 넣고 관리자 화면으로 공용 DB를 고친다
 - 공용 DB(사람, 기록만): SCR-ADM-080 검증으로 `AI_ROUT_MPNG` `PRRT_SEQ`가 No×10에서 1~45로 다시 매겨졌다(순서는 같음). 확인용 행 46(삭제됨)과 사람 확인 행(삭제됨), 감사 로그 259~264 이후 행이 남는다. 그대로 둬도 된다

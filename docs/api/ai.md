@@ -27,6 +27,7 @@
 | GET | /internal/ai/pets/{petSn}/health-report-input?baseYmd= | AI 건강분석 리포트(메인 위젯 MANC0007)의 분석 입력과 저장본. 쿠키 회원이 양육하는 반려동물만(남의 반려동물 403 `PET_ACCESS_DENIED`, 없는 반려동물 404 `PET_NOT_FOUND`). `baseYmd`(KST 오늘, 필수, 없거나 형식이 틀리면 400 `BAD_REQUEST`) 포함 14일 일상기록과 `baseYmd` 이전 가장 최근 완료(HLTC0006) 검진 1회의 참고 범위 밖 검사 수치. `rfrshPsblYn`은 저장본이 없거나 저장 기준일이 `baseYmd`와 다르거나 그날 새로고침 0회면 true, `autoRgnrPsblYn`은 저장본이 없거나 저장 기준일이 다르거나 그날 자동 재생성 5회 미만이면 true. 명세 밖 추가 요청(ai 저장소 `docs/api/healthreport.md`) | MAN-006 | LJS | - | HealthReportContextResponse |
 | PUT | /internal/ai/pets/{petSn}/health-report | AI 건강분석 리포트 저장. 반려동물당 1행 덮어쓰기(`AI_HLTH_RPT`). 저장본이 없거나 기준일이 바뀌면 두 횟수를 0부터 센다. `rfrshYn: true`면 새로고침 횟수 +1(그날 이미 1회면 409 `HEALTH_REPORT_REFRESH_LIMIT`), 같은 기준일에 `rfrshYn: false`면 자동 재생성 횟수 +1(그날 이미 5회면 409 `HEALTH_REPORT_AUTO_LIMIT`). 그날 첫 생성은 세지 않는다. 저장본보다 이른 기준일·형식 오류는 400 `INVALID_INPUT_VALUE`. 응답 200 data 없음. `X-Requested-With` 필요 | MAN-006 | LJS | HealthReportSaveRequest | - |
 | GET | /internal/ai/routes | 라우팅 매핑표(FN-AIM-004-09에서 쓰는 지시어 → 화면). 사용 중(`USE_YN='Y'`) 행만 `prrtSeq`·`aiRoutMpngSn` 순. 이동 방식이 라우팅 대상 아님·제외·보류(AIMC0034~0036)인 행도 준다(Python이 이동하지 않는 행으로 거른다). 관리자가 바꾸면 다음 호출부터 반영(캐시 없음). Python은 DB에 붙지 않아 `data/routing.yaml` 대신 이 API를 쓴다(연결은 ai 저장소) | ADM-080-04 | LJS | - | List<AiRouteResponse> |
+| GET | /internal/ai/keywords?dictUsgCd= | 키워드 사전(일정 등록 판정·가계부 분류). `dictUsgCd`는 AIMC0037·AIMC0038만(뉴스 용도 AIMC0039·0040·모르는 값은 400 `INVALID_INPUT_VALUE`, 없으면 400 `BAD_REQUEST`). 사용 중(`USE_YN='Y'`) 행만 `sortSeq`·`kwrdDictSn` 순, '판정 규칙'·'시간' 행도 준다. `kwrdCn`은 관리자가 쓴 예시 문구 그대로(정규식 아님, 바꾸는 규칙은 ai 저장소가 정한다). 관리자가 바꾸면 다음 호출부터 반영(캐시 없음) | ADM-081-01 | LJS | - | List<AiKeywordResponse> |
 
 탈퇴 회원 대화 파기(AIM-011-19)는 API가 아니라 `scheduler/AiConversationPurgeJob`이 매일 03:00 KST에 한다. Python의 `DELETE /internal/v1/members/{mbrSn}/conversations`는 쓰지 않는다.
 
@@ -42,6 +43,15 @@
 | POST | /admin/ai/routes | 매핑 등록(201). `prrtSeq` 자리에 넣고 나머지를 한 칸씩 민다(없으면 맨 아래, 행 수보다 크면 맨 아래). `domnNm`은 서버가 `scrnId`의 `SCR-` 뒤 세 글자로 정한다(없거나 모양이 다르면 `ETC`). 형식이 틀리면 400 `INVALID_INPUT_VALUE` | ADM-080-02·03 | LJS | AdminAiRouteSaveRequest | AdminAiRouteCreateResponse |
 | PATCH | /admin/ai/routes/{aiRoutMpngSn} | 매핑 수정(보낸 칸만). `prrtSeq`를 보내면 그 자리로 옮기고 나머지를 민다. 아무 칸도 없거나 형식이 틀리면 400 `INVALID_INPUT_VALUE`, 없는·삭제된 행 404 `AI_ROUTE_NOT_FOUND` | ADM-080-02·03 | LJS | AdminAiRouteSaveRequest | AdminAiRouteSummary |
 | DELETE | /admin/ai/routes/{aiRoutMpngSn} | 매핑 삭제(`DEL_YN='Y'`), 뒤 순위를 한 칸씩 당긴다. 응답 200 data 없음. 없는·이미 삭제된 행 404 `AI_ROUTE_NOT_FOUND` | ADM-080-02 | LJS | - | - |
+
+키워드 사전(SCR-ADM-081)은 같은 관리자 규칙에 감사 로그 대상 `KWRD_DICT`. 다루는 행은 용도·분류 여섯 묶음뿐이다: AIMC0037(일정 등록 판정)의 `등록 동사`·`날짜`·`주기`·`일정 종류`(연결 코드 HLTG19)·`검진유형`(HLTG01), AIMC0038(가계부 분류)의 `가계부 카테고리`(MYPG05). AIMC0037의 `판정 규칙`·`시간` 행은 서버 규칙이라 목록에 없고 수정·삭제는 404다(2026-10-30 결정). 뉴스 용도(AIMC0039·0040)는 커뮤니티 `/admin/news/keywords`(SCR-ADM-050). 초기 데이터는 기준 데이터 `[4] 키워드 사전`(부록 B, 가계부 분류는 v0.13 (2), FN-ADM-081-03)
+
+| 메서드 | 경로 | 설명 | 기능 ID | 담당 | 요청 DTO | 응답 DTO |
+| --- | --- | --- | --- | --- | --- | --- |
+| GET | /admin/ai/keywords?dictUsgCd=&kwrdClsfNm= | 키워드 목록. `dictUsgCd` 필수(AIMC0037·AIMC0038, 그 밖은 400 `INVALID_INPUT_VALUE`, 없으면 400 `BAD_REQUEST`), `kwrdClsfNm`을 주면 그 분류만. 사용 안 함 포함, `sortSeq`·`kwrdDictSn` 순, 페이지 없음 | ADM-081-01 | LJS | - | List<AdminAiKeywordSummary> |
+| POST | /admin/ai/keywords | 키워드 등록(201). 용도·분류는 위 여섯 묶음 중 하나, `sortSeq`는 같은 용도·분류의 최댓값+1(비어 있으면 10). 형식·연결 코드가 틀리면 400 `INVALID_INPUT_VALUE` | ADM-081-02 | LJS | AdminAiKeywordSaveRequest | AdminAiKeywordCreateResponse |
+| PATCH | /admin/ai/keywords/{kwrdDictSn} | 키워드 수정(보낸 칸만, 용도·분류·`sortSeq`는 그대로이고 보내도 무시). 아무 칸도 없거나 형식이 틀리면 400 `INVALID_INPUT_VALUE`, 없는·삭제된·이 화면이 다루지 않는 행 404 `AI_KEYWORD_NOT_FOUND` | ADM-081-02 | LJS | AdminAiKeywordSaveRequest | AdminAiKeywordSummary |
+| DELETE | /admin/ai/keywords/{kwrdDictSn} | 키워드 삭제(`DEL_YN='Y'`). 응답 200 data 없음. 없는·이미 삭제된·이 화면이 다루지 않는 행 404 `AI_KEYWORD_NOT_FOUND` | ADM-081-02 | LJS | - | - |
 
 ## DTO
 
@@ -227,3 +237,49 @@
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | aiRoutMpngSn | Long | Y | 등록한 매핑 번호 | AI_ROUT_MPNG.AI_ROUT_MPNG_SN |
+
+### AiKeywordResponse
+쓰는 API: GET /internal/ai/keywords
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| kwrdDictSn | Long | Y | | KWRD_DICT.KWRD_DICT_SN |
+| kwrdClsfNm | String | Y | 예 `등록 동사`·`가계부 카테고리` | KWRD_DICT.KWRD_CLSF_NM |
+| artclNm | String | Y | | KWRD_DICT.ARTCL_NM |
+| kwrdCn | String | Y | 쉼표 구분 예시 문구 한 줄(`○일 후` 같은 자리표시 포함) | KWRD_DICT.KWRD_CN |
+| intrpRsltCn | String | N | | KWRD_DICT.INTRP_RSLT_CN |
+| mpngCd | String | N | 결과 코드(HLTG19·HLTG01·MYPG05) | KWRD_DICT.MPNG_CD |
+
+### AdminAiKeywordSummary
+쓰는 API: GET /admin/ai/keywords, PATCH /admin/ai/keywords/{kwrdDictSn}
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| kwrdDictSn | Long | Y | | KWRD_DICT.KWRD_DICT_SN, ADM-081-01 |
+| dictUsgCd | String | Y | AIMG10: AIMC0037·AIMC0038 | KWRD_DICT.DICT_USG_CD |
+| kwrdClsfNm | String | Y | | KWRD_DICT.KWRD_CLSF_NM |
+| artclNm | String | Y | | KWRD_DICT.ARTCL_NM |
+| kwrdCn | String | Y | 쉼표 구분 한 줄 | KWRD_DICT.KWRD_CN |
+| intrpRsltCn | String | N | | KWRD_DICT.INTRP_RSLT_CN |
+| mpngCd | String | N | 연결 코드 | KWRD_DICT.MPNG_CD |
+| mpngCdNm | String | N | 연결 코드 이름 | COM_CD.COM_CD_NM |
+| sortSeq | Integer | Y | | KWRD_DICT.SORT_SEQ |
+| rmrkCn | String | N | | KWRD_DICT.RMRK_CN |
+| useYn | boolean | Y | | KWRD_DICT.USE_YN |
+
+### AdminAiKeywordSaveRequest
+쓰는 API: POST /admin/ai/keywords, PATCH /admin/ai/keywords/{kwrdDictSn}
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| dictUsgCd | String | 등록 Y | AIMC0037·AIMC0038. 수정에서는 무시 | KWRD_DICT.DICT_USG_CD |
+| kwrdClsfNm | String | 등록 Y | 50자, 용도별 분류(관리자 API 설명) 중 하나. 수정에서는 무시 | KWRD_DICT.KWRD_CLSF_NM |
+| artclNm | String | 등록 Y | 100자, 공백만이면 400 | KWRD_DICT.ARTCL_NM |
+| kwrdCn | String | 등록 Y | 1000자, 쉼표 구분 한 줄, 공백만이면 400 | KWRD_DICT.KWRD_CN |
+| intrpRsltCn | String | N | 500자. 수정에서 빈 문자열은 비움 | KWRD_DICT.INTRP_RSLT_CN |
+| mpngCd | String | N | `일정 종류`·`검진유형`·`가계부 카테고리`는 필수이고 각각 HLTG19·HLTG01·MYPG05의 코드, 그 밖의 분류는 보내면 400. 수정에서 빈 문자열은 비움(필수 분류면 400) | KWRD_DICT.MPNG_CD |
+| rmrkCn | String | N | 1000자. 수정에서 빈 문자열은 비움 | KWRD_DICT.RMRK_CN |
+| useYn | Boolean | N | 등록 기본 true | KWRD_DICT.USE_YN |
+
+### AdminAiKeywordCreateResponse
+쓰는 API: POST /admin/ai/keywords
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| kwrdDictSn | Long | Y | 등록한 키워드 번호 | KWRD_DICT.KWRD_DICT_SN |
