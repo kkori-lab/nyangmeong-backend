@@ -2,22 +2,31 @@
 
 ## 지금 하는 것
 
-SCR-ADM-022 관리자 펫돌봄 매칭 · 완료 사진 관리자 열람 — 끝남 (승인 2026-11-05 10:23, 시작 2026-11-05 09:24, 검증 통과 1회차(확인 못 함 = 프론트 연결), 사람 확인 2026-11-05)
-기준: 명세 기능 ID 추가 없음(사람 결정 2026-11-04). 관리자 매칭 상세가 주는 완료 사진 번호를 관리자 프론트가 공개 주소로 불러 404였다. 완료 사진은 비공개 저장이라 관리자 전용 경로를 만들었다
-- 한 일: `GET /api/admin/care-matches/{petPrtcRcrtSn}/images/{atchFileSn}`(관리자만, `AdminCareMatchController.getImage`·`AdminCareMatchService.getImage`). 이 모집글 매칭의 완료 요청 회차 사진(`selectAdminCompletionPhotos`)이 아니면 파일을 읽지 않고 404 `FILE_NOT_FOUND`, 없거나 삭제된 모집글은 404 `CARE_RECRUITMENT_NOT_FOUND`. 저장 위치(비공개)는 그대로. `docs/api/community.md` 행 추가, 서비스 테스트 4건
-- 알려 둔 것: 시드는 `ATCH_FILE` 행만 있고 이미지 파일은 `uploads/seed/care/`(`app.file.root-dir=uploads`)에 있는 것만 열린다. 시드 완료 사진 93장 중 파일이 있는 것은 15장(예: 모집 5의 3555~3557)이고 78장은 404다. 파일을 채우는 것은 이 작업과 별개다
-- 확인: 새 경로는 서버를 재시작해야 보인다(옛 서버는 일반 `NOT_FOUND`를 준다). 로컬 `application.properties`에 빠진 키 이름이 값 없이 붙어 있으면 앱 컨텍스트 테스트가 실패한다
+SCR-CMU-001 펫이야기 · 탈퇴 회원 표시 — 끝남 (승인 2026-11-05 11:44, 시작 2026-11-05 11:00, 검증 2회차 실패 뒤 루프를 사람이 버림 2026-11-05, 사람 확인 2026-11-05)
+기준: 명세 기능 ID 추가 없음(팀장 요청 2026-11-04, 사람 결정 2026-11-05). 파기 회원(`MemberPurgeService`가 닉네임 `탈퇴회원#번호`, 이메일 HMAC `PURGED…`로 바꾼 회원)을 사용자 화면에서 「탈퇴한 회원」·사진 null로 준다. 탈퇴했지만 파기 전인 회원은 그대로. 응답에 탈퇴 여부 필드는 넣지 않는다. 관리자 쿼리는 건드리지 않는다
+- 파기 판단: 닉네임 접두어가 아니라 `MBR_STTS_CD`=탈퇴(`MemberStatus.WITHDRAWN`) AND `ACNT_EML_HMAC LIKE 'PURGED%'`(`MemberMapper.updatePurge`·`MemberPurgeService`). 사진은 파기 때 이미 null이지만 조각이 한 번 더 null로 막는다
+- 공통 SQL 조각: 닉네임·사진 두 컬럼을 만드는 `<sql>`을 한 곳에 둔다(후보: `mapper/global/` 아래 조각 전용 XML, 안 되면 `PostMapper.xml`에 두고 다른 community Mapper가 `refid="…PostMapper.xxx"`로 include). 「탈퇴한 회원」 문구와 `PURGED` 접두어 상수는 한 곳(조각)에만 둔다. 구현할 때 `mapper-locations`(`mapper/**/*.xml`)로 로드되는지 확인한다
+- FN-CMU-001-01·06·07 (목록·인기 포토·건강팁): 바꿀 파일 `PostMapper.xml` `summaryColumns`(`M.MBR_NCNM`, `M.ATCH_FILE_SN` → 조각), `selectPopularPhoto`가 쓰는 작성자 조회. 응답 `PostSummary`·`PostResponse`. 완료 조건 `명령:` 아래 테스트, `화면:` `GET /api/posts` 목록의 파기 회원 글이 「탈퇴한 회원」, 사진 null
+- FN-CMU-001-04 (상세): `PostMapper.selectAuthor`(현재 `MBR_NCNM`·`ATCH_FILE_SN` 직접 읽음, `PostService:371`, `CommentService:79` 사용)를 조각으로. `화면:` `GET /api/posts/{pstSn}` 파기 회원 글 작성자가 「탈퇴한 회원」
+- FN-CMU-001-11 (댓글): `CommentMapper.xml` `selectList`(37행 `M.MBR_NCNM`과 사진)를 조각으로. 삭제 댓글은 지금처럼 null. `화면:` `GET /api/posts/{pstSn}/comments`
+- 건드리지 않는 것: `selectMbrNcnm`(관리자 신고·관리자 게시글 상세가 씀), `selectAdmin*`, `PRCS_MBR_NCNM`. 이름을 `selectMbrNcnm`처럼 둔 쿼리가 사용자 화면에서도 쓰이는지 구현 때 호출처를 다시 확인한다
+- 테스트: 파기 회원 / 탈퇴했지만 파기 전 회원 / 정상 회원 세 가지가 목록·상세·댓글에서 기대한 닉네임·사진으로 나오는 Mapper 또는 서비스 테스트. 닉네임을 읽는 사용자 화면 쿼리 중 조각을 안 쓰는 것을 잡는 테스트는 이번엔 `community`의 펫이야기 쿼리까지만 두고, 나머지 화면은 후속 절에서 넓힌다
+- 문서: `docs/api/community.md`의 `PostSummary`·`PostResponse`·`CommentSummary`의 `mbrNcnm`·`mbrAtchFileSn` 설명에 파기 회원 규칙을 적는다(필드 추가 없음)
+- 프론트 연결: 없음(서버가 준 이름을 그대로 보여 준다). 프론트에 「작성자를 눌러 이동하는 곳이 있나, 탈퇴 회원을 막아야 하나」는 따로 묻는다. 필요하면 후속 작업으로 그 응답에만 탈퇴 여부 필드를 추가한다
+- 다음 절로 나누는 것(이번에 안 함): 실종센터·펫돌봄·채팅·문의·신고(사용자 화면인 것만)·회원 요약. LJS가 관리자 쿼리를 같은 XML 파일에 쓰므로 병합 충돌을 막으려고 LJS에게 미리 알린다
+- 완료 명령: `./gradlew build -q`
 새 의존성: 없음
 
 ## 지난 작업
 
-SCR-ADM-022 관리자 완료 사진 열람 — 끝남 (2026-11-05). 위 "지금 하는 것"에서 옮김
-SCR-CMU-004 펫돌봄 대기 4건 — 끝남 (2026-11-04). 위 "지금 하는 것"에서 옮김: 일정 비우기, 상세 `chatting`·`mtchSitterNcnm`, 최저시급 조회, 시드 읍면동(공용 DB 반영 완료)
-SCR-CMU-002 전북 밖 좌표 거절 — 끝남 (2026-11-04, PR #154). 카카오 역지오코딩 `KakaoRegionResolver`(`app.region.client=kakao`, 실패는 502), `RegionService` 시(4자리) 단계, `GET /regions` 전북만, 시드 펫돌봄·실종 글 전북 시군구화(공용 DB는 사람이 UPDATE 반영)
-SCR-CMU-002 시드 게시판 코드 — 끝남 (2026-11-04, PR #147). 실종 글 100행 `BBS_CD`를 `CMUC0024`로(공용 DB는 사람이 먼저 고침)
-SCR-CMU-005 우리동네 펫돌봄 채팅 — 끝남 (2026-11-04, PR #139). 채팅방·메시지·읽음 REST, 매칭 요청~수령 확인, STOMP `/ws`. 이번에 안 한 것은 아래 "다음에 할 것"
+SCR-ADM-022 완료 사진 열람(2026-11-05), SCR-CMU-004 펫돌봄 대기 4건(2026-11-04), SCR-CMU-002 전북 밖 좌표 거절(PR #154)·시드 게시판 코드(PR #147), SCR-CMU-005 펫돌봄 채팅(PR #139) — 모두 끝남
 
 ## 다음에 할 것
+- 닫은 이유(사람 결정 2026-11-05): 마지막 검증 판정 `실패`(2회차)지만 사람 확인을 거쳤고 DB 테스트는 별도로 넘긴다. 남은 실패: 세 회원(파기·파기 전·정상) 결과 DB 테스트 없음, 1회차 뒤 기준 파일 `PostMapperSqlTest.java`를 고침(기존 `doesNotContain("MBR_STTS_CD")`가 2026-11-02 결정을 굳히고 있었음)
+- 한 일: `mapper/global/MemberDisplay.xml` 공통 조각(상태 탈퇴 `USRC0003` AND HMAC `PURGED%`)을 `PostMapper.xml` `summaryColumns`·`selectAuthor`, `CommentMapper.xml` `selectList`에 적용(실종센터 글의 댓글도 같은 쿼리라 포함), `docs/api/community.md` 설명, `PostMapperSqlTest` 보강
+- 다음 작업: 후속 화면에 같은 조각 적용(실종센터 작성자·펫돌봄·채팅·문의·신고·회원 요약). 세 회원 결과 DB 테스트는 H2 등 새 의존성이 필요해 팀 합의 뒤 별도 기획
+- 사람이 할 일: 프론트에 「작성자를 눌러 이동하는 곳이 있나, 탈퇴 회원을 막아야 하나」를 묻는다(필요하면 후속으로 그 응답에만 탈퇴 여부 필드. 상세·댓글 응답에는 `mbrSn`이 그대로 나간다). LJS에게 `PostMapper.xml`·`CommentMapper.xml` 관리자 쿼리 병합 충돌을 미리 알린다
+- 다음 작업: 실종센터·펫돌봄·채팅·문의·신고(사용자 화면)·회원 요약에 같은 조각 적용(후속 절)
 - 연결 남음: SCR-ADM-022 관리자 매칭 상세 완료 사진 (프론트 연결: LJS `CareMatchDetailModal.jsx`의 `publicFileUrl`을 `useFileImage` + `GET /api/admin/care-matches/{petPrtcRcrtSn}/images/{atchFileSn}`로 교체, 프론트 저장소에서 /start)
 - 사람이 할 일: 시드 완료 사진 78장의 이미지 파일을 `uploads/seed/care/{ATCH_FILE_SN}.jpg`로 채울지 정한다(진짜 JPG, `uploads/`는 git 제외). 저장소 루트의 추적하지 않는 `3293.jpg`는 커밋하지 말고 지우거나 옮긴다
 - 연결 남음: FN-CMU-004-05 상세의 [채팅하기]·「채팅 중」, 매칭 돌보미 표시 (프론트 연결: 상세 응답 `chatting`·`mtchSitterNcnm`, 프론트 저장소에서 /start)

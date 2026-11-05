@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    회원 표시 공통 SQL 조각 : 사용자 화면이 작성자 닉네임·사진을 내보낼 때 쓴다 (관리자 화면은 쓰지 않음)
+    - 파기된 회원(이메일 HMAC 이 PURGED 로 시작, MemberPurgeService 가 만듦)은 「탈퇴한 회원」·사진 없음으로 내보낸다
+    - 파기 판단 = 상태 탈퇴(USRC0003, MemberStatus.WITHDRAWN) AND 이메일 HMAC PURGED 접두어. 조각은 파라미터를 못 받아 코드 값을 직접 적는다
+    - 탈퇴했지만 파기 전인 회원은 원래 닉네임 그대로
+    - 쓰는 곳: <include refid="com.nyangmeong.global.mapper.MemberDisplay.ncnm"><property name="alias" value="M" /></include>
+-->
+<mapper namespace="com.nyangmeong.global.mapper.MemberDisplay">
+
+    <sql id="ncnm">
+        CASE WHEN ${alias}.MBR_STTS_CD = 'USRC0003' AND ${alias}.ACNT_EML_HMAC LIKE 'PURGED%' THEN '탈퇴한 회원' ELSE ${alias}.MBR_NCNM END
+    </sql>
+
+    <sql id="atchFileSn">
+        CASE WHEN ${alias}.MBR_STTS_CD = 'USRC0003' AND ${alias}.ACNT_EML_HMAC LIKE 'PURGED%' THEN NULL ELSE ${alias}.ATCH_FILE_SN END
+    </sql>
+
+</mapper>

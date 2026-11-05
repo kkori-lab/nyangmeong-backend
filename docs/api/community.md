@@ -868,8 +868,8 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | delYn | boolean | Y | true면 화면이 "삭제된 댓글입니다"로 표시(issues 14) | CMNT.DEL_YN, CMU-001-11 |
 | cmntCn | String | N | 삭제된 댓글이면 null | CMNT.CMNT_CN |
 | mbrSn | Long | N | 삭제된 댓글이면 null | CMNT.MBR_SN |
-| mbrNcnm | String | N | 삭제된 댓글이면 null | MBR.MBR_NCNM |
-| mbrAtchFileSn | Long | N | 작성자 프로필 사진 번호(`GET /files/public/{번호}`). 사진이 없거나 삭제된 댓글이면 null | MBR.ATCH_FILE_SN, 추가 요청 2026-10-30 |
+| mbrNcnm | String | N | 삭제된 댓글이면 null. 파기된 회원(이메일 HMAC `PURGED`)은 「탈퇴한 회원」(탈퇴했지만 파기 전이면 원래 닉네임) | MBR.MBR_NCNM |
+| mbrAtchFileSn | Long | N | 작성자 프로필 사진 번호(`GET /files/public/{번호}`). 사진이 없거나 삭제된 댓글이면 null. 파기된 회원이면 null | MBR.ATCH_FILE_SN, 추가 요청 2026-10-30 |
 | sysAutoCrtYn | boolean | Y | 찾았어요 완료 안내 자동 댓글 | CMNT.SYS_AUTO_CRT_YN, CMU-002-09 |
 | owner | Boolean | Y | 내 댓글인지(삭제 버튼) | CMNT.MBR_SN, CMU-001-11 |
 | regDt | LocalDateTime | Y | 화면의 "1시간 전" 표시용 | CMNT.REG_DT, CMU-001-11 |
@@ -1020,8 +1020,8 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | pstTtl | String | Y | | PST.PST_TTL, CMU-001-10 |
 | pstCn | String | Y | | PST.PST_CN, CMU-001-10 |
 | mbrSn | Long | Y | 작성자 | PST.MBR_SN, CMU-001-10 |
-| mbrNcnm | String | Y | 작성자 | MBR.MBR_NCNM, CMU-001-10 |
-| mbrAtchFileSn | Long | N | 작성자 프로필 사진 번호(`GET /files/public/{번호}`). 사진이 없으면 null(정지·탈퇴 회원도 닉네임처럼 그대로 줌) | MBR.ATCH_FILE_SN, 추가 요청 2026-10-30 |
+| mbrNcnm | String | Y | 작성자. 파기된 회원(이메일 HMAC `PURGED`)은 「탈퇴한 회원」(탈퇴했지만 파기 전이면 원래 닉네임) | MBR.MBR_NCNM, CMU-001-10 |
+| mbrAtchFileSn | Long | N | 작성자 프로필 사진 번호(`GET /files/public/{번호}`). 사진이 없으면 null. 파기된 회원이면 null(정지 회원, 탈퇴했지만 파기 전인 회원은 그대로) | MBR.ATCH_FILE_SN, 추가 요청 2026-10-30 |
 | regDt | LocalDateTime | Y | 작성일 | 공통 감사 컬럼 REG_DT, CMU-001-10 |
 | inqCnt | Integer | Y | | PST.INQ_CNT, CMU-001-10 |
 | rcmdtnCnt | Integer | Y | | PST.RCMDTN_CNT, CMU-001-09 |
@@ -1038,8 +1038,8 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | bbsCd | String | Y | 공통코드 CMUG01 | PST.BBS_CD, CMU-001-02 |
 | pstTtl | String | Y | 1행 말줄임 | PST.PST_TTL, CMU-001-01 |
 | pstCn | String | Y | 2행 말줄임 | PST.PST_CN, CMU-001-01 |
-| mbrNcnm | String | Y | 작성자 | MBR.MBR_NCNM, CMU-001-01 |
-| mbrAtchFileSn | Long | N | 작성자 프로필 사진 번호(`GET /files/public/{번호}`). 사진이 없으면 null(정지·탈퇴 회원도 닉네임처럼 그대로 줌) | MBR.ATCH_FILE_SN, 추가 요청 2026-10-30 |
+| mbrNcnm | String | Y | 작성자. 파기된 회원(이메일 HMAC `PURGED`)은 「탈퇴한 회원」(탈퇴했지만 파기 전이면 원래 닉네임) | MBR.MBR_NCNM, CMU-001-01 |
+| mbrAtchFileSn | Long | N | 작성자 프로필 사진 번호(`GET /files/public/{번호}`). 사진이 없으면 null. 파기된 회원이면 null(정지 회원, 탈퇴했지만 파기 전인 회원은 그대로) | MBR.ATCH_FILE_SN, 추가 요청 2026-10-30 |
 | regDt | LocalDateTime | Y | 작성일("1시간 전" 표시용) | 공통 감사 컬럼 REG_DT, CMU-001-01 |
 | thumbAtchFileSn | Long | N | 대표 사진(첫 장). 사진이 없으면 null | PST_IMG.ATCH_FILE_SN, CMU-001-01 |
 | rcmdtnCnt | Integer | Y | | PST.RCMDTN_CNT, CMU-001-03 |

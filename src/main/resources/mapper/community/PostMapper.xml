@@ -64,8 +64,8 @@
         , P.BBS_CD
         , P.PST_TTL
         , P.PST_CN
-        , M.MBR_NCNM
-        , M.ATCH_FILE_SN AS MBR_ATCH_FILE_SN
+        , <include refid="com.nyangmeong.global.mapper.MemberDisplay.ncnm"><property name="alias" value="M" /></include> AS MBR_NCNM
+        , <include refid="com.nyangmeong.global.mapper.MemberDisplay.atchFileSn"><property name="alias" value="M" /></include> AS MBR_ATCH_FILE_SN
         , P.REG_DT
         , (SELECT I.ATCH_FILE_SN
              FROM PST_IMG I
@@ -237,10 +237,11 @@
     </select>
 
     <select id="selectAuthor" parameterType="long" resultType="com.nyangmeong.community.dto.PostAuthor">
-        SELECT MBR_NCNM AS mbrNcnm
-             , ATCH_FILE_SN AS mbrAtchFileSn
-          FROM MBR
-         WHERE MBR_SN = #{mbrSn}
+        /* 사용자 화면 작성자 표시 : 파기 회원은 「탈퇴한 회원」·사진 없음 */
+        SELECT <include refid="com.nyangmeong.global.mapper.MemberDisplay.ncnm"><property name="alias" value="M" /></include> AS mbrNcnm
+             , <include refid="com.nyangmeong.global.mapper.MemberDisplay.atchFileSn"><property name="alias" value="M" /></include> AS mbrAtchFileSn
+          FROM MBR M
+         WHERE M.MBR_SN = #{mbrSn}
     </select>
 
     <select id="countComments" parameterType="long" resultType="int">
