@@ -4,6 +4,12 @@
 
 SCR-ADM-001 대시보드 · 운영 현황·처리 대기 API — 끝 (2026-11-05). `admin` 패키지에 `AdminDashboardController`(`GET /api/admin/dashboard`)·`AdminDashboardService`·`AdminDashboardResponse`, 도메인 service 건수 메서드 8개(member·community·support·pet·expense·notification·global batch)와 Mapper 쿼리, `docs/api/admin.md` 새 파일. 검증 2회차 통과, 사람 확인 2026-11-05. SCR-ADM-060 장소는 화면을 없애(사람 결정 2026-11-04) 마일스톤 제외로 옮겼다
 
+### 추가 요청
+
+| 추가-1 | `build.gradle`(`tasks.named('test')`에 `maxParallelForks`) | 명령: `./gradlew build -q` 0을 연속 2회, 병렬 전 대비 빌드 시간 단축 | 요청 2026-11-05 15:27 "PR 생성(빌드)이 3분 넘게 걸림. CI도 오래 걸려 고치려 했음. 효과가 가장 큰 것부터 여기서 적용" |
+
+- 추가-1 결과: `maxParallelForks` = 코어 절반·최대 4(CI 2개, `-PtestForks=N`으로 바꿈). `./gradlew clean build -q` 연속 2회 0. 로컬은 다른 Java 프로세스로 CPU 67% 사용 중이라 시간 비교가 흔들렸다(포크 1개 102~172초, 병렬 63~191초). 효과는 PR #168 CI Build 단계(병렬 전 110초)와 비교한다. 사람이 PR #168에 넣기로 함(2026-11-05)
+
 ## 다음에 할 것
 
 - SCR-ADM-001 연결 남음: FN-ADM-001-02·03 (프론트 연결 `features/adminDashboard/api.js` `getAdminDashboard`, 프론트 저장소에서 /start). 프론트 마일스톤에 절 넣음(`SCR-ADM-001 대시보드 · 운영 현황·처리 대기 API 연결`). 프론트에 알릴 것: 필드는 가짜 그대로, 게시글 수·최근 게시글은 삭제 글 포함(관리자 게시글 목록과 같음), 회원 수는 관리자 계정 제외, 계약은 `docs/api/admin.md`
