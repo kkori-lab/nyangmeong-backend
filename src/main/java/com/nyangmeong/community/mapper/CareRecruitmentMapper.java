@@ -44,6 +44,16 @@ public interface CareRecruitmentMapper {
     CareRecruitmentDetail selectDetailByPstSn(@Param("pstSn") Long pstSn, @Param("pstSttsCd") String pstSttsCd);
 
     /**
+     * 로그인 회원이 이 글로 채팅 중인지 (나가지 않은 참여 방 중 메시지가 오간 방이 있는지)
+     */
+    boolean existsChatting(@Param("pstSn") Long pstSn, @Param("mbrSn") Long mbrSn, @Param("joinedCd") String joinedCd);
+
+    /**
+     * 확정된 매칭의 돌보미 닉네임 (없으면 null)
+     */
+    String selectMatchedSitterNcnm(@Param("petPrtcMtchSn") Long petPrtcMtchSn);
+
+    /**
      * 모집 반려동물 종류 조회 (품종명 포함)
      */
     List<CareRecruitmentPet> selectPets(@Param("petPrtcRcrtSns") List<Long> petPrtcRcrtSns);

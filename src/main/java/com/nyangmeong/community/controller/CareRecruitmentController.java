@@ -18,6 +18,7 @@ import com.nyangmeong.community.dto.CareRecruitmentResponse;
 import com.nyangmeong.community.dto.CareRecruitmentSearchCond;
 import com.nyangmeong.community.dto.CareRecruitmentSummary;
 import com.nyangmeong.community.dto.CareRecruitmentUpdateRequest;
+import com.nyangmeong.community.dto.MinimumWageResponse;
 import com.nyangmeong.community.service.CareRecruitmentService;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.response.PageQuery;
@@ -45,6 +46,12 @@ public class CareRecruitmentController {
     public ResponseEntity<ApiResponse<PageResponse<CareRecruitmentSummary>>> search(
             @AuthenticationPrincipal LoginMember me, CareRecruitmentSearchCond cond, PageQuery pq) {
         return ResponseEntity.ok(ApiResponse.success(careRecruitmentService.search(me.id(), cond, pq)));
+    }
+
+    @Operation(summary = "펫돌봄 최저시급 조회")
+    @GetMapping("/minimum-wage")
+    public ResponseEntity<ApiResponse<MinimumWageResponse>> getMinimumWage() {
+        return ResponseEntity.ok(ApiResponse.success(careRecruitmentService.getMinimumWage()));
     }
 
     @Operation(summary = "펫돌봄 모집 상세")

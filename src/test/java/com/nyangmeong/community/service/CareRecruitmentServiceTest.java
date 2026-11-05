@@ -34,6 +34,7 @@ import com.nyangmeong.community.dto.CareRecruitmentPetRequestItem;
 import com.nyangmeong.community.dto.CareRecruitmentResponse;
 import com.nyangmeong.community.dto.CareRecruitmentSearchCond;
 import com.nyangmeong.community.dto.CareRecruitmentUpdateRequest;
+import com.nyangmeong.community.dto.MinimumWageResponse;
 import com.nyangmeong.community.mapper.CareRecruitmentMapper;
 import com.nyangmeong.community.mapper.PostMapper;
 import com.nyangmeong.global.auth.OwnerAuthorizer;
@@ -259,6 +260,54 @@ class CareRecruitmentServiceTest {
     }
 
     @Test
+    void 상세는_로그인_회원이_채팅_중인지를_나가지_않은_참여_기준으로_준다() {
+        when(careRecruitmentMapper.selectDetail(RCRT, NORMAL)).thenReturn(detail(RECRUITING));
+        when(careRecruitmentMapper.existsChatting(PST, OTHER, "CHTC0003")).thenReturn(true);
+
+        assertThat(service.getRecruitment(OTHER, RCRT).chatting()).isTrue();
+        assertThat(service.getRecruitment(MBR, RCRT).chatting()).isFalse();
+    }
+
+    @Test
+    void 매칭_완료와_거래_완료면_확정된_돌보미_닉네임을_준다() {
+        for (String sttsCd : new String[] { MATCHED, "PCAC0003" }) {
+            CareRecruitmentDetail matched = detail(sttsCd);
+            matched.setCfmtnPetPrtcMtchSn(30L);
+            when(careRecruitmentMapper.selectDetail(RCRT, NORMAL)).thenReturn(matched);
+            when(careRecruitmentMapper.selectMatchedSitterNcnm(30L)).thenReturn("돌보미");
+
+            assertThat(service.getRecruitment(OTHER, RCRT).mtchSitterNcnm()).isEqualTo("돌보미");
+        }
+    }
+
+    @Test
+    void 모집중이거나_확정된_매칭이_없으면_돌보미_닉네임은_null이고_조회하지_않는다() {
+        CareRecruitmentDetail recruiting = detail(RECRUITING);
+        recruiting.setCfmtnPetPrtcMtchSn(30L);
+        when(careRecruitmentMapper.selectDetail(RCRT, NORMAL)).thenReturn(recruiting);
+        assertThat(service.getRecruitment(OTHER, RCRT).mtchSitterNcnm()).isNull();
+
+        when(careRecruitmentMapper.selectDetail(RCRT, NORMAL)).thenReturn(detail(MATCHED));
+        assertThat(service.getRecruitment(OTHER, RCRT).mtchSitterNcnm()).isNull();
+
+        verify(careRecruitmentMapper, never()).selectMatchedSitterNcnm(anyLong());
+    }
+
+    @Test
+    void 최저시급_조회는_설정의_현재_값을_매번_읽어_준다() {
+        SystemSetting first = new SystemSetting();
+        first.setLowstHrwgAplcnYr("2026");
+        first.setLowstHrwgAmt(10320L);
+        SystemSetting second = new SystemSetting();
+        second.setLowstHrwgAplcnYr("2027");
+        second.setLowstHrwgAmt(10700L);
+        when(systemSettingService.get()).thenReturn(first, second);
+
+        assertThat(service.getMinimumWage()).isEqualTo(new MinimumWageResponse("2026", 10320L));
+        assertThat(service.getMinimumWage()).isEqualTo(new MinimumWageResponse("2027", 10700L));
+    }
+
+    @Test
     void 없거나_삭제된_모집은_404() {
         assertError(() -> service.getRecruitment(MBR, 9L), ErrorCode.CARE_RECRUITMENT_NOT_FOUND);
     }
@@ -472,6 +521,80 @@ class CareRecruitmentServiceTest {
         assertThat(recruitment.getValue().getPrtcPlcDaddrEnc()).isEqualTo("enc");
         verify(careRecruitmentMapper, never()).deletePets(anyLong());
         verify(careRecruitmentMapper, never()).deleteShapes(anyLong());
+    }
+
+    private CareRecruitment updatedRecruitment() {
+        ArgumentCaptor<CareRecruitment> recruitment = ArgumentCaptor.forClass(CareRecruitment.class);
+        verify(careRecruitmentMapper).updateRecruitment(recruitment.capture(), eq(RECRUITING));
+        return recruitment.getValue();
+    }
+
+    private void stubUpdate() {
+        stubSystemSetting();
+        when(careRecruitmentMapper.selectDetail(RCRT, NORMAL)).thenReturn(detail(RECRUITING));
+        when(careRecruitmentMapper.updateRecruitment(any(), eq(RECRUITING))).thenReturn(1);
+        when(postMapper.updatePost(eq(PST), any(), any(), any(), anyString(), eq(NORMAL))).thenReturn(1);
+    }
+
+    @Test
+    void 일정_협의_가능만_보내고_일정이_없으면_기존_일정을_비운다() {
+        stubUpdate();
+
+        service.update(MBR, RCRT, update(null, null, true, null, null));
+
+        CareRecruitment saved = updatedRecruitment();
+        assertThat(saved.getPrtcBgngDt()).isNull();
+        assertThat(saved.getPrtcEndDt()).isNull();
+        assertThat(saved.getSchdlCnsltnPsbltyYn()).isEqualTo("Y");
+    }
+
+    @Test
+    void 일정_협의_가능이면서_일정을_보내면_희망_일정으로_저장한다() {
+        stubUpdate();
+        LocalDateTime newBgng = LocalDateTime.of(2026, 11, 12, 10, 0);
+        LocalDateTime newEnd = LocalDateTime.of(2026, 11, 12, 12, 0);
+
+        service.update(MBR, RCRT, update(null, null, true, newBgng, newEnd));
+
+        CareRecruitment saved = updatedRecruitment();
+        assertThat(saved.getPrtcBgngDt()).isEqualTo(newBgng);
+        assertThat(saved.getPrtcEndDt()).isEqualTo(newEnd);
+        assertThat(saved.getSchdlCnsltnPsbltyYn()).isEqualTo("Y");
+    }
+
+    @Test
+    void 일정_협의_가능이면서_일정을_하나만_보내면_저장된_값과_합쳐_검사한다() {
+        stubUpdate();
+
+        assertError(() -> service.update(MBR, RCRT, update(null, null, true, END.plusHours(1), null)),
+                ErrorCode.INVALID_INPUT_VALUE);
+        verify(careRecruitmentMapper, never()).updateRecruitment(any(), anyString());
+    }
+
+    @Test
+    void 일정_협의가_아닌데_일정이_없는_글이면_400이다() {
+        stubSystemSetting();
+        CareRecruitmentDetail noSchedule = detail(RECRUITING);
+        noSchedule.setPrtcBgngDt(null);
+        noSchedule.setPrtcEndDt(null);
+        noSchedule.setSchdlCnsltnPsbltyYn("Y");
+        when(careRecruitmentMapper.selectDetail(RCRT, NORMAL)).thenReturn(noSchedule);
+
+        assertError(() -> service.update(MBR, RCRT, update(null, null, false, null, null)),
+                ErrorCode.INVALID_INPUT_VALUE);
+        verify(careRecruitmentMapper, never()).updateRecruitment(any(), anyString());
+    }
+
+    @Test
+    void 협의_여부를_보내지_않은_수정은_일정을_그대로_둔다() {
+        stubUpdate();
+
+        service.update(MBR, RCRT, update(PER_CASE, 7000, null, null, null));
+
+        CareRecruitment saved = updatedRecruitment();
+        assertThat(saved.getPrtcBgngDt()).isEqualTo(BGNG);
+        assertThat(saved.getPrtcEndDt()).isEqualTo(END);
+        assertThat(saved.getSchdlCnsltnPsbltyYn()).isEqualTo("N");
     }
 
     @Test

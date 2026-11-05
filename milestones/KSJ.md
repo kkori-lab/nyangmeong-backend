@@ -102,10 +102,11 @@
 - 기다리는 것: 없음(공용 DB는 사람이 2026-11-04에 `PST` 100행을 같은 값으로 고쳤다)
 - 완료 조건: `db/seed/20261028_seed_data.sql`의 실종 제보(`LOST_TPOF`)와 연결된 `PST` 100행(`PST_SN` 801~900)의 `BBS_CD`가 `CMUC0024`다. 다른 행은 그대로다. 펫이야기 목록(`CMUC0001`·`CMUC0002`)에 `[실종]` 글이 섞이지 않고 관리자 실종 목록(`CMUC0024` 필터)에 나온다
 
-## SCR-CMU-002 실종센터 · 전북 밖 좌표 거절 — 대기
+## SCR-CMU-002 실종센터 · 전북 밖 좌표 거절 — 끝
 - 기능: 명세 기능 ID 추가 없음. 걸치는 기능 FN-CMU-002-10 게시글 작성, FN-CMU-002-11 목격 장소 지도 선택(전북 한정)
 - 기다리는 것: 프론트 SCR-CMU-002 실종센터 · API 연결(끝, 2026-10-30)
-- 완료 조건: `POST·PATCH /api/lost-reports`가 전북 밖 좌표(예: 서울역)를 `LOST_REPORT_REGION_NOT_ALLOWED`로 거절한다(2026-10-30 검증에서 201로 받음). 프론트는 서버 문구를 폼 아래에 이미 보인다. 우선순위 낮음(화면은 장소 찾기가 전북만 보여 줌)
+- 연결 남음: FN-CMU-002-03·FN-CMU-004-02 (지역 콤보박스가 전북만 나오므로 프론트에서 시도 콤보박스 한 줄 처리, 프론트 저장소에서 /start)
+- 완료 조건: `POST·PATCH /api/lost-reports`가 전북 밖 좌표(예: 서울역)를 `LOST_REPORT_REGION_NOT_ALLOWED`로 거절한다(2026-10-30 검증에서 201로 받음). 프론트는 서버 문구를 폼 아래에 이미 보인다. 우선순위 낮음(화면은 장소 찾기가 전북만 보여 줌). 추가(2026-11-04): 시드의 펫돌봄·실종 글 지역·좌표·상세 주소·제목을 전북으로 바꾸고 공용 DB용 UPDATE SQL을 만든다
 
 ## SCR-CMU-003 펫뉴스 · 중복 기사 거르기 — 끝
 - 기능: 명세 기능 ID 추가 없음(사람 요청 2026-11-02). 걸치는 기능 FN-CMU-003-06 뉴스 수집, FN-CMU-003-01 뉴스 목록 조회
@@ -128,25 +129,32 @@
 - 참고: 프로필 사진은 `storePublic`으로 저장되므로 프론트는 `GET /api/files/public/{mbrAtchFileSn}`로 바로 그린다. 별도 이미지 API는 필요 없다. 필드 이름은 백엔드에서 정하고, 바뀌면 프론트는 그 이름을 그대로 쓴다
 - 시드 확인: 회원 1은 ATCH_FILE_SN 25(지금 공개 주소에서 404, 시드 이미지 묶음 문제), 회원 2·3은 없음. 확인할 때 사진이 안 나와도 응답에 번호가 오면 맞다
 
-## SCR-CMU-004 우리동네 펫돌봄 · 상세 내 채팅 여부·매칭 돌보미 — 대기
+## SCR-CMU-004 우리동네 펫돌봄 · 상세 내 채팅 여부·매칭 돌보미 — 끝
 - 기능: 명세 기능 ID 추가 없음. 걸치는 기능 FN-CMU-004-05 채팅하기
 - 기다리는 것: 프론트 SCR-CMU-004 우리동네 펫돌봄 · API 연결(끝, 2026-11-04)
+- 연결 남음: FN-CMU-004-05 (상세의 [채팅하기]·「채팅 중」, 매칭 돌보미 표시, 프론트 저장소에서 /start)
 - 완료 조건: `GET /api/care-recruitments/{petPrtcRcrtSn}` 응답에 로그인 회원이 이 글로 채팅 중인지(메시지 1건 이상 오간 방이 있는지)와 매칭된 돌보미 닉네임(매칭완료·거래완료일 때, 없으면 null)이 있다. `docs/api/community.md` `CareRecruitmentResponse`에 필드를 적는다
 
-## SCR-CMU-004 우리동네 펫돌봄 · 최저시급 공개 조회 — 대기
+## SCR-CMU-004 우리동네 펫돌봄 · 최저시급 공개 조회 — 끝
 - 기능: 명세 기능 ID 추가 없음. 걸치는 기능 FN-CMU-004-08 비용 입력 및 검증
 - 기다리는 것: 프론트 SCR-CMU-004 우리동네 펫돌봄 · API 연결(끝, 2026-11-04)
+- 연결 남음: FN-CMU-004-08 (등록·수정 화면의 시급 안내, `GET /api/care-recruitments/minimum-wage`, 프론트 저장소에서 /start)
 - 완료 조건: 로그인 회원이 부르는 `GET` API가 최저시급(`SYS_STNG.LOWST_HRWG_AMT`)과 기준 연도를 돌려준다. 관리자 설정을 바꾸면 바로 바뀐 값이 나온다. `docs/api/`에 적는다(사람 결정 2026-11-04)
 
-## SCR-CMU-004 우리동네 펫돌봄 · 수정에서 일정 비우기 — 대기
+## SCR-CMU-004 우리동네 펫돌봄 · 수정에서 일정 비우기 — 끝
 - 기능: 명세 기능 ID 추가 없음. 걸치는 기능 FN-CMU-004-07 돌봄 기간·시간 입력, FN-CMU-004-11 게시글 수정
 - 기다리는 것: 프론트 SCR-CMU-004 우리동네 펫돌봄 · API 연결(끝, 2026-11-04)
 - 완료 조건: `PATCH /api/care-recruitments/{petPrtcRcrtSn}`에서 `schdlCnsltnPsbltyYn=true`이고 `prtcBgngDt`·`prtcEndDt`가 둘 다 없으면 기존 일정을 null로 비운다. 일정을 보내면 희망 일정으로 저장, `schdlCnsltnPsbltyYn=false`인데 일정이 없으면 400. 프론트는 이미 이 모양으로 보낸다(사람 결정 2026-11-04)
 
-## SCR-CMU-004 우리동네 펫돌봄 · 시드 글 전북 지역 — 대기
+## SCR-CMU-004 우리동네 펫돌봄 · 시드 글 전북 지역 — 끝
 - 기능: 명세 기능 ID 추가 없음(사람 요청 2026-11-04). 걸치는 기능 FN-CMU-004-01·02 목록·지역 필터, FN-CMU-004-04 상세 대략 장소
 - 기다리는 것: 프론트 SCR-CMU-004 우리동네 펫돌봄 · API 연결(끝, 2026-11-04)
 - 완료 조건: `db/seed/20261028_seed_data.sql`의 `PET_PRTC_RCRT` 행이 전북 지역이다: `RGN_SN`(전북 읍·면·동), `RLS_RGN_NM`(「전주시 완산구 효자동」 형태), `PRTC_PLC_LAT`·`PRTC_PLC_LOT`(전북 안), `PRTC_PLC_DADDR_ENC`(백엔드 암호화로 다시 만든 전북 주소). 공용 DB도 같은 값으로 `UPDATE`(사람). 프론트 지역 필터 「전주시」에 글이 나오고 상세 지도가 그려진다
+
+## SCR-ADM-022 관리자 펫돌봄 매칭 · 완료 사진 관리자 열람 — 대기
+- 기능: 명세 기능 ID 추가 없음(사람 결정 2026-11-04). 걸치는 기능 FN-CMU-005-09 돌봄 완료 요청, 관리자 펫돌봄 매칭 상세(LJS 화면)
+- 기다리는 것: 없음(관리자 매칭 상세 API `AdminCareMatchService`는 develop에 있음)
+- 완료 조건: 관리자 전용 `GET /api/admin/care-matches/{…}/images/{atchFileSn}`가 관리자이고 그 사진이 해당 모집글 완료 요청 회차 사진(`selectAdminCompletionPhotos`와 같은 조건)일 때만 이미지를 준다. 아니면 404. 채팅 사진은 비공개 저장(`fileStore.store`) 그대로. 방식은 `AdminInquiryController` `/{otoInqrySn}/images/{atchFileSn}`와 같게. `docs/api/`에 적고, 관리자 프론트(LJS `CareMatchDetailModal.jsx`의 `publicFileUrl` → `useFileImage`)에 경로를 알린다
 
 ## 제외
 - FN-CMU-001-12: 화면만 있다(공유하기)

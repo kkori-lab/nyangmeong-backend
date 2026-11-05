@@ -62,7 +62,7 @@ spring.servlet.multipart.max-request-size=100MB
 # app.log.dir=
 # 캐릭터 생성기. 외부 API가 정해지기 전에는 fake(가짜 성공), 실패 시험은 fake-fail
 app.character.generator=fake
-# 목격 장소 좌표 → 행정구역 변환(SCR-CMU-002). 카카오 로컬 API 연결 전에는 fake(전주시), 시험은 fake-outside(전북 밖)·fake-none(찾지 못함)
+# 목격 장소·돌봄 장소 좌표 → 행정구역 변환(SCR-CMU-002·004). 기본 fake(좌표와 무관하게 전주시), 시험은 fake-outside(전북 밖)·fake-none(찾지 못함), 실제 변환은 kakao(app.kakao-local.rest-api-key를 같이 씀. 카카오가 실패하면 502)
 app.region.client=fake
 # 장소 검색(SCR-HOS-001). 카카오 로컬 API 키를 받기 전에는 fake(전주 고정 업체), 연결하면 kakao. 키는 REST API 키(디스코드 파일에만 적음)
 app.kakao-local.client=fake
