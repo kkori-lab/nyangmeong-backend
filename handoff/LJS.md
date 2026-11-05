@@ -2,12 +2,12 @@
 
 ## 지금 하는 것
 
-SCR-MYP-010 픽셀 캐릭터 관리 · 착용 모습 대표 이미지·전체 굽기 관리자 허용·얼굴 영역 — 끝 (2026-11-04). DB 기준 SQL v0.13, Python 합성 착용 모습 대표 이미지 저장·우선 노출(`PUT /internal/ai/characters/{id}/equipped-image`), 관리자 쿠키 시트 접근, 얼굴 영역 (96,32,320,320). 검증 2회차 통과, PR #149 병합
+SCR-ADM-011 회원 상세 · 응답에 회원 권한 추가 — 끝 (2026-11-05). `GET /api/admin/members/{mbrSn}` 응답에 `mbrAuthrtCd`(USRG02) 추가, `docs/api/member.md` 표 갱신. 검증 1회차 통과, 사람 확인 2026-11-05
 
 ## 다음에 할 것
 
+- SCR-ADM-011 연결 남음: FN-ADM-011-01 (프론트 연결 회원 상세 관리자 [정지] 숨김, 프론트 저장소에서 /start). 프론트 마일스톤에 절 넣음(`SCR-ADM-011 회원 상세 · 관리자 [정지] 숨김 확인`). 프론트 코드는 이미 `mbrAuthrtCd`로 판정해서 실제 API로 확인만 하면 된다
 - 프론트 저장소에서 확인(JAJ 알림 2026-11-04, 이 세션에서 안 고침): `features/ai/receipt/ReceiptUploadModal.jsx`의 `onManualInput` 키가 `rcptSn`→`recptSn`(서버 키)으로 바뀌고 받는 `HealthDiaryPage`도 맞춤(확인만). 공통 `Modal.jsx`·`DropdownSelect.jsx`·`Card.jsx`에 건강기록용 속성 추가, 기본값 꺼짐(확인만). **필수:** `features/health/CareItemMenu.jsx`는 `ExpenseMenu.jsx` 복사본(다른 점은 아이콘 `size-4.5`)이라 `ExpenseMenu.jsx`를 바꿀 때 같이 맞춘다. 선택: `routes/domains/devRoutes.js`의 영수증 DEV 화면 삭제
-- 확인함(JAJ 알림 2026-11-04): SDMA 공통코드 `HLTC0078`이 기준 데이터에 없다는 알림은 옛 v0.11 파일 기준이다. 지금 기준 `db/20261104_insert_base_data_v0.13.sql`에는 들어 있어(HLTC0078 SDMA) 새 DB에서도 저장된다. 할 것 없음
 - 공용 DB 정리(사람): SCR-MYP-010 확인으로 캐릭터 600(회원 188)에 대표 이미지 `ATCH_FILE` 4220(`wear-600.png`)이 들어갔다. 6단계(`PUT equipped-items` `{"hldItemSns": []}`)를 했으면 `WEAR_IMG_FILE_SN`은 NULL, 아니면 `UPDATE PIXEL_CHAR SET WEAR_IMG_FILE_SN=NULL WHERE PIXEL_CHAR_SN=600;`. 파일은 `UPDATE ATCH_FILE SET USE_YN='N' WHERE ORGNL_FILE_NM='wear-600.png';`
 - 팀에 알린다(PR): DB 기준 파일이 v0.13으로 바뀌었다(v0.12 두 파일은 `db/archive/v0.12/`, 본문은 v0.12 (1)~(7) 그대로). 공용 DB에는 v0.12 (5)·(6)·(7)과 v0.13 (1)을 실행함(2026-11-04 사람 확인). 각자 로컬 DB에는 안 돌린 v0.12 항목과 v0.13 (1)(`PIXEL_CHAR.WEAR_IMG_FILE_SN` ALTER 두 줄)을 실행한다. v0.13 (1)이 없는 DB에서는 캐릭터 조회·착용·생성이 `Unknown column`이다. PR #149 병합됨(2026-11-04). 시드는 `DAY_MSN` 달성 기준 UPDATE가 추가됐다(빈 DB에 새로 넣을 때만)
 - SCR-MYP-010 연결 남음: 추가-② FN-ADM-070-02 (프론트 연결 SCR-ADM-070 전체 굽기 나눠 호출, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
@@ -57,7 +57,7 @@ SCR-MYP-010 픽셀 캐릭터 관리 · 착용 모습 대표 이미지·전체 �
 - SCR-ADM-090 연결 남음: FN-ADM-090-03 (SJM이 만든 `PetService.searchCaregiverMbrSns(petSn)`로 `scheduler/CaregiverFake`를 바꾼 뒤(2026-11-03 메서드 있음 확인), 실제 케어 일정 알림에 등록한 템플릿이 쓰이고 `useYn=false`면 기본 문구인지 확인)
 - SCR-ADM-090 연결 남음: FN-ADM-090-01·02 (프론트 연결 `features/adminNotificationTemplate/api.js` 목록·등록·수정, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트 가짜와 다른 점: `useYn`이 `'Y'|'N'`이 아니라 true/false, 케어 일정 외 유형은 등록 400(화면은 "기본 문구"만)
 - 공용 DB 정리(사람): SCR-ADM-090 사람 확인으로 만든 템플릿은 삭제 API가 없다. `DELETE FROM NOTI_TMPLT WHERE NOTI_TMPLT_SN=<번호>;`(관리자 작업 로그 `TRGT_TBL_NM='NOTI_TMPLT'`는 남거나 같이 지운다)
-- 정리(판단 필요): 핸드오프가 60줄을 넘는다(2026-11-04 SCR-ADM-051 /end 때 약 145줄, 저장소로 끝났다고 확인되는 항목이 없어 지우지 않음. 2026-11-04 SCR-MAN-001 /end 때 146줄, ai-f2 요청 항목은 끝나 지움. 2026-11-04 /end 때 144줄, 저장소로 끝났다고 확인되는 항목이 없어 지우지 않음. 2026-11-03 /end 때 143줄. 펫돌봄 게시판 필터 항목은 `BoardType.CARE`(CMUC0028)가 생겨 지웠다. 2026-11-03 공용 DB에 반영된 것을 확인한 v0.12 (1)·v0.11 (5) 실행 항목 2건은 지웠다). 2026-11-04 SCR-ADM-071 /end(중간 저장) 때 약 162줄, 끝났다고 확인되는 항목이 없어 지우지 않음. 2026-11-04 SCR-MYP-010 /end(중간 저장) 때 약 163줄, 이번 작업으로 옮긴 ai-f2 요청·병합된 PR #145의 v0.12 (7) 항목·실행 확인된 v0.12 (5) 항목 3건을 지웠다. 대부분 알림·사람 할 일이라 끝났는지 코드로 판단할 수 없어 남겼다. 끝난 알림·정리 항목을 사람이 지운다
+- 정리(판단 필요): 핸드오프가 60줄을 넘는다(2026-11-04 SCR-ADM-051 /end 때 약 145줄, 저장소로 끝났다고 확인되는 항목이 없어 지우지 않음. 2026-11-04 SCR-MAN-001 /end 때 146줄, ai-f2 요청 항목은 끝나 지움. 2026-11-04 /end 때 144줄, 저장소로 끝났다고 확인되는 항목이 없어 지우지 않음. 2026-11-03 /end 때 143줄. 펫돌봄 게시판 필터 항목은 `BoardType.CARE`(CMUC0028)가 생겨 지웠다. 2026-11-03 공용 DB에 반영된 것을 확인한 v0.12 (1)·v0.11 (5) 실행 항목 2건은 지웠다). 2026-11-04 SCR-ADM-071 /end(중간 저장) 때 약 162줄, 끝났다고 확인되는 항목이 없어 지우지 않음. 2026-11-04 SCR-MYP-010 /end(중간 저장) 때 약 163줄, 이번 작업으로 옮긴 ai-f2 요청·병합된 PR #145의 v0.12 (7) 항목·실행 확인된 v0.12 (5) 항목 3건을 지웠다. 대부분 알림·사람 할 일이라 끝났는지 코드로 판단할 수 없어 남겼다. 2026-11-05 SCR-ADM-011 /end 때 약 161줄, 이번 작업으로 끝난 백엔드 연결 항목과 "할 것 없음" 확인 항목 2건을 지웠다. 끝난 알림·정리 항목을 사람이 지운다
 - ai-47에 알린다: 굽기 계약 구현 끝(SCR-ADM-070). `bake-items` 응답 `{itemSn, regnCd, bakeHint}`(판매 중이고 지시 있음 30개), `GET /internal/ai/items/{itemSn}/bake-targets?page=`(관리자 쿠키, 100개씩 `{pixelCharSns, last}`, 아니면 403 `ADMIN_ONLY`, 굽기 대상 아님 404). 굽기 지시가 바뀌면 그 아이템 착용 시트를 지워 다시 굽기 대상이 된다. 시드에만 있던 6개(빨간 리본·작은 왕관·털모자·줄무늬 티셔츠·꼬까 한복·곰돌이 후드티)의 지시 문장은 LJS 초안이라 검토를 부탁한다. 백엔드 PR이 AI PR보다 먼저 병합돼야 한다
 - 공용 DB 정리(사람): SCR-ADM-070 사람 확인으로 만든 아이템(예: "확인용 가방")은 삭제 API가 없다. `DELETE FROM MNGR_TASK_LOG WHERE TRGT_TBL_NM='ITEM' AND TRGT_SN=<번호>; DELETE FROM ITEM WHERE ITEM_SN=<번호>;` 또는 판매 중지. 바꾼 순서·판매 여부·굽기 지시를 되돌린다
 - SCR-ADM-070 연결 남음: FN-ADM-070-01~04 (프론트 연결 `features/adminItem/api.js` 목록·등록·수정·순서 저장, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
@@ -85,7 +85,6 @@ SCR-MYP-010 픽셀 캐릭터 관리 · 착용 모습 대표 이미지·전체 �
 - 명세 정리(사람): 설정 화면 FN-COM-008-11 항상 받는 알림에 신고 처리 결과를 넣을지 정한다(2026-11-02 결정: 댓글 알림 설정과 무관하게 보낸다. 앱 알림 채널을 끄면 안 간다)
 - 테스트 부족: 복구 뒤 재삭제 판별(`autoTargetCondition`의 `MDFCN_DT` 비교)은 SQL 조건이라 자동 테스트가 없다
 - 실제 DB 확인 범위(SCR-ADM-020): 사람 확인 내용은 `확인`이라고만 기록됐다. 검증 에이전트는 공용 DB라 블라인드·복구·댓글 삭제 성공 경로를 실행하지 않았다
-- SCR-ADM-011 연결 남음: FN-ADM-011-01 (백엔드 연결 `AdminMemberDetailResponse.mbrAuthrtCd`, 백엔드 저장소에서 /start). 프론트 마일스톤 결정이며 프론트 5개 탭 연결은 끝났다
 - 공용 DB 정리(사람): SCR-ADM-020·011·113·114 검증의 `dev-tokens`로 회원 1~6 세션이 생겼다. 지울지 정한다
 - 실행해 보지 못한 SQL(SCR-ADM-011): 재동의 시 최신 1행, 동의 기록 없는 약관(`TermsMapper.selectAdminAgreementList`), 해제된 연동 제외(`PetMapper.selectAdminList`). 자동 테스트는 매퍼 목이고 공용 DB에 해당 데이터가 없어 SQL 읽기로만 확인했다. 파기 회원 상세도 데이터가 없어 코드로만 확인했다
 - PR 전 확인(사람): YAY·SJM에게 SCR-ADM-011을 알린다. `member`: `MemberService.checkExists`, `maskPhone` 이동, `Member.hldPnt`, `TermsService`에 `MemberMapper` 주입. `pet`: `PetService`에 `MemberService` 주입, `AdminPetController`·`AdminPointController`. SCR-ADM-072 원장 조회는 `selectAdminLedgerList`를 재사용할 수 있다

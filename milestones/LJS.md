@@ -392,10 +392,12 @@
 - 완료 조건 결과: 끝. `member/MemberPurgeJob` 매일 03:30, 배치 구분 SYSC0027, 처리 건수는 파기한 회원 수. `MBR` 행은 남기고 식별값만 없앤다(2026-11-02)
 - 연결 남음: FN-ADM-013-02 (프론트 연결 배치 현황 링크 `?batch=SYSC0027`, 프론트 저장소에서 /start)
 
-## SCR-ADM-011 회원 상세 · 응답에 회원 권한 추가 — 대기
+## SCR-ADM-011 회원 상세 · 응답에 회원 권한 추가 — 끝
 - 기능: 명세 기능 ID 추가 없음. FN-ADM-011-01
 - 기다리는 것: 프론트 SCR-ADM-011 회원 상세 연결(끝, 2026-11-02)
 - 완료 조건: `GET /api/admin/members/{mbrSn}` 응답 `AdminMemberDetailResponse`에 `mbrAuthrtCd`가 온다. `docs/api/member.md` DTO 표도 같이 고친다. 프론트는 이 값이 관리자면 [정지]를 숨긴다
+- 완료 조건 결과: 검증 `통과`(2026-11-05, 1회차), 사람 확인 2026-11-05. Mapper·DB 변경 없음(`selectBySn`이 이미 `MBR_AUTHRT_CD`를 읽음). 값은 USRG02(`USRC0004` 일반회원·`USRC0005` 관리자)
+- 연결 남음: FN-ADM-011-01 (프론트 연결 회원 상세 [정지] 숨김 `pages/admin/AdminMemberDetailPage.jsx`, 프론트 저장소에서 /start. 프론트 코드는 이미 `mbrAuthrtCd`로 판정하므로 확인만)
 
 ## SCR-MYP-011 아이템 상점 모달 · 캐릭터 작업·시트 내부 API (SCR-MYP-010 공통) — 끝
 - 기능: 명세 기능 ID 추가 없음. FN-MYP-010-08·09·12·13·17, FN-MYP-011-01·06
