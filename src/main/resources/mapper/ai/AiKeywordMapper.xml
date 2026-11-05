@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nyangmeong.ai.mapper.AiKeywordMapper">
+
+    <resultMap id="keywordResultMap" type="com.nyangmeong.ai.domain.KwrdDict">
+        <id     column="KWRD_DICT_SN"  property="kwrdDictSn" />
+        <result column="DICT_USG_CD"   property="dictUsgCd" />
+        <result column="KWRD_CLSF_NM"  property="kwrdClsfNm" />
+        <result column="ARTCL_NM"      property="artclNm" />
+        <result column="KWRD_CN"       property="kwrdCn" />
+        <result column="INTRP_RSLT_CN" property="intrpRsltCn" />
+        <result column="MPNG_CD"       property="mpngCd" />
+        <result column="MPNG_CD_NM"    property="mpngCdNm" />
+        <result column="SORT_SEQ"      property="sortSeq" />
+        <result column="RMRK_CN"       property="rmrkCn" />
+        <result column="USE_YN"        property="useYn" />
+    </resultMap>
+
+    <sql id="keywordColumns">
+        SELECT K.KWRD_DICT_SN
+             , K.DICT_USG_CD
+             , K.KWRD_CLSF_NM
+             , K.ARTCL_NM
+             , K.KWRD_CN
+             , K.INTRP_RSLT_CN
+             , K.MPNG_CD
+             , C.COM_CD_NM AS MPNG_CD_NM
+             , K.SORT_SEQ
+             , K.RMRK_CN
+             , K.USE_YN
+          FROM KWRD_DICT K
+          LEFT JOIN COM_CD C
+            ON C.COM_CD = K.MPNG_CD
+           AND C.COM_CD_PRNT_SN IS NOT NULL
+    </sql>
+
+    <select id="selectAdminKeywords" resultMap="keywordResultMap">
+        /* 관리자 키워드 목록 : 사용 안 함 포함 */
+        <include refid="keywordColumns" />
+         WHERE K.DICT_USG_CD = #{dictUsgCd}
+        <if test="kwrdClsfNm != null">
+           AND K.KWRD_CLSF_NM = #{kwrdClsfNm}
+        </if>
+           AND K.DEL_YN = 'N'
+         ORDER BY K.SORT_SEQ, K.KWRD_DICT_SN
+    </select>
+
+    <select id="selectKeyword" parameterType="long" resultMap="keywordResultMap">
+        /* 키워드 한 행 */
+        <include refid="keywordColumns" />
+         WHERE K.KWRD_DICT_SN = #{kwrdDictSn}
+           AND K.DEL_YN = 'N'
+    </select>
+
+    <select id="selectActiveKeywords" resultMap="keywordResultMap">
+        /* AI 서버용 : 사용 중 행만 */
+        <include refid="keywordColumns" />
+         WHERE K.DICT_USG_CD = #{dictUsgCd}
+           AND K.USE_YN = 'Y'
+           AND K.DEL_YN = 'N'
+         ORDER BY K.SORT_SEQ, K.KWRD_DICT_SN
+    </select>
+
+    <select id="selectMaxSortSeq" resultType="java.lang.Integer">
+        /* 같은 탭의 가장 큰 정렬순서 */
+        SELECT MAX(SORT_SEQ)
+          FROM KWRD_DICT
+         WHERE DICT_USG_CD = #{dictUsgCd}
+           AND KWRD_CLSF_NM = #{kwrdClsfNm}
+           AND DEL_YN = 'N'
+    </select>
+
+    <select id="countCodeInGroup" resultType="int">
+        /* 연결 코드가 그 그룹의 코드인지 */
+        SELECT COUNT(*)
+          FROM COM_CD C
+          JOIN COM_CD P
+            ON P.COM_CD_SN = C.COM_CD_PRNT_SN
+         WHERE C.COM_CD = #{comCd}
+           AND P.COM_CD = #{codeGroup}
+    </select>
+
+    <insert id="insertKeyword" useGeneratedKeys="true" keyProperty="keyword.kwrdDictSn" keyColumn="KWRD_DICT_SN">
+        /* 키워드 등록 */
+        INSERT INTO KWRD_DICT (DICT_USG_CD, KWRD_CLSF_NM, ARTCL_NM, KWRD_CN, INTRP_RSLT_CN, MPNG_CD, SORT_SEQ,
+                               RMRK_CN, USE_YN, RGTR_ID, MDFR_ID)
+        VALUES (#{keyword.dictUsgCd}, #{keyword.kwrdClsfNm}, #{keyword.artclNm}, #{keyword.kwrdCn},
+                #{keyword.intrpRsltCn}, #{keyword.mpngCd}, #{keyword.sortSeq}, #{keyword.rmrkCn},
+                #{keyword.useYn}, #{actorId}, #{actorId})
+    </insert>
+
+    <update id="updateKeyword">
+        /* 키워드 수정 : 용도·분류·정렬순서는 그대로 */
+        UPDATE KWRD_DICT
+           SET ARTCL_NM      = #{keyword.artclNm}
+             , KWRD_CN       = #{keyword.kwrdCn}
+             , INTRP_RSLT_CN = #{keyword.intrpRsltCn}
+             , MPNG_CD       = #{keyword.mpngCd}
+             , RMRK_CN       = #{keyword.rmrkCn}
+             , USE_YN        = #{keyword.useYn}
+             , MDFR_ID       = #{actorId}
+         WHERE KWRD_DICT_SN = #{keyword.kwrdDictSn}
+           AND DEL_YN = 'N'
+    </update>
+
+    <update id="deleteKeyword">
+        /* 키워드 삭제 */
+        UPDATE KWRD_DICT
+           SET DEL_YN  = 'Y'
+             , MDFR_ID = #{actorId}
+         WHERE KWRD_DICT_SN = #{kwrdDictSn}
+           AND DEL_YN = 'N'
+    </update>
+</mapper>
