@@ -141,7 +141,7 @@
 - 완료 조건: `PetService.syncWeight`가 `PET_BDWG`만 `MDFR_ID`·`MDFCN_DT`와 함께 갱신하고, 삭제됐거나 없는 반려동물이면 404 `PET_NOT_FOUND`를 던진다. 권한 검사는 하지 않는다(호출하는 쪽 담당). 단위 테스트와 `./gradlew build -q`가 통과한다
 - 연결 남음: FN-HLT-002-09~11 (`PetWeightFake`를 `PetService.syncWeight`로 바꾸기, JAJ) → `DailyHealthRecordService.java:192`에서 끝
 
-## SCR-MYP-003 반려동물 등록/수정 · 종에 맞지 않는 털색 코드 거절 — 대기
+## SCR-MYP-003 반려동물 등록/수정 · 종에 맞지 않는 털색 코드 거절 — 끝
 
 - 기능: 명세 기능 ID 추가 없음, FN-MYP-003-03에 걸침 (`PetService` 등록·수정의 털색 검증)
 - 기다리는 것: 이 프론트 작업(수정 모달이 종에 맞지 않는 털색을 다시 고르게 막음). 완료됨
