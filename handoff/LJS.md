@@ -2,10 +2,11 @@
 
 ## 지금 하는 것
 
-SCR-ADM-082 처리 현황 · 영수증 OCR 현황 API — 끝 (2026-11-05). `expense`에 `AdminReceiptController`·`AdminReceiptService`, `GET /api/admin/processing/receipts`(현재 상태 기준 summary 다섯 키 + 기간·출처·상태 목록)와 `…/{recptSn}/image`(관리자 원본 보기), `docs/api/receipt.md` 두 행·DTO 절. 검증 통과(1회차), 사람 확인 2026-11-05
+SCR-ADM-082 처리 현황 · 캐릭터 생성 현황 API — 끝 (2026-11-05). `pet`에 `AdminCharacterJobController`·`AdminCharacterJobService`, `GET /api/admin/processing/character-jobs`(CHRG01 네 상태 `sttsCnts` + 상태 필터 목록), `docs/api/pet.md` 한 행·DTO 절. 검증 통과(1회차), 사람 확인 2026-11-05
 
 ## 다음에 할 것
 
+- SCR-ADM-082 연결 남음: FN-ADM-082-02 (프론트 연결 `features/adminProcessing/api.js` `getAdminCharacterJobs`·`processingLabels.js` `CHAR_JOB_STTS`·`CharacterJobTable.jsx`, 프론트 저장소에서 /start). 프론트 마일스톤에 절 넣음(`SCR-ADM-082 처리 현황 · 캐릭터 생성 현황 API 연결`). 프론트에 알릴 것: `jobSttsCd`→`crtJobSttsCd`, `frstRegDt`→`regDt`, 상태 코드 CHRC0001~0004(가짜 TMP 아님), 계약은 `docs/api/pet.md` `/admin/processing/character-jobs` 행
 - SCR-ADM-082 연결 남음: FN-ADM-082-01 (프론트 연결 `features/adminProcessing/api.js` `getAdminReceipts`·`processingLabels.js`·`ReceiptImageModal.jsx`, 프론트 저장소에서 /start). 프론트 마일스톤에 절 넣음(`SCR-ADM-082 처리 현황 · 영수증 OCR 현황 API 연결`). 프론트에 알릴 것: `ocrRqstSrcCd`→`ocrDmndSrcCd`, `frstRegDt`→`regDt`, 가계부 출처 `AIMC0027`, 가짜의 처리 중·성공 코드가 틀림(분석중 AIMC0001, 인식성공 AIMC0002), summary에 `errCnt`(일시오류) 추가, 계약은 `docs/api/receipt.md` `/admin/processing/receipts` 두 행
 - 공용 DB 정리(사람, 정하기): SCR-ADM-082 검증이 만든 확인용 영수증 `RECPT_SN=527`(회원 1, 가계부 출처, 일시오류)과 그 `ATCH_FILE` 한 건. 영수증 삭제 API가 없어 남길지 SQL로 지울지 정한다
 - SCR-ADM-072 연결 남음: FN-ADM-072-01·02 (프론트 연결 `features/adminPoint/api.js` 원장 목록·조정 모달·현재 잔액, 프론트 저장소에서 /start). 프론트 마일스톤에 절 넣음(`SCR-ADM-072 포인트 · 관리자 포인트 API 연결`). 프론트에 알릴 것: 현재 잔액은 `GET /api/admin/members/{mbrSn}`의 `hldPnt`, 잔액 부족 400 `POINT_NOT_ENOUGH`(가짜 `POINT_BALANCE_NOT_ENOUGH` 아님), 같은 요청 두 번이면 두 건이라 버튼 잠금, 계약은 `docs/api/pet.md` `/admin/points` 두 행
