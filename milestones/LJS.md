@@ -549,10 +549,13 @@
 - 완료 조건 결과: 검증 `통과`(2026-11-05, 1회차), 사람 확인 2026-11-05. 정한 것: 필드·파라미터 이름은 DB 컬럼대로 `crtJobSttsCd`·`regDt`(가정 `jobSttsCd`·`frstRegDt`와 다름), 행에 `mbrSn` 포함, 상태 코드는 기존 CHRG01(CHRC0001 요청·0002 생성 중·0003 생성 완료·0004 생성 실패, 새 공통코드 없음), `sttsCnts`는 네 상태를 순서대로 늘 주고 없는 상태 0, 모르는 상태 코드 400. 계약은 `docs/api/pet.md` `/admin/processing/character-jobs` 행
 - 연결 남음: FN-ADM-082-02 (프론트 연결 `features/adminProcessing/api.js` `getAdminCharacterJobs`·`processingLabels.js` `CHAR_JOB_STTS`·`CharacterJobTable.jsx`, 프론트 저장소에서 /start)
 
-## SCR-ADM-082 처리 현황 · 검사결과지 분석 현황 API — 대기
+## SCR-ADM-082 처리 현황 · 검사결과지 분석 현황 API — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-082-03
 - 기다리는 것: 프론트 SCR-ADM-082(가짜 응답으로 완료)
 - 완료 조건: Python→Java 통지 내부 API로 EXTL_API_CALL_LOG에 PDF 분석 호출이 쌓인다(검사결과지가 아닌 파일은 제외). `GET /api/admin/processing/pdf-analyses?fromYmd=&toYmd=&page=&size=`가 summary(`totCnt`·`scsCnt`·`tmotCnt`·`errCnt`)와 실패 목록(`extlApiCallLogSn`·`callRsltCd`·`failRsn`·`callDt`)을 준다. 분석 결과 내용은 주지 않는다
+- 완료 조건 결과: 검증 `통과`(2026-11-05, 1회차), 사람 확인 2026-11-05. 정한 것: 통지는 기존 `POST /internal/ai/external-api-calls`(SYSC0025) 그대로, 검사결과지가 아닌 파일은 Python이 성공(SYSC0021)으로 통지해 실패에서 빠진다(새 컬럼·코드 없음). 기간은 `fromYmd`·`toYmd` 모두 선택, 호출일 양끝 포함. 계약은 `docs/api/global.md` `/admin/processing/pdf-analyses` 행
+- 연결 남음: FN-ADM-082-03 (프론트 연결 `features/adminProcessing/api.js` `getAdminPdfAnalyses` 검사결과지 분석 탭, 프론트 저장소에서 /start)
+- 연결 남음: FN-ADM-082-03 (ai 연결 `app/checkup` PDF 분석 호출마다 SYSC0025 통지, 검사결과지 아님 판정은 SYSC0021, ai 저장소에서 /start)
 
 ## SCR-ADM-001 대시보드 · 운영 현황·처리 대기 API — 대기
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-001-02·03

@@ -32,9 +32,10 @@ import com.nyangmeong.global.security.jwt.JwtTokenProvider;
 import com.nyangmeong.global.security.jwt.TokenCookies;
 
 /**
- * [검사 - 외부 API 사용량·호출 통지 API]
+ * [검사 - 외부 API 사용량·호출 통지·검사결과지 분석 현황 API]
  */
-@WebMvcTest(controllers = {AdminExternalApiUsageController.class, ExternalApiCallInternalController.class})
+@WebMvcTest(controllers = {AdminExternalApiUsageController.class, ExternalApiCallInternalController.class,
+        AdminPdfAnalysisController.class})
 @Import({SecurityConfig.class, JwtTokenProvider.class, JwtProperties.class, TokenCookies.class,
         ErrorResponseWriter.class, RestAuthenticationEntryPoint.class, RestAccessDeniedHandler.class,
         SensitiveDataMasker.class, GlobalExceptionHandler.class})
@@ -110,6 +111,35 @@ class ExternalApiControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"extlApiSeCd\":\"SYSC0015\",\"callRsltCd\":\"SYSC0021\"}"))
                 .andExpect(status().isUnauthorized());
+        verifyNoInteractions(externalApiUsageService);
+    }
+
+    @Test
+    @WithMockLoginMember(id = 9L, mbrAuthrtCd = ADMIN)
+    void 관리자는_검사결과지_분석_현황을_조회한다() throws Exception {
+        PdfAnalysisSummary summary = new PdfAnalysisSummary();
+        summary.setTotCnt(3);
+        summary.setTmotCnt(1);
+        PdfAnalysisFailureRow row = new PdfAnalysisFailureRow();
+        row.setExtlApiCallLogSn(11L);
+        row.setCallRsltCd("SYSC0023");
+        when(externalApiUsageService.searchPdfAnalyses(any(), any()))
+                .thenReturn(new PdfAnalysisListResponse(summary, List.of(row), 1, 20, 1, 1, false));
+
+        mockMvc.perform(get("/api/admin/processing/pdf-analyses").param("fromYmd", "2026-11-01")
+                .param("toYmd", "2026-11-05"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.summary.totCnt").value(3))
+                .andExpect(jsonPath("$.data.summary.tmotCnt").value(1))
+                .andExpect(jsonPath("$.data.content[0].extlApiCallLogSn").value(11))
+                .andExpect(jsonPath("$.data.totalElements").value(1));
+    }
+
+    @Test
+    @WithMockLoginMember(id = 5L, mbrAuthrtCd = USER)
+    void 일반_회원은_검사결과지_분석_현황을_볼_수_없다() throws Exception {
+        mockMvc.perform(get("/api/admin/processing/pdf-analyses"))
+                .andExpect(status().isForbidden());
         verifyNoInteractions(externalApiUsageService);
     }
 }

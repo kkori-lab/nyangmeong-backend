@@ -115,4 +115,50 @@
         <include refid="searchWhere" />
          ORDER BY CALL_DT DESC, EXTL_API_CALL_LOG_SN DESC
     </select>
+
+    <resultMap id="pdfSummaryMap" type="com.nyangmeong.global.external.PdfAnalysisSummary">
+        <result column="TOT_CNT"  property="totCnt" />
+        <result column="SCS_CNT"  property="scsCnt" />
+        <result column="TMOT_CNT" property="tmotCnt" />
+        <result column="ERR_CNT"  property="errCnt" />
+    </resultMap>
+
+    <resultMap id="pdfFailureMap" type="com.nyangmeong.global.external.PdfAnalysisFailureRow">
+        <id     column="EXTL_API_CALL_LOG_SN" property="extlApiCallLogSn" />
+        <result column="CALL_RSLT_CD"         property="callRsltCd" />
+        <result column="FAIL_RSN"             property="failRsn" />
+        <result column="CALL_DT"              property="callDt" />
+    </resultMap>
+
+    <sql id="pdfWhere">
+         WHERE EXTL_API_SE_CD = #{pdfCd}
+        <if test="cond.fromYmd != null">
+           AND CALL_DT &gt;= #{cond.fromYmd}
+        </if>
+        <if test="cond.toYmd != null">
+           AND CALL_DT &lt; DATE_ADD(#{cond.toYmd}, INTERVAL 1 DAY)
+        </if>
+    </sql>
+
+    <select id="selectPdfAnalysisSummary" resultMap="pdfSummaryMap">
+        /* 검사결과지 분석 건수 묶음 조회 */
+        SELECT COUNT(*) AS TOT_CNT
+             , COALESCE(SUM(CASE WHEN CALL_RSLT_CD = #{successCd} THEN 1 ELSE 0 END), 0) AS SCS_CNT
+             , COALESCE(SUM(CASE WHEN CALL_RSLT_CD = #{timeoutCd} THEN 1 ELSE 0 END), 0) AS TMOT_CNT
+             , COALESCE(SUM(CASE WHEN CALL_RSLT_CD = #{failCd} THEN 1 ELSE 0 END), 0) AS ERR_CNT
+          FROM EXTL_API_CALL_LOG
+        <include refid="pdfWhere" />
+    </select>
+
+    <select id="selectPdfAnalysisFailures" resultMap="pdfFailureMap">
+        /* 검사결과지 분석 실패 목록 조회 */
+        SELECT EXTL_API_CALL_LOG_SN
+             , CALL_RSLT_CD
+             , FAIL_RSN
+             , CALL_DT
+          FROM EXTL_API_CALL_LOG
+        <include refid="pdfWhere" />
+           AND CALL_RSLT_CD &lt;&gt; #{successCd}
+         ORDER BY CALL_DT DESC, EXTL_API_CALL_LOG_SN DESC
+    </select>
 </mapper>

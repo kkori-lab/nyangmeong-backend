@@ -40,4 +40,17 @@ public interface ExternalApiCallLogMapper {
      */
     List<ExternalApiFailureSummary> selectFailures(@Param("cond") ExternalApiUsageSearchCond cond,
             @Param("successCd") String successCd);
+
+    /**
+     * 검사결과지 분석 건수 묶음 조회
+     */
+    PdfAnalysisSummary selectPdfAnalysisSummary(@Param("cond") PdfAnalysisSearchCond cond,
+            @Param("pdfCd") String pdfCd, @Param("successCd") String successCd, @Param("timeoutCd") String timeoutCd,
+            @Param("failCd") String failCd);
+
+    /**
+     * 검사결과지 분석 실패 목록 조회
+     */
+    List<PdfAnalysisFailureRow> selectPdfAnalysisFailures(@Param("cond") PdfAnalysisSearchCond cond,
+            @Param("pdfCd") String pdfCd, @Param("successCd") String successCd);
 }
