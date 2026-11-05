@@ -2,15 +2,16 @@
 
 ## 지금 하는 것
 
-SCR-AIM-011 AI 대화창 · 건강 읽기 도구 표시 — 끝 (2026-11-06). `AiToolCatalogService`가 `@ModelAttribute` 검색 조건 필드(경로 변수와 같은 이름은 뺌)·`PageQuery`(`page`·`size`)를 쿼리 칸으로 싣고, 건강 조회 13개 `@AiTool(kind = READ)`, 검색 조건 6개 `@AiCode`, `docs/api/ai.md`. 기존 `AiToolCatalogControllerTest` 기대값(`search_fake` 포함·도구 3개)은 사람 결정으로 바꿈(별도 커밋). 읽기 결과 자르기는 Java 기존 상한 그대로, 나머지는 Python 요약(설계 9절). 검증 1회차 통과, 사람 확인 2026-11-06
+SCR-AIM-011 AI 대화창 · 가계부·반려동물·커뮤니티·플레이스·FAQ 읽기 도구 표시 — 끝 (2026-11-06). 컨트롤러 16개에 `@AiTool(kind = READ)` 27개(expense 6·pet 10·community 8·place 2·support 1), 검색 조건 6곳 `@ModelAttribute`, `@AiCode` 11곳, `AiToolCatalogService`가 `YearMonth`를 `string`+pattern으로 싣고, `docs/api/ai.md`. 도메인별 카탈로그 테스트 5개. 검증 1회차 통과, 사람 확인 2026-11-06(도구 42개)
 
 ## 다음에 할 것
 
+- SCR-AIM-011 가계부·반려동물·커뮤니티·플레이스·FAQ 읽기 도구 ai 연결 남음 (ai 저장소에서 /start, 아래 건강 READ 실행 경로 ① 뒤): 27개 도구 설명 `data/tool_prompts.yaml`·스냅샷 갱신. 설계 `docs/design/tool-catalog.md` 2-1절 고칠 것: `/{pixelCharSn}/held-items`는 GET이 없다(보유는 `get_pixel_character`·`list_shop_items`의 `hldYn`), `GET /api/caregiver-invitations`는 보낸 초대(`list_sent_caregiver_invitations`)
+- 각 담당에게 알린다(SCR-AIM-011 읽기 도구, PR 전): 가계부(`ExpenseController`·`ReceiptController`·`ExpenseSearchCond`), 반려동물(`PetController`·`CaregiverInvitationController`·`CareMissionController`·`PointController`·`PointLedgerController`·`PixelCharacterController`), 커뮤니티(`Post`·`Comment`·`LostReport`·`CareRecruitment`·`News` 컨트롤러와 검색 조건 4개), 플레이스(`Place`·`PlaceBookmark` 컨트롤러·`PlaceSearchCond`), 고객센터(`FaqController`·`FaqSearchCond`)에 `@AiTool`·`@AiCode`, 검색 조건 6곳에 `@ModelAttribute`만 붙였다(동작 그대로). 검색 조건 필드 이름·검증을 바꾸면 AI 도구 칸도 바뀐다
+- 판단 필요(가계부 담당): `get_expense_statistics.yearMonth`는 `String`이라 형식 검사가 없다(`ExpenseController` statistics). AI가 다른 형식을 보낼 때 응답은 확인 안 함. `@Pattern`을 붙일지 정한다
 - SCR-AIM-011 건강 읽기 도구 ai 연결 남음 (ai 저장소에서 /start, 순서 지킴): ① READ 실행 경로(`app/chat/service.py` `_tool_judged`에 READ 분기 없음, 설계 4-3절 Cookie 그대로 Java 호출 → 결과 요약) ② 그 뒤 13개 도구 설명 `data/tool_prompts.yaml`·스냅샷 갱신. ②를 먼저 하면 READ 호출이 사용법 안내 분기로 떨어진다(추정, `service.py:232` 이후)
 - JAJ에게 알린다(SCR-AIM-011 건강 읽기 도구, PR 전): 건강 컨트롤러 10개에 `@AiTool`(READ 13개), 검색 조건 6개에 `@AiCode`만 붙였다(동작 그대로). 검색 조건 필드 이름·검증을 바꾸면 AI 도구 칸도 바뀐다. `ObservationCycleSearchCond.obsrvCyclSn`도 쿼리 칸으로 실린다(목록 SQL이 거름, Python 설명에서 쓸지 ai가 정함)
 - SCR-AIM-012 도구 목록 연결 남음: FN-AIM-012-05·06·07·13 (ai 저장소 가짜 응답 → `GET /internal/ai/tools`, ai `docs/api/internal.md` 행 확정, 설계 8절 3번, ai 세션)
-- ai-50에 보낸다(PR #175 병합됨 2026-11-06, 이제 보낼 수 있음): PR 번호와 실제 `GET /internal/ai/tools` 응답 JSON 한 벌(ai가 스냅샷으로 씀). 가짜와 다른 4곳(`cldrBadgeColrCd`·`schdlSrcCd` code, `codes` 목록, `min`·`max`)은 이미 알림(2026-11-05)
-- 디스코드 공유 `application.properties`(사람): `app.security.permit-all-paths`에 `/api/auth/sns-login`·`/internal/ai/tools`. 팀에 알린다: 각자 로컬 목록에도 넣지 않으면 `GET /internal/ai/tools`가 401
 - JAJ에게 알린다(PR 전, SCR-AIM-012 서비스 검사 오류 칸 이름): `CareScheduleService`·`CareItemService`의 `invalid()`에 칸 이름 인자만 넣었다(동작 그대로, 병원 일정 `hsptlNm`·`ckupTypeCd` 묶음 조건은 칸별로 나눔). 400 응답에 `data: [{field, message}]`가 새로 붙는다. 검사를 더하면 `invalid("칸")`으로 던진다
 - JAJ에게 알린다(PR 전, SCR-AIM-012 도구 목록): `CareScheduleController`·`CareItemController`의 `create`와 `CareScheduleCreateRequest`·`CareItemCreateRequest`에 AI 도구 표시 어노테이션만 붙였다(동작 그대로). DTO 검증·조건부 필수를 바꾸면 `@AiRequiredIf`도 같이 고친다. 시드 `CARE_ARTCL` 2번 빗질하기가 일상관리(HLTC0036)인데 주기 HLTC0038이 있다(`db/seed/20261028_seed_data.sql:88`, 등록 API로는 생기지 않는 조합)
 

@@ -17,6 +17,8 @@ import com.nyangmeong.community.dto.CommentCreateRequest;
 import com.nyangmeong.community.dto.CommentResponse;
 import com.nyangmeong.community.dto.CommentSummary;
 import com.nyangmeong.community.service.CommentService;
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
 
@@ -36,6 +38,7 @@ public class CommentController {
     private final CommentService commentService;
 
     @Operation(summary = "댓글·대댓글 목록")
+    @AiTool(name = "list_comments", domain = "community", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<List<CommentSummary>>> search(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long pstSn) {

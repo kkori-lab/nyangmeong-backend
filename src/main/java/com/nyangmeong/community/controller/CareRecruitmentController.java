@@ -20,6 +20,8 @@ import com.nyangmeong.community.dto.CareRecruitmentSummary;
 import com.nyangmeong.community.dto.CareRecruitmentUpdateRequest;
 import com.nyangmeong.community.dto.MinimumWageResponse;
 import com.nyangmeong.community.service.CareRecruitmentService;
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.response.PageResponse;
@@ -42,9 +44,10 @@ public class CareRecruitmentController {
     private final CareRecruitmentService careRecruitmentService;
 
     @Operation(summary = "펫돌봄 모집 목록")
+    @AiTool(name = "list_care_recruitments", domain = "community", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<CareRecruitmentSummary>>> search(
-            @AuthenticationPrincipal LoginMember me, CareRecruitmentSearchCond cond, PageQuery pq) {
+            @AuthenticationPrincipal LoginMember me, @ModelAttribute CareRecruitmentSearchCond cond, PageQuery pq) {
         return ResponseEntity.ok(ApiResponse.success(careRecruitmentService.search(me.id(), cond, pq)));
     }
 

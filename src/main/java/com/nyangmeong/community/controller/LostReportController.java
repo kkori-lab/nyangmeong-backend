@@ -19,6 +19,8 @@ import com.nyangmeong.community.dto.LostReportSearchCond;
 import com.nyangmeong.community.dto.LostReportSummary;
 import com.nyangmeong.community.dto.LostReportUpdateRequest;
 import com.nyangmeong.community.service.LostReportService;
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.response.PageResponse;
@@ -41,9 +43,10 @@ public class LostReportController {
     private final LostReportService lostReportService;
 
     @Operation(summary = "실종 제보 목록")
+    @AiTool(name = "list_lost_reports", domain = "community", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<LostReportSummary>>> search(@AuthenticationPrincipal LoginMember me,
-            LostReportSearchCond cond, PageQuery pq) {
+            @ModelAttribute LostReportSearchCond cond, PageQuery pq) {
         return ResponseEntity.ok(ApiResponse.success(lostReportService.search(me.id(), cond, pq)));
     }
 

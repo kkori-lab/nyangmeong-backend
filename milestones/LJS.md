@@ -575,6 +575,13 @@
 - 연결 남음: FN-MYP-010-16 (프론트 연결 꾸미기 화면 착용 확정 뒤 Python 대표 이미지 합성 요청·이미지 다시 불러오기, 화면 SJM, 프론트 저장소에서 /start)
 - 연결 남음: 추가-①·③ (ai 저장소 `internal.md` 32~36행 확정·`schemas.py` FACE·나눠 굽기, ai 세션 #149 병합 뒤 /start)
 
+## SCR-AIM-011 AI 대화창 · 가계부·반려동물·커뮤니티·플레이스·FAQ 읽기 도구 표시 — 끝
+- 기능: 명세 기능 ID 추가 없음(설계 `nyangmeong-ai` `docs/design/tool-catalog.md` 2-1절·8절 4번 건강 외 도메인), 걸치는 기능 FN-AIM-004-02
+- 기다리는 것: 없음(Python 설명이 없는 도구는 Python이 싣지 않으므로 먼저 붙여도 지금 동작은 그대로. 도메인을 여는 시점은 ai `tool_eval` 기준)
+- 완료 조건: `GET /internal/ai/tools`에 설계 2-1절 가계부·반려동물·캐릭터·커뮤니티·플레이스·고객센터(FAQ) 조회 API가 `kind: READ`로 쿼리 칸·필수·코드 값과 함께 있고, 기존 15개는 그대로다. 제외(알림·1:1 채팅)는 없다. 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-06, 1회차), 사람 확인 2026-11-06(도구 42개 = 건강 15 + pet 10 + community 8 + expense 6 + place 2 + support 1). 정한 것: 검색 조건 6곳에 `@ModelAttribute`(없으면 도구 목록이 칸을 오류 없이 뺀다), `YearMonth` 칸은 `string` + pattern(새 타입 이름 없음), 보유 아이템 GET이 없어 `get_pixel_character`·`list_shop_items`(`hldYn`)로 대신, `GET /api/caregiver-invitations`는 보낸 초대라 `list_sent_caregiver_invitations`. YearMonth 테스트는 기존 `AiToolCatalogControllerTest` 대신 `PetAiToolCatalogTest`에 둠(기존 기대값 유지)
+- 연결 남음: FN-AIM-004-02 (ai 연결 27개 도구 Python 설명 `data/tool_prompts.yaml`·스냅샷, READ 실행 경로 뒤, 설계 2-1절 held-items·받은 초대 표기 수정, LJS ai 저장소에서 /start)
+
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
 - FN-COM-002-11: 채팅 안 읽은 수 API는 KSJ(채팅, 마일스톤 담당 표 COM-009)

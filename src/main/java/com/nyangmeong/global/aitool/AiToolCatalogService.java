@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -67,6 +68,8 @@ public class AiToolCatalogService {
     private static final String QUERY = "query";
     private static final String BODY = "body";
     private static final String CODE = "code";
+    /** YearMonth 칸은 string + yyyy-MM 형식으로 싣는다 */
+    private static final String YEAR_MONTH_PATTERN = "^\\d{4}-(0[1-9]|1[0-2])$";
 
     /** 해시용 : 키 순서 고정 */
     private static final JsonMapper HASH_MAPPER = JsonMapper.builder()
@@ -324,14 +327,14 @@ public class AiToolCatalogService {
                 min != null ? min.value() : null,
                 max != null ? max.value() : null,
                 element.isAnnotationPresent(Positive.class) ? Boolean.TRUE : null,
-                pattern != null ? pattern.regexp() : null,
+                pattern != null ? pattern.regexp() : type == YearMonth.class ? YEAR_MONTH_PATTERN : null,
                 digits != null ? digits.integer() + digits.fraction() : null,
                 digits != null ? digits.fraction() : null,
                 null), null);
     }
 
     private static String typeNameOf(Class<?> type) {
-        if (type == String.class) {
+        if (type == String.class || type == YearMonth.class) {
             return "string";
         }
         if (type == Long.class || type == long.class) {

@@ -1,5 +1,7 @@
 package com.nyangmeong.community.dto;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import lombok.Data;
 
 /**
@@ -9,6 +11,7 @@ import lombok.Data;
  */
 @Data
 public class NewsSearchCond {
+    @AiCode("CMUG06")
     private String newsClsfCd;
     private String keyword;
 }
