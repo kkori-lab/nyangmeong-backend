@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.response.PageResponse;
@@ -40,6 +42,7 @@ public class CheckupController {
     private final CheckupService checkupService;
 
     @Operation(summary = "검진기록 목록")
+    @AiTool(name = "list_checkups", domain = "health", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<CheckupSummary>>> search(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @Valid @ModelAttribute CheckupSearchCond cond, PageQuery pq) {
@@ -47,6 +50,7 @@ public class CheckupController {
     }
 
     @Operation(summary = "검진상세 기본정보")
+    @AiTool(name = "get_checkup", domain = "health", kind = AiToolKind.READ)
     @GetMapping("/{ckupRcdSn}")
     public ResponseEntity<ApiResponse<CheckupResponse>> getCheckup(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long ckupRcdSn) {

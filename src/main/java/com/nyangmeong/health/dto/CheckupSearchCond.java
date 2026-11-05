@@ -1,5 +1,7 @@
 package com.nyangmeong.health.dto;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.Data;
@@ -16,5 +18,6 @@ public class CheckupSearchCond {
     @Max(2200)
     private Integer year;
     /** 검진유형공통코드 */
+    @AiCode("HLTG01")
     private String ckupTypeCd;
 }

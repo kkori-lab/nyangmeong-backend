@@ -637,3 +637,11 @@
 - 완료 조건: 서비스 검사로 나는 400 `INVALID_INPUT_VALUE`도 `data: [{field, message}]`에 칸 이름을 담는다. 정기관리 케어 항목 등록에 `careCycleCd` 없이 보내면 `data[0].field`가 `careCycleCd`다
 - 완료 조건 결과: 검증 `통과`(2026-11-06, 1회차), 사람 확인 2026-11-06(Postman: 일정 등록 칸 빠짐 400 `data[0].field`). 정한 것: `message`는 `ErrorCode` 문구, 칸 없는 예외는 `data` 없이 그대로, 범위는 AI 도구가 붙은 일정·케어 항목 서비스만(다른 `INVALID_INPUT_VALUE`는 그대로), 테스트는 서비스 테스트에(컨트롤러 테스트는 서비스를 목으로 바꿔 칸을 확인 못 함)
 - 추가: 없음
+
+## SCR-AIM-011 AI 대화창 · 건강 읽기 도구 표시 — 끝
+- 기능: 명세 기능 ID 추가 없음(설계 `nyangmeong-ai` `docs/design/tool-catalog.md` 8절 4번 건강 도메인, 8절 0번 기능 ID 추가 전), 걸치는 기능 FN-AIM-004-02
+- 기다리는 것: 없음(8절 3번 연결은 ai 저장소에서 따로. Python 설명이 없는 도구는 Python이 싣지 않으므로 먼저 붙여도 지금 동작은 그대로)
+- 완료 조건: `GET /internal/ai/tools`에 건강 조회 API 13개가 `kind: READ`로 쿼리 칸(검색 조건·페이지)·필수·코드 값과 함께 있고, 기존 `draft_schedule`·`draft_care_item`은 그대로다. 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-06, 1회차), 사람 확인 2026-11-06(Postman: 쿠키 없이 `GET /internal/ai/tools` 200·도구 15개, 카드 2개는 바뀌기 전과 같음, 기동·첫 호출 뒤 `[AiTool] 제외` 없음). 정한 것: 경로 변수와 같은 이름의 검색 조건 필드는 뺌(서비스가 덮어씀), `PageQuery`는 `page`·`size`(max 50)만, 읽기 결과 자르기는 Java 기존 상한 그대로·나머지 Python 요약, 기존 테스트 `search_fake` 기대값 변경(사람 결정, 별도 커밋). 계약은 `docs/api/ai.md`
+- 추가: 없음
+- 연결 남음: 걸치는 기능 FN-AIM-004-02 (ai 저장소 ① READ 실행 경로 → ② `data/tool_prompts.yaml` 13개 설명·스냅샷 갱신, ai 세션)
