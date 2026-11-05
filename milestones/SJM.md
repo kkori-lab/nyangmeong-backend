@@ -26,8 +26,9 @@
 - 연결 남음: FN-MYP-020-01·09, FN-MYP-001-03·04 (프론트 연결 SCR-MYP-020 포인트 카드·요약, SCR-MYP-001 요약, 프론트 저장소에서 /start)
 - 연결 남음: FN-MYP-020-02 (프론트 연결 SCR-MYP-020 포인트 내역, 프론트 저장소에서 /start)
 - 연결 남음: FN-MYP-020-03·04·07 (프론트 연결 SCR-MYP-020 케어미션 탭·날짜 이동·0마리 안내, SCR-MYP-001 오늘의 케어미션, 프론트 저장소에서 /start)
-- 연결 남음: FN-MYP-020-08 (검진기록 등록·영수증 빠른 등록에서 `earnCheckupPoint` 호출, JAJ)
-- 연결 남음: FN-MYP-020-04·06 (건강 일지 기록·케어리스트 기본 항목 체크·일정·관찰 기록 → `reflect` JAJ, 관찰 중 반려동물 조회 JAJ, 펫이야기 글·댓글 → `reflectRepresentative` KSJ, 아이템 구매 `PointFake` → `PointService.use` LJS)
+- 연결 남음: FN-MYP-020-08 (검진기록 등록·영수증 빠른 등록에서 `earnCheckupPoint` 호출, JAJ) → `CheckupService.java:283`에서 끝 (영수증 등록도 같은 insert를 지나 호출, 사람 확인)
+- 연결 남음: FN-MYP-020-04·06 (건강 일지 기록·케어리스트 기본 항목 체크·일정·관찰 기록 → `reflect` JAJ, 관찰 중 반려동물 조회 JAJ) → `DailyHealthRecordService.java:89`, `CareItemService.java:492`, `CareScheduleService.java:88`, `ObservationService.java:142·181`의 `reflect`와 `scheduler/CareMissionJob.java:53`의 `searchObservingPetSns()`에서 끝
+- 연결 남음: FN-MYP-020-04·06 (펫이야기 글·댓글 → `reflectRepresentative` KSJ, 아이템 구매 `PointFake` → `PointService.use` LJS)
 
 ## SCR-MYP-031 가계부 등록/수정 — 끝
 
@@ -37,8 +38,8 @@
 - 기다리는 것: 없음
 - 완료 조건: `POST /api/expenses`가 1원 미만과 병원+공용 조합을 막는다. 저장 뒤 월 합계가 한도의 90%·100%를 넘으면 한도 알림 이벤트를 발행한다
 - 연결 남음: FN-MYP-031-02·03·05·06 (프론트 연결 SCR-MYP-031 직접 입력·인식 결과 확인 저장·실패 후 직접 입력의 영수증 연결·중복 지출 확인 모달, 프론트 저장소에서 /start)
-- 연결 남음: FN-MYP-031-05 (영수증 저장 `ExpenseFake` → `ExpenseService.create`·`findDuplicates`, LJS)
-- 연결 남음: FN-MYP-030-08 (알림 목록 COM-004에 가계부 한도 알림 표시, LJS)
+- 연결 남음: FN-MYP-031-05 (영수증 저장 `ExpenseFake` → `ExpenseService.create`·`findDuplicates`, LJS) → `ReceiptSaveService.java:120`(create)·`:76`(`searchDuplicates`)에서 끝
+- 연결 남음: FN-MYP-030-08 (알림 목록 COM-004에 가계부 한도 알림 표시, LJS) → 백엔드 끝(`ExpenseService.java:313·316` 발행, `NotificationService.search`), 화면 미확인
 
 ## SCR-MYP-004 공동양육자 목록 — 끝
 
@@ -72,7 +73,7 @@
 - 기다리는 것: 반려동물 삭제 연쇄 범위(docs/api/issues.md 마이페이지 3번, 팀)
 - 완료 조건: 주양육자만 삭제할 수 있다. 삭제하면 연동이 모두 해제되고 공동양육자에게 알림이 가며, 대표였으면 다음 주양육 동물로 승계된다. 지출은 남는다
 - 연결 남음: FN-MYP-002-07 (프론트 연결 SCR-MYP-002 ⋮ 메뉴 [반려동물 삭제]·2-3 삭제 확인 팝업·2-4 등록 카드 복귀, 프론트 저장소에서 /start)
-- 연결 남음: FN-MYP-002-08 (알림함 COM-004에 공동양육 연동 해제 알림 표시, LJS)
+- 연결 남음: FN-MYP-002-08 (알림함 COM-004에 공동양육 연동 해제 알림 표시, LJS) → 백엔드 끝(`PetService.java:273`, 반려동물 삭제 때의 알림), 화면 미확인
 
 ## SCR-MYP-040 회원정보 수정 — 끝
 
@@ -118,7 +119,7 @@
 - 기능: 명세 기능 ID 추가 없음. FN-MYP-031-02와 걸친다
 - 기다리는 것: 프론트 SCR-MYP-030 (프론트 저장소, 끝남. 사람 결정 2026-11-02: 오늘(KST)까지만 허용. 프론트 폼과 달력은 이미 막았다)
 - 완료 조건: `POST /api/expenses`(`ExpenseService.validate`)와 `PATCH /api/expenses/{expndSn}`(`update`)에서 `EXPND_YMD`가 오늘(KST)보다 뒤면 400(`INVALID_INPUT_VALUE`)이다
-- 연결 남음: 영수증 저장 `ExpenseFake` → `ExpenseService.create` 연결 때 같은 미래 날짜 검사를 받는다 (LJS)
+- 연결 남음: 영수증 저장 `ExpenseFake` → `ExpenseService.create` 연결 때 같은 미래 날짜 검사를 받는다 (LJS) → `ExpenseService.java:111`(`create`의 `checkNotFuture`)에서 끝
 
 ## SCR-MYP-030 가계부 목록 · 시드 병원 공용 지출 행 수정 — 끝
 
@@ -138,7 +139,19 @@
 - 기다리는 것: 없음
 - 프론트 연결: 없음(서버 내부 호출). JAJ가 `PetWeightFake`를 이 메서드로 바꾼다(JAJ 마일스톤 SCR-HLT-002 · 프로필 체중 동기화 연결)
 - 완료 조건: `PetService.syncWeight`가 `PET_BDWG`만 `MDFR_ID`·`MDFCN_DT`와 함께 갱신하고, 삭제됐거나 없는 반려동물이면 404 `PET_NOT_FOUND`를 던진다. 권한 검사는 하지 않는다(호출하는 쪽 담당). 단위 테스트와 `./gradlew build -q`가 통과한다
-- 연결 남음: FN-HLT-002-09~11 (`PetWeightFake`를 `PetService.syncWeight`로 바꾸기, JAJ)
+- 연결 남음: FN-HLT-002-09~11 (`PetWeightFake`를 `PetService.syncWeight`로 바꾸기, JAJ) → `DailyHealthRecordService.java:192`에서 끝
+
+## SCR-MYP-003 반려동물 등록/수정 · 종에 맞지 않는 털색 코드 거절 — 대기
+
+- 기능: 명세 기능 ID 추가 없음, FN-MYP-003-03에 걸침 (`PetService` 등록·수정의 털색 검증)
+- 기다리는 것: 이 프론트 작업(수정 모달이 종에 맞지 않는 털색을 다시 고르게 막음). 완료됨
+- 완료 조건: 강아지 전용 털색(PETC0010·0011·0012·0028~0031)을 고양이에, 고양이 전용(PETC0014~0016·0032~0034)을 강아지에 보내면 거절한다. 직접 입력(PETC0017)과 공통 털색은 어느 종에서나 받는다. 시드에서 불일치인 고양이+PETC0011 55마리는 데이터 정리 방침을 정한다
+
+## SCR-MYP-003 반려동물 등록/수정 · 종에 맞지 않는 털색 데이터 정리 — 대기
+
+- 기능: 명세 기능 ID 추가 없음, FN-MYP-003-03에 걸침 (시드와 공용 DB의 고양이+PETC0011 55마리)
+- 기다리는 것: 이 프론트 작업(털색 선택 칸 글자색, 끝남)
+- 완료 조건: 시드 파일(PET 1000행 기준)에서 고양이+PETC0011 55마리를 고양이 털색으로 고쳐 종-털색 불일치가 없게 한다. 공용 DB는 팀에 알린 뒤 반영하고, 반영 SQL은 사람이 DBeaver로 직접 실행한다. 어떤 고양이 털색으로 바꿀지는 정해야 한다
 
 ## 제외
 
