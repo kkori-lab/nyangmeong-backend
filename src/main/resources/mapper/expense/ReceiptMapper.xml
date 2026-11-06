@@ -194,4 +194,21 @@
           FROM RECPT
          WHERE RECPT_SN = #{recptSn}
     </select>
+
+    <resultMap id="adminDailyOcrRequestResultMap" type="com.nyangmeong.expense.dto.AdminDailyOcrRequestSummary">
+        <result column="YMD" property="ymd" />
+        <result column="CNT" property="cnt" />
+    </resultMap>
+
+    <select id="selectDailyRequestCounts" resultMap="adminDailyOcrRequestResultMap">
+        /* 관리자 대시보드 일별 OCR 요청 수 : 출처·처리 상태 무관 */
+        SELECT DATE(REG_DT) AS YMD
+             , COUNT(*)     AS CNT
+          FROM RECPT
+         WHERE REG_DT &gt;= #{fromDt}
+           AND REG_DT &lt; #{toDt}
+         GROUP BY DATE(REG_DT)
+         ORDER BY YMD
+    </select>
+
 </mapper>

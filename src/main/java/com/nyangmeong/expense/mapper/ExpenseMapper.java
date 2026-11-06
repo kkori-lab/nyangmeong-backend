@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 
 import com.nyangmeong.expense.domain.Expense;
 import com.nyangmeong.expense.domain.ExpenseSort;
+import com.nyangmeong.expense.dto.AdminExpenseCategoryCountSummary;
 import com.nyangmeong.expense.dto.ExpenseLineRequest;
 import com.nyangmeong.expense.dto.ExpensePetOption;
 import com.nyangmeong.expense.dto.ExpenseSearchCond;
@@ -161,4 +162,10 @@ public interface ExpenseMapper {
      * 월 지출 한도 : 미설정이면 null
      */
     Long selectLimitAmt(@Param("mbrSn") Long mbrSn);
+
+    /**
+     * 관리자 대시보드 카테고리별 지출 건수 조회 (지출일자 양끝 포함)
+     */
+    List<AdminExpenseCategoryCountSummary> selectCategoryCounts(@Param("ctgryGrpCd") String ctgryGrpCd,
+            @Param("fromYmd") LocalDate fromYmd, @Param("toYmd") LocalDate toYmd);
 }

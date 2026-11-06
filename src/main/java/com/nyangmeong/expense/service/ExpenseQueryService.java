@@ -16,6 +16,7 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.nyangmeong.expense.domain.ExpenseCategory;
 import com.nyangmeong.expense.domain.ExpenseSort;
+import com.nyangmeong.expense.dto.AdminExpenseCategoryCountSummary;
 import com.nyangmeong.expense.dto.ExpenseMonthSummary;
 import com.nyangmeong.expense.dto.ExpensePetOption;
 import com.nyangmeong.expense.dto.ExpenseSearchCond;
@@ -41,6 +42,9 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class ExpenseQueryService {
+
+    /** 가계부 카테고리 공통코드 그룹 */
+    private static final String EXPENSE_CATEGORY_GROUP_CD = "MYPG05";
 
     static final int PAGE_SIZE = 20;
 
@@ -179,5 +183,13 @@ public class ExpenseQueryService {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
         return month;
+    }
+
+    /**
+     * 관리자 대시보드 카테고리별 지출 건수 조회 (지출일자 양끝 포함)
+     */
+    @Transactional(readOnly = true)
+    public List<AdminExpenseCategoryCountSummary> getCategoryCounts(LocalDate fromYmd, LocalDate toYmd) {
+        return expenseMapper.selectCategoryCounts(EXPENSE_CATEGORY_GROUP_CD, fromYmd, toYmd);
     }
 }

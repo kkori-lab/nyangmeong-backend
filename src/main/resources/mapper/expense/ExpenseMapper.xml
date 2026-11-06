@@ -435,4 +435,33 @@
           FROM MBR
          WHERE MBR_SN = #{mbrSn}
     </select>
+
+    <resultMap id="adminExpenseCategoryCountResultMap" type="com.nyangmeong.expense.dto.AdminExpenseCategoryCountSummary">
+        <result column="CTGRY_CD" property="ctgryCd" />
+        <result column="CTGRY_NM" property="ctgryNm" />
+        <result column="CNT"      property="cnt" />
+    </resultMap>
+
+    <select id="selectCategoryCounts" resultMap="adminExpenseCategoryCountResultMap">
+        /* 관리자 대시보드 카테고리별 지출 건수 : 사용 중인 카테고리 전부, 건이 없으면 0 */
+        SELECT C.COM_CD           AS CTGRY_CD
+             , C.COM_CD_NM        AS CTGRY_NM
+             , COUNT(E.EXPND_SN)  AS CNT
+          FROM COM_CD C
+          JOIN COM_CD G
+            ON G.COM_CD_SN = C.COM_CD_PRNT_SN
+           AND G.COM_CD_PRNT_SN IS NULL
+          LEFT JOIN EXPND E
+            ON E.EXPND_CLSF_CD = C.COM_CD
+           AND E.DEL_YN = 'N'
+           AND E.EXPND_YMD BETWEEN #{fromYmd} AND #{toYmd}
+         WHERE G.COM_CD = #{ctgryGrpCd}
+           AND C.USE_YN = 'Y'
+         GROUP BY C.COM_CD
+                , C.COM_CD_NM
+                , C.SORT_SEQ
+         ORDER BY C.SORT_SEQ
+                , C.COM_CD
+    </select>
+
 </mapper>
