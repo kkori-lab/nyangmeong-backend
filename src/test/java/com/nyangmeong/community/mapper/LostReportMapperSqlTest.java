@@ -73,4 +73,20 @@ class LostReportMapperSqlTest {
                 .contains("CASE WHEN L.LOST_TPOF_STTS_CD = ? THEN NULL ELSE L.EXPRY_CRTR_DT END");
         assertThat(whereOf(FOUND)).contains("AND L.LOST_TPOF_STTS_CD = ?").doesNotContain("EXPRY_CRTR_DT");
     }
+
+    @Test
+    void 만료_사전_알림_대상은_정상_실종_글의_종료일_날짜로_고른다() {
+        Map<String, Object> param = new HashMap<>();
+        param.put("missingCd", MISSING);
+        param.put("pstSttsCd", "CMUC0003");
+        param.put("days", 7);
+        param.put("lostTpofSn", 1L);
+        String expected = "P.PST_STTS_CD = ? AND L.LOST_TPOF_STTS_CD = ? AND L.EXPRY_CRTR_DT >= NOW()"
+                + " AND DATE(L.EXPRY_CRTR_DT) = DATE_ADD(CURDATE(), INTERVAL ? DAY)";
+        for (String id : new String[] { "selectExpiryAlarmTargets", "existsExpiryAlarmTarget" }) {
+            String sql = configuration.getMappedStatement("com.nyangmeong.community.mapper.LostReportMapper." + id)
+                    .getBoundSql(param).getSql().replaceAll("\\s+", " ").strip();
+            assertThat(sql).contains(expected).contains("JOIN PST P ON P.PST_SN = L.PST_SN");
+        }
+    }
 }

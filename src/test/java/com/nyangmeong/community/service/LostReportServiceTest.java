@@ -43,6 +43,9 @@ import com.nyangmeong.global.code.RegionService;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.file.FileStore;
+import com.nyangmeong.global.notification.EventPublisher;
+import com.nyangmeong.global.notification.NotificationEvent;
+import com.nyangmeong.global.notification.NotificationType;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.security.crypto.FieldCryptoService;
 import com.nyangmeong.global.setting.SystemSetting;
@@ -72,9 +75,10 @@ class LostReportServiceTest {
     private final FieldCryptoService fieldCryptoService = mock(FieldCryptoService.class);
     private final RegionService regionService = mock(RegionService.class);
     private final BreedService breedService = mock(BreedService.class);
+    private final EventPublisher eventPublisher = mock(EventPublisher.class);
     private final LostReportService service = new LostReportService(lostReportMapper, postMapper, commentMapper,
             fileStore, new OwnerAuthorizer(), systemSettingService, fieldCryptoService, regionService,
-            breedService);
+            breedService, eventPublisher);
 
     @AfterEach
     void clearPage() {
@@ -652,5 +656,65 @@ class LostReportServiceTest {
 
         assertError(() -> service.renew(OTHER, LOST), ErrorCode.NOT_OWNER);
         verify(lostReportMapper, never()).updateRenewed(anyLong(), anyString());
+    }
+
+    private LostReportDetail alarmDetail() {
+        LostReportDetail detail = new LostReportDetail();
+        detail.setLostTpofSn(LOST);
+        detail.setMbrSn(31L);
+        detail.setPetNm("콩이");
+        detail.setLostTpofSttsCd("CMUC0006");
+        detail.setExpryCrtrDt(LocalDateTime.of(2026, 11, 13, 10, 30));
+        return detail;
+    }
+
+    @Test
+    void 만료_사전_알림_대상은_실종_정상_글을_일수로_고른다() {
+        when(lostReportMapper.selectExpiryAlarmTargets("CMUC0006", "CMUC0003", 7)).thenReturn(List.of(LOST));
+
+        assertThat(service.findExpiryAlarmTargets(7)).containsExactly(LOST);
+    }
+
+    @Test
+    void 만료_7일_전_알림은_작성자에게_종료일과_이동_경로를_담아_보낸다() {
+        when(lostReportMapper.existsExpiryAlarmTarget(LOST, "CMUC0006", "CMUC0003", 7)).thenReturn(true);
+        when(lostReportMapper.selectDetail(LOST, "CMUC0003")).thenReturn(alarmDetail());
+
+        assertThat(service.sendExpiryAlarm(LOST, 7)).isTrue();
+
+        ArgumentCaptor<NotificationEvent> captor = ArgumentCaptor.forClass(NotificationEvent.class);
+        verify(eventPublisher).publish(captor.capture());
+        NotificationEvent event = captor.getValue();
+        assertThat(event.mbrSn()).isEqualTo(31L);
+        assertThat(event.type()).isEqualTo(NotificationType.LOST_EXPIRY);
+        assertThat(event.notiTtl()).isEqualTo("실종 제보 게시 종료 안내");
+        assertThat(event.notiCn()).isEqualTo("콩이 제보가 7일 뒤(2026.11.13) 게시 종료돼요. 아직 찾고 계시면 30일 더 게시할 수 있어요.");
+        assertThat(event.mvmnPath()).isEqualTo("/community/lost/" + LOST);
+    }
+
+    @Test
+    void 만료_1일_전_알림은_내일로_안내한다() {
+        when(lostReportMapper.existsExpiryAlarmTarget(LOST, "CMUC0006", "CMUC0003", 1)).thenReturn(true);
+        when(lostReportMapper.selectDetail(LOST, "CMUC0003")).thenReturn(alarmDetail());
+
+        assertThat(service.sendExpiryAlarm(LOST, 1)).isTrue();
+
+        ArgumentCaptor<NotificationEvent> captor = ArgumentCaptor.forClass(NotificationEvent.class);
+        verify(eventPublisher).publish(captor.capture());
+        assertThat(captor.getValue().notiCn()).startsWith("콩이 제보가 내일(2026.11.13) 게시 종료돼요.");
+    }
+
+    @Test
+    void 보내기_전에_대상이_아니게_되면_알림을_보내지_않는다() {
+        when(lostReportMapper.existsExpiryAlarmTarget(LOST, "CMUC0006", "CMUC0003", 7)).thenReturn(false);
+
+        assertThat(service.sendExpiryAlarm(LOST, 7)).isFalse();
+        verify(eventPublisher, never()).publish(any(NotificationEvent.class));
+    }
+
+    @Test
+    void 만료_사전_알림_일수는_7일과_1일만() {
+        assertThatThrownBy(() -> service.sendExpiryAlarm(LOST, 3)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> service.findExpiryAlarmTargets(0)).isInstanceOf(IllegalArgumentException.class);
     }
 }

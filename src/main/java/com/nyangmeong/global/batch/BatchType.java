@@ -19,7 +19,8 @@ public enum BatchType {
     NEWS_COLLECT("SYSC0028", "뉴스 수집"),
     CHARACTER_JOB_TIMEOUT("SYSC0029", "캐릭터 생성 시간 초과"),
     TODAY_PHRASE_SELECT("SYSC0030", "오늘의 한마디 선택"),
-    CARE_MATCH_NO_RESPONSE("SYSC0031", "펫돌봄 매칭 무응답 종료");
+    CARE_MATCH_NO_RESPONSE("SYSC0031", "펫돌봄 매칭 무응답 종료"),
+    LOST_EXPIRY_ALARM("SYSC0032", "실종 만료 사전 알림");
 
     private final String code;
     private final String label;
