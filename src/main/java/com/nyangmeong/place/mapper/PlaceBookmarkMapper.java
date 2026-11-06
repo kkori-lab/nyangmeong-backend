@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import com.nyangmeong.place.domain.PlaceBookmark;
+import com.nyangmeong.place.dto.AdminFavoritePlaceSummary;
 import com.nyangmeong.place.dto.PlaceBookmarkSummary;
 
 /**
@@ -35,4 +36,9 @@ public interface PlaceBookmarkMapper {
      * 내 즐겨찾기 목록 조회 : 카테고리별, 저장 최신순
      */
     List<PlaceBookmarkSummary> selectList(@Param("mbrSn") Long mbrSn, @Param("plcClsfCd") String plcClsfCd);
+
+    /**
+     * 관리자 대시보드 즐겨찾기 상위 장소 조회 (많은 순 상위 limit)
+     */
+    List<AdminFavoritePlaceSummary> selectTopBookmarkedPlaces(@Param("limit") int limit);
 }

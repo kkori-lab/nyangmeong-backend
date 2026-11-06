@@ -22,6 +22,7 @@ import com.nyangmeong.global.setting.SystemSettingService;
 import com.nyangmeong.global.validation.PhoneNumberNormalizer;
 import com.nyangmeong.member.domain.JoinPath;
 import com.nyangmeong.member.domain.Member;
+import com.nyangmeong.member.dto.AdminDailyMemberSummary;
 import com.nyangmeong.member.dto.AdminMemberDetailResponse;
 import com.nyangmeong.member.dto.AdminDashboardMemberSummary;
 import com.nyangmeong.member.dto.AdminMemberSearchCond;
@@ -504,5 +505,13 @@ public class MemberService {
         summary.setRecentMbrs(memberMapper.selectRecentMembers(userCd,
                 List.of(MemberStatus.NORMAL.getCode(), MemberStatus.SUSPENDED.getCode()), DASHBOARD_RECENT_LIMIT));
         return summary;
+    }
+
+    /**
+     * 관리자 대시보드 일별 가입·탈퇴 수 조회 (일반 회원, fromDt 이상 toDt 미만)
+     */
+    @Transactional(readOnly = true)
+    public List<AdminDailyMemberSummary> getDailyJoinWithdrawCounts(LocalDateTime fromDt, LocalDateTime toDt) {
+        return memberMapper.selectDailyJoinWithdrawCounts(MemberAuthority.USER.getCode(), fromDt, toDt);
     }
 }

@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 
 import com.nyangmeong.member.domain.Member;
 import com.nyangmeong.member.dto.AdminAccountSummary;
+import com.nyangmeong.member.dto.AdminDailyMemberSummary;
 import com.nyangmeong.member.dto.AdminDashboardMemberSummary;
 import com.nyangmeong.member.dto.AdminMemberSearchCond;
 import com.nyangmeong.member.dto.AdminMemberStatusHistorySummary;
@@ -228,4 +229,10 @@ public interface MemberMapper {
      */
     List<AdminRecentMemberSummary> selectRecentMembers(@Param("mbrAuthrtCd") String mbrAuthrtCd,
             @Param("mbrSttsCds") List<String> mbrSttsCds, @Param("limit") int limit);
+
+    /**
+     * 관리자 대시보드 일별 가입·탈퇴 수 조회 (fromDt 이상 toDt 미만)
+     */
+    List<AdminDailyMemberSummary> selectDailyJoinWithdrawCounts(@Param("mbrAuthrtCd") String mbrAuthrtCd,
+            @Param("fromDt") LocalDateTime fromDt, @Param("toDt") LocalDateTime toDt);
 }
