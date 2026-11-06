@@ -559,10 +559,12 @@
 - 완료 조건 결과: 검증 `통과`(2026-11-05, 2회차. 1회차는 게시글 수가 삭제 글을 빼 관리자 게시글 목록과 달라 실패), 사람 확인 2026-11-05. 정한 것: `admin` 패키지 `GET /api/admin/dashboard`, 회원 수는 일반 회원(USRC0004)만·가입 수는 상태 무관, 게시글은 관리자 게시글 목록 기본 조건(삭제 글 포함), 배치 실패는 마지막 실행이 실패한 배치 수, 알림 실패는 지금-24시간. 계약은 `docs/api/admin.md`
 - 연결 남음: FN-ADM-001-02·03 (프론트 연결 `features/adminDashboard/api.js` `getAdminDashboard` 운영 현황·처리 대기 카드, 프론트 저장소에서 /start)
 
-## SCR-ADM-001 대시보드 · 이용 통계 API — 대기
+## SCR-ADM-001 대시보드 · 이용 통계 API — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-001-04·05
 - 기다리는 것: 프론트 SCR-ADM-001(끝, 가짜 응답 `features/adminDashboard/api.js`)
 - 완료 조건: `GET /api/admin/dashboard/stats?fromYmd=&toYmd=`(양끝 포함, 최대 90일)가 `daily`[`ymd`·`joinCnt`·`whdwlCnt`·`aiChatCnt`·`ocrRqstCnt`](날짜 순서대로 빠짐없이, 없는 날은 0), `pstCntByBbs`[`bbsCd`·`bbsNm`·`cnt`], `expnsCntByCtgry`[`ctgryCd`·`ctgryNm`·`cnt`], `petDstrb`[`petSeNm`·`vrtyNm`·`cnt`], `fvrtPlcs`[`plcSn`·`plcNm`·`cnt`]를 준다. 기간이 잘못되면 400
+- 완료 조건 결과: 검증 `통과`(2026-11-06, 1회차), 사람 확인 2026-11-06. 정한 것: 새 `AdminDashboardStatsController`·`AdminDashboardStatsService`로 분리(기존 대시보드 테스트가 생성자·mock bean을 직접 써서). 종료일은 오늘까지, 날짜 형식 오류도 400. 가입은 일반 회원·상태 무관, AI 대화는 사용자 메시지 수(지운 대화방은 빠짐), OCR 요청은 영수증 등록 수, 게시글은 상태 무관, 지출은 지출일자·삭제 제외, 게시판·카테고리는 사용 중인 코드 전부(0 포함). 종·품종 분포(상위 20, 품종 없음은 "직접 입력")와 즐겨찾기 상위 장소(상위 10)는 기간 무관. 계약은 `docs/api/admin.md`
+- 연결 남음: FN-ADM-001-04·05 (프론트 연결 `features/adminDashboard/api.js` 이용 통계 그래프·표·기간 선택, 프론트 저장소에서 /start)
 
 ## SCR-MYP-010 픽셀 캐릭터 관리 · 착용 모습 대표 이미지·전체 굽기 관리자 허용·얼굴 영역 — 끝
 - 기능: 명세 기능 ID 추가 없음(명세 밖 추가 요청, ai-f2 2026-11-04), 걸치는 기능 FN-MYP-010-16·13, FN-ADM-070-02
@@ -597,11 +599,6 @@
 - 완료 조건: `GET /internal/ai/tools`에 지출 등록(`POST /api/expenses`)·지출 수정(`PATCH /{expndSn}`)·월 지출 한도(`PUT /api/members/me/expense-limit`)·영수증 인식 결과 저장(`POST /api/receipts/{recptSn}/save`)이 `kind: CARD`로 있고, 그 서비스 검사 400이 칸 이름을 담는다. 기동 로그에 `[AiTool] 제외`가 없다
 - 완료 조건 결과: 건강 쓰기 도구 절과 함께 끝(2026-11-06). 중복 확인은 도구로 싣지 않고 React가 `draft_expense` 전에 부른다(결정 G)
 - 연결 남음: FN-AIM-012-05·06·07, FN-AIM-013 (프론트·ai 연결은 건강 쓰기 도구 절과 같음)
-
-## SCR-AIM-012 AI 일정 생성 확인 · 도구 목록 스냅샷 내보내기 — 대기
-- 기능: 명세 기능 ID 추가 없음(설계 6절·8절 6번)
-- 기다리는 것: 저장소를 건너 깨우는 토큰(PAT 또는 GitHub App)을 저장소 시크릿에 둘지(사람). 없으면 1단계는 사람이 로컬에서 받아 ai 저장소에 커밋
-- 완료 조건: DB 없이(앱을 띄우지 않고) 도구 목록 구조(코드 값 제외)를 파일로 뽑는 Gradle 작업 또는 테스트가 있고, 그 결과의 `structureVersion`이 실행 중 `GET /internal/ai/tools`의 값과 같다. 토큰을 정하면 main 배포 성공 뒤 `deploy-latest` 릴리스 첨부와 `repository_dispatch`까지
 
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)

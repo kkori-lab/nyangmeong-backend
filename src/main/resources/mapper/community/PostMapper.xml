@@ -558,4 +558,34 @@
          LIMIT #{limit}
     </select>
 
+    <resultMap id="adminBoardPostCountResultMap" type="com.nyangmeong.community.dto.AdminBoardPostCountSummary">
+        <result column="BBS_CD" property="bbsCd" />
+        <result column="BBS_NM" property="bbsNm" />
+        <result column="CNT"    property="cnt" />
+    </resultMap>
+
+    <select id="selectBoardPostCounts" resultMap="adminBoardPostCountResultMap">
+        /* 관리자 대시보드 게시판별 게시글 수 : 전체 게시글 수(countAll)와 같게 상태 무관, 게시판 전부 */
+        SELECT C.COM_CD          AS BBS_CD
+             , C.COM_CD_NM       AS BBS_NM
+             , COUNT(P.PST_SN)   AS CNT
+          FROM COM_CD C
+          JOIN COM_CD G
+            ON G.COM_CD_SN = C.COM_CD_PRNT_SN
+           AND G.COM_CD_PRNT_SN IS NULL
+          LEFT JOIN (PST P
+                     JOIN MBR M
+                       ON M.MBR_SN = P.MBR_SN)
+            ON P.BBS_CD = C.COM_CD
+           AND P.REG_DT &gt;= #{fromDt}
+           AND P.REG_DT &lt; #{toDt}
+         WHERE G.COM_CD = #{bbsGrpCd}
+           AND C.USE_YN = 'Y'
+         GROUP BY C.COM_CD
+                , C.COM_CD_NM
+                , C.SORT_SEQ
+         ORDER BY C.SORT_SEQ
+                , C.COM_CD
+    </select>
+
 </mapper>

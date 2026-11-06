@@ -1,5 +1,6 @@
 package com.nyangmeong.expense.mapper;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
@@ -7,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 
 import com.nyangmeong.expense.domain.Receipt;
 import com.nyangmeong.expense.domain.ReceiptStatusHistory;
+import com.nyangmeong.expense.dto.AdminDailyOcrRequestSummary;
 import com.nyangmeong.expense.dto.AdminReceiptRow;
 import com.nyangmeong.expense.dto.AdminReceiptSearchCond;
 import com.nyangmeong.expense.dto.AdminReceiptSummary;
@@ -77,4 +79,10 @@ public interface ReceiptMapper {
      * 관리자 원본 보기용 첨부파일 번호 (회원 소유 검사 없음, SCR-ADM-082)
      */
     Long selectAtchFileSn(@Param("recptSn") Long recptSn);
+
+    /**
+     * 관리자 대시보드 일별 OCR 요청 수 조회 (fromDt 이상 toDt 미만)
+     */
+    List<AdminDailyOcrRequestSummary> selectDailyRequestCounts(@Param("fromDt") LocalDateTime fromDt,
+            @Param("toDt") LocalDateTime toDt);
 }

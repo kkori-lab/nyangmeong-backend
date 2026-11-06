@@ -80,4 +80,27 @@
          ORDER BY B.MDFCN_DT DESC, B.PLC_BKMK_SN DESC
     </select>
 
+    <resultMap id="adminFavoritePlaceResultMap" type="com.nyangmeong.place.dto.AdminFavoritePlaceSummary">
+        <id     column="PLC_SN" property="plcSn" />
+        <result column="PLC_NM" property="plcNm" />
+        <result column="CNT"    property="cnt" />
+    </resultMap>
+
+    <select id="selectTopBookmarkedPlaces" resultMap="adminFavoritePlaceResultMap">
+        /* 관리자 대시보드 즐겨찾기 상위 장소 : 기간 무관, 사용 중인 즐겨찾기·장소만 */
+        SELECT P.PLC_SN
+             , P.PLC_CONM AS PLC_NM
+             , COUNT(*)   AS CNT
+          FROM PLC_BKMK B
+          JOIN PLC P
+            ON P.PLC_SN = B.PLC_SN
+         WHERE B.USE_YN = 'Y'
+           AND P.USE_YN = 'Y'
+         GROUP BY P.PLC_SN
+                , P.PLC_CONM
+         ORDER BY CNT DESC
+                , P.PLC_SN
+         LIMIT #{limit}
+    </select>
+
 </mapper>

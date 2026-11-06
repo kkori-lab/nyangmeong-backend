@@ -30,6 +30,7 @@ import com.nyangmeong.pet.domain.Pet;
 import com.nyangmeong.pet.domain.PetCodeGroup;
 import com.nyangmeong.pet.domain.PetDeletedEvent;
 import com.nyangmeong.pet.domain.PetColor;
+import com.nyangmeong.pet.dto.AdminPetDistributionSummary;
 import com.nyangmeong.pet.dto.AdminPetSummary;
 import com.nyangmeong.pet.dto.CaregiverSummary;
 import com.nyangmeong.pet.dto.PetCreateRequest;
@@ -54,6 +55,11 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class PetService {
+
+    /** 관리자 대시보드 종·품종 분포 행 수 */
+    private static final int DISTRIBUTION_LIMIT = 20;
+    /** 품종을 직접 입력한 반려동물의 분포 품종 이름 */
+    private static final String DRCT_INPT_VRTY_NM = "직접 입력";
 
     /** 계정당 주양육 반려동물 상한 */
     private static final int MAX_PET_COUNT = 10;
@@ -455,5 +461,13 @@ public class PetService {
      */
     private boolean hasText(String value) {
         return value != null && !value.isBlank();
+    }
+
+    /**
+     * 관리자 대시보드 종·품종 분포 조회 (기간 무관, 많은 순 상위 20)
+     */
+    @Transactional(readOnly = true)
+    public List<AdminPetDistributionSummary> getDistribution() {
+        return petMapper.selectDistribution(DRCT_INPT_VRTY_NM, DISTRIBUTION_LIMIT);
     }
 }

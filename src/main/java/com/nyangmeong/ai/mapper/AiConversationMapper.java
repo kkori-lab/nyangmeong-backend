@@ -1,5 +1,6 @@
 package com.nyangmeong.ai.mapper;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
@@ -7,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 
 import com.nyangmeong.ai.domain.AiConversationMessage;
 import com.nyangmeong.ai.domain.AiConversationRoom;
+import com.nyangmeong.ai.dto.AdminDailyAiChatSummary;
 
 /**
  * [AI 대화 Mapper]
@@ -69,4 +71,10 @@ public interface AiConversationMapper {
      * 회원들의 대화방 일괄 삭제
      */
     int deleteRoomsByMbrSns(@Param("mbrSns") List<Long> mbrSns);
+
+    /**
+     * 관리자 대시보드 일별 메시지 수 조회 (fromDt 이상 toDt 미만)
+     */
+    List<AdminDailyAiChatSummary> selectDailyMessageCounts(@Param("roleCd") String roleCd,
+            @Param("fromDt") LocalDateTime fromDt, @Param("toDt") LocalDateTime toDt);
 }
