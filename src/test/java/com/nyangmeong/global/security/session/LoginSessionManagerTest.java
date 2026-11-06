@@ -176,6 +176,27 @@ class LoginSessionManagerTest {
     }
 
     @Test
+    void 동시_회전에서_진_요청은_UNAUTHORIZED이고_쿠키를_지우지_않는다() {
+        String refresh = issue(7L);
+        /** 조회는 통과했지만 폐기 직전에 다른 요청이 먼저 폐기한 상황 */
+        FakeRefreshTokenMapper racing = new FakeRefreshTokenMapper() {
+            @Override
+            public int updateDiscard(Long rfrshTknSn) {
+                return 0;
+            }
+        };
+        racing.rows.addAll(mapper.rows);
+        JwtProperties properties = new JwtProperties();
+        LoginSessionManager racingManager = new LoginSessionManager(racing, provider, properties,
+                new TokenCookies(properties), hashUtil);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        assertUnauthorized(() -> racingManager.rotate(withRefresh(refresh), response));
+        assertThat(response.getHeaders(HttpHeaders.SET_COOKIE)).isEmpty();
+        assertThat(racing.rows).hasSize(1);
+    }
+
+    @Test
     void 폐기한_세션은_다시_회전할_수_없다() {
         String refresh = issue(7L);
         MockHttpServletResponse response = new MockHttpServletResponse();

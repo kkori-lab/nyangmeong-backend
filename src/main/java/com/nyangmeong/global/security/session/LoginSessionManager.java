@@ -76,8 +76,8 @@ public class LoginSessionManager {
             throw fail(response);
         }
         if (refreshTokenMapper.updateDiscard(row.getRfrshTknSn()) != 1) {
-            /** 동시 회전에서 진 요청 */
-            throw fail(response);
+            /** 동시 회전에서 진 요청 : 이긴 요청의 새 쿠키가 지워지지 않게 쿠키는 그대로 */
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
         }
         issue(row.getMbrSn(), response);
         return row.getMbrSn();
