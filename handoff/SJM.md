@@ -1,29 +1,20 @@
 # SJM 핸드오프
 
 ## 지금 하는 것
-SCR-MYP-003 반려동물 등록/수정 · 종에 맞지 않는 털색 데이터 정리 — 끝남 (승인 2026-11-06 01:00, 시작 2026-11-06 00:55). 검증 통과 1회차, 사람 확인 완료. 공용 DB 반영은 "다음에 할 것" 맨 위
+SCR-MYP-003 반려동물 등록/수정 · 종에 맞지 않는 털색 데이터 정리 — 끝남 (승인 2026-11-06 01:00, 시작 2026-11-06 00:55). 검증 통과 1회차, 사람 확인 완료. 공용 DB 반영(팀장 완료)·시드 수정(3a71e1c, PR 올림)·화면 확인(탄이 털색 젖소, 수정 모달 안내 사라짐) 모두 끝남 (2026-11-06)
 
 기능 ID 추가 없음, FN-MYP-003-03에 걸침. Java 코드와 API는 바꾸지 않는다. 시드 SQL만 고친다.
 
 - 현황(시드 `PET` 덤프 집계): 종-털색 불일치는 고양이(PETC0002)+얼룩(PETC0011, 강아지 전용) 55마리뿐. 고양이 전용 털색을 쓴 강아지, 그 밖의 강아지 전용 털색을 쓴 고양이는 없다
 - 바꿀 털색: 얼룩 → 젖소(PETC0032, 고양이 전용). 흰 바탕에 검은 얼룩이라 뜻이 가장 가깝다. 55마리를 모두 같은 값으로 바꾼다
-- 바꿀 파일: `db/seed/20261028_seed_data.sql`
-  - `PET` 덤프(`UNLOCK TABLES;`) 바로 뒤에 ``UPDATE `PET` SET `COLR_CD`='PETC0032' WHERE `PET_SE_CD`='PETC0002' AND `COLR_CD`='PETC0011';`` 한 줄을 넣는다(덤프 행은 고치지 않는다. 앞선 DAY_MSN UPDATE와 같은 방식)
-  - 머리말에 "2026-11-06: 고양이+얼룩(강아지 전용) 55마리를 젖소(PETC0032)로 바꾸는 UPDATE를 PET 덤프 아래에 추가. 공용 DB에도 이 UPDATE 하나만 실행한다(팀에 알린 뒤 사람이 DBeaver로)" 한 줄
+- 한 일: `db/seed/20261028_seed_data.sql`의 `PET` 덤프에서 고양이(PETC0002)+얼룩(PETC0011) 55행을 직접 PETC0032로 고쳤다(커밋 3a71e1c). 처음 기획한 덤프 아래 UPDATE 줄은 같은 수정이 두 번 들어가는 것이라 지웠고 머리말(10행)만 직접 수정으로 고쳤다
 - 부를 API: 없음
-- 완료 조건:
-  - 명령: `grep -c "SET .COLR_CD.='PETC0032' WHERE .PET_SE_CD.='PETC0002' AND .COLR_CD.='PETC0011'" db/seed/20261028_seed_data.sql`가 1이고 그 줄이 `PET` 덤프의 `UNLOCK TABLES;`보다 뒤. `PET` INSERT 줄(덤프 행)은 바뀌지 않음(`git diff`에 INSERT 줄 없음). `./gradlew build -q` 통과
-  - 화면: 없음(사람 확인: 로컬 DB에 시드를 다시 넣지 않는다. 파일은 grep과 git diff로만 확인한다)
-- 공용 DB 반영은 이 마일스톤 밖이다. "다음에 할 것"에 "팀에 알린 뒤 공용 DB에 위 UPDATE 실행(사람, DBeaver)"을 남긴다
+- 완료 조건(실제 확인): 시드 `PET` 덤프에 고양이+PETC0011 행이 없다. `./gradlew build` 통과. 화면은 /mypage/pets 탄이 털색이 젖소, 수정 모달의 "얼룩 (강아지 털색)" 안내가 사라짐
+- 공용 DB 반영은 이 마일스톤 밖이었고, 팀장이 UPDATE를 실행해 끝났다
 
 새 의존성: 없음
 
 ## 다음에 할 것
-- 공용 DB 반영(SCR-MYP-003 털색 정리, 사람이 DBeaver로, 시드 전체는 실행하지 않는다):
-  1. 팀에 알린다.
-  2. 실행 전 개수를 본다: `SELECT COUNT(*) FROM PET WHERE PET_SE_CD='PETC0002' AND COLR_CD='PETC0011';`
-  3. 트랜잭션 안에서 `UPDATE PET SET COLR_CD='PETC0032' WHERE PET_SE_CD='PETC0002' AND COLR_CD='PETC0011';`를 실행하고, 영향받은 행 수를 2번과 비교한 뒤 COMMIT 한다.
-  4. 탄이 수정 모달의 "얼룩 (강아지 털색)" 안내가 사라졌는지 본다.
 - Postman 컬렉션: 3번 회원이 정지(`MEMBER_INACTIVE`)라 그 회원을 쓰는 변수(`mbrSnB`·`emailB`·`delCoMbrSn`·`delCoEmail`·`invReceiverMbrSn`·`infoOtherMbrSn`)가 있는 폴더는 403. 돌릴 때 정상 회원으로 바꾼다(이메일은 `GET /members/me`의 `acntEml`)
 - YAY와 정하기(SCR-MYP-040): 본인 확인(6-1)을 통과했는지 `PATCH /members/me`에서 서버가 검사하지 않는다. `POST /members/me/password-verification`을 만들 때 통과 표시를 어떻게 남길지 함께 정한다
 - 화면 확인 필요(FN-MYP-002-08): 알림함 COM-004에 공동양육 연동 해제 알림(CO_PARENTING, 이동 경로 `/mypage/pets`)이 보이는지. 백엔드는 `PetService.java:273`에서 끝
