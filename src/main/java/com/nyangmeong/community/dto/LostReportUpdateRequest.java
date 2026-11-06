@@ -19,12 +19,13 @@ import jakarta.validation.constraints.Size;
  * - multipart/form-data, 등록과 같은 항목을 모두 다시 보낸다(수정 범위 전체, 화면설계서 SCR-CMU-002-06)
  * - keepAtchFileSns 를 보내면 그 목록에 없는 기존 이미지는 삭제, 보내지 않으면 기존 이미지 유지
  * - 목격 장소 좌표가 그대로면 실종지역을 유지하고 바뀌면 다시 계산한다
+ * - 품종은 등록과 같다 : 둘 다 보내지 않으면 저장된 품종을 지운다
  */
 public record LostReportUpdateRequest(
         @NotBlank String petSeCd,
         @NotBlank @Size(max = 20) @Pattern(regexp = "(?s).*\\S.*") String petNm,
         Long vrtySn,
-        @Size(max = 20) @Pattern(regexp = "(?s).*\\S.*") String vrtyDrctInptNm,
+        @Size(max = 20) @Pattern(regexp = "(?s)|.*\\S.*") String vrtyDrctInptNm,
         @NotBlank @Size(max = 20) @Pattern(regexp = "(?s).*\\S.*") String colrNm,
         @Size(max = 40) String chrcCn,
         @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime lastWtnsDt,

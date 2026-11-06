@@ -404,10 +404,73 @@ class LostReportServiceTest {
     }
 
     @Test
-    void 품종은_마스터_선택과_직접_입력_중_하나만() {
-        assertError(() -> service.create(MBR, create(null, null, true, null)), ErrorCode.INVALID_INPUT_VALUE);
+    void 품종은_마스터_선택과_직접_입력을_함께_보내면_400() {
+        // 품종은 선택 항목이 됐다(사람 결정 2026-11-06) : 둘 다 없는 것은 허용, 둘 다 있는 것만 거절
         assertError(() -> service.create(MBR, create(1L, "믹스", true, null)), ErrorCode.INVALID_INPUT_VALUE);
         verify(postMapper, never()).insertPost(any());
+    }
+
+    @Test
+    void 품종_없이_등록하면_품종_없이_저장한다() {
+        stubCreate();
+
+        service.create(MBR, create(null, null, true, null));
+        service.create(MBR, create(null, "", true, null));
+
+        ArgumentCaptor<LostReport> report = ArgumentCaptor.forClass(LostReport.class);
+        verify(lostReportMapper, org.mockito.Mockito.times(2)).insertLostReport(report.capture());
+        assertThat(report.getAllValues()).allSatisfy(saved -> {
+            assertThat(saved.getVrtySn()).isNull();
+            assertThat(saved.getVrtyDrctInptNm()).isNull();
+        });
+        verify(breedService, never()).getBreedOrThrow(any(), any());
+    }
+
+    @Test
+    void 마스터_품종과_빈_직접_입력을_함께_보내면_마스터_품종으로_저장한다() {
+        stubCreate();
+
+        service.create(MBR, create(1L, "", true, null));
+
+        ArgumentCaptor<LostReport> report = ArgumentCaptor.forClass(LostReport.class);
+        verify(lostReportMapper).insertLostReport(report.capture());
+        assertThat(report.getValue().getVrtySn()).isEqualTo(1L);
+        assertThat(report.getValue().getVrtyDrctInptNm()).isNull();
+    }
+
+    @Test
+    void 수정에서_품종을_비우면_저장된_품종을_지운다() {
+        stubSystemSetting();
+        when(lostReportMapper.selectDetail(LOST, NORMAL)).thenReturn(missing());
+        when(postMapper.updatePost(eq(PST), eq(null), anyString(), anyString(), anyString(), eq(NORMAL)))
+                .thenReturn(1);
+        when(lostReportMapper.updateLostReport(any(LostReport.class), eq(MISSING))).thenReturn(1);
+        when(fieldCryptoService.encrypt(anyString())).thenReturn("enc");
+        LostReportUpdateRequest req = new LostReportUpdateRequest("PETC0001", "보리", null, "", "흰색", "빨간 목줄",
+                LocalDateTime.now().minusDays(1), "서곡초 인근", LAT, LOT, "010-1234-5678", "새 제목", "새 내용", null,
+                null, true);
+
+        service.update(MBR, LOST, req);
+
+        ArgumentCaptor<LostReport> saved = ArgumentCaptor.forClass(LostReport.class);
+        verify(lostReportMapper).updateLostReport(saved.capture(), eq(MISSING));
+        assertThat(saved.getValue().getVrtySn()).isNull();
+        assertThat(saved.getValue().getVrtyDrctInptNm()).isNull();
+    }
+
+    @Test
+    void 품종_직접_입력은_빈_값은_받고_공백만_있으면_요청_검증에서_막는다() {
+        try (jakarta.validation.ValidatorFactory factory = jakarta.validation.Validation
+                .buildDefaultValidatorFactory()) {
+            jakarta.validation.Validator validator = factory.getValidator();
+            assertThat(validator.validateProperty(create(null, "", true, null), "vrtyDrctInptNm")).isEmpty();
+            assertThat(validator.validateProperty(create(null, null, true, null), "vrtyDrctInptNm")).isEmpty();
+            assertThat(validator.validateProperty(create(null, "믹스", true, null), "vrtyDrctInptNm")).isEmpty();
+            assertThat(validator.validateProperty(create(null, "  ", true, null), "vrtyDrctInptNm")).isNotEmpty();
+            LostReportUpdateRequest blank = new LostReportUpdateRequest("PETC0001", "보리", null, " ", "흰색", null,
+                    LocalDateTime.now().minusDays(1), null, LAT, LOT, "010-1234-5678", "제목", "내용", null, null, true);
+            assertThat(validator.validateProperty(blank, "vrtyDrctInptNm")).isNotEmpty();
+        }
     }
 
     @Test

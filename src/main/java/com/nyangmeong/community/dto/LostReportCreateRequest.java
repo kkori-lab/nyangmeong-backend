@@ -18,13 +18,13 @@ import jakarta.validation.constraints.Size;
  * [실종 제보 등록 요청]
  * - multipart/form-data, 이미지 최대 10장 (FN-CMU-002-10·13)
  * - 실종지역은 받지 않고 목격 장소 좌표로 서버가 계산한다
- * - vrtySn·vrtyDrctInptNm 중 하나만 보낸다
+ * - 품종은 선택 항목 : vrtySn·vrtyDrctInptNm 중 하나만 보내거나 둘 다 보내지 않는다(빈 값은 없음, 사람 결정 2026-11-06)
  */
 public record LostReportCreateRequest(
         @NotBlank String petSeCd,
         @NotBlank @Size(max = 20) @Pattern(regexp = "(?s).*\\S.*") String petNm,
         Long vrtySn,
-        @Size(max = 20) @Pattern(regexp = "(?s).*\\S.*") String vrtyDrctInptNm,
+        @Size(max = 20) @Pattern(regexp = "(?s)|.*\\S.*") String vrtyDrctInptNm,
         @NotBlank @Size(max = 20) @Pattern(regexp = "(?s).*\\S.*") String colrNm,
         @Size(max = 40) String chrcCn,
         @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime lastWtnsDt,

@@ -337,8 +337,8 @@ public class LostReportService {
         if (in.lastWtnsDt().isAfter(LocalDateTime.now())) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
-        /** 품종 마스터 선택과 직접 입력 중 하나만 */
-        if ((in.vrtySn() == null) == (in.vrtyDrctInptNm() == null)) {
+        /** 품종은 선택 항목 : 없거나(빈 값 포함) 마스터 선택·직접 입력 중 하나만 (사람 결정 2026-11-06) */
+        if (in.vrtySn() != null && emptyToNull(in.vrtyDrctInptNm()) != null) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
         breedService.checkPetSe(in.petSeCd());
@@ -372,7 +372,7 @@ public class LostReportService {
         report.setWtnsPlcNm(blankToNull(in.wtnsPlcNm()));
         report.setPrvcRlsAgreYn("Y");
         report.setVrtySn(in.vrtySn());
-        report.setVrtyDrctInptNm(in.vrtyDrctInptNm());
+        report.setVrtyDrctInptNm(emptyToNull(in.vrtyDrctInptNm()));
         return report;
     }
 
@@ -435,6 +435,11 @@ public class LostReportService {
 
     private String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value;
+    }
+
+    /** 빈 문자열만 없음으로 본다 (품종 직접 입력 : 공백만 있는 값은 요청 검증에서 400) */
+    private String emptyToNull(String value) {
+        return value == null || value.isEmpty() ? null : value;
     }
 
     /**
