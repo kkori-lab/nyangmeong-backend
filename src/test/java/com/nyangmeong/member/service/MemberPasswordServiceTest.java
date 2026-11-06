@@ -118,6 +118,15 @@ class MemberPasswordServiceTest {
     }
 
     @Test
+    void 새_비밀번호가_현재와_같으면_PASSWORD_SAME_AS_CURRENT이고_저장도_폐기도_하지_않는다() {
+        Throwable thrown = catchThrowable(() -> service.change(MBR_SN, change(CURRENT, CURRENT, CURRENT)));
+
+        assertThat(errorOf(thrown)).isEqualTo(ErrorCode.PASSWORD_SAME_AS_CURRENT);
+        verify(memberMapper, never()).updatePassword(anyLong(), anyString(), anyString(), anyString());
+        verify(loginSessionManager, never()).revokeAll(any());
+    }
+
+    @Test
     void 새_비밀번호와_확인값이_다르면_PASSWORD_MISMATCH이고_저장하지_않는다() {
         Throwable thrown = catchThrowable(() -> service.change(MBR_SN, change(CURRENT, "newpass34", "newpass35")));
 

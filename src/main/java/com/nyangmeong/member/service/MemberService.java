@@ -270,6 +270,15 @@ public class MemberService {
     }
 
     /**
+     * 현재 비밀번호 해시 : 재설정 때 새 비밀번호가 같은지 비교하는 데 쓴다, SNS 전용 회원(비밀번호 없음)이거나 회원이 없으면 null
+     */
+    @Transactional(readOnly = true)
+    public String getPasswordHash(Long mbrSn) {
+        Member member = memberMapper.selectBySn(mbrSn);
+        return member == null ? null : member.getPswdHash();
+    }
+
+    /**
      * 비밀번호 재설정 저장 : 이미 BCrypt 로 만든 해시를 받는다, 바뀐 행이 없으면(그 사이 탈퇴) 재설정 불가
      */
     @Transactional

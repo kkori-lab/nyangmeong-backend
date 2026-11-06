@@ -64,6 +64,7 @@ public enum ErrorCode {
     PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다."),
     /** 로그인한 회원이 입력한 현재 비밀번호가 틀림 : 새 비밀번호·확인값 불일치(PASSWORD_MISMATCH)와 화면의 오류 위치가 달라 따로 둠 */
     CURRENT_PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "현재 비밀번호가 일치하지 않습니다."),
+    PASSWORD_SAME_AS_CURRENT(HttpStatus.BAD_REQUEST, "현재 비밀번호와 다른 비밀번호를 입력해 주세요."),
     EMAIL_ALREADY_REGISTERED(HttpStatus.CONFLICT, "이미 가입된 이메일입니다. 기존에 가입한 방법으로 로그인해 주세요."),
     /** 탈퇴 후 보관 중인 이메일 : 새 회원을 만들지 않고 복구 흐름으로 안내 */
     MEMBER_RECOVERY_AVAILABLE(HttpStatus.CONFLICT, "탈퇴 후 보관 중인 계정입니다. 기존 정보 복구를 진행해 주세요."),
@@ -74,7 +75,8 @@ public enum ErrorCode {
     EMAIL_CERT_MISMATCH(HttpStatus.BAD_REQUEST, "인증번호가 일치하지 않습니다."),
     EMAIL_CERT_EXPIRED(HttpStatus.BAD_REQUEST, "인증시간이 만료되었습니다. 다시 보내기를 눌러 주세요."),
     EMAIL_CERT_NOT_VERIFIED(HttpStatus.BAD_REQUEST, "이메일 인증을 완료해 주세요."),
-    EMAIL_CERT_FAIL_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "인증번호를 여러 번 잘못 입력했습니다. 인증번호를 다시 받아 주세요."),
+    EMAIL_CERT_FAIL_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "인증번호가 일치하지 않습니다. 인증번호를 다시 받아 주세요."),
+    EMAIL_DOMAIN_NOT_RECEIVABLE(HttpStatus.BAD_REQUEST, "메일을 받을 수 없는 이메일 주소입니다. 주소를 다시 확인해 주세요."),
     EMAIL_CERT_ALREADY_USED(HttpStatus.BAD_REQUEST, "이미 사용한 인증번호입니다."),
     EMAIL_CERT_RESEND_NOT_YET(HttpStatus.BAD_REQUEST, "인증번호를 다시 보낼 수 없습니다. 잠시 후 시도해 주세요."),
     PASSWORD_RESET_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "비밀번호 재설정 권한이 만료되었거나 이미 사용되었습니다."),
