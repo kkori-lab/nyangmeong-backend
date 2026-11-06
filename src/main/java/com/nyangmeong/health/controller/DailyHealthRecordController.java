@@ -51,6 +51,7 @@ public class DailyHealthRecordController {
     }
 
     @Operation(summary = "일상 건강기록 등록")
+    @AiTool(name = "draft_daily_health_record", domain = "health", kind = AiToolKind.CARD)
     @PostMapping
     public ResponseEntity<ApiResponse<DailyHealthRecordResponse>> create(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @Valid @RequestBody DailyHealthRecordCreateRequest req) {

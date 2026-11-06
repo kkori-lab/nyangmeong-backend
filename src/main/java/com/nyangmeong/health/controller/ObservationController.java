@@ -98,6 +98,7 @@ public class ObservationController {
     }
 
     @Operation(summary = "관찰 회차 추가")
+    @AiTool(name = "draft_observation_cycle", domain = "health", kind = AiToolKind.CARD)
     @PostMapping(value = "/observation-cycles", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<ObservationCycleResponse>> createCycle(
             @AuthenticationPrincipal LoginMember me, @PathVariable Long petSn,

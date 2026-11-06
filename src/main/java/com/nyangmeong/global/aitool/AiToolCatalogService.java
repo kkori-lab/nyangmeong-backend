@@ -3,7 +3,9 @@ package com.nyangmeong.global.aitool;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.RecordComponent;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -20,6 +22,7 @@ import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.MethodParameter;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -29,6 +32,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ValueConstants;
 import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
@@ -58,7 +62,9 @@ import tools.jackson.databind.json.JsonMapper;
  * [AI 매니저 도구 목록]
  * - @AiTool 컨트롤러 메서드의 매핑·인자·요청 DTO 검증 어노테이션 -> 도구 목록
  * - 쿼리 칸 : @RequestParam, @ModelAttribute 검색 조건 필드, PageQuery(page·size)
- * - 지원하지 않는 칸(목록·중첩 객체 등)이 있는 도구는 빼고 WARN 로그
+ * - 본문 칸 : @RequestBody record, multipart @ModelAttribute record(MultipartFile -> file)
+ * - List<record> 칸 -> array + items(같은 칸 모양)
+ * - 지원하지 않는 칸(값 목록·중첩 객체 등)이 있는 도구는 빼고 WARN 로그
  */
 @Slf4j
 @Service
@@ -68,6 +74,8 @@ public class AiToolCatalogService {
     private static final String QUERY = "query";
     private static final String BODY = "body";
     private static final String CODE = "code";
+    private static final String ARRAY = "array";
+    private static final String FILE = "file";
     /** YearMonth 칸은 string + yyyy-MM 형식으로 싣는다 */
     private static final String YEAR_MONTH_PATTERN = "^\\d{4}-(0[1-9]|1[0-2])$";
 
@@ -139,6 +147,8 @@ public class AiToolCatalogService {
         }
         String httpMethod = info.getMethodsCondition().getMethods().iterator().next().name();
         String path = info.getPatternValues().iterator().next();
+        boolean isMultipart = info.getConsumesCondition().getConsumableMediaTypes().stream()
+                .anyMatch(MediaType.MULTIPART_FORM_DATA::includes);
 
         Map<String, Param> params = new LinkedHashMap<>();
         List<Rule> rules = new ArrayList<>();
@@ -150,7 +160,7 @@ public class AiToolCatalogService {
             }
         }
         for (MethodParameter parameter : handlerMethod.getMethodParameters()) {
-            String skipReason = addParameter(parameter, params, rules, pathNames);
+            String skipReason = addParameter(parameter, params, rules, pathNames, isMultipart);
             if (skipReason != null) {
                 return ToolDraft.skip(skipReason);
             }
@@ -162,14 +172,15 @@ public class AiToolCatalogService {
             }
         }
         return new ToolDraft(new AiToolResponse(aiTool.name(), aiTool.domain(), aiTool.kind(),
-                new AiToolResponse.Call(httpMethod, path), params, List.copyOf(rules)), null);
+                new AiToolResponse.Call(httpMethod, path, isMultipart ? MediaType.MULTIPART_FORM_DATA_VALUE : null),
+                params, List.copyOf(rules)), null);
     }
 
     /**
      * 컨트롤러 인자 하나 반영
      */
     private String addParameter(MethodParameter parameter, Map<String, Param> params, List<Rule> rules,
-            Set<String> pathNames) {
+            Set<String> pathNames, boolean isMultipart) {
         PathVariable pathVariable = parameter.getParameterAnnotation(PathVariable.class);
         if (pathVariable != null) {
             String name = nameOf(pathVariable.name(), parameter);
@@ -183,7 +194,10 @@ public class AiToolCatalogService {
             return put(params, name, toParam(QUERY, parameter.getParameterType(), annotated(parameter), required));
         }
         if (parameter.hasParameterAnnotation(RequestBody.class)) {
-            return addBody(parameter.getParameterType(), params, rules);
+            return addBody(parameter.getParameterType(), params, rules, pathNames);
+        }
+        if (parameter.hasParameterAnnotation(ModelAttribute.class) && isMultipart) {
+            return addBody(parameter.getParameterType(), params, rules, pathNames);
         }
         if (parameter.hasParameterAnnotation(ModelAttribute.class)) {
             return addModelAttribute(parameter.getParameterType(), params, pathNames);
@@ -240,27 +254,29 @@ public class AiToolCatalogService {
      */
     private String addPageQuery(Map<String, Param> params) {
         String skipReason = put(params, "page", new ParamDraft(new Param(QUERY, "int", null, null, null, null,
-                (long) PageQuery.DEFAULT_PAGE, null, null, null, null, null, null), null));
+                (long) PageQuery.DEFAULT_PAGE, null, null, null, null, null, null, null, null, null), null));
         if (skipReason != null) {
             return skipReason;
         }
         return put(params, "size", new ParamDraft(new Param(QUERY, "int", null, null, null, null, 1L,
-                (long) PageQuery.MAX_SIZE, null, null, null, null, null), null));
+                (long) PageQuery.MAX_SIZE, null, null, null, null, null, null, null, null), null));
     }
 
-    private String addBody(Class<?> bodyType, Map<String, Param> params, List<Rule> rules) {
+    /**
+     * 요청 본문 record -> 본문 칸
+     * - 경로 변수와 이름이 같은 칸은 뺌(예: 일정 수정의 옮길 반려동물 petSn)
+     */
+    private String addBody(Class<?> bodyType, Map<String, Param> params, List<Rule> rules, Set<String> pathNames) {
         if (!bodyType.isRecord()) {
             return "요청 본문이 record가 아님: " + bodyType.getSimpleName();
         }
-        for (RecordComponent component : bodyType.getRecordComponents()) {
-            Field field;
-            try {
-                field = bodyType.getDeclaredField(component.getName());
-            } catch (NoSuchFieldException e) {
-                /** record 칸은 같은 이름의 필드가 항상 있음 */
-                throw new IllegalStateException("record 필드를 찾을 수 없습니다: " + component.getName(), e);
+        for (Field field : queryFieldsOf(bodyType)) {
+            if (pathNames.contains(field.getName())) {
+                log.info("[AiTool] 경로 변수와 같은 본문 칸 뺌 body={} field={}", bodyType.getSimpleName(),
+                        field.getName());
+                continue;
             }
-            String skipReason = put(params, component.getName(), toParam(BODY, component.getType(), field, false));
+            String skipReason = put(params, field.getName(), toFieldParam(BODY, field));
             if (skipReason != null) {
                 return skipReason;
             }
@@ -297,6 +313,44 @@ public class AiToolCatalogService {
     }
 
     /**
+     * 본문 필드 -> 칸 : List<record>는 array + items, 그 밖은 toParam
+     */
+    private ParamDraft toFieldParam(String location, Field field) {
+        if (field.getType() != List.class) {
+            return toParam(location, field.getType(), field, false);
+        }
+        Class<?> itemType = listItemTypeOf(field.getGenericType());
+        if (itemType == null || !itemType.isRecord()) {
+            return ParamDraft.skip("타입 미지원: " + field.getGenericType().getTypeName());
+        }
+        Map<String, Param> items = new LinkedHashMap<>();
+        for (Field itemField : queryFieldsOf(itemType)) {
+            String skipReason = put(items, itemField.getName(), toFieldParam(null, itemField));
+            if (skipReason != null) {
+                return ParamDraft.skip("[]." + skipReason);
+            }
+        }
+        NotEmpty notEmpty = field.getAnnotation(NotEmpty.class);
+        Size size = field.getAnnotation(Size.class);
+        boolean isRequired = notEmpty != null || field.isAnnotationPresent(NotNull.class);
+        Integer minItems = notEmpty != null ? Integer.valueOf(1) : null;
+        if (size != null && size.min() > 0) {
+            minItems = minItems == null ? size.min() : Math.max(minItems, size.min());
+        }
+        return new ParamDraft(new Param(location, ARRAY, null, isRequired ? Boolean.TRUE : null, null, null, null,
+                null, null, null, null, null, null, minItems, null, items.isEmpty() ? null : items),
+                null);
+    }
+
+    private static Class<?> listItemTypeOf(Type genericType) {
+        if (genericType instanceof ParameterizedType parameterized
+                && parameterized.getActualTypeArguments()[0] instanceof Class<?> itemType) {
+            return itemType;
+        }
+        return null;
+    }
+
+    /**
      * 칸 타입·검증 어노테이션 -> 칸
      */
     private ParamDraft toParam(String location, Class<?> type, AnnotatedElement element, boolean isPathOrRequired) {
@@ -305,14 +359,19 @@ public class AiToolCatalogService {
         if (typeName == null) {
             return ParamDraft.skip("타입 미지원: " + type.getSimpleName());
         }
+        if (FILE.equals(typeName) && !BODY.equals(location)) {
+            return ParamDraft.skip("파일 칸은 multipart 본문에만");
+        }
+        AiGenerated generated = element.getAnnotation(AiGenerated.class);
         if (aiCode != null) {
             if (type != String.class) {
                 return ParamDraft.skip("@AiCode는 String 칸에만");
             }
             typeName = CODE;
         }
-        boolean isRequired = isPathOrRequired || element.isAnnotationPresent(NotNull.class)
-                || element.isAnnotationPresent(NotBlank.class) || element.isAnnotationPresent(NotEmpty.class);
+        /** 실행하는 쪽이 만드는 값은 LLM이 채우지 않게 필수로 싣지 않음 */
+        boolean isRequired = generated == null && (isPathOrRequired || element.isAnnotationPresent(NotNull.class)
+                || element.isAnnotationPresent(NotBlank.class) || element.isAnnotationPresent(NotEmpty.class));
 
         Size size = element.getAnnotation(Size.class);
         Min min = element.getAnnotation(Min.class);
@@ -330,7 +389,7 @@ public class AiToolCatalogService {
                 pattern != null ? pattern.regexp() : type == YearMonth.class ? YEAR_MONTH_PATTERN : null,
                 digits != null ? digits.integer() + digits.fraction() : null,
                 digits != null ? digits.fraction() : null,
-                null), null);
+                null, null, generated != null ? generated.value() : null, null), null);
     }
 
     private static String typeNameOf(Class<?> type) {
@@ -358,6 +417,9 @@ public class AiToolCatalogService {
         if (type == LocalDateTime.class) {
             return "datetime";
         }
+        if (type == MultipartFile.class) {
+            return FILE;
+        }
         return null;
     }
 
@@ -370,10 +432,18 @@ public class AiToolCatalogService {
     }
 
     private AiToolResponse withCodes(AiToolResponse tool, Map<String, List<Code>> codesByGroup) {
-        Map<String, Param> params = new LinkedHashMap<>();
-        tool.params().forEach((name, param) -> params.put(name, param.group() == null ? param
-                : param.withCodes(codesByGroup.computeIfAbsent(param.group(), this::codesOf))));
-        return new AiToolResponse(tool.name(), tool.domain(), tool.kind(), tool.call(), params, tool.rules());
+        return new AiToolResponse(tool.name(), tool.domain(), tool.kind(), tool.call(),
+                withCodes(tool.params(), codesByGroup), tool.rules());
+    }
+
+    private Map<String, Param> withCodes(Map<String, Param> params, Map<String, List<Code>> codesByGroup) {
+        Map<String, Param> result = new LinkedHashMap<>();
+        params.forEach((name, param) -> {
+            Param withItems = param.items() == null ? param : param.withItems(withCodes(param.items(), codesByGroup));
+            result.put(name, withItems.group() == null ? withItems
+                    : withItems.withCodes(codesByGroup.computeIfAbsent(withItems.group(), this::codesOf)));
+        });
+        return result;
     }
 
     private List<Code> codesOf(String group) {

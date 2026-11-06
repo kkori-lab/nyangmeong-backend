@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.nyangmeong.expense.dto.ExpenseLimitResponse;
 import com.nyangmeong.expense.dto.ExpenseLimitSaveRequest;
 import com.nyangmeong.expense.service.ExpenseLimitService;
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
 
@@ -29,6 +31,7 @@ public class ExpenseLimitController {
     private final ExpenseLimitService expenseLimitService;
 
     @Operation(summary = "월 지출 한도 저장(처음 저장하면 한도 알림 수신을 켬)")
+    @AiTool(name = "draft_expense_limit", domain = "expense", kind = AiToolKind.CARD)
     @PutMapping
     public ResponseEntity<ApiResponse<ExpenseLimitResponse>> save(@AuthenticationPrincipal LoginMember me,
             @Valid @RequestBody ExpenseLimitSaveRequest req) {

@@ -65,6 +65,7 @@ public class CareItemController {
     }
 
     @Operation(summary = "케어 항목 수정")
+    @AiTool(name = "draft_care_item_update", domain = "health", kind = AiToolKind.CARD)
     @PatchMapping("/care-items/{careArtclSn}")
     public ResponseEntity<ApiResponse<CareItemResponse>> update(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long careArtclSn, @Valid @RequestBody CareItemUpdateRequest req) {
@@ -96,6 +97,7 @@ public class CareItemController {
     }
 
     @Operation(summary = "케어 완료 체크")
+    @AiTool(name = "draft_care_completion", domain = "health", kind = AiToolKind.CARD)
     @PostMapping("/care-completions")
     public ResponseEntity<ApiResponse<CareCompletionResponse>> complete(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @Valid @RequestBody CareCompletionCreateRequest req) {

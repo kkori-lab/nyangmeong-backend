@@ -54,6 +54,7 @@ public class ExpenseController {
     private final ExpenseQueryService expenseQueryService;
 
     @Operation(summary = "가계부 지출 등록(반려동물별 줄, 영수증 연결)")
+    @AiTool(name = "draft_expense", domain = "expense", kind = AiToolKind.CARD)
     @PostMapping
     public ResponseEntity<ApiResponse<List<ExpenseResponse>>> create(@AuthenticationPrincipal LoginMember me,
             @Valid @RequestBody ExpenseCreateRequest req) {
@@ -111,6 +112,7 @@ public class ExpenseController {
     }
 
     @Operation(summary = "가계부 지출 수정")
+    @AiTool(name = "draft_expense_update", domain = "expense", kind = AiToolKind.CARD)
     @PatchMapping("/{expndSn}")
     public ResponseEntity<ApiResponse<ExpenseResponse>> update(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long expndSn, @Valid @RequestBody ExpenseUpdateRequest req) {

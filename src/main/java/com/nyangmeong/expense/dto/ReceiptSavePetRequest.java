@@ -2,6 +2,8 @@ package com.nyangmeong.expense.dto;
 
 import java.util.List;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -18,7 +20,7 @@ import jakarta.validation.constraints.Size;
  */
 public record ReceiptSavePetRequest(
         @NotNull Long petSn,
-        @NotBlank @Pattern(regexp = "HLTC000[1-5]") String ckupTypeCd,
+        @NotBlank @Pattern(regexp = "HLTC000[1-5]") @AiCode("HLTG01") String ckupTypeCd,
         @Size(max = 500) String ckupCn,
         @Size(max = 200) String ckupMemoCn,
         @PositiveOrZero Long amt,

@@ -305,4 +305,14 @@ class CareScheduleServiceTest {
         verify(mapper).selectHospitalSchedules(schdlYmd, ScheduleKind.HOSPITAL.getCode());
         verify(petAuthorizer, never()).checkCaregiver(anyLong(), anyLong());
     }
+
+    @Test
+    void 수정_서비스_검사_400은_틀린_칸_이름을_담는다() {
+        when(mapper.selectSchedule(SCHDL)).thenReturn(saved(PET, ScheduleKind.HOSPITAL));
+
+        assertInvalidField(() -> service.update(MBR, PET, SCHDL, new CareScheduleUpdateRequest(null, "HLTC9999",
+                null, null, null, null, null, null, null)), "schdlKndCd");
+        assertInvalidField(() -> service.update(MBR, PET, SCHDL, new CareScheduleUpdateRequest(null, null, null,
+                null, null, "", null, null, null)), "hsptlNm");
+    }
 }
