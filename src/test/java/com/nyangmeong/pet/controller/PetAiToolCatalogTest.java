@@ -89,12 +89,12 @@ class PetAiToolCatalogTest {
     void 반려동물_READ_10개가_빠짐없이_실린다() throws Exception {
         givenCodes();
         mockMvc.perform(get(PATH))
-                .andExpect(jsonPath("$.data.tools.length()").value(10))
-                .andExpect(jsonPath("$.data.tools[*].name", containsInAnyOrder("get_pet", "get_pixel_character",
+                .andExpect(jsonPath("$.data.tools.length()").value(11))
+                .andExpect(jsonPath("$.data.tools[*].name", containsInAnyOrder("draft_pet_update", "get_pet", "get_pixel_character",
                         "get_points", "list_caregivers", "list_daily_missions", "list_pets", "list_pixel_characters",
                         "list_point_ledgers", "list_sent_caregiver_invitations", "list_shop_items")))
                 .andExpect(jsonPath("$.data.tools[?(@.kind == 'READ')].name", hasSize(10)))
-                .andExpect(jsonPath("$.data.tools[?(@.domain == 'pet')].name", hasSize(10)));
+                .andExpect(jsonPath("$.data.tools[?(@.domain == 'pet')].name", hasSize(11)));
     }
 
     @Test

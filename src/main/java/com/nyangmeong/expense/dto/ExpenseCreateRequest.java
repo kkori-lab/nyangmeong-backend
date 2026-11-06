@@ -3,6 +3,8 @@ package com.nyangmeong.expense.dto;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -16,11 +18,11 @@ import jakarta.validation.constraints.Size;
  */
 public record ExpenseCreateRequest(
         @NotNull LocalDate expndYmd,
-        @NotBlank String expndClsfCd,
+        @NotBlank @AiCode("MYPG05") String expndClsfCd,
         @Size(max = 1000) String dtlMttr,
         @Size(max = 80) String expndPlcusNm,
         Long recptSn,
-        @NotBlank String expndInptMthCd,
+        @NotBlank @AiCode("MYPG06") String expndInptMthCd,
         @NotEmpty(message = "반려동물과 금액을 1줄 이상 입력해 주세요") @Valid List<ExpenseLineRequest> lines) {
 
     public String dtlMttrOrNull() {

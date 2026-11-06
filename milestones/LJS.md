@@ -582,6 +582,27 @@
 - 완료 조건 결과: 검증 `통과`(2026-11-06, 1회차), 사람 확인 2026-11-06(도구 42개 = 건강 15 + pet 10 + community 8 + expense 6 + place 2 + support 1). 정한 것: 검색 조건 6곳에 `@ModelAttribute`(없으면 도구 목록이 칸을 오류 없이 뺀다), `YearMonth` 칸은 `string` + pattern(새 타입 이름 없음), 보유 아이템 GET이 없어 `get_pixel_character`·`list_shop_items`(`hldYn`)로 대신, `GET /api/caregiver-invitations`는 보낸 초대라 `list_sent_caregiver_invitations`. YearMonth 테스트는 기존 `AiToolCatalogControllerTest` 대신 `PetAiToolCatalogTest`에 둠(기존 기대값 유지)
 - 연결 남음: FN-AIM-004-02 (ai 연결 27개 도구 Python 설명 `data/tool_prompts.yaml`·스냅샷, READ 실행 경로 뒤, 설계 2-1절 held-items·받은 초대 표기 수정, LJS ai 저장소에서 /start)
 
+## SCR-AIM-012 AI 일정 생성 확인 · 건강 쓰기 도구 표시 — 끝
+- 기능: 명세 기능 ID 추가 없음(설계 `nyangmeong-ai` `docs/design/tool-catalog.md` 2-2절 건강·3-3절·8절 5번), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 기다리는 것: 관찰 회차 등록(`POST /observation-cycles`)은 `@NotNull MultipartFile file`이라 도구 목록이 타입 미지원으로 뺀다 — 사진 선택으로 바꿀지·이번에 뺄지·파일 칸을 지원할지(사람). 대화로 쓴 기록의 출처 코드는 `SCHDL.SCHDL_SRC_CD`만 있어 다른 테이블은 DB 변경이 필요하다(사람). 프론트 범용 카드·응답 계약(프론트·ai)은 Python 설명이 없는 도구를 싣지 않으므로 먼저 붙여도 지금 동작은 그대로
+- 완료 조건: `GET /internal/ai/tools`에 일정 수정(`PATCH /{schdlSn}`)·케어 항목 수정·케어 완료 체크·건강 일지 기록·반려동물 정보 수정(`PATCH /api/pets/{petSn}`)(+ 정한 경우 관찰 회차 추가)이 `kind: CARD`로 칸·필수·규칙과 함께 있고, 그 서비스 검사 400이 `data: [{field, message}]`에 칸 이름을 담는다. 기존 READ 40개·CARD 2개는 그대로, 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-06, 2회차. 1회차는 종료된 관찰 항목 400에 칸 이름 없음으로 실패 뒤 수정), 도구 52개(READ 40·CARD 12), 사람 확인 2026-11-06. 관찰 회차는 파일 칸(`type: file`)으로 넣음, 출처 코드(DB 변경)는 이번 범위 밖
+- 연결 남음: FN-AIM-012-05·06·07·13 (프론트 연결 쓰기 도구 범용 확인 카드: multipart·array·generated 키 채우기·지출 중복 확인 먼저, 프론트 저장소에서 /start)
+- 연결 남음: FN-AIM-012-05·06·07·13 (ai 연결 10개 도구 설명 `data/tool_prompts.yaml`·`file`·`array` 타입 지원, ai 저장소에서 /start)
+
+## SCR-AIM-012 AI 일정 생성 확인 · 가계부 쓰기 도구 표시 — 끝
+- 합침: 2026-11-06 사람 결정으로 `건강 쓰기 도구 표시` 절에서 함께 한다(기획은 handoff). 그 절이 끝나면 이 절도 끝
+- 기능: 명세 기능 ID 추가 없음(설계 2-2절 가계부·3-3절), 걸치는 기능 FN-AIM-012-05·06·07, FN-AIM-013(영수증 저장)
+- 기다리는 것: 건강 쓰기 도구 절(같은 방식으로 붙인다). 지출 등록 전 중복 확인(`/duplicate-check`)을 카드 흐름에서 어떻게 부를지(ai·LJS)
+- 완료 조건: `GET /internal/ai/tools`에 지출 등록(`POST /api/expenses`)·지출 수정(`PATCH /{expndSn}`)·월 지출 한도(`PUT /api/members/me/expense-limit`)·영수증 인식 결과 저장(`POST /api/receipts/{recptSn}/save`)이 `kind: CARD`로 있고, 그 서비스 검사 400이 칸 이름을 담는다. 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 건강 쓰기 도구 절과 함께 끝(2026-11-06). 중복 확인은 도구로 싣지 않고 React가 `draft_expense` 전에 부른다(결정 G)
+- 연결 남음: FN-AIM-012-05·06·07, FN-AIM-013 (프론트·ai 연결은 건강 쓰기 도구 절과 같음)
+
+## SCR-AIM-012 AI 일정 생성 확인 · 도구 목록 스냅샷 내보내기 — 대기
+- 기능: 명세 기능 ID 추가 없음(설계 6절·8절 6번)
+- 기다리는 것: 저장소를 건너 깨우는 토큰(PAT 또는 GitHub App)을 저장소 시크릿에 둘지(사람). 없으면 1단계는 사람이 로컬에서 받아 ai 저장소에 커밋
+- 완료 조건: DB 없이(앱을 띄우지 않고) 도구 목록 구조(코드 값 제외)를 파일로 뽑는 Gradle 작업 또는 테스트가 있고, 그 결과의 `structureVersion`이 실행 중 `GET /internal/ai/tools`의 값과 같다. 토큰을 정하면 main 배포 성공 뒤 `deploy-latest` 릴리스 첨부와 `repository_dispatch`까지
+
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
 - FN-COM-002-11: 채팅 안 읽은 수 API는 KSJ(채팅, 마일스톤 담당 표 COM-009)

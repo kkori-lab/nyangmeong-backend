@@ -207,7 +207,7 @@ public class CareScheduleService {
     }
 
     private ScheduleKind kindOf(String schdlKndCd) {
-        return ScheduleKind.of(schdlKndCd).orElseThrow(this::invalid);
+        return ScheduleKind.of(schdlKndCd).orElseThrow(() -> invalid("schdlKndCd"));
     }
 
     private ScheduleSource sourceOf(String schdlSrcCd) {

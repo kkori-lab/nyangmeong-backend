@@ -66,6 +66,7 @@ public class PetController {
     }
 
     @Operation(summary = "반려동물 수정")
+    @AiTool(name = "draft_pet_update", domain = "pet", kind = AiToolKind.CARD)
     @PatchMapping("/{petSn}")
     public ResponseEntity<ApiResponse<PetResponse>> updatePet(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @Valid @RequestBody PetUpdateRequest req) {

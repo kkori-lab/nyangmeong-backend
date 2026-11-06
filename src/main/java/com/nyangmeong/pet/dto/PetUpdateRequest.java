@@ -3,6 +3,8 @@ package com.nyangmeong.pet.dto;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
@@ -14,18 +16,18 @@ import jakarta.validation.constraints.Size;
  * - goalBdwgReset 이 true 면 목표체중을 비운다, goalBdwg 와 함께 보내면 400
  */
 public record PetUpdateRequest(@Size(min = 1, max = 20) String petNm,
-        @Size(min = 1) String petSeCd,
+        @Size(min = 1) @AiCode("PETG01") String petSeCd,
         Long vrtySn,
         @Size(max = 40) String vrtyDrctInptNm,
         LocalDate petBrdt,
         @Pattern(regexp = "^[0-9]{0,20}$") String chipNo,
-        @Size(min = 1) String petGndrCd,
+        @Size(min = 1) @AiCode("PETG02") String petGndrCd,
         Boolean nutrYn,
         @Positive @Digits(integer = 5, fraction = 3) BigDecimal petBdwg,
         @Positive @Digits(integer = 5, fraction = 3) BigDecimal goalBdwg,
         @Positive @Digits(integer = 5, fraction = 3) BigDecimal minBdwg,
         @Positive @Digits(integer = 5, fraction = 3) BigDecimal maxBdwg,
-        @Size(min = 1) String colrCd,
+        @Size(min = 1) @AiCode("PETG03") String colrCd,
         @Size(max = 20) String colrDrctInptNm,
         @Size(max = 1000) String chrcCn,
         @Size(max = 1000) String algyCn,

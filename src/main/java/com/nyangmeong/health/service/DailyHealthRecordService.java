@@ -72,7 +72,8 @@ public class DailyHealthRecordService {
     @Transactional
     public DailyHealthRecordResponse create(Long mbrSn, Long petSn, DailyHealthRecordCreateRequest req) {
         petAuthorizer.checkCaregiver(mbrSn, petSn);
-        DailyRecordIndicator indicator = DailyRecordIndicator.of(req.dailyRcdIdctCd()).orElseThrow(this::invalid);
+        DailyRecordIndicator indicator = DailyRecordIndicator.of(req.dailyRcdIdctCd())
+                .orElseThrow(() -> invalid("dailyRcdIdctCd"));
         checkValue(indicator, req.rcdNvl(), req.crsdSttsCd());
         String actorId = String.valueOf(mbrSn);
 
@@ -156,27 +157,33 @@ public class DailyHealthRecordService {
      */
     private void checkValue(DailyRecordIndicator indicator, BigDecimal rcdNvl, String crsdSttsCd) {
         if (indicator.isStool()) {
-            if (rcdNvl != null || crsdSttsCd == null) {
-                throw invalid();
+            if (rcdNvl != null) {
+                throw invalid("rcdNvl");
+            }
+            if (crsdSttsCd == null) {
+                throw invalid("crsdSttsCd");
             }
             checkStoolStatus(crsdSttsCd);
             return;
         }
-        if (crsdSttsCd != null || rcdNvl == null) {
-            throw invalid();
+        if (crsdSttsCd != null) {
+            throw invalid("crsdSttsCd");
+        }
+        if (rcdNvl == null) {
+            throw invalid("rcdNvl");
         }
         checkPositive(rcdNvl);
     }
 
     private void checkStoolStatus(String crsdSttsCd) {
         if (!dailyHealthRecordMapper.existsChildCode(HealthCodeGroup.STOOL_STATUS.getCode(), crsdSttsCd)) {
-            throw invalid();
+            throw invalid("crsdSttsCd");
         }
     }
 
     private void checkPositive(BigDecimal rcdNvl) {
         if (rcdNvl.signum() <= 0) {
-            throw invalid();
+            throw invalid("rcdNvl");
         }
     }
 
@@ -193,7 +200,7 @@ public class DailyHealthRecordService {
         }
     }
 
-    private CustomException invalid() {
-        return new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+    private CustomException invalid(String... fields) {
+        return new CustomException(ErrorCode.INVALID_INPUT_VALUE, fields);
     }
 }

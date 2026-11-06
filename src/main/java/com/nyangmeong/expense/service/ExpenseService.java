@@ -165,10 +165,10 @@ public class ExpenseService {
         checkNotFuture(req.expndYmd());
         boolean common = Boolean.TRUE.equals(req.common());
         if (common && req.petSn() != null) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "petSn", "common");
         }
         if (req.expndClsfCd() != null && !ExpenseCategory.exists(req.expndClsfCd())) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "expndClsfCd");
         }
         Long petSn = common ? null : req.petSn() != null ? req.petSn() : expense.getPetSn();
         String clsfCd = req.expndClsfCd() != null ? req.expndClsfCd() : expense.getExpndClsfCd();
@@ -240,7 +240,7 @@ public class ExpenseService {
      */
     private void checkNotFuture(LocalDate expndYmd) {
         if (expndYmd != null && expndYmd.isAfter(LocalDate.now(ZONE))) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "expndYmd");
         }
     }
 
@@ -248,22 +248,26 @@ public class ExpenseService {
      * 등록 요청 검사
      */
     private void validate(Long mbrSn, ExpenseCreateRequest req) {
-        if (!ExpenseCategory.exists(req.expndClsfCd()) || !ExpenseInputMethod.exists(req.expndInptMthCd())) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        if (!ExpenseCategory.exists(req.expndClsfCd())) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "expndClsfCd");
+        }
+        if (!ExpenseInputMethod.exists(req.expndInptMthCd())) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "expndInptMthCd");
         }
         checkNotFuture(req.expndYmd());
         Set<Long> petSns = new HashSet<>();
-        for (ExpenseLineRequest line : req.lines()) {
+        for (int i = 0; i < req.lines().size(); i++) {
+            ExpenseLineRequest line = req.lines().get(i);
             if (line.petSn() == null && ExpenseCategory.HOSPITAL.is(req.expndClsfCd())) {
                 throw new CustomException(ErrorCode.EXPENSE_PET_REQUIRED);
             }
             if (!petSns.add(line.petSn())) {
-                throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+                throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "lines[" + i + "].petSn");
             }
         }
         /** 반려동물이 없어도 공용 1줄은 등록 가능 */
         if (req.lines().size() > Math.max(petService.searchMyPets(mbrSn).size(), 1)) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "lines");
         }
         for (Long petSn : petSns) {
             if (petSn != null) {

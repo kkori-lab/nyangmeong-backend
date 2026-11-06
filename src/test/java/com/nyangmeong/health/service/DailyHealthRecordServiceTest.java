@@ -211,4 +211,29 @@ class DailyHealthRecordServiceTest {
         service.delete(MBR, PET, RCD);
         verify(petService).syncWeight(eq(PET), any(), eq(MBR));
     }
+
+    @Test
+    void 등록_서비스_검사_400은_틀린_칸_이름을_담는다() {
+        assertFields(() -> service.create(MBR, PET, new DailyHealthRecordCreateRequest("HLTC9999", AT,
+                new BigDecimal("1"), null)), "dailyRcdIdctCd");
+        assertFields(() -> service.create(MBR, PET, new DailyHealthRecordCreateRequest(STOOL, AT,
+                new BigDecimal("1"), NORMAL)), "rcdNvl");
+        assertFields(() -> service.create(MBR, PET, new DailyHealthRecordCreateRequest(STOOL, AT, null, null)),
+                "crsdSttsCd");
+        assertFields(() -> service.create(MBR, PET, new DailyHealthRecordCreateRequest(STOOL, AT, null,
+                "HLTC9999")), "crsdSttsCd");
+        assertFields(() -> service.create(MBR, PET, new DailyHealthRecordCreateRequest(WEIGHT, AT, null, null)),
+                "rcdNvl");
+        assertFields(() -> service.create(MBR, PET, new DailyHealthRecordCreateRequest(WEIGHT, AT, null,
+                NORMAL)), "crsdSttsCd");
+        assertFields(() -> service.create(MBR, PET, new DailyHealthRecordCreateRequest(WEIGHT, AT,
+                new BigDecimal("0"), null)), "rcdNvl");
+    }
+
+    private static void assertFields(org.assertj.core.api.ThrowableAssert.ThrowingCallable call, String... fields) {
+        assertThatThrownBy(call).isInstanceOfSatisfying(CustomException.class, e -> {
+            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+            assertThat(e.getFields()).containsExactly(fields);
+        });
+    }
 }

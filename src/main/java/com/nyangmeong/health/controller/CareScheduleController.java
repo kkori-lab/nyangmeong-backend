@@ -59,6 +59,7 @@ public class CareScheduleController {
     }
 
     @Operation(summary = "일정 수정")
+    @AiTool(name = "draft_schedule_update", domain = "health", kind = AiToolKind.CARD)
     @PatchMapping("/{schdlSn}")
     public ResponseEntity<ApiResponse<CareScheduleResponse>> update(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long schdlSn, @Valid @RequestBody CareScheduleUpdateRequest req) {

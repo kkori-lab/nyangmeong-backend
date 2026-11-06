@@ -2,6 +2,8 @@ package com.nyangmeong.expense.dto;
 
 import java.time.LocalDate;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -18,5 +20,5 @@ public record ReceiptSaveDrugRequest(
         @NotNull LocalDate mdcnBgngYmd,
         @NotNull LocalDate mdcnEndYmd,
         @NotNull @Positive Integer dayMdcnNmtm,
-        @NotBlank @Pattern(regexp = "HLTC001[01]") String prscSttsCd) {
+        @NotBlank @Pattern(regexp = "HLTC001[01]") @AiCode("HLTG06") String prscSttsCd) {
 }
