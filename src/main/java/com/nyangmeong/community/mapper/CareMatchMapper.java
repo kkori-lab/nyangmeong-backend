@@ -61,6 +61,17 @@ public interface CareMatchMapper {
     int updateReceipt(@Param("petPrtcMtchSn") Long petPrtcMtchSn, @Param("rcvYn") String rcvYn);
 
     /**
+     * 무응답 기준 일수 이상 지금 상태에 머문 매칭 번호 (지금 상태가 된 시각 = 그 상태로 바뀐 가장 최근 이력)
+     */
+    List<Long> selectNoResponseTargets(@Param("sttsCd") String sttsCd, @Param("days") long days);
+
+    /**
+     * 이 매칭이 지금도 그 상태로 기준 일수 이상 머물렀는지 (잠근 뒤 다시 확인)
+     */
+    boolean existsNoResponseExpired(@Param("petPrtcMtchSn") Long petPrtcMtchSn, @Param("sttsCd") String sttsCd,
+            @Param("days") long days);
+
+    /**
      * 매칭 상태 이력 등록
      */
     int insertStatusHistory(CareMatchStatusHistory history);

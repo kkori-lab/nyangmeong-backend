@@ -266,6 +266,66 @@ public class CareMatchService {
         notifyReceiver(counterpartMbrSn, room.getOtoChatRoomSn(), "상대가 채팅방을 나가 매칭이 취소되었어요.");
     }
 
+    /**
+     * 무응답 처리 대상 매칭 번호 (FN-CMU-005-06 수락 대기, FN-CMU-005-09 확인 대기)
+     */
+    @Transactional(readOnly = true)
+    public List<Long> findNoResponseTargets(CareMatchStatus from, long days) {
+        noResponseTarget(from);
+        return careMatchMapper.selectNoResponseTargets(from.getCode(), days);
+    }
+
+    /**
+     * 기준 일수 동안 응답이 없는 매칭 종료 (배치, 처리자 없음)
+     * - 수락 대기 -> 요청 취소 (모집글은 모집중 그대로), 확인 대기 -> 무응답 종료 (모집글은 매칭완료 그대로, 자동 완료는 하지 않음)
+     * - 잠근 뒤 상태·경과일을 다시 확인해 그사이 수락·취소·완료 확인된 건은 건너뜀
+     *
+     * @return 처리했으면 true
+     */
+    @Transactional
+    public boolean expireNoResponse(Long petPrtcMtchSn, CareMatchStatus from, long days) {
+        CareMatchStatus to = noResponseTarget(from);
+        CareMatch peek = careMatchMapper.selectById(petPrtcMtchSn);
+        if (peek == null) {
+            return false;
+        }
+        ChatRoomDetail room = chatRoomMapper.selectDetail(peek.getOtoChatRoomSn());
+        if (room == null) {
+            return false;
+        }
+        lockRecruitment(peek.getPetPrtcRcrtSn());
+        chatRoomMapper.selectRoomForUpdate(peek.getOtoChatRoomSn());
+        CareMatch match = careMatchMapper.selectByIdForUpdate(petPrtcMtchSn);
+        if (match == null || !from.is(match.getMtchDlngSttsCd())
+                || !careMatchMapper.existsNoResponseExpired(petPrtcMtchSn, from.getCode(), days)) {
+            return false;
+        }
+
+        String message;
+        if (to == CareMatchStatus.CANCELED) {
+            changeStatus(match, to, null, days + "일 무응답 자동 취소");
+            message = days + "일 동안 수락이 없어 요청이 자동 취소되었어요.";
+        } else {
+            changeStatus(match, to, null, days + "일 무응답 종료");
+            message = days + "일 동안 완료 확인이 없어 거래가 무응답 종료되었어요.";
+        }
+        chatMessageService.createSystemMessage(room.getOtoChatRoomSn(), message);
+        notifyReceiver(room.getOwnerMbrSn(), room.getOtoChatRoomSn(), message);
+        notifyReceiver(room.getCtptMbrSn(), room.getOtoChatRoomSn(), message);
+        return true;
+    }
+
+    /** 무응답 처리할 수 있는 상태와 바뀔 상태 */
+    private CareMatchStatus noResponseTarget(CareMatchStatus from) {
+        if (from == CareMatchStatus.REQUESTED) {
+            return CareMatchStatus.CANCELED;
+        }
+        if (from == CareMatchStatus.AWAITING_CONFIRM) {
+            return CareMatchStatus.NO_RESPONSE;
+        }
+        throw new IllegalArgumentException("무응답 처리 대상 상태가 아님 : " + from);
+    }
+
     private CareMatch getMatchOrThrow(Long petPrtcMtchSn) {
         CareMatch match = careMatchMapper.selectById(petPrtcMtchSn);
         if (match == null) {

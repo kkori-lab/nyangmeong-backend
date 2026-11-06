@@ -23,6 +23,9 @@
 --     ('AIMC0038','가계부 카테고리','용품','용품, 장난감, 배변패드, 모래, 하네스','가계부 카테고리 = 용품(MYPG05)','MYPC0015',40,'어디에도 안 걸리면 기타(MYPC0018). 관리자 SCR-ADM-081에서 편집. FN-ADM-081-03'),
 --     ('AIMC0038','가계부 카테고리','미용','미용, 목욕, 털 깎기','가계부 카테고리 = 미용(MYPG05)','MYPC0016',50,'어디에도 안 걸리면 기타(MYPC0018). 관리자 SCR-ADM-081에서 편집. FN-ADM-081-03'),
 --     ('AIMC0038','가계부 카테고리','돌봄','돌봄, 펫시터, 펫호텔, 유치원','가계부 카테고리 = 돌봄(MYPG05)','MYPC0017',60,'어디에도 안 걸리면 기타(MYPC0018). 관리자 SCR-ADM-081에서 편집. FN-ADM-081-03');
+-- v0.13 (3) 펫돌봄 매칭 무응답 종료 배치 코드 (2026-11-06, KSJ, 근거: 커뮤니티_기능명세서 v0.8 FN-CMU-005-06·09). 테이블 변경 없음
+--   SET NAMES utf8mb4;
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0031','펫돌봄 매칭 무응답 종료','community/CareMatchNoResponseJob',90);
 SET NAMES utf8mb4;
 START TRANSACTION;
 
@@ -534,6 +537,7 @@ INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='CMUG01') p),'CMUC0028','우리동네 펫돌봄','PET_PRTC_RCRT와 1:1인 게시글',40);
 -- v0.12 추가: 배치 구분 오늘의 한마디 선택 (v0.12 (4))
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0030','오늘의 한마디 선택','community/TodayPhraseSelectJob',80);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0031','펫돌봄 매칭 무응답 종료','community/CareMatchNoResponseJob',90);
 
 -- =====================================================================
 -- [2] 케어미션 마스터 (CARE_MSN) — 20261027_02_update_care_msn_and_ckup_pnt 의 최종 상태
