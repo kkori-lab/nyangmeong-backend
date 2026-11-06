@@ -2,15 +2,15 @@
 
 ## 지금 하는 것
 
-SCR-CMU-002 실종센터 · 탈퇴 회원 표시 — 끝남 (승인 2026-11-05 14:38, 시작 2026-11-05 14:28, 검증 2회차 통과, 사람 확인 2026-11-05)
-- 한 일: `LostReportMapper.xml` `selectDetail` 작성자 닉네임·사진을 `MemberDisplay` 조각으로, `PostMapperSqlTest` 실종 상세·관리자 실종 목록 테스트, `LostReportMapperSqlTest`가 조각을 먼저 불러오게 함, `docs/api/community.md` `LostReportResponse` 설명. 실종 글 댓글은 PR #164에서 이미 적용
+SCR-CMU-005 우리동네 펫돌봄 채팅 · 탈퇴 회원 표시 — 끝남 (승인 2026-11-05 16:30, 시작 2026-11-05 16:25, 검증 1회차 통과, 사람 확인 2026-11-05)
+- 한 일: `ChatRoomMapper.xml` 내 채팅 목록(`selectList` CASE 두 분기)·채팅방 조회(`chatRoomDetailSelect`)의 글쓴이(O)·지원자(A) 닉네임·사진을 `MemberDisplay` 조각으로, 새 `ChatRoomMapperSqlTest`, `ChatMessageMapperSqlTest`가 조각을 먼저 불러오게 함, `docs/api/community.md` `ChatRoomResponse`·`ChatRoomSummary` 설명
 
 ## 지난 작업
 
-SCR-CMU-001·002 탈퇴 회원 표시(PR #164 외)·SCR-ADM-022 완료 사진 열람(2026-11-05), SCR-CMU-004 펫돌봄 대기 4건(2026-11-04), SCR-CMU-002 전북 밖 좌표 거절(PR #154)·시드 게시판 코드(PR #147), SCR-CMU-005 펫돌봄 채팅(PR #139) — 모두 끝남
+SCR-CMU-001·002·004·005 탈퇴 회원 표시(PR #164·#166·#170 외)·SCR-ADM-022 완료 사진 열람(2026-11-05), SCR-CMU-004 펫돌봄 대기 4건(2026-11-04), SCR-CMU-002 전북 밖 좌표 거절(PR #154)·시드 게시판 코드(PR #147), SCR-CMU-005 펫돌봄 채팅(PR #139) — 모두 끝남
 
 ## 다음에 할 것
-- 다음 작업: 후속 화면에 같은 조각 `MemberDisplay` 적용(펫돌봄·채팅·문의·신고(사용자 화면)·회원 요약, 실종센터는 끝남). 세 회원(파기·파기 전 탈퇴·정상) 결과 DB 테스트는 H2 등 새 의존성이 필요해 팀 합의 뒤 별도 기획
+- 다음 작업: 후속 화면에 같은 조각 `MemberDisplay` 적용(문의·신고(사용자 화면)·회원 요약. 펫이야기·실종센터·펫돌봄·채팅은 끝남). 세 회원(파기·파기 전 탈퇴·정상) 결과 DB 테스트는 H2 등 새 의존성이 필요해 팀 합의 뒤 별도 기획
 - 사람이 할 일: 프론트에 「작성자를 눌러 이동하는 곳이 있나, 탈퇴 회원을 막아야 하나」를 묻는다(필요하면 후속으로 그 응답에만 탈퇴 여부 필드. 상세·댓글 응답에는 `mbrSn`이 그대로 나간다). LJS에게 `PostMapper.xml`·`CommentMapper.xml` 관리자 쿼리 병합 충돌을 미리 알린다
 - 연결 남음: SCR-ADM-022 관리자 매칭 상세 완료 사진 (프론트 연결: LJS `CareMatchDetailModal.jsx`의 `publicFileUrl`을 `useFileImage` + `GET /api/admin/care-matches/{petPrtcRcrtSn}/images/{atchFileSn}`로 교체, 프론트 저장소에서 /start)
 - 사람이 할 일: 시드 완료 사진 78장의 이미지 파일을 `uploads/seed/care/{ATCH_FILE_SN}.jpg`로 채울지 정한다(진짜 JPG, `uploads/`는 git 제외). 저장소 루트의 추적하지 않는 `3293.jpg`는 커밋하지 말고 지우거나 옮긴다

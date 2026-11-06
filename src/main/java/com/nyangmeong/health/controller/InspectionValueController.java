@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
 import com.nyangmeong.health.dto.InspectionValueCreateRequest;
@@ -41,6 +43,7 @@ public class InspectionValueController {
     private final InspectionValueService inspectionValueService;
 
     @Operation(summary = "검사 수치 목록")
+    @AiTool(name = "list_inspection_values", domain = "health", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<List<InspectionValueSummary>>> search(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @Valid @ModelAttribute InspectionValueSearchCond cond) {

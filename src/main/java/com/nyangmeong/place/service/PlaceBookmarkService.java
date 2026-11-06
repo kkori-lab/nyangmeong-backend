@@ -10,6 +10,7 @@ import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.place.domain.PlaceBookmark;
 import com.nyangmeong.place.domain.PlaceCategory;
+import com.nyangmeong.place.dto.AdminFavoritePlaceSummary;
 import com.nyangmeong.place.dto.PlaceBookmarkCreateRequest;
 import com.nyangmeong.place.dto.PlaceBookmarkResponse;
 import com.nyangmeong.place.dto.PlaceBookmarkSummary;
@@ -26,6 +27,9 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class PlaceBookmarkService {
+
+    /** 관리자 대시보드 즐겨찾기 상위 장소 수 */
+    private static final int FAVORITE_PLACE_LIMIT = 10;
 
     private static final String USE = "Y";
     private static final String UNUSE = "N";
@@ -76,5 +80,13 @@ public class PlaceBookmarkService {
     public List<PlaceBookmarkSummary> search(Long mbrSn, String plcClsfCd) {
         PlaceCategory category = PlaceCategory.from(plcClsfCd);
         return placeBookmarkMapper.selectList(mbrSn, category.getCode());
+    }
+
+    /**
+     * 관리자 대시보드 즐겨찾기 상위 장소 조회 (기간 무관, 많은 순 상위 10)
+     */
+    @Transactional(readOnly = true)
+    public List<AdminFavoritePlaceSummary> getTopBookmarkedPlaces() {
+        return placeBookmarkMapper.selectTopBookmarkedPlaces(FAVORITE_PLACE_LIMIT);
     }
 }

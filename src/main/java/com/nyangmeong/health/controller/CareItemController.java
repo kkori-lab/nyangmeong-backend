@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
 import com.nyangmeong.health.dto.CareCompletionCreateRequest;
@@ -46,6 +48,7 @@ public class CareItemController {
     private final CareItemService careItemService;
 
     @Operation(summary = "케어 항목 목록(토탈 케어리스트)")
+    @AiTool(name = "list_care_items", domain = "health", kind = AiToolKind.READ)
     @GetMapping("/care-items")
     public ResponseEntity<ApiResponse<List<CareItemSummary>>> search(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @ModelAttribute CareItemSearchCond cond) {
@@ -53,6 +56,7 @@ public class CareItemController {
     }
 
     @Operation(summary = "케어 항목 추가")
+    @AiTool(name = "draft_care_item", domain = "health", kind = AiToolKind.CARD)
     @PostMapping("/care-items")
     public ResponseEntity<ApiResponse<CareItemResponse>> create(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @Valid @RequestBody CareItemCreateRequest req) {
@@ -61,6 +65,7 @@ public class CareItemController {
     }
 
     @Operation(summary = "케어 항목 수정")
+    @AiTool(name = "draft_care_item_update", domain = "health", kind = AiToolKind.CARD)
     @PatchMapping("/care-items/{careArtclSn}")
     public ResponseEntity<ApiResponse<CareItemResponse>> update(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long careArtclSn, @Valid @RequestBody CareItemUpdateRequest req) {
@@ -83,6 +88,7 @@ public class CareItemController {
     }
 
     @Operation(summary = "케어 완료 기록 목록")
+    @AiTool(name = "list_care_completions", domain = "health", kind = AiToolKind.READ)
     @GetMapping("/care-completions")
     public ResponseEntity<ApiResponse<List<CareCompletionSummary>>> searchCompletions(
             @AuthenticationPrincipal LoginMember me, @PathVariable Long petSn,
@@ -91,6 +97,7 @@ public class CareItemController {
     }
 
     @Operation(summary = "케어 완료 체크")
+    @AiTool(name = "draft_care_completion", domain = "health", kind = AiToolKind.CARD)
     @PostMapping("/care-completions")
     public ResponseEntity<ApiResponse<CareCompletionResponse>> complete(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @Valid @RequestBody CareCompletionCreateRequest req) {

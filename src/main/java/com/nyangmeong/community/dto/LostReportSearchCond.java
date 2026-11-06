@@ -1,5 +1,7 @@
 package com.nyangmeong.community.dto;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import lombok.Data;
 
 /**
@@ -11,8 +13,10 @@ import lombok.Data;
  */
 @Data
 public class LostReportSearchCond {
+    @AiCode("CMUG03")
     private String lostTpofSttsCd;
     private Long rgnSn;
+    @AiCode("PETG01")
     private String petSeCd;
     private String wtnsPrd;
     private String keyword;

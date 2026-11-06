@@ -187,36 +187,38 @@ public class CareScheduleService {
      */
     private void check(Schedule schedule, ScheduleKind kind) {
         if (schedule.getSchdlDt() == null) {
-            throw invalid();
+            throw invalid("schdlDt");
         }
         if (kind == ScheduleKind.HOSPITAL) {
-            if (schedule.getHsptlNm() == null || schedule.getCkupTypeCd() == null
-                    || !careScheduleMapper.existsChildCode(HealthCodeGroup.CHECKUP_TYPE.getCode(),
-                            schedule.getCkupTypeCd())) {
-                throw invalid();
+            if (schedule.getHsptlNm() == null) {
+                throw invalid("hsptlNm");
+            }
+            if (schedule.getCkupTypeCd() == null || !careScheduleMapper
+                    .existsChildCode(HealthCodeGroup.CHECKUP_TYPE.getCode(), schedule.getCkupTypeCd())) {
+                throw invalid("ckupTypeCd");
             }
         } else if (schedule.getSchdlNm() == null) {
-            throw invalid();
+            throw invalid("schdlNm");
         }
         if (schedule.getCldrBadgeColrCd() != null && !careScheduleMapper
                 .existsChildCode(HealthCodeGroup.BADGE_COLOR.getCode(), schedule.getCldrBadgeColrCd())) {
-            throw invalid();
+            throw invalid("cldrBadgeColrCd");
         }
     }
 
     private ScheduleKind kindOf(String schdlKndCd) {
-        return ScheduleKind.of(schdlKndCd).orElseThrow(this::invalid);
+        return ScheduleKind.of(schdlKndCd).orElseThrow(() -> invalid("schdlKndCd"));
     }
 
     private ScheduleSource sourceOf(String schdlSrcCd) {
         if (schdlSrcCd == null || schdlSrcCd.isBlank()) {
             return ScheduleSource.DIRECT;
         }
-        return ScheduleSource.of(schdlSrcCd).orElseThrow(this::invalid);
+        return ScheduleSource.of(schdlSrcCd).orElseThrow(() -> invalid("schdlSrcCd"));
     }
 
-    private CustomException invalid() {
-        return new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+    private CustomException invalid(String... fields) {
+        return new CustomException(ErrorCode.INVALID_INPUT_VALUE, fields);
     }
 
     private String emptyToNull(String value) {

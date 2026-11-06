@@ -1,5 +1,6 @@
 package com.nyangmeong.expense.service;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -10,6 +11,7 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.nyangmeong.expense.domain.ReceiptSource;
 import com.nyangmeong.expense.domain.ReceiptStatus;
+import com.nyangmeong.expense.dto.AdminDailyOcrRequestSummary;
 import com.nyangmeong.expense.dto.AdminReceiptListResponse;
 import com.nyangmeong.expense.dto.AdminReceiptRow;
 import com.nyangmeong.expense.dto.AdminReceiptSearchCond;
@@ -93,5 +95,13 @@ public class AdminReceiptService {
                 SUCCESS_CDS, ReceiptStatus.NOT_RECOGNIZED.getCode(), ReceiptStatus.ANALYZING.getCode(),
                 ReceiptStatus.TEMPORARY_ERROR.getCode());
         return summary == null ? 0 : summary.getFailCnt();
+    }
+
+    /**
+     * 관리자 대시보드 일별 OCR 요청 수 조회 (fromDt 이상 toDt 미만)
+     */
+    @Transactional(readOnly = true)
+    public List<AdminDailyOcrRequestSummary> getDailyRequestCounts(LocalDateTime fromDt, LocalDateTime toDt) {
+        return receiptMapper.selectDailyRequestCounts(fromDt, toDt);
     }
 }

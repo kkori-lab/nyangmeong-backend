@@ -2,6 +2,8 @@ package com.nyangmeong.health.dto;
 
 import java.time.LocalDate;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.Data;
@@ -17,6 +19,7 @@ public class DailyHealthRecordSearchCond {
     /** 반려동물일련번호 (경로에서 채움) */
     private Long petSn;
     /** 일상기록지표공통코드(HLTG09) */
+    @AiCode("HLTG09")
     private String dailyRcdIdctCd;
     /** 조회 시작일 */
     private LocalDate fromYmd;

@@ -226,6 +226,20 @@ class CareItemServiceTest {
     }
 
     @Test
+    void 서비스_검사_400은_틀린_칸_이름을_담는다() {
+        assertThat(thrown(() -> service.create(MBR, PET, createRequest(CareZone.REGULAR.getCode(), null, null, null)))
+                .getFields()).containsExactly("careCycleCd");
+        assertThat(thrown(() -> service.create(MBR, PET,
+                createRequest(CareZone.REGULAR.getCode(), CareCycle.CUSTOM.getCode(), null, null))).getFields())
+                .containsExactly("cycleDrctInptDayCnt");
+        assertThat(thrown(() -> service.create(MBR, PET, createRequest("HLTC9999", null, null, null))).getFields())
+                .containsExactly("careZoneCd");
+        assertThat(thrown(() -> service.create(MBR, PET,
+                new CareItemCreateRequest(" ", null, CareZone.DAILY.getCode(), null, null, null))).getFields())
+                .containsExactly("careArtclNm");
+    }
+
+    @Test
     void 구역_코드가_목록_밖이면_400() {
         assertThat(thrown(() -> service.create(MBR, PET, createRequest("HLTC9999", null, null, null))).getErrorCode())
                 .isEqualTo(ErrorCode.INVALID_INPUT_VALUE);

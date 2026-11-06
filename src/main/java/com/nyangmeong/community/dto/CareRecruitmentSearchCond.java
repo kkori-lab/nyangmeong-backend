@@ -4,6 +4,8 @@ import java.time.LocalDate;
 
 import org.springframework.format.annotation.DateTimeFormat;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import lombok.Data;
 
 /**
@@ -17,6 +19,7 @@ import lombok.Data;
  */
 @Data
 public class CareRecruitmentSearchCond {
+    @AiCode("PCAG01")
     private String rcrtSttsCd;
     private boolean mineYn;
     private Long rgnSn;
@@ -24,6 +27,7 @@ public class CareRecruitmentSearchCond {
     private LocalDate prtcBgngDe;
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate prtcEndDe;
+    @AiCode("PETG01")
     private String petSeCd;
     private String petSizeCd;
 }

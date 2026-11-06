@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
 import com.nyangmeong.health.dto.HealthIndicatorResponse;
@@ -27,6 +29,7 @@ public class HealthIndicatorController {
     private final HealthIndicatorService healthIndicatorService;
 
     @Operation(summary = "메인 건강 지표 조회")
+    @AiTool(name = "get_health_indicators", domain = "health", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<HealthIndicatorResponse>> get(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn) {

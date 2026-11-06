@@ -1,5 +1,7 @@
 package com.nyangmeong.community.dto;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import lombok.Data;
 
 /**
@@ -8,6 +10,7 @@ import lombok.Data;
  */
 @Data
 public class PostSearchCond {
+    @AiCode("CMUG01")
     private String bbsCd;
     private String keyword;
 }

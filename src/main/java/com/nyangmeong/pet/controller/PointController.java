@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
 import com.nyangmeong.pet.dto.PointResponse;
@@ -26,6 +28,7 @@ public class PointController {
     private final PointService pointService;
 
     @Operation(summary = "포인트 요약")
+    @AiTool(name = "get_points", domain = "pet", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<PointResponse>> getPoint(@AuthenticationPrincipal LoginMember me) {
         return ResponseEntity.ok(ApiResponse.success(pointService.getPoint(me.id())));

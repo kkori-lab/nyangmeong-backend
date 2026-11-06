@@ -559,10 +559,12 @@
 - 완료 조건 결과: 검증 `통과`(2026-11-05, 2회차. 1회차는 게시글 수가 삭제 글을 빼 관리자 게시글 목록과 달라 실패), 사람 확인 2026-11-05. 정한 것: `admin` 패키지 `GET /api/admin/dashboard`, 회원 수는 일반 회원(USRC0004)만·가입 수는 상태 무관, 게시글은 관리자 게시글 목록 기본 조건(삭제 글 포함), 배치 실패는 마지막 실행이 실패한 배치 수, 알림 실패는 지금-24시간. 계약은 `docs/api/admin.md`
 - 연결 남음: FN-ADM-001-02·03 (프론트 연결 `features/adminDashboard/api.js` `getAdminDashboard` 운영 현황·처리 대기 카드, 프론트 저장소에서 /start)
 
-## SCR-ADM-001 대시보드 · 이용 통계 API — 대기
+## SCR-ADM-001 대시보드 · 이용 통계 API — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-001-04·05
 - 기다리는 것: 프론트 SCR-ADM-001(끝, 가짜 응답 `features/adminDashboard/api.js`)
 - 완료 조건: `GET /api/admin/dashboard/stats?fromYmd=&toYmd=`(양끝 포함, 최대 90일)가 `daily`[`ymd`·`joinCnt`·`whdwlCnt`·`aiChatCnt`·`ocrRqstCnt`](날짜 순서대로 빠짐없이, 없는 날은 0), `pstCntByBbs`[`bbsCd`·`bbsNm`·`cnt`], `expnsCntByCtgry`[`ctgryCd`·`ctgryNm`·`cnt`], `petDstrb`[`petSeNm`·`vrtyNm`·`cnt`], `fvrtPlcs`[`plcSn`·`plcNm`·`cnt`]를 준다. 기간이 잘못되면 400
+- 완료 조건 결과: 검증 `통과`(2026-11-06, 1회차), 사람 확인 2026-11-06. 정한 것: 새 `AdminDashboardStatsController`·`AdminDashboardStatsService`로 분리(기존 대시보드 테스트가 생성자·mock bean을 직접 써서). 종료일은 오늘까지, 날짜 형식 오류도 400. 가입은 일반 회원·상태 무관, AI 대화는 사용자 메시지 수(지운 대화방은 빠짐), OCR 요청은 영수증 등록 수, 게시글은 상태 무관, 지출은 지출일자·삭제 제외, 게시판·카테고리는 사용 중인 코드 전부(0 포함). 종·품종 분포(상위 20, 품종 없음은 "직접 입력")와 즐겨찾기 상위 장소(상위 10)는 기간 무관. 계약은 `docs/api/admin.md`
+- 연결 남음: FN-ADM-001-04·05 (프론트 연결 `features/adminDashboard/api.js` 이용 통계 그래프·표·기간 선택, 프론트 저장소에서 /start)
 
 ## SCR-MYP-010 픽셀 캐릭터 관리 · 착용 모습 대표 이미지·전체 굽기 관리자 허용·얼굴 영역 — 끝
 - 기능: 명세 기능 ID 추가 없음(명세 밖 추가 요청, ai-f2 2026-11-04), 걸치는 기능 FN-MYP-010-16·13, FN-ADM-070-02
@@ -574,6 +576,29 @@
 - 연결 남음: 추가-② FN-ADM-070-02 (프론트 연결 SCR-ADM-070 전체 굽기 나눠 호출, 프론트 저장소에서 /start)
 - 연결 남음: FN-MYP-010-16 (프론트 연결 꾸미기 화면 착용 확정 뒤 Python 대표 이미지 합성 요청·이미지 다시 불러오기, 화면 SJM, 프론트 저장소에서 /start)
 - 연결 남음: 추가-①·③ (ai 저장소 `internal.md` 32~36행 확정·`schemas.py` FACE·나눠 굽기, ai 세션 #149 병합 뒤 /start)
+
+## SCR-AIM-011 AI 대화창 · 가계부·반려동물·커뮤니티·플레이스·FAQ 읽기 도구 표시 — 끝
+- 기능: 명세 기능 ID 추가 없음(설계 `nyangmeong-ai` `docs/design/tool-catalog.md` 2-1절·8절 4번 건강 외 도메인), 걸치는 기능 FN-AIM-004-02
+- 기다리는 것: 없음(Python 설명이 없는 도구는 Python이 싣지 않으므로 먼저 붙여도 지금 동작은 그대로. 도메인을 여는 시점은 ai `tool_eval` 기준)
+- 완료 조건: `GET /internal/ai/tools`에 설계 2-1절 가계부·반려동물·캐릭터·커뮤니티·플레이스·고객센터(FAQ) 조회 API가 `kind: READ`로 쿼리 칸·필수·코드 값과 함께 있고, 기존 15개는 그대로다. 제외(알림·1:1 채팅)는 없다. 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-06, 1회차), 사람 확인 2026-11-06(도구 42개 = 건강 15 + pet 10 + community 8 + expense 6 + place 2 + support 1). 정한 것: 검색 조건 6곳에 `@ModelAttribute`(없으면 도구 목록이 칸을 오류 없이 뺀다), `YearMonth` 칸은 `string` + pattern(새 타입 이름 없음), 보유 아이템 GET이 없어 `get_pixel_character`·`list_shop_items`(`hldYn`)로 대신, `GET /api/caregiver-invitations`는 보낸 초대라 `list_sent_caregiver_invitations`. YearMonth 테스트는 기존 `AiToolCatalogControllerTest` 대신 `PetAiToolCatalogTest`에 둠(기존 기대값 유지)
+- 연결 남음: FN-AIM-004-02 (ai 연결 27개 도구 Python 설명 `data/tool_prompts.yaml`·스냅샷, READ 실행 경로 뒤, 설계 2-1절 held-items·받은 초대 표기 수정, LJS ai 저장소에서 /start)
+
+## SCR-AIM-012 AI 일정 생성 확인 · 건강 쓰기 도구 표시 — 끝
+- 기능: 명세 기능 ID 추가 없음(설계 `nyangmeong-ai` `docs/design/tool-catalog.md` 2-2절 건강·3-3절·8절 5번), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 기다리는 것: 관찰 회차 등록(`POST /observation-cycles`)은 `@NotNull MultipartFile file`이라 도구 목록이 타입 미지원으로 뺀다 — 사진 선택으로 바꿀지·이번에 뺄지·파일 칸을 지원할지(사람). 대화로 쓴 기록의 출처 코드는 `SCHDL.SCHDL_SRC_CD`만 있어 다른 테이블은 DB 변경이 필요하다(사람). 프론트 범용 카드·응답 계약(프론트·ai)은 Python 설명이 없는 도구를 싣지 않으므로 먼저 붙여도 지금 동작은 그대로
+- 완료 조건: `GET /internal/ai/tools`에 일정 수정(`PATCH /{schdlSn}`)·케어 항목 수정·케어 완료 체크·건강 일지 기록·반려동물 정보 수정(`PATCH /api/pets/{petSn}`)(+ 정한 경우 관찰 회차 추가)이 `kind: CARD`로 칸·필수·규칙과 함께 있고, 그 서비스 검사 400이 `data: [{field, message}]`에 칸 이름을 담는다. 기존 READ 40개·CARD 2개는 그대로, 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-06, 2회차. 1회차는 종료된 관찰 항목 400에 칸 이름 없음으로 실패 뒤 수정), 도구 52개(READ 40·CARD 12), 사람 확인 2026-11-06. 관찰 회차는 파일 칸(`type: file`)으로 넣음, 출처 코드(DB 변경)는 이번 범위 밖
+- 연결 남음: FN-AIM-012-05·06·07·13 (프론트 연결 쓰기 도구 범용 확인 카드: multipart·array·generated 키 채우기·지출 중복 확인 먼저, 프론트 저장소에서 /start)
+- 연결 남음: FN-AIM-012-05·06·07·13 (ai 연결 10개 도구 설명 `data/tool_prompts.yaml`·`file`·`array` 타입 지원, ai 저장소에서 /start)
+
+## SCR-AIM-012 AI 일정 생성 확인 · 가계부 쓰기 도구 표시 — 끝
+- 합침: 2026-11-06 사람 결정으로 `건강 쓰기 도구 표시` 절에서 함께 한다(기획은 handoff). 그 절이 끝나면 이 절도 끝
+- 기능: 명세 기능 ID 추가 없음(설계 2-2절 가계부·3-3절), 걸치는 기능 FN-AIM-012-05·06·07, FN-AIM-013(영수증 저장)
+- 기다리는 것: 건강 쓰기 도구 절(같은 방식으로 붙인다). 지출 등록 전 중복 확인(`/duplicate-check`)을 카드 흐름에서 어떻게 부를지(ai·LJS)
+- 완료 조건: `GET /internal/ai/tools`에 지출 등록(`POST /api/expenses`)·지출 수정(`PATCH /{expndSn}`)·월 지출 한도(`PUT /api/members/me/expense-limit`)·영수증 인식 결과 저장(`POST /api/receipts/{recptSn}/save`)이 `kind: CARD`로 있고, 그 서비스 검사 400이 칸 이름을 담는다. 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 건강 쓰기 도구 절과 함께 끝(2026-11-06). 중복 확인은 도구로 싣지 않고 React가 `draft_expense` 전에 부른다(결정 G)
+- 연결 남음: FN-AIM-012-05·06·07, FN-AIM-013 (프론트·ai 연결은 건강 쓰기 도구 절과 같음)
 
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
@@ -622,3 +647,26 @@
 - AI매니저 v0.10 SCR-AIM-013(v0.9 신설): 명세 9 = 마일스톤 3 + 제외 6
 - 건강기록: 명세 86 = 마일스톤 13 + 제외 73
 - 관리자: 명세 135 = 마일스톤 123 + 제외 12 (FN-ADM-100-01~04 공통코드 화면, 2026-11-01 사람 결정: 코드 변경이 드물어 SQL로 처리 / FN-ADM-023-07·050-04·073-01, 2026-10-30 결정, 구현 계획 B-3·B-4·B-5 / FN-ADM-060-01~05 장소 화면, 2026-11-04 사람 결정). 기능명세서 v0.4 사본 기준, DMS 업로드 전
+
+## SCR-AIM-012 AI 일정 생성 확인 · 도구 목록 내부 API — 끝
+- 기능: 명세 기능 ID 추가 없음(설계 `nyangmeong-ai` `docs/design/tool-catalog.md` 8절 2번, 8절 0번 기능 ID 추가 전. ai-50 요청 2026-11-05), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 기다리는 것: 없음(ai 저장소 8절 1번은 가짜 Java 응답으로 진행 중)
+- 완료 조건: 쿠키 없이 `GET /internal/ai/tools`가 200으로 `version`·`structureVersion`·`tools`를 주고, `tools`에 `draft_schedule`(`POST /api/pets/{petSn}/care-schedules`)·`draft_care_item`(`POST /api/pets/{petSn}/care-items`)이 `kind: CARD`로 칸·필수·조건부 규칙·공통코드 값과 함께 있다
+- 완료 조건 결과: 검증 `통과`(2026-11-05, 1회차), 사람 확인 2026-11-05(Postman: 쿠키 없이 `GET /internal/ai/tools` 200·두 도구 응답, 등록 API 두 개의 빈 본문 400 칸이 도구 목록 `required`와 같음). 정한 것: 어노테이션·수집·API는 `global/aitool`(health 2층이 붙이므로 ai 3층에 두지 않음), 400 오류 모양은 기존 `data: [{field, message}]` 유지, 칸 type에 `datetime`, `@Min`·`@Max` → `min`·`max`, 응답은 `ApiResponse`로 감쌈·도구 이름순, 해시는 `TokenHashUtil`(SHA-256), 열린 경로는 `SecurityPathProperties` 기본값과 `.example`(설정 방식 유지). 계약은 `docs/api/ai.md`
+- 추가: 추가-1 로컬 `application.properties`(git 제외) 열린 경로에 `/api/auth/sns-login`·`/internal/ai/tools`
+- 연결 남음: 걸치는 기능 FN-AIM-012-05·06·07·13 (ai 저장소 가짜 응답 `data/tools.snapshot.json` → 실제 `GET /internal/ai/tools`, ai `docs/api/internal.md` 행 확정, 설계 8절 3번, ai 세션)
+
+## SCR-AIM-012 AI 일정 생성 확인 · 서비스 검사 오류 칸 이름 — 끝
+- 기능: 명세 기능 ID 추가 없음(ai 저장소 `docs/design/tool-catalog.md` 3-3절 "오류에 필드 이름", 2026-11-05 사람 결정으로 분리), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 기다리는 것: 없음
+- 완료 조건: 서비스 검사로 나는 400 `INVALID_INPUT_VALUE`도 `data: [{field, message}]`에 칸 이름을 담는다. 정기관리 케어 항목 등록에 `careCycleCd` 없이 보내면 `data[0].field`가 `careCycleCd`다
+- 완료 조건 결과: 검증 `통과`(2026-11-06, 1회차), 사람 확인 2026-11-06(Postman: 일정 등록 칸 빠짐 400 `data[0].field`). 정한 것: `message`는 `ErrorCode` 문구, 칸 없는 예외는 `data` 없이 그대로, 범위는 AI 도구가 붙은 일정·케어 항목 서비스만(다른 `INVALID_INPUT_VALUE`는 그대로), 테스트는 서비스 테스트에(컨트롤러 테스트는 서비스를 목으로 바꿔 칸을 확인 못 함)
+- 추가: 없음
+
+## SCR-AIM-011 AI 대화창 · 건강 읽기 도구 표시 — 끝
+- 기능: 명세 기능 ID 추가 없음(설계 `nyangmeong-ai` `docs/design/tool-catalog.md` 8절 4번 건강 도메인, 8절 0번 기능 ID 추가 전), 걸치는 기능 FN-AIM-004-02
+- 기다리는 것: 없음(8절 3번 연결은 ai 저장소에서 따로. Python 설명이 없는 도구는 Python이 싣지 않으므로 먼저 붙여도 지금 동작은 그대로)
+- 완료 조건: `GET /internal/ai/tools`에 건강 조회 API 13개가 `kind: READ`로 쿼리 칸(검색 조건·페이지)·필수·코드 값과 함께 있고, 기존 `draft_schedule`·`draft_care_item`은 그대로다. 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-06, 1회차), 사람 확인 2026-11-06(Postman: 쿠키 없이 `GET /internal/ai/tools` 200·도구 15개, 카드 2개는 바뀌기 전과 같음, 기동·첫 호출 뒤 `[AiTool] 제외` 없음). 정한 것: 경로 변수와 같은 이름의 검색 조건 필드는 뺌(서비스가 덮어씀), `PageQuery`는 `page`·`size`(max 50)만, 읽기 결과 자르기는 Java 기존 상한 그대로·나머지 Python 요약, 기존 테스트 `search_fake` 기대값 변경(사람 결정, 별도 커밋). 계약은 `docs/api/ai.md`
+- 추가: 없음
+- 연결 남음: 걸치는 기능 FN-AIM-004-02 (ai 저장소 ① READ 실행 경로 → ② `data/tool_prompts.yaml` 13개 설명·스냅샷 갱신, ai 세션)

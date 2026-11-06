@@ -7,6 +7,7 @@
 | 메서드 | 경로 | 설명 | 기능 ID | 담당 | 요청 DTO | 응답 DTO |
 | --- | --- | --- | --- | --- | --- | --- |
 | GET | /admin/dashboard | 관리자 대시보드 운영 현황·처리 대기. 기간과 무관한 지금 값. 회원 수는 일반 회원 권한(USRC0004)만 센다(관리자 계정 제외). 게시글은 관리자 게시글 목록(`GET /admin/posts`) 기본 조건과 같게 정상·블라인드·삭제 글을 모두 센다. 처리 대기 건수는 각 목록 화면의 필터 건수와 같은 조건이다(아래 `AdminDashboardResponse`). 일반 회원 403 ADMIN_ONLY | ADM-001-01·02·03 | LJS | - | AdminDashboardResponse |
+| GET | /admin/dashboard/stats | 관리자 대시보드 이용 통계. `fromYmd`·`toYmd`(yyyy-MM-dd, 둘 다 필수, 양끝 포함) 기간의 건수만 준다(건강기록·AI 대화 내용 없음, 결정 26). 최근 7일·30일은 프론트가 날짜로 바꿔 보낸다. 시작 > 종료, 종료 > 오늘, 91일 이상, 빠진 값, 날짜 형식 오류는 400 INVALID_INPUT_VALUE. 일반 회원 403 ADMIN_ONLY | ADM-001-04·05 | LJS | AdminDashboardStatsSearchCond | AdminDashboardStatsResponse |
 
 ## DTO
 
@@ -47,3 +48,62 @@
 | bbsNm | String | Y | 게시판 이름 | COM_CD.COM_CD_NM |
 | pstTtl | String | Y | | PST.PST_TTL |
 | regDt | LocalDateTime | Y | 작성 일시 | PST.REG_DT |
+
+### AdminDashboardStatsSearchCond
+쓰는 API: GET /admin/dashboard/stats
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| fromYmd | LocalDate | Y | 시작일자(포함). `toYmd` 이하 | ADM-001-05 |
+| toYmd | LocalDate | Y | 종료일자(포함). 오늘 이하, `fromYmd`부터 최대 90일 | ADM-001-05 |
+
+### AdminDashboardStatsResponse
+쓰는 API: GET /admin/dashboard/stats
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| daily | List<AdminDailyStatsSummary> | Y | 기간 안 날짜를 오름차순으로 빠짐없이. 없는 날은 0 | ADM-001-04 |
+| pstCntByBbs | List<AdminBoardPostCountSummary> | Y | 게시판별 게시글 수. 사용 중인 CMUG01 게시판 전부를 정렬 순서대로, 글이 없으면 0 | PST |
+| expnsCntByCtgry | List<AdminExpenseCategoryCountSummary> | Y | 가계부 카테고리별 지출 건수. 사용 중인 MYPG05 카테고리 전부를 정렬 순서대로, 없으면 0 | EXPND |
+| petDstrb | List<AdminPetDistributionSummary> | Y | 반려동물 종·품종 분포. **기간 무관** 지금 등록된(삭제 제외) 반려동물, 많은 순 상위 20 | PET |
+| fvrtPlcs | List<AdminFavoritePlaceSummary> | Y | 즐겨찾기 상위 장소. **기간 무관** 지금 즐겨찾기(해제·사용 중지 장소 제외), 많은 순(같으면 장소 번호 오름차순) 상위 10 | PLC_BKMK |
+
+### AdminDailyStatsSummary
+쓰는 API: GET /admin/dashboard/stats (`daily` 행)
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| ymd | LocalDate | Y | 일자 | |
+| joinCnt | long | Y | 가입 수. 일반 회원(USRC0004), 상태 무관(대시보드 `todayJoinCnt`와 같은 기준) | MBR.REG_DT |
+| whdwlCnt | long | Y | 탈퇴 수. 일반 회원 | MBR.WHDWL_DT |
+| aiChatCnt | long | Y | AI 대화 수 = 사용자(AIMC0024) 메시지 수. 회원이 지운 대화방의 메시지는 남지 않아 세지 않는다 | AI_CNVRS_MSG.ROLE_CD·REG_DT |
+| ocrRqstCnt | long | Y | OCR 요청 수 = 영수증 등록 수. 출처·처리 상태 무관 | RECPT.REG_DT |
+
+### AdminBoardPostCountSummary
+쓰는 API: GET /admin/dashboard/stats (`pstCntByBbs` 행)
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| bbsCd | String | Y | 공통코드 CMUG01 | COM_CD.COM_CD |
+| bbsNm | String | Y | 게시판 이름 | COM_CD.COM_CD_NM |
+| cnt | long | Y | 기간 안 작성 글 수. 정상·블라인드·삭제 글 모두(`totPstCnt`와 같은 기준) | PST.REG_DT |
+
+### AdminExpenseCategoryCountSummary
+쓰는 API: GET /admin/dashboard/stats (`expnsCntByCtgry` 행)
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| ctgryCd | String | Y | 공통코드 MYPG05 | COM_CD.COM_CD |
+| ctgryNm | String | Y | 카테고리 이름 | COM_CD.COM_CD_NM |
+| cnt | long | Y | 지출일자가 기간 안인 지출 건수, 삭제 제외 | EXPND.EXPND_YMD·DEL_YN |
+
+### AdminPetDistributionSummary
+쓰는 API: GET /admin/dashboard/stats (`petDstrb` 행)
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| petSeNm | String | Y | 종 이름(PETG01) | COM_CD.COM_CD_NM |
+| vrtyNm | String | Y | 품종 이름. 품종을 직접 입력한 반려동물은 종마다 `"직접 입력"` 한 묶음 | VRTY.VRTY_NM |
+| cnt | long | Y | 마릿수 | PET |
+
+### AdminFavoritePlaceSummary
+쓰는 API: GET /admin/dashboard/stats (`fvrtPlcs` 행)
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| plcSn | Long | Y | 장소 번호 | PLC.PLC_SN |
+| plcNm | String | Y | 장소 상호명 | PLC.PLC_CONM |
+| cnt | long | Y | 즐겨찾기 수 | PLC_BKMK.USE_YN |

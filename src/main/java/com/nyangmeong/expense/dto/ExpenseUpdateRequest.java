@@ -2,6 +2,8 @@ package com.nyangmeong.expense.dto;
 
 import java.time.LocalDate;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
@@ -13,7 +15,7 @@ import jakarta.validation.constraints.Size;
  */
 public record ExpenseUpdateRequest(
         LocalDate expndYmd,
-        String expndClsfCd,
+        @AiCode("MYPG05") String expndClsfCd,
         Long petSn,
         Boolean common,
         @Min(value = 1, message = "금액은 1원 이상이어야 해요") @Max(9_999_999_999_999L) Long expndAmt,

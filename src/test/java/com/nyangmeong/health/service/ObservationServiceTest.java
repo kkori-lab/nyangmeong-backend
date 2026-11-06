@@ -349,4 +349,25 @@ class ObservationServiceTest {
 
         assertThat(service.searchObservingPetSns()).isEqualTo(Set.of(10L, 20L));
     }
+
+    @Test
+    void 회차_추가_서비스_검사_400은_틀린_칸_이름을_담는다() {
+        when(mapper.selectItem(PET, ITEM)).thenReturn(item(ONGOING));
+
+        assertFields(() -> service.createCycle(MBR, PET, new ObservationCycleCreateRequest(ITEM, photo,
+                LocalDateTime.now().plusDays(3), null, null, null)), "obsrvDt");
+        assertFields(() -> service.createCycle(MBR, PET, new ObservationCycleCreateRequest(ITEM, photo, PAST,
+                new BigDecimal("-1"), null, null)), "obsrvSz");
+        assertFields(() -> service.createCycle(MBR, PET, new ObservationCycleCreateRequest(ITEM, photo, PAST, null,
+                "HLTC9999", null)), "obsrvChgCd");
+        assertFields(() -> service.createCycle(MBR, PET, new ObservationCycleCreateRequest(ITEM,
+                new MockMultipartFile("file", new byte[0]), PAST, null, null, null)), "file");
+    }
+
+    private static void assertFields(org.assertj.core.api.ThrowableAssert.ThrowingCallable call, String... fields) {
+        assertThatThrownBy(call).isInstanceOfSatisfying(CustomException.class, e -> {
+            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+            assertThat(e.getFields()).containsExactly(fields);
+        });
+    }
 }

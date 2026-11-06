@@ -30,6 +30,7 @@ import com.nyangmeong.pet.domain.Pet;
 import com.nyangmeong.pet.domain.PetCodeGroup;
 import com.nyangmeong.pet.domain.PetDeletedEvent;
 import com.nyangmeong.pet.domain.PetColor;
+import com.nyangmeong.pet.dto.AdminPetDistributionSummary;
 import com.nyangmeong.pet.dto.AdminPetSummary;
 import com.nyangmeong.pet.dto.CaregiverSummary;
 import com.nyangmeong.pet.dto.PetCreateRequest;
@@ -54,6 +55,11 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class PetService {
+
+    /** 관리자 대시보드 종·품종 분포 행 수 */
+    private static final int DISTRIBUTION_LIMIT = 20;
+    /** 품종을 직접 입력한 반려동물의 분포 품종 이름 */
+    private static final String DRCT_INPT_VRTY_NM = "직접 입력";
 
     /** 계정당 주양육 반려동물 상한 */
     private static final int MAX_PET_COUNT = 10;
@@ -164,7 +170,7 @@ public class PetService {
             pet.setPetSeCd(req.petSeCd());
         }
         if (req.vrtySn() != null && hasText(req.vrtyDrctInptNm())) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "vrtySn", "vrtyDrctInptNm");
         }
         if (req.vrtySn() != null) {
             pet.setVrtySn(req.vrtySn());
@@ -390,12 +396,15 @@ public class PetService {
      * 저장 직전 값 검사
      */
     private void checkPet(Pet pet) {
-        checkCode(PetCodeGroup.PET_SE, pet.getPetSeCd());
-        checkCode(PetCodeGroup.GENDER, pet.getPetGndrCd());
-        checkCode(PetCodeGroup.COLOR, pet.getColrCd());
+        checkCode(PetCodeGroup.PET_SE, pet.getPetSeCd(), "petSeCd");
+        checkCode(PetCodeGroup.GENDER, pet.getPetGndrCd(), "petGndrCd");
+        checkCode(PetCodeGroup.COLOR, pet.getColrCd(), "colrCd");
+        if (!PetColor.fits(pet.getPetSeCd(), pet.getColrCd())) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "colrCd");
+        }
 
         if ((pet.getVrtySn() == null) == (pet.getVrtyDrctInptNm() == null)) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "vrtySn", "vrtyDrctInptNm");
         }
         if (pet.getVrtySn() != null && !petMapper.existsVrty(pet.getVrtySn(), pet.getPetSeCd())) {
             throw new CustomException(ErrorCode.BREED_NOT_FOUND);
@@ -403,26 +412,26 @@ public class PetService {
 
         if (PetColor.DIRECT_INPUT.is(pet.getColrCd())) {
             if (pet.getColrDrctInptNm() == null) {
-                throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+                throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "colrDrctInptNm");
             }
         } else {
             pet.setColrDrctInptNm(null);
         }
 
         if (pet.getMinBdwg().compareTo(pet.getMaxBdwg()) >= 0) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "minBdwg", "maxBdwg");
         }
     }
 
     /**
      * 공통코드 그룹 소속 검사
      */
-    private void checkCode(PetCodeGroup group, String code) {
+    private void checkCode(PetCodeGroup group, String code, String field) {
         boolean exists = commonCodeService.search(group.getCode()).stream()
                 .map(CommonCodeSummary::getComCd)
                 .anyMatch(c -> c.equals(code));
         if (!exists) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, field);
         }
     }
 
@@ -452,5 +461,13 @@ public class PetService {
      */
     private boolean hasText(String value) {
         return value != null && !value.isBlank();
+    }
+
+    /**
+     * 관리자 대시보드 종·품종 분포 조회 (기간 무관, 많은 순 상위 20)
+     */
+    @Transactional(readOnly = true)
+    public List<AdminPetDistributionSummary> getDistribution() {
+        return petMapper.selectDistribution(DRCT_INPT_VRTY_NM, DISTRIBUTION_LIMIT);
     }
 }

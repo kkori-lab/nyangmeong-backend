@@ -88,10 +88,10 @@
              , P.PST_TTL
              , P.PST_STTS_CD
              , P.MBR_SN AS OWNER_MBR_SN
-             , O.MBR_NCNM AS OWNER_NCNM
-             , O.ATCH_FILE_SN AS OWNER_ATCH_FILE_SN
-             , A.MBR_NCNM AS APPLICANT_NCNM
-             , A.ATCH_FILE_SN AS APPLICANT_ATCH_FILE_SN
+             , <include refid="com.nyangmeong.global.mapper.MemberDisplay.ncnm"><property name="alias" value="O" /></include> AS OWNER_NCNM
+             , <include refid="com.nyangmeong.global.mapper.MemberDisplay.atchFileSn"><property name="alias" value="O" /></include> AS OWNER_ATCH_FILE_SN
+             , <include refid="com.nyangmeong.global.mapper.MemberDisplay.ncnm"><property name="alias" value="A" /></include> AS APPLICANT_NCNM
+             , <include refid="com.nyangmeong.global.mapper.MemberDisplay.atchFileSn"><property name="alias" value="A" /></include> AS APPLICANT_ATCH_FILE_SN
              , R.PET_PRTC_RCRT_SN
              , R.RCRT_STTS_CD
              , T.PET_PRTC_MTCH_SN
@@ -241,8 +241,8 @@
              , C.PST_SN
              , P.PST_TTL
              , CASE WHEN P.MBR_SN = #{mbrSn} THEN C.CTPT_MBR_SN ELSE P.MBR_SN END AS CTPT_MBR_SN
-             , CASE WHEN P.MBR_SN = #{mbrSn} THEN A.MBR_NCNM ELSE O.MBR_NCNM END AS CTPT_MBR_NCNM
-             , CASE WHEN P.MBR_SN = #{mbrSn} THEN A.ATCH_FILE_SN ELSE O.ATCH_FILE_SN END AS CTPT_ATCH_FILE_SN
+             , CASE WHEN P.MBR_SN = #{mbrSn} THEN <include refid="com.nyangmeong.global.mapper.MemberDisplay.ncnm"><property name="alias" value="A" /></include> ELSE <include refid="com.nyangmeong.global.mapper.MemberDisplay.ncnm"><property name="alias" value="O" /></include> END AS CTPT_MBR_NCNM
+             , CASE WHEN P.MBR_SN = #{mbrSn} THEN <include refid="com.nyangmeong.global.mapper.MemberDisplay.atchFileSn"><property name="alias" value="A" /></include> ELSE <include refid="com.nyangmeong.global.mapper.MemberDisplay.atchFileSn"><property name="alias" value="O" /></include> END AS CTPT_ATCH_FILE_SN
              , CASE WHEN P.MBR_SN = #{mbrSn} THEN #{guardianRole} ELSE #{sitterRole} END AS MY_ROLE
              , T.MTCH_DLNG_STTS_CD
              , LM.MSG_TYPE_CD AS LAST_MSG_TYPE_CD

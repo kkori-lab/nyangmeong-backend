@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
 import com.nyangmeong.health.dto.DailyHealthRecordCreateRequest;
@@ -40,6 +42,7 @@ public class DailyHealthRecordController {
     private final DailyHealthRecordService dailyHealthRecordService;
 
     @Operation(summary = "일상 건강기록 목록")
+    @AiTool(name = "list_daily_health_records", domain = "health", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<List<DailyHealthRecordSummary>>> search(
             @AuthenticationPrincipal LoginMember me, @PathVariable Long petSn,
@@ -48,6 +51,7 @@ public class DailyHealthRecordController {
     }
 
     @Operation(summary = "일상 건강기록 등록")
+    @AiTool(name = "draft_daily_health_record", domain = "health", kind = AiToolKind.CARD)
     @PostMapping
     public ResponseEntity<ApiResponse<DailyHealthRecordResponse>> create(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @Valid @RequestBody DailyHealthRecordCreateRequest req) {

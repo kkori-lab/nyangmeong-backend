@@ -1,5 +1,6 @@
 package com.nyangmeong.ai.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -8,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.nyangmeong.ai.domain.AiConversationMessage;
 import com.nyangmeong.ai.domain.AiConversationRoom;
 import com.nyangmeong.ai.domain.AiMessageRole;
+import com.nyangmeong.ai.dto.AdminDailyAiChatSummary;
 import com.nyangmeong.ai.dto.ConversationCreateRequest;
 import com.nyangmeong.ai.dto.ConversationMessageCreateRequest;
 import com.nyangmeong.ai.dto.ConversationMessageResponse;
@@ -183,5 +185,13 @@ public class AiConversationService {
         return new ConversationMessageResponse(message.getAiCnvrsMsgSn(), message.getRoleCd(),
                 fieldCryptoService.decrypt(message.getCnvrsCnEnc()), message.getMsgSeq(),
                 "Y".equals(message.getCmptnYn()), message.getRegDt());
+    }
+
+    /**
+     * 관리자 대시보드 일별 AI 대화 수 조회 (사용자 메시지, fromDt 이상 toDt 미만)
+     */
+    @Transactional(readOnly = true)
+    public List<AdminDailyAiChatSummary> getDailyUserMessageCounts(LocalDateTime fromDt, LocalDateTime toDt) {
+        return aiConversationMapper.selectDailyMessageCounts(AiMessageRole.USER.getCode(), fromDt, toDt);
     }
 }

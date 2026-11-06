@@ -625,4 +625,35 @@ class ExpenseServiceTest {
                 .doesNotContain("P.DEL_YN = 'N'");
         assertThat(xml).contains("WHEN P.DEL_YN = 'Y' THEN TRUE");
     }
+
+    @Test
+    void 등록_서비스_검사_400은_틀린_칸_이름을_담는다() {
+        assertFields(() -> service.create(MBR, request("MYPC9999", DIRECT, null, today, line(10L, 1_000, "a"))),
+                "expndClsfCd");
+        assertFields(() -> service.create(MBR, request(FOOD, "MYPC9999", null, today, line(10L, 1_000, "a"))),
+                "expndInptMthCd");
+        assertFields(() -> service.create(MBR, request(FOOD, DIRECT, null, today.plusDays(1),
+                line(10L, 1_000, "a"))), "expndYmd");
+        assertFields(() -> service.create(MBR, request(FOOD, DIRECT, null, today, line(10L, 1_000, "a"),
+                line(10L, 2_000, "b"))), "lines[1].petSn");
+        assertFields(() -> service.create(MBR, request(FOOD, DIRECT, null, today, line(10L, 1_000, "a"),
+                line(11L, 1_000, "b"), line(12L, 1_000, "c"), line(13L, 1_000, "d"))), "lines");
+    }
+
+    @Test
+    void 수정_서비스_검사_400은_틀린_칸_이름을_담는다() {
+        saved(10L, FOOD);
+
+        assertFields(() -> service.update(MBR, 5L, update(null, 11L, true, null, null)), "petSn", "common");
+        assertFields(() -> service.update(MBR, 5L, update("MYPC9999", null, null, null, null)), "expndClsfCd");
+        assertFields(() -> service.update(MBR, 5L, new ExpenseUpdateRequest(today.plusDays(1), null, null, null,
+                null, null, null)), "expndYmd");
+    }
+
+    private static void assertFields(org.assertj.core.api.ThrowableAssert.ThrowingCallable call, String... fields) {
+        assertThatThrownBy(call).isInstanceOfSatisfying(CustomException.class, e -> {
+            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+            assertThat(e.getFields()).containsExactly(fields);
+        });
+    }
 }

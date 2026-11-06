@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.nyangmeong.expense.dto.ReceiptResultResponse;
 import com.nyangmeong.expense.service.ReceiptAnalyzer;
 import com.nyangmeong.expense.service.ReceiptService;
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.file.StoredFile;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
@@ -34,6 +36,7 @@ public class ReceiptController {
     private final ReceiptService receiptService;
 
     @Operation(summary = "영수증 분석 결과 다시 열기")
+    @AiTool(name = "get_receipt", domain = "expense", kind = AiToolKind.READ)
     @GetMapping("/{recptSn}")
     public ResponseEntity<ApiResponse<ReceiptResultResponse>> get(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long recptSn, @RequestParam(required = false) Long petSn) {
