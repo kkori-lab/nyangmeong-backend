@@ -369,4 +369,31 @@
            AND NOW() >= DATE_SUB(EXPRY_CRTR_DT, INTERVAL 7 DAY)
            AND NOW() <![CDATA[<=]]> EXPRY_CRTR_DT
     </update>
+
+    <!-- 만료 사전 알림 대상 : 정상 게시글의 실종 제보 중 종료일(날짜)이 오늘부터 days 일 뒤.
+         연장하면 종료일이 바뀌어 이전 종료일 기준 알림은 나가지 않고, 찾았어요·만료·삭제 글은 빠진다 -->
+    <sql id="expiryAlarmCond">
+            P.PST_STTS_CD = #{pstSttsCd}
+        AND L.LOST_TPOF_STTS_CD = #{missingCd}
+        AND L.EXPRY_CRTR_DT >= NOW()
+        AND DATE(L.EXPRY_CRTR_DT) = DATE_ADD(CURDATE(), INTERVAL #{days} DAY)
+    </sql>
+
+    <select id="selectExpiryAlarmTargets" resultType="long">
+        SELECT L.LOST_TPOF_SN
+          FROM LOST_TPOF L
+          JOIN PST P
+            ON P.PST_SN = L.PST_SN
+         WHERE <include refid="expiryAlarmCond" />
+         ORDER BY L.LOST_TPOF_SN
+    </select>
+
+    <select id="existsExpiryAlarmTarget" resultType="boolean">
+        SELECT EXISTS (SELECT 1
+                         FROM LOST_TPOF L
+                         JOIN PST P
+                           ON P.PST_SN = L.PST_SN
+                        WHERE L.LOST_TPOF_SN = #{lostTpofSn}
+                          AND <include refid="expiryAlarmCond" />)
+    </select>
 </mapper>

@@ -1,6 +1,7 @@
 package com.nyangmeong.community.service;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -36,6 +37,9 @@ import com.nyangmeong.global.code.RegionService;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.file.FileStore;
+import com.nyangmeong.global.notification.EventPublisher;
+import com.nyangmeong.global.notification.NotificationEvent;
+import com.nyangmeong.global.notification.NotificationType;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.response.PageResponse;
 import com.nyangmeong.global.security.crypto.FieldCryptoService;
@@ -50,6 +54,7 @@ import lombok.RequiredArgsConstructor;
  * - 게시글(PST, 실종센터 게시판)과 제보(LOST_TPOF)가 1:1, 좋아요·댓글·신고는 /api/posts 와 같이 쓴다
  * - 실종지역은 목격 장소 좌표로 서버가 계산하고 전북 밖이면 거절한다
  * - 실종 상태는 등록 후 30일이 지나면 목록에서 빠지고 작성자만 상세를 본다(배치 없이 조회 조건으로 처리)
+ * - 종료 7일 전·1일 전 작성자 알림은 LostReportExpiryAlarmJob 이 글마다 sendExpiryAlarm 을 부른다
  */
 @Service
 @RequiredArgsConstructor
@@ -58,6 +63,11 @@ public class LostReportService {
     static final int PAGE_SIZE = 12;
     static final Set<String> PERIODS = Set.of("TODAY", "WEEK", "MONTH", "OVER_MONTH");
     static final String FOUND_COMMENT = "🎉 여러분의 제보와 관심 덕분에 %s가 무사히 가족의 품으로 돌아갔어요.";
+    /** 만료 사전 알림을 보내는 남은 일수 (화면설계서 SCR-CMU-002 : 종료 7일 전·1일 전) */
+    static final Set<Integer> EXPIRY_ALARM_DAYS = Set.of(7, 1);
+    static final String EXPIRY_ALARM_TTL = "실종 제보 게시 종료 안내";
+    static final String EXPIRY_ALARM_PATH = "/community/lost/%d";
+    private static final DateTimeFormatter EXPIRY_DATE = DateTimeFormatter.ofPattern("yyyy.MM.dd");
 
     private final LostReportMapper lostReportMapper;
     private final PostMapper postMapper;
@@ -68,6 +78,7 @@ public class LostReportService {
     private final FieldCryptoService fieldCryptoService;
     private final RegionService regionService;
     private final BreedService breedService;
+    private final EventPublisher eventPublisher;
 
     /**
      * 목록 조회 (실종 먼저·찾았어요 뒤, 한 페이지 12건. mineYn 이면 내 글만, 만료 글은 맨 뒤)
@@ -256,6 +267,45 @@ public class LostReportService {
     }
 
     /**
+     * 만료 사전 알림 대상 제보 번호 (종료일이 오늘부터 days 일 뒤인 실종 제보)
+     */
+    @Transactional(readOnly = true)
+    public List<Long> findExpiryAlarmTargets(int days) {
+        checkExpiryAlarmDays(days);
+        return lostReportMapper.selectExpiryAlarmTargets(LostReportStatus.MISSING.getCode(),
+                PostStatus.NORMAL.getCode(), days);
+    }
+
+    /**
+     * 만료 사전 알림 한 건 (작성자에게 인앱 알림, 수신 설정은 알림 저장 단계에서 거름)
+     * - 보내기 직전 다시 확인 : 그 사이 찾았어요·연장·삭제된 글이면 보내지 않고 false
+     */
+    @Transactional
+    public boolean sendExpiryAlarm(Long lostTpofSn, int days) {
+        checkExpiryAlarmDays(days);
+        if (!lostReportMapper.existsExpiryAlarmTarget(lostTpofSn, LostReportStatus.MISSING.getCode(),
+                PostStatus.NORMAL.getCode(), days)) {
+            return false;
+        }
+        LostReportDetail detail = lostReportMapper.selectDetail(lostTpofSn, PostStatus.NORMAL.getCode());
+        if (detail == null) {
+            return false;
+        }
+        String when = days == 1 ? "내일" : days + "일 뒤";
+        String content = String.format("%s 제보가 %s(%s) 게시 종료돼요. 아직 찾고 계시면 30일 더 게시할 수 있어요.",
+                detail.getPetNm(), when, detail.getExpryCrtrDt().format(EXPIRY_DATE));
+        eventPublisher.publish(new NotificationEvent(detail.getMbrSn(), NotificationType.LOST_EXPIRY,
+                EXPIRY_ALARM_TTL, content, String.format(EXPIRY_ALARM_PATH, lostTpofSn)));
+        return true;
+    }
+
+    private void checkExpiryAlarmDays(int days) {
+        if (!EXPIRY_ALARM_DAYS.contains(days)) {
+            throw new IllegalArgumentException("만료 사전 알림 일수가 아님 : " + days);
+        }
+    }
+
+    /**
      * 정상 게시글의 제보 조회
      */
     private LostReportDetail getDetailOrThrow(Long lostTpofSn) {
@@ -287,8 +337,8 @@ public class LostReportService {
         if (in.lastWtnsDt().isAfter(LocalDateTime.now())) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
-        /** 품종 마스터 선택과 직접 입력 중 하나만 */
-        if ((in.vrtySn() == null) == (in.vrtyDrctInptNm() == null)) {
+        /** 품종은 선택 항목 : 없거나(빈 값 포함) 마스터 선택·직접 입력 중 하나만 (사람 결정 2026-11-06) */
+        if (in.vrtySn() != null && emptyToNull(in.vrtyDrctInptNm()) != null) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
         breedService.checkPetSe(in.petSeCd());
@@ -322,7 +372,7 @@ public class LostReportService {
         report.setWtnsPlcNm(blankToNull(in.wtnsPlcNm()));
         report.setPrvcRlsAgreYn("Y");
         report.setVrtySn(in.vrtySn());
-        report.setVrtyDrctInptNm(in.vrtyDrctInptNm());
+        report.setVrtyDrctInptNm(emptyToNull(in.vrtyDrctInptNm()));
         return report;
     }
 
@@ -385,6 +435,11 @@ public class LostReportService {
 
     private String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value;
+    }
+
+    /** 빈 문자열만 없음으로 본다 (품종 직접 입력 : 공백만 있는 값은 요청 검증에서 400) */
+    private String emptyToNull(String value) {
+        return value == null || value.isEmpty() ? null : value;
     }
 
     /**

@@ -889,8 +889,8 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | --- | --- | --- | --- | --- |
 | petSeCd | String | Y | 공통코드 PETG01 | LOST_TPOF.PET_SE_CD, CMU-002-10 |
 | petNm | String | Y | 최대 20자(명세) | LOST_TPOF.PET_NM, CMU-002-10 |
-| vrtySn | Long | N | `vrtySn`·`vrtyDrctInptNm` 중 하나 필수. 해당 구분의 품종 마스터여야 한다 | LOST_TPOF.VRTY_SN, CMU-002-13 |
-| vrtyDrctInptNm | String | N | '기타' 선택 시 직접 입력. 최대 20자(명세). 마스터에 등록하지 않는다 | LOST_TPOF.VRTY_DRCT_INPT_NM, CMU-002-13 |
+| vrtySn | Long | N | 선택. `vrtyDrctInptNm`과 함께 보내면 400. 둘 다 없거나 `vrtyDrctInptNm`이 빈 값이면 품종 없음(명세는 필수, 사람 결정 2026-11-06). 해당 구분의 품종 마스터여야 한다 | LOST_TPOF.VRTY_SN, CMU-002-13 |
+| vrtyDrctInptNm | String | N | '기타' 선택 시 직접 입력. 최대 20자(명세). 빈 값(`""`)은 품종 없음, 공백만 있으면 400. 마스터에 등록하지 않는다 | LOST_TPOF.VRTY_DRCT_INPT_NM, CMU-002-13 |
 | colrNm | String | Y | 털 색상. 최대 20자(명세) | LOST_TPOF.COLR_NM, CMU-002-10 |
 | chrcCn | String | N | 특징. 최대 40자 | LOST_TPOF.CHRC_CN, CMU-002-10 |
 | lastWtnsDt | LocalDateTime | Y | 마지막 목격 날짜(화면은 날짜, 컬럼은 일시, issues 12) | LOST_TPOF.LAST_WTNS_DT, CMU-002-10 |
