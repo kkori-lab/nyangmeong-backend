@@ -76,4 +76,19 @@ class CareMatchMapperSqlTest {
     void 수령_확인은_수령_여부와_시각을_함께_기록한다() {
         assertThat(sql("CareMatchMapper.updateReceipt")).contains("RCV_YN = ?").contains("RCV_IDNTY_DT = NOW()");
     }
+
+    @Test
+    void 무응답_대상은_지금_상태가_된_시각이_기준_일수_이전인_매칭이다() {
+        String targets = sql("CareMatchMapper.selectNoResponseTargets");
+        String expired = sql("CareMatchMapper.existsNoResponseExpired");
+
+        for (String sql : new String[] { targets, expired }) {
+            assertThat(sql).contains("T.MTCH_DLNG_STTS_CD = ?")
+                    .contains("SELECT MAX(H.REG_DT) FROM PET_PRTC_MTCH_STTS_HSTRY H")
+                    .contains("H.AFTR_STTS_CD = T.MTCH_DLNG_STTS_CD")
+                    .contains("T.REG_DT) <= NOW() - INTERVAL ? DAY")
+                    .doesNotContain("MDFCN_DT");
+        }
+        assertThat(expired).contains("T.PET_PRTC_MTCH_SN = ?");
+    }
 }

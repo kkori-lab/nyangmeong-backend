@@ -122,6 +122,30 @@
              , NOW() )
     </insert>
 
+    <!-- 무응답 판정 : 지금 상태가 된 시각(그 상태로 바뀐 가장 최근 이력, 없으면 등록 시각)이 기준 일수 이전 -->
+    <sql id="noResponseExpiredCond">
+               T.MTCH_DLNG_STTS_CD = #{sttsCd}
+           AND COALESCE(( SELECT MAX(H.REG_DT)
+                            FROM PET_PRTC_MTCH_STTS_HSTRY H
+                           WHERE H.PET_PRTC_MTCH_SN = T.PET_PRTC_MTCH_SN
+                             AND H.AFTR_STTS_CD = T.MTCH_DLNG_STTS_CD ), T.REG_DT)
+               <![CDATA[<=]]> NOW() - INTERVAL #{days} DAY
+    </sql>
+
+    <select id="selectNoResponseTargets" resultType="long">
+        SELECT T.PET_PRTC_MTCH_SN
+          FROM PET_PRTC_MTCH T
+         WHERE <include refid="noResponseExpiredCond" />
+         ORDER BY T.PET_PRTC_MTCH_SN
+    </select>
+
+    <select id="existsNoResponseExpired" resultType="boolean">
+        SELECT EXISTS ( SELECT 1
+                          FROM PET_PRTC_MTCH T
+                         WHERE T.PET_PRTC_MTCH_SN = #{petPrtcMtchSn}
+                           AND <include refid="noResponseExpiredCond" /> )
+    </select>
+
     <update id="updateStatus">
         UPDATE PET_PRTC_MTCH
            SET MTCH_DLNG_STTS_CD = #{aftrSttsCd}

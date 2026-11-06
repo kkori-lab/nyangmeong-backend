@@ -22,6 +22,7 @@ import org.mockito.ArgumentCaptor;
 import com.nyangmeong.community.domain.CareCompletionRequest;
 import com.nyangmeong.community.domain.CareMatch;
 import com.nyangmeong.community.domain.CareMatchCondition;
+import com.nyangmeong.community.domain.CareMatchStatus;
 import com.nyangmeong.community.domain.CareMatchStatusHistory;
 import com.nyangmeong.community.domain.CareRecruitment;
 import com.nyangmeong.community.domain.CareRecruitmentDetail;
@@ -506,5 +507,74 @@ class CareMatchServiceTest {
     @Test
     void 없는_매칭은_404다() {
         assertError(() -> service.getMatch(GUARDIAN, 999L), ErrorCode.CARE_MATCH_NOT_FOUND);
+    }
+
+    // 무응답 자동 종료 (배치)
+
+    private static final String NO_RESPONSE = "PCAC0018";
+
+    @Test
+    void 수락_대기_무응답은_요청_취소가_되고_양쪽에_알리며_모집글은_그대로다() {
+        stubMatch(REQUESTED);
+        when(careMatchMapper.existsNoResponseExpired(MATCH, REQUESTED, 14L)).thenReturn(true);
+
+        boolean done = service.expireNoResponse(MATCH, CareMatchStatus.REQUESTED, 14L);
+
+        assertThat(done).isTrue();
+        verify(careMatchMapper).updateStatus(MATCH, REQUESTED, CANCELED);
+        ArgumentCaptor<CareMatchStatusHistory> history = ArgumentCaptor.forClass(CareMatchStatusHistory.class);
+        verify(careMatchMapper).insertStatusHistory(history.capture());
+        assertThat(history.getValue().getMbrSn()).isNull();
+        assertThat(history.getValue().getAftrSttsCd()).isEqualTo(CANCELED);
+        assertThat(history.getValue().getChgRsn()).isEqualTo("14일 무응답 자동 취소");
+        verify(chatMessageService).createSystemMessage(ROOM, "14일 동안 수락이 없어 요청이 자동 취소되었어요.");
+        ArgumentCaptor<NotificationEvent> event = ArgumentCaptor.forClass(NotificationEvent.class);
+        verify(eventPublisher, org.mockito.Mockito.times(2)).publish(event.capture());
+        assertThat(event.getAllValues()).extracting(NotificationEvent::mbrSn).containsExactlyInAnyOrder(GUARDIAN,
+                SITTER);
+        verify(careRecruitmentMapper, never()).updateStatus(anyLong(), anyString(), anyString(), any());
+    }
+
+    @Test
+    void 확인_대기_무응답은_무응답_종료가_되고_모집글은_매칭완료_그대로다() {
+        stubMatch(AWAITING_CONFIRM);
+        when(careMatchMapper.existsNoResponseExpired(MATCH, AWAITING_CONFIRM, 14L)).thenReturn(true);
+
+        boolean done = service.expireNoResponse(MATCH, CareMatchStatus.AWAITING_CONFIRM, 14L);
+
+        assertThat(done).isTrue();
+        verify(careMatchMapper).updateStatus(MATCH, AWAITING_CONFIRM, NO_RESPONSE);
+        verify(careMatchMapper, never()).updateStatus(MATCH, AWAITING_CONFIRM, AWAITING_RECEIPT);
+        verify(chatMessageService).createSystemMessage(ROOM, "14일 동안 완료 확인이 없어 거래가 무응답 종료되었어요.");
+        verify(eventPublisher, org.mockito.Mockito.times(2)).publish(any(NotificationEvent.class));
+        verify(careRecruitmentMapper, never()).updateStatus(anyLong(), anyString(), anyString(), any());
+    }
+
+    @Test
+    void 잠근_뒤_상태가_바뀌었으면_건너뛴다() {
+        stubMatch(MATCHED);
+
+        boolean done = service.expireNoResponse(MATCH, CareMatchStatus.REQUESTED, 14L);
+
+        assertThat(done).isFalse();
+        verify(careMatchMapper, never()).updateStatus(anyLong(), anyString(), anyString());
+        verify(eventPublisher, never()).publish(any(NotificationEvent.class));
+    }
+
+    @Test
+    void 잠근_뒤_다시_보니_기준_일수가_안_지났으면_건너뛴다() {
+        stubMatch(REQUESTED);
+        when(careMatchMapper.existsNoResponseExpired(MATCH, REQUESTED, 14L)).thenReturn(false);
+
+        assertThat(service.expireNoResponse(MATCH, CareMatchStatus.REQUESTED, 14L)).isFalse();
+        verify(careMatchMapper, never()).updateStatus(anyLong(), anyString(), anyString());
+    }
+
+    @Test
+    void 수령_대기는_무응답_처리_대상이_아니다() {
+        assertThatThrownBy(() -> service.findNoResponseTargets(CareMatchStatus.AWAITING_RECEIPT, 14L))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> service.expireNoResponse(MATCH, CareMatchStatus.AWAITING_RECEIPT, 14L))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 }
