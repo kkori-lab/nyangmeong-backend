@@ -3,6 +3,8 @@ package com.nyangmeong.expense.dto;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.nyangmeong.global.aitool.AiGenerated;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -16,7 +18,7 @@ import jakarta.validation.constraints.Size;
  * - expndPlcusNm : 가계부 사용처. 선택, 비면 사용처 없이 기록 (FN-AIM-009-10)
  */
 public record ReceiptSaveRequest(
-        @NotBlank @Size(max = 100) String idmptDmndId,
+        @NotBlank @Size(max = 100) @AiGenerated String idmptDmndId,
         @NotBlank @Size(max = 50) String hsptlNm,
         @NotNull LocalDate ckupYmd,
         @Size(max = 80) String expndPlcusNm,

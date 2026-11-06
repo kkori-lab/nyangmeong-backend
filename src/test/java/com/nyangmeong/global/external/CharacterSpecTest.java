@@ -3,6 +3,7 @@ package com.nyangmeong.global.external;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 
@@ -50,7 +51,21 @@ class CharacterSpecTest {
 
         BufferedImage face = ImageIO.read(new ByteArrayInputStream(CharacterSpec.cropFace(full)));
 
-        assertThat(face.getWidth()).isEqualTo(CharacterSpec.FACE.width);
-        assertThat(face.getHeight()).isEqualTo(CharacterSpec.FACE.height);
+        assertThat(face.getWidth()).isEqualTo(256);
+        assertThat(face.getHeight()).isEqualTo(256);
+    }
+
+    @Test
+    void 얼굴_영역은_96_32에서_320칸이다() throws Exception {
+        BufferedImage full = new BufferedImage(512, 512, BufferedImage.TYPE_INT_ARGB);
+        full.setRGB(96, 32, 0xFFFF0000);
+        full.setRGB(415, 351, 0xFF0000FF);
+        full.setRGB(95, 31, 0xFF00FF00);
+
+        BufferedImage face = ImageIO.read(new ByteArrayInputStream(CharacterSpec.cropFace(CharacterSpec.toPng(full))));
+
+        assertThat(CharacterSpec.FACE).isEqualTo(new Rectangle(96, 32, 320, 320));
+        assertThat(face.getRGB(0, 0)).isEqualTo(0xFFFF0000);
+        assertThat(face.getRGB(255, 255)).isEqualTo(0xFF0000FF);
     }
 }

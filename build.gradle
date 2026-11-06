@@ -22,6 +22,10 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	// 채팅 실시간(global/config/WebSocketConfig). STOMP over WebSocket, 내장 브로커
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+	// 인증번호 메일 SMTP 발송(global/mail/SmtpMailSender). app.mail.client=smtp 일 때만 쓰고, 버전은 Boot 관리
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:4.1.0'
 	implementation 'com.github.pagehelper:pagehelper-spring-boot-starter:4.1.1'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1'
@@ -43,6 +47,8 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	/** 테스트 JVM을 코어 절반(최대 4개)만큼 나눠 실행 : CI(4코어)는 2개, -PtestForks=N으로 바꿈 */
+	maxParallelForks = (findProperty('testForks') ?: Math.min(4, Math.max(1, Runtime.runtime.availableProcessors().intdiv(2)))) as int
 }
 
 tasks.withType(JavaCompile).configureEach {

@@ -21,6 +21,8 @@ import com.nyangmeong.community.mapper.CareMatchMapper;
 import com.nyangmeong.community.mapper.CareRecruitmentMapper;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.file.FileStore;
+import com.nyangmeong.global.file.StoredFile;
 import com.nyangmeong.global.response.PageQuery;
 
 /**
@@ -34,7 +36,9 @@ class AdminCareMatchServiceTest {
 
     private final CareRecruitmentMapper careRecruitmentMapper = mock(CareRecruitmentMapper.class);
     private final CareMatchMapper careMatchMapper = mock(CareMatchMapper.class);
-    private final AdminCareMatchService service = new AdminCareMatchService(careRecruitmentMapper, careMatchMapper);
+    private final FileStore fileStore = mock(FileStore.class);
+    private final AdminCareMatchService service = new AdminCareMatchService(careRecruitmentMapper, careMatchMapper,
+            fileStore);
 
     private void assertError(Runnable call, ErrorCode code) {
         assertThatThrownBy(call::run).isInstanceOf(CustomException.class).hasFieldOrPropertyWithValue("errorCode",
@@ -168,5 +172,42 @@ class AdminCareMatchServiceTest {
             assertThat(Arrays.stream(type.getDeclaredFields()).map(Field::getName))
                     .noneMatch(name -> name.toLowerCase().contains("chat") || name.toLowerCase().contains("msg"));
         }
+    }
+
+    @Test
+    void 이_모집글_완료_사진이면_파일을_읽어_준다() {
+        StoredFile stored = new StoredFile(new byte[] { 1, 2 }, "image/jpeg", "care_3555.jpg");
+        when(careRecruitmentMapper.selectAdminDetail(RCRT, DELETED)).thenReturn(detail());
+        when(careMatchMapper.selectAdminCompletionPhotos(RCRT)).thenReturn(List.of(photo(1L, 3555L), photo(1L, 3556L)));
+        when(fileStore.load(3556L)).thenReturn(stored);
+
+        assertThat(service.getImage(RCRT, 3556L)).isSameAs(stored);
+    }
+
+    @Test
+    void 이_모집글_완료_사진이_아니면_파일을_읽지_않고_404() {
+        when(careRecruitmentMapper.selectAdminDetail(RCRT, DELETED)).thenReturn(detail());
+        when(careMatchMapper.selectAdminCompletionPhotos(RCRT)).thenReturn(List.of(photo(1L, 3555L)));
+
+        assertError(() -> service.getImage(RCRT, 9999L), ErrorCode.FILE_NOT_FOUND);
+        verify(fileStore, never()).load(anyLong());
+    }
+
+    @Test
+    void 완료_사진이_하나도_없는_모집글이면_파일을_읽지_않고_404() {
+        when(careRecruitmentMapper.selectAdminDetail(RCRT, DELETED)).thenReturn(detail());
+        when(careMatchMapper.selectAdminCompletionPhotos(RCRT)).thenReturn(List.of());
+
+        assertError(() -> service.getImage(RCRT, 3555L), ErrorCode.FILE_NOT_FOUND);
+        verify(fileStore, never()).load(anyLong());
+    }
+
+    @Test
+    void 없거나_삭제된_모집글의_사진은_조회하지_않고_404() {
+        when(careRecruitmentMapper.selectAdminDetail(RCRT, DELETED)).thenReturn(null);
+
+        assertError(() -> service.getImage(RCRT, 3555L), ErrorCode.CARE_RECRUITMENT_NOT_FOUND);
+        verify(careMatchMapper, never()).selectAdminCompletionPhotos(anyLong());
+        verify(fileStore, never()).load(anyLong());
     }
 }

@@ -22,7 +22,9 @@ import com.nyangmeong.global.setting.SystemSettingService;
 import com.nyangmeong.global.validation.PhoneNumberNormalizer;
 import com.nyangmeong.member.domain.JoinPath;
 import com.nyangmeong.member.domain.Member;
+import com.nyangmeong.member.dto.AdminDailyMemberSummary;
 import com.nyangmeong.member.dto.AdminMemberDetailResponse;
+import com.nyangmeong.member.dto.AdminDashboardMemberSummary;
 import com.nyangmeong.member.dto.AdminMemberSearchCond;
 import com.nyangmeong.member.dto.AdminMemberStatusHistorySummary;
 import com.nyangmeong.member.dto.AdminMemberSummary;
@@ -35,6 +37,7 @@ import com.nyangmeong.member.dto.MemberSnsAccountSummary;
 import com.nyangmeong.member.dto.MemberUpdateRequest;
 import com.nyangmeong.member.dto.EmailCertificationResponse;
 import com.nyangmeong.member.dto.PasswordResetAccount;
+import com.nyangmeong.member.dto.SnsSignupClaims;
 import com.nyangmeong.member.mapper.MemberMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -53,6 +56,7 @@ public class MemberService {
     private static final String SIGNUP_REASON = "회원가입";
     private static final String RECOVERY_REASON = "재가입 복구";
     private static final int MASK_VISIBLE_LENGTH = 3;
+    private static final int DASHBOARD_RECENT_LIMIT = 5;
 
     private final MemberMapper memberMapper;
     private final FieldCryptoService fieldCryptoService;
@@ -115,7 +119,7 @@ public class MemberService {
                 maskEmail(fieldCryptoService.decrypt(member.getAcntEmlEnc())),
                 mblTelnoEnc == null ? null : maskPhone(fieldCryptoService.decrypt(mblTelnoEnc)),
                 member.getJoinPathCd(), snsLinks, member.getRegDt(), member.getLastLgnDt(), member.getHldPnt(),
-                member.getMbrSttsCd(), member.getSuspnEndDt());
+                member.getMbrAuthrtCd(), member.getMbrSttsCd(), member.getSuspnEndDt());
     }
 
     /**
@@ -310,10 +314,37 @@ public class MemberService {
      */
     @Transactional
     public Member create(String acntEml, String normalizedMblTelno, String pswdHash) {
+        return insertMember(JoinPath.EMAIL.getCode(), acntEml, normalizedMblTelno, pswdHash);
+    }
+
+    /**
+     * SNS 회원 등록 : 이메일 회원과 같은 방식으로 저장하되 비밀번호는 만들지 않고 SNS 연동을 함께 저장
+     * - 같은 제공자 계정이 이미 연동돼 있으면 SNS_ACCOUNT_ALREADY_LINKED
+     */
+    @Transactional
+    public Member createWithSns(SnsSignupClaims claims, String normalizedMblTelno) {
+        Member member = insertMember(claims.snsOffrCd(), claims.email(), normalizedMblTelno, null);
+        try {
+            memberMapper.insertSnsLink(member.getMbrSn(), claims.snsOffrCd(), claims.offrAcntId());
+        } catch (DuplicateKeyException e) {
+            throw new CustomException(ErrorCode.SNS_ACCOUNT_ALREADY_LINKED);
+        }
+        return member;
+    }
+
+    /**
+     * SNS 제공자 계정에 연결된 회원 조회 (탈퇴·정지 포함), 없으면 null
+     */
+    @Transactional(readOnly = true)
+    public Member findBySnsAccount(String snsOffrCd, String offrAcntId) {
+        return memberMapper.selectBySnsAccount(snsOffrCd, offrAcntId);
+    }
+
+    private Member insertMember(String joinPathCd, String acntEml, String normalizedMblTelno, String pswdHash) {
         Member member = new Member();
         member.setMbrSttsCd(MemberStatus.NORMAL.getCode());
         member.setMbrAuthrtCd(MemberAuthority.USER.getCode());
-        member.setJoinPathCd(JoinPath.EMAIL.getCode());
+        member.setJoinPathCd(joinPathCd);
         member.setAcntEmlEnc(fieldCryptoService.encrypt(acntEml));
         member.setAcntEmlHmac(fieldCryptoService.emailHmac(acntEml));
         member.setMblTelnoEnc(fieldCryptoService.encrypt(normalizedMblTelno));
@@ -458,5 +489,29 @@ public class MemberService {
     @Transactional(readOnly = true)
     public int countNormalMembers() {
         return memberMapper.countByStatus(MemberStatus.NORMAL.getCode());
+    }
+
+    /**
+     * 관리자 대시보드 회원 현황 조회
+     */
+    @Transactional(readOnly = true)
+    public AdminDashboardMemberSummary getDashboardSummary() {
+        String userCd = MemberAuthority.USER.getCode();
+        AdminDashboardMemberSummary summary = memberMapper.selectDashboardCounts(userCd,
+                MemberStatus.NORMAL.getCode(), MemberStatus.SUSPENDED.getCode());
+        if (summary == null) {
+            summary = new AdminDashboardMemberSummary();
+        }
+        summary.setRecentMbrs(memberMapper.selectRecentMembers(userCd,
+                List.of(MemberStatus.NORMAL.getCode(), MemberStatus.SUSPENDED.getCode()), DASHBOARD_RECENT_LIMIT));
+        return summary;
+    }
+
+    /**
+     * 관리자 대시보드 일별 가입·탈퇴 수 조회 (일반 회원, fromDt 이상 toDt 미만)
+     */
+    @Transactional(readOnly = true)
+    public List<AdminDailyMemberSummary> getDailyJoinWithdrawCounts(LocalDateTime fromDt, LocalDateTime toDt) {
+        return memberMapper.selectDailyJoinWithdrawCounts(MemberAuthority.USER.getCode(), fromDt, toDt);
     }
 }

@@ -22,6 +22,8 @@ import com.nyangmeong.community.dto.PostSearchCond;
 import com.nyangmeong.community.dto.PostSummary;
 import com.nyangmeong.community.dto.PostUpdateRequest;
 import com.nyangmeong.community.service.PostService;
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.response.PageResponse;
@@ -43,24 +45,29 @@ public class PostController {
     private final PostService postService;
 
     @Operation(summary = "펫이야기 게시글 목록")
+    @AiTool(name = "list_posts", domain = "community", kind = AiToolKind.READ)
     @GetMapping
-    public ResponseEntity<ApiResponse<PageResponse<PostSummary>>> search(PostSearchCond cond, PageQuery pq) {
+    public ResponseEntity<ApiResponse<PageResponse<PostSummary>>> search(
+            @ModelAttribute PostSearchCond cond, PageQuery pq) {
         return ResponseEntity.ok(ApiResponse.success(postService.search(cond, pq)));
     }
 
     @Operation(summary = "오늘의 건강팁")
+    @AiTool(name = "list_health_tips", domain = "community", kind = AiToolKind.READ)
     @GetMapping("/health-tips")
     public ResponseEntity<ApiResponse<List<PostSummary>>> getHealthTips() {
         return ResponseEntity.ok(ApiResponse.success(postService.getHealthTips()));
     }
 
     @Operation(summary = "인기 포토")
+    @AiTool(name = "get_popular_photo", domain = "community", kind = AiToolKind.READ)
     @GetMapping("/popular-photo")
     public ResponseEntity<ApiResponse<PostResponse>> getPopularPhoto(@AuthenticationPrincipal LoginMember me) {
         return ResponseEntity.ok(ApiResponse.success(postService.getPopularPhoto(me.id())));
     }
 
     @Operation(summary = "게시글 상세")
+    @AiTool(name = "get_post", domain = "community", kind = AiToolKind.READ)
     @GetMapping("/{pstSn}")
     public ResponseEntity<ApiResponse<PostResponse>> getPost(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long pstSn) {

@@ -22,6 +22,7 @@ import com.nyangmeong.health.dto.DailyHealthRecordUpdateRequest;
 import com.nyangmeong.health.mapper.DailyHealthRecordMapper;
 import com.nyangmeong.pet.domain.CareMission;
 import com.nyangmeong.pet.service.CareMissionService;
+import com.nyangmeong.pet.service.PetService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -47,7 +48,7 @@ public class DailyHealthRecordService {
     private final DailyHealthRecordMapper dailyHealthRecordMapper;
     private final PetAuthorizer petAuthorizer;
     private final CareMissionService careMissionService;
-    private final PetWeightFake petWeightFake;
+    private final PetService petService;
 
     /**
      * 일상 건강기록 목록 조회
@@ -71,7 +72,8 @@ public class DailyHealthRecordService {
     @Transactional
     public DailyHealthRecordResponse create(Long mbrSn, Long petSn, DailyHealthRecordCreateRequest req) {
         petAuthorizer.checkCaregiver(mbrSn, petSn);
-        DailyRecordIndicator indicator = DailyRecordIndicator.of(req.dailyRcdIdctCd()).orElseThrow(this::invalid);
+        DailyRecordIndicator indicator = DailyRecordIndicator.of(req.dailyRcdIdctCd())
+                .orElseThrow(() -> invalid("dailyRcdIdctCd"));
         checkValue(indicator, req.rcdNvl(), req.crsdSttsCd());
         String actorId = String.valueOf(mbrSn);
 
@@ -86,7 +88,7 @@ public class DailyHealthRecordService {
         dailyHealthRecordMapper.insertRecord(record);
 
         careMissionService.reflect(petSn, MISSIONS.get(indicator), mbrSn);
-        syncWeight(indicator, petSn);
+        syncWeight(indicator, petSn, mbrSn);
         return DailyHealthRecordResponse.from(dailyHealthRecordMapper.selectSummary(record.getDailyHlthRcdSn()));
     }
 
@@ -123,7 +125,7 @@ public class DailyHealthRecordService {
             record.setRcdDt(req.rcdDt());
         }
         dailyHealthRecordMapper.updateRecord(record, String.valueOf(mbrSn));
-        syncWeight(indicator, petSn);
+        syncWeight(indicator, petSn, mbrSn);
         return DailyHealthRecordResponse.from(dailyHealthRecordMapper.selectSummary(dailyHlthRcdSn));
     }
 
@@ -135,7 +137,7 @@ public class DailyHealthRecordService {
         petAuthorizer.checkCaregiver(mbrSn, petSn);
         DailyHealthRecord record = getOwn(petSn, dailyHlthRcdSn);
         dailyHealthRecordMapper.deleteRecord(dailyHlthRcdSn, String.valueOf(mbrSn));
-        DailyRecordIndicator.of(record.getDailyRcdIdctCd()).ifPresent(indicator -> syncWeight(indicator, petSn));
+        DailyRecordIndicator.of(record.getDailyRcdIdctCd()).ifPresent(indicator -> syncWeight(indicator, petSn, mbrSn));
     }
 
     /**
@@ -155,44 +157,50 @@ public class DailyHealthRecordService {
      */
     private void checkValue(DailyRecordIndicator indicator, BigDecimal rcdNvl, String crsdSttsCd) {
         if (indicator.isStool()) {
-            if (rcdNvl != null || crsdSttsCd == null) {
-                throw invalid();
+            if (rcdNvl != null) {
+                throw invalid("rcdNvl");
+            }
+            if (crsdSttsCd == null) {
+                throw invalid("crsdSttsCd");
             }
             checkStoolStatus(crsdSttsCd);
             return;
         }
-        if (crsdSttsCd != null || rcdNvl == null) {
-            throw invalid();
+        if (crsdSttsCd != null) {
+            throw invalid("crsdSttsCd");
+        }
+        if (rcdNvl == null) {
+            throw invalid("rcdNvl");
         }
         checkPositive(rcdNvl);
     }
 
     private void checkStoolStatus(String crsdSttsCd) {
         if (!dailyHealthRecordMapper.existsChildCode(HealthCodeGroup.STOOL_STATUS.getCode(), crsdSttsCd)) {
-            throw invalid();
+            throw invalid("crsdSttsCd");
         }
     }
 
     private void checkPositive(BigDecimal rcdNvl) {
         if (rcdNvl.signum() <= 0) {
-            throw invalid();
+            throw invalid("rcdNvl");
         }
     }
 
     /**
      * 체중 기록이 바뀌면 남은 최신 체중으로 프로필 동기화(남은 기록이 없으면 하지 않음)
      */
-    private void syncWeight(DailyRecordIndicator indicator, Long petSn) {
+    private void syncWeight(DailyRecordIndicator indicator, Long petSn, Long mbrSn) {
         if (indicator != DailyRecordIndicator.WEIGHT) {
             return;
         }
         BigDecimal latest = dailyHealthRecordMapper.selectLatestWeight(petSn, DailyRecordIndicator.WEIGHT.getCode());
         if (latest != null) {
-            petWeightFake.sync(petSn, latest);
+            petService.syncWeight(petSn, latest, mbrSn);
         }
     }
 
-    private CustomException invalid() {
-        return new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+    private CustomException invalid(String... fields) {
+        return new CustomException(ErrorCode.INVALID_INPUT_VALUE, fields);
     }
 }

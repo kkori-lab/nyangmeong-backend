@@ -22,6 +22,8 @@ import com.nyangmeong.health.dto.CareScheduleSummary;
 import com.nyangmeong.health.dto.CareScheduleUpdateRequest;
 import com.nyangmeong.health.dto.HospitalScheduleSummary;
 import com.nyangmeong.health.mapper.CareScheduleMapper;
+import com.nyangmeong.pet.domain.CareMission;
+import com.nyangmeong.pet.service.CareMissionService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,6 +31,7 @@ import lombok.RequiredArgsConstructor;
  * [케어 캘린더 일정]
  * - 일정 조회·등록·수정·삭제 (SCR-HLT-003, AI 대화 등록 FN-AIM-012-13·14)
  * - 병원 일정: 검진유형·병원명 필수, 그 외: 일정명 필수 (FN-HLT-003-35)
+ * - 케어미션 반영은 직접 등록 출처만 (AI 대화·검진기록 연동 일정은 제외)
  */
 @Service
 @RequiredArgsConstructor
@@ -36,6 +39,7 @@ public class CareScheduleService {
 
     private final CareScheduleMapper careScheduleMapper;
     private final PetAuthorizer petAuthorizer;
+    private final CareMissionService careMissionService;
 
     /**
      * 반려동물 일정 목록 조회
@@ -80,6 +84,9 @@ public class CareScheduleService {
         check(schedule, kind);
 
         careScheduleMapper.insertSchedule(schedule);
+        if (ScheduleSource.DIRECT.is(schedule.getSchdlSrcCd())) {
+            careMissionService.reflect(petSn, CareMission.SCHEDULE_CREATE, mbrSn);
+        }
         return CareScheduleResponse.from(schedule);
     }
 
@@ -180,36 +187,38 @@ public class CareScheduleService {
      */
     private void check(Schedule schedule, ScheduleKind kind) {
         if (schedule.getSchdlDt() == null) {
-            throw invalid();
+            throw invalid("schdlDt");
         }
         if (kind == ScheduleKind.HOSPITAL) {
-            if (schedule.getHsptlNm() == null || schedule.getCkupTypeCd() == null
-                    || !careScheduleMapper.existsChildCode(HealthCodeGroup.CHECKUP_TYPE.getCode(),
-                            schedule.getCkupTypeCd())) {
-                throw invalid();
+            if (schedule.getHsptlNm() == null) {
+                throw invalid("hsptlNm");
+            }
+            if (schedule.getCkupTypeCd() == null || !careScheduleMapper
+                    .existsChildCode(HealthCodeGroup.CHECKUP_TYPE.getCode(), schedule.getCkupTypeCd())) {
+                throw invalid("ckupTypeCd");
             }
         } else if (schedule.getSchdlNm() == null) {
-            throw invalid();
+            throw invalid("schdlNm");
         }
         if (schedule.getCldrBadgeColrCd() != null && !careScheduleMapper
                 .existsChildCode(HealthCodeGroup.BADGE_COLOR.getCode(), schedule.getCldrBadgeColrCd())) {
-            throw invalid();
+            throw invalid("cldrBadgeColrCd");
         }
     }
 
     private ScheduleKind kindOf(String schdlKndCd) {
-        return ScheduleKind.of(schdlKndCd).orElseThrow(this::invalid);
+        return ScheduleKind.of(schdlKndCd).orElseThrow(() -> invalid("schdlKndCd"));
     }
 
     private ScheduleSource sourceOf(String schdlSrcCd) {
         if (schdlSrcCd == null || schdlSrcCd.isBlank()) {
             return ScheduleSource.DIRECT;
         }
-        return ScheduleSource.of(schdlSrcCd).orElseThrow(this::invalid);
+        return ScheduleSource.of(schdlSrcCd).orElseThrow(() -> invalid("schdlSrcCd"));
     }
 
-    private CustomException invalid() {
-        return new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+    private CustomException invalid(String... fields) {
+        return new CustomException(ErrorCode.INVALID_INPUT_VALUE, fields);
     }
 
     private String emptyToNull(String value) {

@@ -8,6 +8,7 @@
         <result column="PET_SE_CD" property="petSeCd" />
         <result column="VRTY_NM"   property="vrtyNm" />
         <result column="SORT_SEQ"  property="sortSeq" />
+        <result column="USE_YN"    property="useYn" />
     </resultMap>
 
     <sql id="breedColumns">
@@ -16,6 +17,7 @@
         , PET_SE_CD
         , VRTY_NM
         , SORT_SEQ
+        , USE_YN
     </sql>
 
     <select id="selectList" resultMap="breedResultMap">
@@ -33,4 +35,89 @@
          WHERE VRTY_SN = #{vrtySn}
            AND USE_YN = 'Y'
     </select>
+
+    <select id="selectAdminList" resultMap="breedResultMap">
+        /* 관리자 품종 목록 (사용 안 함 포함) */
+        SELECT <include refid="breedColumns" />
+          FROM VRTY
+        <where>
+            <if test="petSeCd != null">
+               AND PET_SE_CD = #{petSeCd}
+            </if>
+        </where>
+         ORDER BY PET_SE_CD
+                , SORT_SEQ
+                , VRTY_SN
+    </select>
+
+    <select id="selectAdminBreed" resultMap="breedResultMap">
+        /* 관리자 품종 단건 (사용 안 함 포함) */
+        SELECT <include refid="breedColumns" />
+          FROM VRTY
+         WHERE VRTY_SN = #{vrtySn}
+    </select>
+
+    <select id="countSameName" resultType="int">
+        /* 같은 구분에 공백을 지운 이름이 같은 품종 수 */
+        SELECT COUNT(*)
+          FROM VRTY
+         WHERE PET_SE_CD = #{petSeCd}
+           AND REPLACE(VRTY_NM, ' ', '') = #{nameKey}
+        <if test="excludeVrtySn != null">
+           AND VRTY_SN <![CDATA[<>]]> #{excludeVrtySn}
+        </if>
+    </select>
+
+    <select id="selectMaxCodeNo" resultType="int">
+        /* 코드 접두의 가장 큰 번호 */
+        SELECT COALESCE(MAX(CAST(SUBSTRING(VRTY_CD, 5) AS UNSIGNED)), 0)
+          FROM VRTY
+         WHERE VRTY_CD LIKE CONCAT(#{prefix}, '%')
+    </select>
+
+    <select id="selectMaxSortSeq" resultType="int">
+        /* 구분의 가장 큰 정렬 순서 */
+        SELECT COALESCE(MAX(SORT_SEQ), 0)
+          FROM VRTY
+         WHERE PET_SE_CD = #{petSeCd}
+    </select>
+
+    <insert id="insert" parameterType="com.nyangmeong.pet.domain.Breed" useGeneratedKeys="true" keyProperty="vrtySn">
+        /* 품종 등록 */
+        INSERT INTO VRTY
+             ( VRTY_CD
+             , PET_SE_CD
+             , VRTY_NM
+             , SORT_SEQ
+             , USE_YN
+             , REG_DT
+             , MDFCN_DT
+             , RGTR_ID
+             , MDFR_ID
+             )
+        VALUES
+             ( #{vrtyCd}
+             , #{petSeCd}
+             , #{vrtyNm}
+             , #{sortSeq}
+             , #{useYn}
+             , NOW()
+             , NOW()
+             , #{rgtrId}
+             , #{mdfrId}
+             )
+    </insert>
+
+    <update id="update" parameterType="com.nyangmeong.pet.domain.Breed">
+        /* 품종 수정 (보낸 칸만) */
+        UPDATE VRTY
+        <set>
+            <if test="vrtyNm != null">VRTY_NM = #{vrtyNm},</if>
+            <if test="sortSeq != null">SORT_SEQ = #{sortSeq},</if>
+            <if test="useYn != null">USE_YN = #{useYn},</if>
+            MDFCN_DT = NOW(),
+            MDFR_ID = #{mdfrId}
+        </set>
+         WHERE VRTY_SN = #{vrtySn}
+    </update>
 </mapper>

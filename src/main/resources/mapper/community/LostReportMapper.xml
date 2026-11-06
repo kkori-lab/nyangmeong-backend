@@ -239,8 +239,8 @@
     <select id="selectDetail" resultMap="lostReportDetailResultMap">
         SELECT <include refid="lostReportColumns" />
              , P.MBR_SN
-             , M.MBR_NCNM
-             , M.ATCH_FILE_SN AS MBR_ATCH_FILE_SN
+             , <include refid="com.nyangmeong.global.mapper.MemberDisplay.ncnm"><property name="alias" value="M" /></include> AS MBR_NCNM
+             , <include refid="com.nyangmeong.global.mapper.MemberDisplay.atchFileSn"><property name="alias" value="M" /></include> AS MBR_ATCH_FILE_SN
              , P.PST_STTS_CD
              , P.PST_TTL
              , P.PST_CN

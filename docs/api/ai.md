@@ -1,6 +1,6 @@
 # AI 대화(ai) 내부 API·DTO
 
-공통 규칙(응답 껍데기, `Yn` 필드, 정본)은 `docs/api/README.md`에 있다. 이 파일은 Python AI 서버가 호출하는 대화 저장·조회와 AI 설정값 조회 내부 API만 담는다. 구현된 API의 정본은 Swagger(`/swagger-ui.html`)다.
+공통 규칙(응답 껍데기, `Yn` 필드, 정본)은 `docs/api/README.md`에 있다. 이 파일은 Python AI 서버가 호출하는 대화 저장·조회, AI 설정값 조회, AI 건강분석 리포트 입력·저장, 라우팅 매핑표 조회 내부 API와 관리자 라우팅 매핑표 API(SCR-ADM-080)를 담는다. 구현된 API의 정본은 Swagger(`/swagger-ui.html`)다.
 
 ## 호출 규칙
 
@@ -24,10 +24,35 @@
 | DELETE | /internal/ai/conversations/{aiCnvrsRoomSn} | 대화 삭제(물리 삭제, 메시지 CASCADE, 200) | AIM-011-13 | LJS | - | - |
 | GET | /internal/ai/settings | AI 설정값(응답 토큰 상한·대화 턴 수). 설정 행이 없으면 기본 4500·6 | AIM-002-02·11 | LJS | - | AiSettingResponse |
 | GET | /internal/ai/register-context | 등록 카드 컨텍스트. 쿠키 회원이 양육하는 반려동물 전부(공동양육 포함)와 각자의 케어 항목 이름. 반려동물이 없으면 빈 배열. 반려동물 목록은 외부 AI에 보내지 않는다 | AIM-012-04·08 | LJS | - | List<RegisterContextPet> |
+| GET | /internal/ai/pets/{petSn}/health-report-input?baseYmd= | AI 건강분석 리포트(메인 위젯 MANC0007)의 분석 입력과 저장본. 쿠키 회원이 양육하는 반려동물만(남의 반려동물 403 `PET_ACCESS_DENIED`, 없는 반려동물 404 `PET_NOT_FOUND`). `baseYmd`(KST 오늘, 필수, 없거나 형식이 틀리면 400 `BAD_REQUEST`) 포함 14일 일상기록과 `baseYmd` 이전 가장 최근 완료(HLTC0006) 검진 1회의 참고 범위 밖 검사 수치. `rfrshPsblYn`은 저장본이 없거나 저장 기준일이 `baseYmd`와 다르거나 그날 새로고침 0회면 true, `autoRgnrPsblYn`은 저장본이 없거나 저장 기준일이 다르거나 그날 자동 재생성 5회 미만이면 true. 명세 밖 추가 요청(ai 저장소 `docs/api/healthreport.md`) | MAN-006 | LJS | - | HealthReportContextResponse |
+| PUT | /internal/ai/pets/{petSn}/health-report | AI 건강분석 리포트 저장. 반려동물당 1행 덮어쓰기(`AI_HLTH_RPT`). 저장본이 없거나 기준일이 바뀌면 두 횟수를 0부터 센다. `rfrshYn: true`면 새로고침 횟수 +1(그날 이미 1회면 409 `HEALTH_REPORT_REFRESH_LIMIT`), 같은 기준일에 `rfrshYn: false`면 자동 재생성 횟수 +1(그날 이미 5회면 409 `HEALTH_REPORT_AUTO_LIMIT`). 그날 첫 생성은 세지 않는다. 저장본보다 이른 기준일·형식 오류는 400 `INVALID_INPUT_VALUE`. 응답 200 data 없음. `X-Requested-With` 필요 | MAN-006 | LJS | HealthReportSaveRequest | - |
+| GET | /internal/ai/routes | 라우팅 매핑표(FN-AIM-004-09에서 쓰는 지시어 → 화면). 사용 중(`USE_YN='Y'`) 행만 `prrtSeq`·`aiRoutMpngSn` 순. 이동 방식이 라우팅 대상 아님·제외·보류(AIMC0034~0036)인 행도 준다(Python이 이동하지 않는 행으로 거른다). 관리자가 바꾸면 다음 호출부터 반영(캐시 없음). Python은 DB에 붙지 않아 `data/routing.yaml` 대신 이 API를 쓴다(연결은 ai 저장소) | ADM-080-04 | LJS | - | List<AiRouteResponse> |
+| GET | /internal/ai/keywords?dictUsgCd= | 키워드 사전(일정 등록 판정·가계부 분류). `dictUsgCd`는 AIMC0037·AIMC0038만(뉴스 용도 AIMC0039·0040·모르는 값은 400 `INVALID_INPUT_VALUE`, 없으면 400 `BAD_REQUEST`). 사용 중(`USE_YN='Y'`) 행만 `sortSeq`·`kwrdDictSn` 순, '판정 규칙'·'시간' 행도 준다. `kwrdCn`은 관리자가 쓴 예시 문구 그대로(정규식 아님, 바꾸는 규칙은 ai 저장소가 정한다). 관리자가 바꾸면 다음 호출부터 반영(캐시 없음) | ADM-081-01 | LJS | - | List<AiKeywordResponse> |
+| GET | /internal/ai/tools | AI 매니저 도구 목록. `@AiTool`을 붙인 컨트롤러 메서드의 호출 경로·칸(경로 변수·쿼리·요청 본문 camelCase)·필수·검증(`@Size`→`minLength`·`maxLength`, `@Min`·`@Max`→`min`·`max`, `@Positive`→`positive`, `@Pattern`→`pattern`, `@Digits`→`precision`·`scale`)·조건부 규칙(`@AiRequiredIf`·`@AiOneOf`)·공통코드 값(`@AiCode`, 사용 중 코드만). **쿠키 없이** 부른다(`app.security.permit-all-paths`, Python 기동 때 호출). 쿼리 칸은 `@RequestParam`, `@ModelAttribute` 검색 조건의 필드(경로 변수와 이름이 같은 필드는 서비스가 경로 값으로 덮어쓰므로 뺀다), `PageQuery`의 `page`(min 1)·`size`(min 1·max 50, `sort`는 싣지 않음)에서 온다. 목록·중첩 객체 칸이 있는 도구는 빼고 WARN 로그. `version`은 코드 값 포함, `structureVersion`은 코드 값 제외 SHA-256. 400 오류 모양은 기존 그대로(`data: [{field, message}]`). 일정·케어 항목 등록의 서비스 검사(공통코드 값·조건부 필수)도 `data`에 칸 이름을 담는다(쓰기 도구가 붙은 서비스 범위는 아래 Param 절). multipart 칸은 `file`, 목록 칸은 `array`+`items`, 중복 방지 키는 `generated`. 명세 기능 ID 추가 전(ai 저장소 `docs/design/tool-catalog.md` 3절) | AIM-012-05·06·07·13 | LJS | - | AiToolCatalogResponse |
 
 탈퇴 회원 대화 파기(AIM-011-19)는 API가 아니라 `scheduler/AiConversationPurgeJob`이 매일 03:00 KST에 한다. Python의 `DELETE /internal/v1/members/{mbrSn}/conversations`는 쓰지 않는다.
 
 미완료(`cmptnYn=false`) 메시지를 완료로 바꾸는 API는 두지 않는다. [다시 생성]은 새 메시지를 덧붙이고, Python이 미완료 메시지를 AI 컨텍스트에서 뺀다(2026-10-28 ai 세션 합의, FN-AIM-002-07).
+
+## 관리자 API
+
+관리자 쿠키로 부른다(`/api` 접두어, 아래 경로는 `/api` 뒤). 일반 회원은 403 `ADMIN_ONLY`. 등록·수정·삭제는 `X-Requested-With` 필요, 감사 로그(`MNGR_TASK_LOG`, 대상 `AI_ROUT_MPNG`)를 남긴다. 우선순위 `prrtSeq`는 삭제 안 된 행 전체에서 1부터 빈틈없이 매기고, 등록·수정·삭제 때마다 다시 매긴다(기준 데이터의 No×10은 첫 저장 때 1~N으로 바뀐다). 같은 길이로 일치하면 위쪽 행이 먼저다(FN-ADM-080-03). 화면 ID 선택지는 서버가 주지 않는다(프론트 `docs/routes.md` 기준 목록). 초기 데이터는 기준 데이터 `[3] AI 라우팅 매핑`(부록 A, FN-ADM-080-05)
+
+| 메서드 | 경로 | 설명 | 기능 ID | 담당 | 요청 DTO | 응답 DTO |
+| --- | --- | --- | --- | --- | --- | --- |
+| GET | /admin/ai/routes?q= | 라우팅 매핑표. 사용 안 함 포함, `prrtSeq`·`aiRoutMpngSn` 순, 페이지 없음. `q`는 공백을 뺀 값이 공백을 뺀 지시어(`instKwrdCn`)에 들어 있는 행, 없거나 공백뿐이면 전체 | ADM-080-01 | LJS | - | List<AdminAiRouteSummary> |
+| POST | /admin/ai/routes | 매핑 등록(201). `prrtSeq` 자리에 넣고 나머지를 한 칸씩 민다(없으면 맨 아래, 행 수보다 크면 맨 아래). `domnNm`은 서버가 `scrnId`의 `SCR-` 뒤 세 글자로 정한다(없거나 모양이 다르면 `ETC`). 형식이 틀리면 400 `INVALID_INPUT_VALUE` | ADM-080-02·03 | LJS | AdminAiRouteSaveRequest | AdminAiRouteCreateResponse |
+| PATCH | /admin/ai/routes/{aiRoutMpngSn} | 매핑 수정(보낸 칸만). `prrtSeq`를 보내면 그 자리로 옮기고 나머지를 민다. 아무 칸도 없거나 형식이 틀리면 400 `INVALID_INPUT_VALUE`, 없는·삭제된 행 404 `AI_ROUTE_NOT_FOUND` | ADM-080-02·03 | LJS | AdminAiRouteSaveRequest | AdminAiRouteSummary |
+| DELETE | /admin/ai/routes/{aiRoutMpngSn} | 매핑 삭제(`DEL_YN='Y'`), 뒤 순위를 한 칸씩 당긴다. 응답 200 data 없음. 없는·이미 삭제된 행 404 `AI_ROUTE_NOT_FOUND` | ADM-080-02 | LJS | - | - |
+
+키워드 사전(SCR-ADM-081)은 같은 관리자 규칙에 감사 로그 대상 `KWRD_DICT`. 다루는 행은 용도·분류 여섯 묶음뿐이다: AIMC0037(일정 등록 판정)의 `등록 동사`·`날짜`·`주기`·`일정 종류`(연결 코드 HLTG19)·`검진유형`(HLTG01), AIMC0038(가계부 분류)의 `가계부 카테고리`(MYPG05). AIMC0037의 `판정 규칙`·`시간` 행은 서버 규칙이라 목록에 없고 수정·삭제는 404다(2026-10-30 결정). 뉴스 용도(AIMC0039·0040)는 커뮤니티 `/admin/news/keywords`(SCR-ADM-050). 초기 데이터는 기준 데이터 `[4] 키워드 사전`(부록 B, 가계부 분류는 v0.13 (2), FN-ADM-081-03)
+
+| 메서드 | 경로 | 설명 | 기능 ID | 담당 | 요청 DTO | 응답 DTO |
+| --- | --- | --- | --- | --- | --- | --- |
+| GET | /admin/ai/keywords?dictUsgCd=&kwrdClsfNm= | 키워드 목록. `dictUsgCd` 필수(AIMC0037·AIMC0038, 그 밖은 400 `INVALID_INPUT_VALUE`, 없으면 400 `BAD_REQUEST`), `kwrdClsfNm`을 주면 그 분류만. 사용 안 함 포함, `sortSeq`·`kwrdDictSn` 순, 페이지 없음 | ADM-081-01 | LJS | - | List<AdminAiKeywordSummary> |
+| POST | /admin/ai/keywords | 키워드 등록(201). 용도·분류는 위 여섯 묶음 중 하나, `sortSeq`는 같은 용도·분류의 최댓값+1(비어 있으면 10). 형식·연결 코드가 틀리면 400 `INVALID_INPUT_VALUE` | ADM-081-02 | LJS | AdminAiKeywordSaveRequest | AdminAiKeywordCreateResponse |
+| PATCH | /admin/ai/keywords/{kwrdDictSn} | 키워드 수정(보낸 칸만, 용도·분류·`sortSeq`는 그대로이고 보내도 무시). 아무 칸도 없거나 형식이 틀리면 400 `INVALID_INPUT_VALUE`, 없는·삭제된·이 화면이 다루지 않는 행 404 `AI_KEYWORD_NOT_FOUND` | ADM-081-02 | LJS | AdminAiKeywordSaveRequest | AdminAiKeywordSummary |
+| DELETE | /admin/ai/keywords/{kwrdDictSn} | 키워드 삭제(`DEL_YN='Y'`). 응답 200 data 없음. 없는·이미 삭제된·이 화면이 다루지 않는 행 404 `AI_KEYWORD_NOT_FOUND` | ADM-081-02 | LJS | - | - |
 
 ## DTO
 
@@ -93,3 +118,194 @@
 | petSn | Long | Y | | PET.PET_SN, AIM-012-04 |
 | petNm | String | Y | 문장 속 이름과 대조 | PET.PET_NM, AIM-012-04 |
 | careArtclNms | List<String> | Y | 그 반려동물의 케어 항목 이름(삭제 제외, 등록순). 없으면 빈 배열. 케어 항목 목록 service(JAJ) 연결 전까지 빈 배열 | CARE_ARTCL.CARE_ARTCL_NM, AIM-012-08 |
+
+### AiToolCatalogResponse
+쓰는 API: GET /internal/ai/tools
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| version | String | Y | 도구 목록(코드 값 포함) 키 정렬 JSON의 SHA-256(64자) | tool-catalog.md 3-2 |
+| structureVersion | String | Y | 코드 값을 뺀 같은 해시. 스냅샷 비교용 | tool-catalog.md 3-2 |
+| tools | List<AiToolResponse> | Y | 도구 이름순 | |
+
+### AiToolResponse
+쓰는 API: GET /internal/ai/tools
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| name | String | Y | Python 설명과 짝짓는 키(예: `draft_schedule`, `draft_care_item`, `list_care_schedules`). 건강 READ 13개: `list_care_schedules`·`list_care_items`·`list_care_completions`·`list_daily_health_records`·`list_checkups`·`get_checkup`·`list_prescriptions`·`list_inspection_values`·`list_etc_inspections`·`list_repeat_preventions`·`get_health_indicators`·`list_observation_items`·`list_observation_cycles`. 가계부 READ 6개: `list_expenses`·`get_expense_total`·`list_expense_months`·`get_expense_statistics`·`list_expense_pets`·`get_receipt`. 반려동물 READ 10개: `list_pets`·`get_pet`·`list_caregivers`·`list_sent_caregiver_invitations`(보낸 초대)·`list_daily_missions`·`get_points`·`list_point_ledgers`·`list_pixel_characters`·`get_pixel_character`·`list_shop_items`(보유 여부 `hldYn`, 보유 아이템 GET이 따로 없다). 커뮤니티 READ 8개: `list_posts`·`list_health_tips`·`get_popular_photo`·`get_post`·`list_comments`·`list_lost_reports`·`list_care_recruitments`·`list_news`. 플레이스 READ 2개: `list_places`·`list_place_bookmarks`. 고객센터 READ 1개: `list_faqs`. 건강 CARD 7개: `draft_schedule`·`draft_schedule_update`·`draft_care_item`·`draft_care_item_update`·`draft_care_completion`·`draft_daily_health_record`·`draft_observation_cycle`(multipart). 반려동물 CARD 1개: `draft_pet_update`. 가계부 CARD 4개: `draft_expense`(실행 전 React가 같은 본문으로 `/duplicate-check`)·`draft_expense_update`·`draft_expense_limit`·`draft_receipt_save`. 알림·1:1 채팅은 도구가 아니다. 읽기 결과 자르기는 Java가 기존 `size`·페이지 상한 그대로, 그 밖은 Python 요약(tool-catalog.md 9절) | `@AiTool.name` |
+| domain | String | Y | `health`·`expense`·`pet`·`community`·`place`·`support` | `@AiTool.domain` |
+| kind | String | Y | `READ`(Python이 바로 실행)·`CARD`(확인 카드) | `@AiTool.kind` |
+| call | Object | Y | `{method, path, contentType}`. path는 `{petSn}` 같은 경로 변수 그대로. `contentType`은 multipart 요청일 때만 `multipart/form-data`(그 밖은 키째 없다) | 컨트롤러 매핑 |
+| params | Map<String, Param> | Y | 키는 칸 이름. 값은 아래 Param. 값이 없는 속성은 키째 없다 | |
+| rules | List<Rule> | Y | `{requiredIf: {field, when, equals}}` 또는 `{oneOf: [칸…]}`. 조건 값이 여럿이면 값마다 한 줄. 없으면 빈 배열 | `@AiRequiredIf`·`@AiOneOf` |
+
+Param: `in`(`path`·`query`·`body`. multipart 요청의 칸도 `body`), `type`(`string`·`long`·`int`·`decimal`·`boolean`·`date`·`time`·`datetime`·`code`·`file`·`array`), `group`(코드 그룹), `required`(true일 때만), `minLength`·`maxLength`, `min`·`max`, `positive`, `pattern`(`YearMonth` 칸은 `string` + `^\d{4}-(0[1-9]|1[0-2])$`), `precision`·`scale`, `codes`(`[{cd, nm}]`, `code` 칸만), `minItems`(`array` 칸, `@NotEmpty` → 1, `@Size(min)`), `items`(`array` 칸 한 줄의 칸들. 같은 Param 모양이고 `in`이 없다. 중첩 가능, 예: `draft_receipt_save`의 `pets[].drugs[]`), `generated`(`@AiGenerated`, 실행하는 쪽이 만드는 값. 지금은 `uuid`뿐, 이 칸은 `required`를 싣지 않는다. 예: 중복 방지 키 `idmptDmndId`).
+
+- `file`은 multipart 요청 본문에만 싣는다(쿼리·`items` 안이면 도구를 뺀다). `array`는 `List<record>`만(값 목록 `List<String>` 등은 도구를 뺀다)
+- 요청 본문 칸 중 경로 변수와 이름이 같은 칸은 뺀다(INFO 로그 `[AiTool] 경로 변수와 같은 본문 칸 뺌`). 예: 일정 수정 본문 `petSn`(다른 반려동물로 옮기기)은 AI 도구로 쓰지 않는다
+- 서비스 검사 400의 칸 이름(`data: [{field, message}]`)은 일정·케어 항목에 더해 일상 건강기록 등록·관찰 회차 추가·반려동물 수정(등록도 같은 검사)·지출 등록·수정·영수증 저장도 담는다. 목록 칸은 `lines[1].petSn`·`pets[0].drugs[0].mdcnEndYmd`처럼 Bean Validation과 같은 모양
+
+### HealthReportContextResponse
+쓰는 API: GET /internal/ai/pets/{petSn}/health-report-input
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| input | HealthReportInputResponse | Y | 분석 입력 | MAN-006 |
+| report | HealthReportResponse | N | 그 반려동물의 저장본(기준일과 관계없이 최근 1건). 없으면 null | AI_HLTH_RPT |
+| rfrshPsblYn | Boolean | Y | `baseYmd`에 새로고침할 수 있는가 | AI_HLTH_RPT.RFRSH_NMTM |
+| autoRgnrPsblYn | Boolean | Y | `baseYmd`에 자동 재생성할 수 있는가 | AI_HLTH_RPT.AUTO_RGNR_NMTM |
+
+### HealthReportInputResponse
+쓰는 API: GET /internal/ai/pets/{petSn}/health-report-input
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| petNm | String | Y | | PET.PET_NM |
+| petSeCd | String | Y | PETG01 | PET.PET_SE_CD |
+| vrtyNm | String | N | 품종 이름, 품종이 없으면 직접 입력명 | VRTY.VRTY_NM, PET.VRTY_DRCT_INPT_NM |
+| ageMm | Integer | Y | `baseYmd` 기준 만 개월 | PET.PET_BRDT |
+| nutrYn | Boolean | Y | 중성화 | PET.NUTR_YN |
+| goalBdwg | BigDecimal | N | 목표체중 | PET.GOAL_BDWG |
+| weights | List<HealthReportDailySummary> | Y | 체중(HLTC0014). 그날 마지막 기록. 날짜 오름차순, 기록 없는 날은 빠짐 | DAILY_HLTH_RCD |
+| meals | List<HealthReportDailySummary> | Y | 식사량(HLTC0015). 그날 합계 | DAILY_HLTH_RCD |
+| waters | List<HealthReportDailySummary> | Y | 음수량(HLTC0016). 그날 합계 | DAILY_HLTH_RCD |
+| walks | List<HealthReportDailySummary> | Y | 산책(HLTC0018). 그날 합계 | DAILY_HLTH_RCD |
+| stools | List<HealthReportStoolSummary> | Y | 배변(HLTC0017). 기록마다 한 줄, 기록 시각 오름차순 | DAILY_HLTH_RCD |
+| latestCkupYmd | LocalDate | N | `baseYmd` 이전 가장 최근 완료 검진일. 없으면 null | SCHDL.SCHDL_DT |
+| inspOutOfRange | List<HealthReportInspectionSummary> | Y | 그 검진의 참고 범위 밖 검사 수치. 없으면 빈 배열 | INSP_NVL |
+
+### HealthReportDailySummary
+쓰는 API: GET /internal/ai/pets/{petSn}/health-report-input
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| ymd | LocalDate | Y | 기록일 | DAILY_HLTH_RCD.RCD_DT |
+| rcdNvl | BigDecimal | Y | 하루 값 | DAILY_HLTH_RCD.RCD_NVL |
+
+### HealthReportStoolSummary
+쓰는 API: GET /internal/ai/pets/{petSn}/health-report-input
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| ymd | LocalDate | Y | 기록일 | DAILY_HLTH_RCD.RCD_DT |
+| crsdSttsCdNm | String | Y | 배변 상태 이름(HLTG10) | DAILY_HLTH_RCD.CRSD_STTS_CD |
+
+### HealthReportInspectionSummary
+쓰는 API: GET /internal/ai/pets/{petSn}/health-report-input
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| inspArtclNm | String | Y | 검사항목 이름(HLTG12), 직접 입력 항목이면 직접 입력명 | INSP_NVL.INSP_ARTCL_CD·INSP_ARTCL_DRCT_INPT_NM |
+| rsltNvl | BigDecimal | Y | | INSP_NVL.RSLT_NVL |
+| unitNm | String | Y | | INSP_NVL.UNIT_NM |
+| refLlmtNvl | BigDecimal | N | | INSP_NVL.REF_LLMT_NVL |
+| refUplmtNvl | BigDecimal | N | | INSP_NVL.REF_UPLMT_NVL |
+
+### HealthReportResponse
+쓰는 API: GET /internal/ai/pets/{petSn}/health-report-input
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| rptTtl | String | Y | | AI_HLTH_RPT.RPT_TTL |
+| tips | List<String> | Y | | AI_HLTH_RPT.ANLS_CN(JSON 배열) |
+| inputHash | String | Y | 소문자 16진 64자 | AI_HLTH_RPT.INPT_HASH |
+| crtDt | LocalDateTime | Y | 리포트를 저장한 시각 | AI_HLTH_RPT.CRT_DT |
+
+### HealthReportSaveRequest
+쓰는 API: PUT /internal/ai/pets/{petSn}/health-report
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| baseYmd | LocalDate | Y | 기준일(KST 오늘). 저장본보다 이르면 400 | AI_HLTH_RPT.BASE_YMD |
+| rptTtl | String | Y | 1~20자 | AI_HLTH_RPT.RPT_TTL |
+| tips | List<String> | Y | 1~3개, 각 1~40자 | AI_HLTH_RPT.ANLS_CN |
+| inputHash | String | Y | 16진 64자(SHA-256), 소문자로 저장 | AI_HLTH_RPT.INPT_HASH |
+| rfrshYn | Boolean | Y | 새로고침으로 만든 리포트인가 | AI_HLTH_RPT.RFRSH_NMTM |
+
+### AiRouteResponse
+쓰는 API: GET /internal/ai/routes
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| aiRoutMpngSn | Long | Y | | AI_ROUT_MPNG.AI_ROUT_MPNG_SN |
+| trgtScrnNm | String | Y | | AI_ROUT_MPNG.TRGT_SCRN_NM |
+| scrnId | String | N | | AI_ROUT_MPNG.SCRN_ID |
+| scrnParamCn | String | N | 예 `cat=hospital` | AI_ROUT_MPNG.SCRN_PARAM_CN |
+| instKwrds | List<String> | Y | 지시어를 쉼표로 나눠 앞뒤 공백을 뺀 배열, 빈 값 제외. 지시어가 없으면 빈 배열 | AI_ROUT_MPNG.INST_KWRD_CN |
+| mvmnMthdCd | String | Y | AIMG09: AIMC0032 화면 이동, AIMC0033 모달 열기, AIMC0034 라우팅 대상 아님, AIMC0035 제외, AIMC0036 보류 | AI_ROUT_MPNG.MVMN_MTHD_CD |
+| rprsChipYn | boolean | Y | 대표 칩 | AI_ROUT_MPNG.RPRS_CHIP_YN |
+| prrtSeq | Integer | Y | 작을수록 먼저 | AI_ROUT_MPNG.PRRT_SEQ |
+
+### AdminAiRouteSummary
+쓰는 API: GET /admin/ai/routes, PATCH /admin/ai/routes/{aiRoutMpngSn}
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| aiRoutMpngSn | Long | Y | | AI_ROUT_MPNG.AI_ROUT_MPNG_SN, ADM-080-01 |
+| domnNm | String | Y | 서버가 화면 ID로 정함 | AI_ROUT_MPNG.DOMN_NM |
+| trgtScrnNm | String | Y | | AI_ROUT_MPNG.TRGT_SCRN_NM |
+| scrnId | String | N | | AI_ROUT_MPNG.SCRN_ID |
+| scrnParamCn | String | N | | AI_ROUT_MPNG.SCRN_PARAM_CN |
+| instKwrdCn | String | N | 쉼표 구분 한 줄 | AI_ROUT_MPNG.INST_KWRD_CN |
+| mvmnMthdCd | String | Y | AIMG09 | AI_ROUT_MPNG.MVMN_MTHD_CD |
+| rprsChipYn | boolean | Y | | AI_ROUT_MPNG.RPRS_CHIP_YN |
+| prrtSeq | Integer | Y | 1부터 | AI_ROUT_MPNG.PRRT_SEQ, ADM-080-03 |
+| rmrkCn | String | N | | AI_ROUT_MPNG.RMRK_CN |
+| useYn | boolean | Y | | AI_ROUT_MPNG.USE_YN |
+| mdfcnDt | LocalDateTime | Y | | AI_ROUT_MPNG.MDFCN_DT |
+
+### AdminAiRouteSaveRequest
+쓰는 API: POST /admin/ai/routes, PATCH /admin/ai/routes/{aiRoutMpngSn}
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| trgtScrnNm | String | 등록 Y | 100자, 공백만이면 400 | AI_ROUT_MPNG.TRGT_SCRN_NM |
+| scrnId | String | N | 100자. 이동 방식이 AIMC0032·AIMC0033이면 필수. 모양은 검사하지 않는다(제외 행에 `SCR-ACC-001 / 002` 같은 값이 있음). 수정에서 빈 문자열은 비움 | AI_ROUT_MPNG.SCRN_ID |
+| scrnParamCn | String | N | 200자. 수정에서 빈 문자열은 비움 | AI_ROUT_MPNG.SCRN_PARAM_CN |
+| instKwrdCn | String | N | 1000자, 쉼표 구분 한 줄. 이동 방식이 AIMC0032·AIMC0033이면 필수. 수정에서 빈 문자열은 비움 | AI_ROUT_MPNG.INST_KWRD_CN |
+| mvmnMthdCd | String | 등록 Y | AIMG09 다섯 값, 아니면 400 | AI_ROUT_MPNG.MVMN_MTHD_CD |
+| rprsChipYn | Boolean | N | 등록 기본 false | AI_ROUT_MPNG.RPRS_CHIP_YN |
+| prrtSeq | Integer | N | 1 이상. 등록 기본 맨 아래, 수정에서 없으면 순위 그대로 | AI_ROUT_MPNG.PRRT_SEQ, ADM-080-03 |
+| rmrkCn | String | N | 1000자. 수정에서 빈 문자열은 비움 | AI_ROUT_MPNG.RMRK_CN |
+| useYn | Boolean | N | 등록 기본 true | AI_ROUT_MPNG.USE_YN |
+
+### AdminAiRouteCreateResponse
+쓰는 API: POST /admin/ai/routes
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| aiRoutMpngSn | Long | Y | 등록한 매핑 번호 | AI_ROUT_MPNG.AI_ROUT_MPNG_SN |
+
+### AiKeywordResponse
+쓰는 API: GET /internal/ai/keywords
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| kwrdDictSn | Long | Y | | KWRD_DICT.KWRD_DICT_SN |
+| kwrdClsfNm | String | Y | 예 `등록 동사`·`가계부 카테고리` | KWRD_DICT.KWRD_CLSF_NM |
+| artclNm | String | Y | | KWRD_DICT.ARTCL_NM |
+| kwrdCn | String | Y | 쉼표 구분 예시 문구 한 줄(`○일 후` 같은 자리표시 포함) | KWRD_DICT.KWRD_CN |
+| intrpRsltCn | String | N | | KWRD_DICT.INTRP_RSLT_CN |
+| mpngCd | String | N | 결과 코드(HLTG19·HLTG01·MYPG05) | KWRD_DICT.MPNG_CD |
+
+### AdminAiKeywordSummary
+쓰는 API: GET /admin/ai/keywords, PATCH /admin/ai/keywords/{kwrdDictSn}
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| kwrdDictSn | Long | Y | | KWRD_DICT.KWRD_DICT_SN, ADM-081-01 |
+| dictUsgCd | String | Y | AIMG10: AIMC0037·AIMC0038 | KWRD_DICT.DICT_USG_CD |
+| kwrdClsfNm | String | Y | | KWRD_DICT.KWRD_CLSF_NM |
+| artclNm | String | Y | | KWRD_DICT.ARTCL_NM |
+| kwrdCn | String | Y | 쉼표 구분 한 줄 | KWRD_DICT.KWRD_CN |
+| intrpRsltCn | String | N | | KWRD_DICT.INTRP_RSLT_CN |
+| mpngCd | String | N | 연결 코드 | KWRD_DICT.MPNG_CD |
+| mpngCdNm | String | N | 연결 코드 이름 | COM_CD.COM_CD_NM |
+| sortSeq | Integer | Y | | KWRD_DICT.SORT_SEQ |
+| rmrkCn | String | N | | KWRD_DICT.RMRK_CN |
+| useYn | boolean | Y | | KWRD_DICT.USE_YN |
+
+### AdminAiKeywordSaveRequest
+쓰는 API: POST /admin/ai/keywords, PATCH /admin/ai/keywords/{kwrdDictSn}
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| dictUsgCd | String | 등록 Y | AIMC0037·AIMC0038. 수정에서는 무시 | KWRD_DICT.DICT_USG_CD |
+| kwrdClsfNm | String | 등록 Y | 50자, 용도별 분류(관리자 API 설명) 중 하나. 수정에서는 무시 | KWRD_DICT.KWRD_CLSF_NM |
+| artclNm | String | 등록 Y | 100자, 공백만이면 400 | KWRD_DICT.ARTCL_NM |
+| kwrdCn | String | 등록 Y | 1000자, 쉼표 구분 한 줄, 공백만이면 400 | KWRD_DICT.KWRD_CN |
+| intrpRsltCn | String | N | 500자. 수정에서 빈 문자열은 비움 | KWRD_DICT.INTRP_RSLT_CN |
+| mpngCd | String | N | `일정 종류`·`검진유형`·`가계부 카테고리`는 필수이고 각각 HLTG19·HLTG01·MYPG05의 코드, 그 밖의 분류는 보내면 400. 수정에서 빈 문자열은 비움(필수 분류면 400) | KWRD_DICT.MPNG_CD |
+| rmrkCn | String | N | 1000자. 수정에서 빈 문자열은 비움 | KWRD_DICT.RMRK_CN |
+| useYn | Boolean | N | 등록 기본 true | KWRD_DICT.USE_YN |
+
+### AdminAiKeywordCreateResponse
+쓰는 API: POST /admin/ai/keywords
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| kwrdDictSn | Long | Y | 등록한 키워드 번호 | KWRD_DICT.KWRD_DICT_SN |

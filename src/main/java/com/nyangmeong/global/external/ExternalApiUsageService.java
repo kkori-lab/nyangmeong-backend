@@ -91,6 +91,25 @@ public class ExternalApiUsageService {
         return PageResponse.of(new PageInfo<>(rows));
     }
 
+    /**
+     * 검사결과지 분석 현황 조회 (FN-ADM-082-03)
+     * - PDF 분석(SYSC0025)만, 실패는 실패·시간초과. 기간은 모두 선택
+     */
+    @Transactional(readOnly = true)
+    public PdfAnalysisListResponse searchPdfAnalyses(PdfAnalysisSearchCond cond, PageQuery pq) {
+        if (cond.getFromYmd() != null && cond.getToYmd() != null && cond.getFromYmd().isAfter(cond.getToYmd())) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        String pdfCd = ExternalApiType.PDF_ANALYSIS.getCode();
+        PdfAnalysisSummary summary = externalApiCallLogMapper.selectPdfAnalysisSummary(cond, pdfCd,
+                ExternalApiCallResult.SUCCESS.getCode(), ExternalApiCallResult.TIMEOUT.getCode(),
+                ExternalApiCallResult.FAIL.getCode());
+        PageHelper.startPage(pq.pageOrDefault(), pq.sizeOrDefault());
+        List<PdfAnalysisFailureRow> rows = externalApiCallLogMapper.selectPdfAnalysisFailures(cond, pdfCd,
+                ExternalApiCallResult.SUCCESS.getCode());
+        return PdfAnalysisListResponse.of(summary, PageResponse.of(new PageInfo<>(rows)));
+    }
+
     // 기간 기본값을 채우고 종류·기간을 검사
     private void normalize(ExternalApiUsageSearchCond cond) {
         if (cond.getExtlApiSeCd() != null) {

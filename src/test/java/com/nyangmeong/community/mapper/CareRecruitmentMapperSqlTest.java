@@ -16,16 +16,23 @@ import org.junit.jupiter.api.Test;
 /**
  * [검사 - 펫돌봄 모집 SQL]
  * - DB 없이 Mapper XML 에서 만들어지는 SQL 에 필터 조건이 붙는지, 공개 조회에 상세 주소·좌표가 없는지만 확인
+ * - 작성자·매칭 돌보미 닉네임이 파기 회원 표시 공통 조각(MemberDisplay)을 쓰는지, 관리자 매칭 조회는 원래 닉네임인지 확인
  */
 class CareRecruitmentMapperSqlTest {
+
+    /** 파기 회원(이메일 HMAC 이 PURGED 로 시작)은 「탈퇴한 회원」·사진 없음 : MemberDisplay.xml 이 만드는 SQL */
+    private static final String PURGED_NCNM = "CASE WHEN M.MBR_STTS_CD = 'USRC0003' AND M.ACNT_EML_HMAC LIKE 'PURGED%' THEN '탈퇴한 회원' ELSE M.MBR_NCNM END";
+    private static final String PURGED_PHOTO = "CASE WHEN M.MBR_STTS_CD = 'USRC0003' AND M.ACNT_EML_HMAC LIKE 'PURGED%' THEN NULL ELSE M.ATCH_FILE_SN END";
 
     private static Configuration configuration;
 
     @BeforeAll
     static void loadMappers() throws Exception {
         configuration = new Configuration();
-        for (String name : new String[] { "CareRecruitmentMapper", "ChatRoomMapper" }) {
-            String path = "mapper/community/" + name + ".xml";
+        // 작성자 표시 공통 조각(MemberDisplay)을 먼저 불러와야 include 가 풀린다
+        for (String name : new String[] { "global/MemberDisplay", "community/CareRecruitmentMapper",
+                "community/ChatRoomMapper" }) {
+            String path = "mapper/" + name + ".xml";
             try (InputStream in = CareRecruitmentMapperSqlTest.class.getResourceAsStream("/" + path)) {
                 new XMLMapperBuilder(in, configuration, path, configuration.getSqlFragments()).parse();
             }
@@ -100,7 +107,7 @@ class CareRecruitmentMapperSqlTest {
         String detail = sql("CareRecruitmentMapper.selectDetail", param);
 
         for (String sql : List.of(list, detail)) {
-            assertThat(sql).contains("M.ATCH_FILE_SN AS MBR_ATCH_FILE_SN")
+            assertThat(sql).contains(PURGED_PHOTO + " AS MBR_ATCH_FILE_SN")
                     .contains("EXISTS (SELECT 1 FROM CHAT_MSG G WHERE G.OTO_CHAT_ROOM_SN = C.OTO_CHAT_ROOM_SN)");
         }
     }
@@ -142,5 +149,59 @@ class CareRecruitmentMapperSqlTest {
 
         assertThat(sql("ChatRoomMapper.selectByPstSnAndCtptMbrSn", param)).contains("C.PST_SN = ?")
                 .contains("C.CTPT_MBR_SN = ?");
+    }
+
+    @Test
+    void 채팅_중_여부는_나가지_않은_참여_방_중_메시지가_오간_방만_본다() {
+        Map<String, Object> param = new HashMap<>();
+        param.put("pstSn", 7L);
+        param.put("mbrSn", 2L);
+        param.put("joinedCd", "CHTC0003");
+
+        assertThat(sql("CareRecruitmentMapper.existsChatting", param)).startsWith("SELECT EXISTS")
+                .contains("C.PST_SN = ?").contains("T.MBR_SN = ?").contains("T.PTCP_STTS_CD = ?")
+                .contains("FROM CHAT_MSG G WHERE G.OTO_CHAT_ROOM_SN = C.OTO_CHAT_ROOM_SN");
+    }
+
+    @Test
+    void 매칭_돌보미는_확정된_매칭의_채팅방_지원자_닉네임이다() {
+        Map<String, Object> param = new HashMap<>();
+        param.put("petPrtcMtchSn", 30L);
+
+        assertThat(sql("CareRecruitmentMapper.selectMatchedSitterNcnm", param))
+                .contains("SELECT " + PURGED_NCNM + " FROM PET_PRTC_MTCH")
+                .contains("M.MBR_SN = C.CTPT_MBR_SN").contains("T.PET_PRTC_MTCH_SN = ?");
+    }
+
+    @Test
+    void 목록은_작성자_닉네임과_사진을_공통_조각으로_고른다() {
+        assertThat(sql("CareRecruitmentMapper.selectList", listParam())).contains(PURGED_NCNM + " AS MBR_NCNM")
+                .contains(PURGED_PHOTO + " AS MBR_ATCH_FILE_SN");
+    }
+
+    @Test
+    void 상세는_작성자_닉네임과_사진을_공통_조각으로_고른다() {
+        Map<String, Object> param = new HashMap<>();
+        param.put("petPrtcRcrtSn", 5L);
+        param.put("pstSttsCd", "CMUC0003");
+
+        assertThat(sql("CareRecruitmentMapper.selectDetail", param)).contains(PURGED_NCNM + " AS MBR_NCNM")
+                .contains(PURGED_PHOTO + " AS MBR_ATCH_FILE_SN");
+    }
+
+    @Test
+    void 글_번호로_고르는_상세도_공통_조각을_쓴다() {
+        Map<String, Object> param = new HashMap<>();
+        param.put("pstSn", 7L);
+        param.put("pstSttsCd", "CMUC0003");
+
+        assertThat(sql("CareRecruitmentMapper.selectDetailByPstSn", param)).contains(PURGED_NCNM + " AS MBR_NCNM")
+                .contains(PURGED_PHOTO + " AS MBR_ATCH_FILE_SN");
+    }
+
+    @Test
+    void 관리자_매칭_조회는_원래_닉네임을_그대로_준다() {
+        assertThat(sql("CareRecruitmentMapper.selectAdminList", new HashMap<>())).doesNotContain("탈퇴한 회원");
+        assertThat(sql("CareRecruitmentMapper.selectAdminDetail", new HashMap<>())).doesNotContain("탈퇴한 회원");
     }
 }

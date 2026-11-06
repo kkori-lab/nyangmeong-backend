@@ -11,7 +11,7 @@
         <result column="RGN_STP_CD" property="rgnStpCd" />
     </resultMap>
 
-    <!-- 시도 단계 코드 RGNC0001 -->
+    <!-- 시도 단계 코드 RGNC0001. 서비스 지역은 전북특별자치도만이라 행정구역코드가 52로 시작하는 지역만 준다(RegionService.JEONBUK_PREFIX) -->
     <select id="selectList" resultMap="regionSummaryResultMap">
         SELECT RGN_SN
              , ADMDST_CD
@@ -21,6 +21,7 @@
              , RGN_STP_CD
           FROM RGN
          WHERE USE_YN = 'Y'
+           AND ADMDST_CD LIKE '52%'
         <choose>
             <when test="upRgnSn != null">
            AND UP_RGN_SN = #{upRgnSn}

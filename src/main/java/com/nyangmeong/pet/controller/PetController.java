@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
 import com.nyangmeong.pet.dto.CaregiverSummary;
@@ -41,12 +43,14 @@ public class PetController {
     private final PetService petService;
 
     @Operation(summary = "내 반려동물 목록")
+    @AiTool(name = "list_pets", domain = "pet", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<List<PetSummary>>> searchMyPets(@AuthenticationPrincipal LoginMember me) {
         return ResponseEntity.ok(ApiResponse.success(petService.searchMyPets(me.id())));
     }
 
     @Operation(summary = "반려동물 상세")
+    @AiTool(name = "get_pet", domain = "pet", kind = AiToolKind.READ)
     @GetMapping("/{petSn}")
     public ResponseEntity<ApiResponse<PetResponse>> getPet(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn) {
@@ -62,6 +66,7 @@ public class PetController {
     }
 
     @Operation(summary = "반려동물 수정")
+    @AiTool(name = "draft_pet_update", domain = "pet", kind = AiToolKind.CARD)
     @PatchMapping("/{petSn}")
     public ResponseEntity<ApiResponse<PetResponse>> updatePet(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @Valid @RequestBody PetUpdateRequest req) {
@@ -85,6 +90,7 @@ public class PetController {
     }
 
     @Operation(summary = "양육자 목록")
+    @AiTool(name = "list_caregivers", domain = "pet", kind = AiToolKind.READ)
     @GetMapping("/{petSn}/caregivers")
     public ResponseEntity<ApiResponse<List<CaregiverSummary>>> searchCaregivers(
             @AuthenticationPrincipal LoginMember me, @PathVariable Long petSn) {

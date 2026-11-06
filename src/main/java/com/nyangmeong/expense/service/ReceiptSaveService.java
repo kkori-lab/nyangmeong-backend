@@ -177,10 +177,13 @@ public class ReceiptSaveService {
      */
     private void validate(Long mbrSn, ReceiptSaveRequest req) {
         checkPets(mbrSn, req.pets().stream().map(ReceiptSavePetRequest::petSn).toList());
-        for (ReceiptSavePetRequest pet : req.pets()) {
-            for (ReceiptSaveDrugRequest drug : pet.drugsOrEmpty()) {
+        for (int i = 0; i < req.pets().size(); i++) {
+            List<ReceiptSaveDrugRequest> drugs = req.pets().get(i).drugsOrEmpty();
+            for (int j = 0; j < drugs.size(); j++) {
+                ReceiptSaveDrugRequest drug = drugs.get(j);
                 if (drug.mdcnEndYmd().isBefore(drug.mdcnBgngYmd())) {
-                    throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+                    throw new CustomException(ErrorCode.INVALID_INPUT_VALUE,
+                            "pets[" + i + "].drugs[" + j + "].mdcnEndYmd");
                 }
             }
         }
@@ -191,9 +194,9 @@ public class ReceiptSaveService {
      */
     private void checkPets(Long mbrSn, List<Long> petSns) {
         Set<Long> seen = new HashSet<>();
-        for (Long petSn : petSns) {
-            if (!seen.add(petSn)) {
-                throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        for (int i = 0; i < petSns.size(); i++) {
+            if (!seen.add(petSns.get(i))) {
+                throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "pets[" + i + "].petSn");
             }
         }
         petSns.forEach(petSn -> petAuthorizer.checkCaregiver(mbrSn, petSn));

@@ -282,4 +282,12 @@ public class AdminReportService {
     private boolean hasText(String value) {
         return value != null && !value.isBlank();
     }
+
+    /**
+     * 접수 상태 신고 수 조회
+     */
+    @Transactional(readOnly = true)
+    public long countReceived() {
+        return reportMapper.countByStatus(ReportStatus.RECEIVED.getCode());
+    }
 }

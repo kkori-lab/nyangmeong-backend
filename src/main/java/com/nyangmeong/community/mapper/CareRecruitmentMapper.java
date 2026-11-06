@@ -44,6 +44,16 @@ public interface CareRecruitmentMapper {
     CareRecruitmentDetail selectDetailByPstSn(@Param("pstSn") Long pstSn, @Param("pstSttsCd") String pstSttsCd);
 
     /**
+     * 로그인 회원이 이 글로 채팅 중인지 (나가지 않은 참여 방 중 메시지가 오간 방이 있는지)
+     */
+    boolean existsChatting(@Param("pstSn") Long pstSn, @Param("mbrSn") Long mbrSn, @Param("joinedCd") String joinedCd);
+
+    /**
+     * 확정된 매칭의 돌보미 닉네임 (없으면 null)
+     */
+    String selectMatchedSitterNcnm(@Param("petPrtcMtchSn") Long petPrtcMtchSn);
+
+    /**
      * 모집 반려동물 종류 조회 (품종명 포함)
      */
     List<CareRecruitmentPet> selectPets(@Param("petPrtcRcrtSns") List<Long> petPrtcRcrtSns);
@@ -90,6 +100,17 @@ public interface CareRecruitmentMapper {
      */
     int updateRecruitment(@Param("recruitment") CareRecruitment recruitment,
             @Param("recruitingCd") String recruitingCd);
+
+    /**
+     * 모집 행 잠금 읽기 (매칭 확정·되돌림을 모집 단위로 직렬화, 스냅샷이 아닌 최신 커밋 값)
+     */
+    CareRecruitment selectForUpdate(Long petPrtcRcrtSn);
+
+    /**
+     * 모집 상태 변경 (현재 상태가 bfrSttsCd 일 때만, 확정 매칭 번호는 함께 바꿈)
+     */
+    int updateStatus(@Param("petPrtcRcrtSn") Long petPrtcRcrtSn, @Param("bfrSttsCd") String bfrSttsCd,
+            @Param("aftrSttsCd") String aftrSttsCd, @Param("cfmtnPetPrtcMtchSn") Long cfmtnPetPrtcMtchSn);
 
     /**
      * 모집 반려동물 종류 삭제 (목록 교체 때)

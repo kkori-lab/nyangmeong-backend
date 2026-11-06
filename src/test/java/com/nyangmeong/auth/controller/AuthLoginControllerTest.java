@@ -29,7 +29,11 @@ import com.nyangmeong.auth.dto.LoginAttemptLimitResponse;
 import com.nyangmeong.auth.dto.LoginRequest;
 import com.nyangmeong.auth.dto.LoginResponse;
 import com.nyangmeong.auth.dto.LoginResult;
+import com.nyangmeong.auth.dto.SnsLoginRequest;
+import com.nyangmeong.auth.dto.SnsLoginResponse;
+import com.nyangmeong.auth.dto.SnsLoginResult;
 import com.nyangmeong.auth.service.LoginService;
+import com.nyangmeong.auth.service.SnsLoginService;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.error.GlobalExceptionHandler;
@@ -63,6 +67,9 @@ class AuthLoginControllerTest {
 
     @MockitoBean
     LoginService loginService;
+
+    @MockitoBean
+    SnsLoginService snsLoginService;
 
     @MockitoBean
     RefreshTokenMapper refreshTokenMapper;
@@ -210,5 +217,82 @@ class AuthLoginControllerTest {
                 .content("{\"acntEml\":\"choco@example.com\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("CAPTCHA_NOT_REQUIRED"));
+    }
+
+    private MockHttpServletRequestBuilder snsLogin(String body) {
+        return post("/api/auth/sns-login")
+                .header("X-Requested-With", "XMLHttpRequest")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body);
+    }
+
+    @Test
+    void SNS_로그인_성공은_로그인_없이_열려_있고_쿠키를_발급한다() throws Exception {
+        doAnswer(invocation -> {
+            ((RefreshToken) invocation.getArgument(0)).setRfrshTknSn(11L);
+            return null;
+        }).when(refreshTokenMapper).insert(any(RefreshToken.class), anyLong());
+        when(snsLoginService.login(any(SnsLoginRequest.class)))
+                .thenReturn(SnsLoginResult.login(7L, SnsLoginResponse.login(true, "초코맘")));
+
+        mockMvc.perform(snsLogin("{\"snsOffrCd\":\"USRC0008\",\"code\":\"abc\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.snsLoginRslt").value("LOGIN"))
+                .andExpect(jsonPath("$.data.ncnmReguide").value(true))
+                .andExpect(jsonPath("$.data.mbrNcnm").value("초코맘"))
+                .andExpect(header().stringValues("Set-Cookie", Matchers.hasItems(
+                        Matchers.startsWith("access_token="), Matchers.startsWith("refresh_token="))));
+    }
+
+    @Test
+    void SNS_신규_가입_확인은_쿠키를_발급하지_않고_가입_토큰을_준다() throws Exception {
+        when(snsLoginService.login(any(SnsLoginRequest.class))).thenReturn(SnsLoginResult.notLoggedIn(
+                SnsLoginResponse.signupRequired("USRC0007", "new@example.com", "01012345678", true, "tkn")));
+
+        mockMvc.perform(snsLogin("{\"snsOffrCd\":\"USRC0007\",\"code\":\"abc\",\"state\":\"s1\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.snsLoginRslt").value("SIGNUP_REQUIRED"))
+                .andExpect(jsonPath("$.data.signupTkn").value("tkn"))
+                .andExpect(jsonPath("$.data.acntEml").value("new@example.com"))
+                .andExpect(jsonPath("$.data.ageCnfrmd").value(true))
+                .andExpect(jsonPath("$.data.mbrNcnm").doesNotExist())
+                .andExpect(header().doesNotExist("Set-Cookie"));
+
+        verify(refreshTokenMapper, never()).insert(any(), anyLong());
+    }
+
+    @Test
+    void SNS_로그인은_제공자와_인가_코드가_빠지면_400이고_서비스를_부르지_않는다() throws Exception {
+        mockMvc.perform(snsLogin("{\"code\":\"abc\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT_VALUE"));
+        mockMvc.perform(snsLogin("{\"snsOffrCd\":\"USRC0007\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT_VALUE"));
+
+        verify(snsLoginService, never()).login(any());
+    }
+
+    @Test
+    void SNS_로그인에_이메일_가입_코드_USRC0006을_보내면_400이고_쿠키를_발급하지_않는다() throws Exception {
+        when(snsLoginService.login(any(SnsLoginRequest.class)))
+                .thenThrow(new CustomException(ErrorCode.BAD_REQUEST));
+
+        mockMvc.perform(snsLogin("{\"snsOffrCd\":\"USRC0006\",\"code\":\"fake-choco\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+                .andExpect(header().doesNotExist("Set-Cookie"));
+
+        verify(refreshTokenMapper, never()).insert(any(), anyLong());
+    }
+
+    @Test
+    void SNS_로그인_서비스_오류는_그대로_응답한다() throws Exception {
+        when(snsLoginService.login(any(SnsLoginRequest.class)))
+                .thenThrow(new CustomException(ErrorCode.SNS_AUTH_FAILED));
+
+        mockMvc.perform(snsLogin("{\"snsOffrCd\":\"USRC0009\",\"code\":\"bad\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("SNS_AUTH_FAILED"));
     }
 }

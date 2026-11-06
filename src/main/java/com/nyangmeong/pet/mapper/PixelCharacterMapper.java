@@ -10,6 +10,9 @@ import com.nyangmeong.pet.domain.CharacterItemSheet;
 import com.nyangmeong.pet.domain.CharacterJobStatusHistory;
 import com.nyangmeong.pet.domain.CharacterPhoto;
 import com.nyangmeong.pet.domain.PixelCharacter;
+import com.nyangmeong.pet.dto.AdminCharacterJobRow;
+import com.nyangmeong.pet.dto.AdminCharacterJobSearchCond;
+import com.nyangmeong.pet.dto.AdminCharacterJobStatusCount;
 import com.nyangmeong.pet.dto.HeldItemSummary;
 import com.nyangmeong.pet.dto.PetProfileSummary;
 import com.nyangmeong.pet.dto.PixelCharacterSummary;
@@ -45,6 +48,12 @@ public interface PixelCharacterMapper {
      * 오류 확인 중(기본 캐릭터 대체) 여부 변경
      */
     int updateBscCharSbstYn(@Param("pixelCharSn") Long pixelCharSn, @Param("bscCharSbstYn") String bscCharSbstYn,
+            @Param("actorId") String actorId);
+
+    /**
+     * 착용 모습 대표 이미지 저장·삭제 : NULL이면 삭제
+     */
+    int updateWearImage(@Param("pixelCharSn") Long pixelCharSn, @Param("wearImgFileSn") Long wearImgFileSn,
             @Param("actorId") String actorId);
 
     /**
@@ -207,4 +216,14 @@ public interface PixelCharacterMapper {
      * 캐릭터 생성용 반려동물 정보 조회
      */
     PetProfileSummary selectPetProfile(Long petSn);
+
+    /**
+     * 관리자 캐릭터 생성 작업 상태별 건수 (있는 상태만, SCR-ADM-082)
+     */
+    List<AdminCharacterJobStatusCount> selectAdminJobStatusCounts();
+
+    /**
+     * 관리자 캐릭터 생성 작업 목록 (상태 필터, 최신순, SCR-ADM-082)
+     */
+    List<AdminCharacterJobRow> selectAdminJobList(@Param("cond") AdminCharacterJobSearchCond cond);
 }

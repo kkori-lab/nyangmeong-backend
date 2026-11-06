@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,6 +28,8 @@ import com.nyangmeong.expense.dto.ExpenseTotalResponse;
 import com.nyangmeong.expense.dto.ExpenseUpdateRequest;
 import com.nyangmeong.expense.service.ExpenseQueryService;
 import com.nyangmeong.expense.service.ExpenseService;
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.response.PageResponse;
@@ -51,6 +54,7 @@ public class ExpenseController {
     private final ExpenseQueryService expenseQueryService;
 
     @Operation(summary = "가계부 지출 등록(반려동물별 줄, 영수증 연결)")
+    @AiTool(name = "draft_expense", domain = "expense", kind = AiToolKind.CARD)
     @PostMapping
     public ResponseEntity<ApiResponse<List<ExpenseResponse>>> create(@AuthenticationPrincipal LoginMember me,
             @Valid @RequestBody ExpenseCreateRequest req) {
@@ -69,6 +73,7 @@ public class ExpenseController {
     }
 
     @Operation(summary = "가계부 월 통계(총 지출·한도·달력·카테고리별·반려동물별·주요 지출)")
+    @AiTool(name = "get_expense_statistics", domain = "expense", kind = AiToolKind.READ)
     @GetMapping("/statistics")
     public ResponseEntity<ApiResponse<ExpenseStatisticsResponse>> getStatistics(
             @AuthenticationPrincipal LoginMember me, @RequestParam String yearMonth) {
@@ -76,20 +81,23 @@ public class ExpenseController {
     }
 
     @Operation(summary = "가계부 지출 목록(기간·반려동물·공용·카테고리 필터, 최신순·금액순)")
+    @AiTool(name = "list_expenses", domain = "expense", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<ExpenseSummary>>> search(@AuthenticationPrincipal LoginMember me,
-            ExpenseSearchCond cond, PageQuery pq) {
+            @ModelAttribute ExpenseSearchCond cond, PageQuery pq) {
         return ResponseEntity.ok(ApiResponse.success(expenseQueryService.search(me.id(), cond, pq)));
     }
 
     @Operation(summary = "가계부 조건별 지출 건수·합계")
+    @AiTool(name = "get_expense_total", domain = "expense", kind = AiToolKind.READ)
     @GetMapping("/totals")
     public ResponseEntity<ApiResponse<ExpenseTotalResponse>> getTotal(@AuthenticationPrincipal LoginMember me,
-            ExpenseSearchCond cond) {
+            @ModelAttribute ExpenseSearchCond cond) {
         return ResponseEntity.ok(ApiResponse.success(expenseQueryService.getTotal(me.id(), cond)));
     }
 
     @Operation(summary = "가계부 지출이 있는 연월(월 피커)")
+    @AiTool(name = "list_expense_months", domain = "expense", kind = AiToolKind.READ)
     @GetMapping("/months")
     public ResponseEntity<ApiResponse<List<ExpenseMonthSummary>>> searchMonths(
             @AuthenticationPrincipal LoginMember me) {
@@ -97,12 +105,14 @@ public class ExpenseController {
     }
 
     @Operation(summary = "가계부 필터 반려동물(연동 해제·삭제된 반려동물 포함)")
+    @AiTool(name = "list_expense_pets", domain = "expense", kind = AiToolKind.READ)
     @GetMapping("/pets")
     public ResponseEntity<ApiResponse<List<ExpensePetOption>>> searchPets(@AuthenticationPrincipal LoginMember me) {
         return ResponseEntity.ok(ApiResponse.success(expenseQueryService.searchPets(me.id())));
     }
 
     @Operation(summary = "가계부 지출 수정")
+    @AiTool(name = "draft_expense_update", domain = "expense", kind = AiToolKind.CARD)
     @PatchMapping("/{expndSn}")
     public ResponseEntity<ApiResponse<ExpenseResponse>> update(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long expndSn, @Valid @RequestBody ExpenseUpdateRequest req) {

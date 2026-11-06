@@ -1,5 +1,6 @@
 package com.nyangmeong.community.service;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -12,6 +13,8 @@ import com.nyangmeong.community.domain.BoardType;
 import com.nyangmeong.community.domain.Post;
 import com.nyangmeong.community.domain.PostStatus;
 import com.nyangmeong.community.domain.PostStatusHistory;
+import com.nyangmeong.community.dto.AdminBoardPostCountSummary;
+import com.nyangmeong.community.dto.AdminDashboardPostResponse;
 import com.nyangmeong.community.dto.AdminPostDetailResponse;
 import com.nyangmeong.community.dto.AdminPostSearchCond;
 import com.nyangmeong.community.dto.AdminPostStatusChangeRequest;
@@ -36,7 +39,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AdminPostService {
 
+    /** 게시판 공통코드 그룹 */
+    private static final String BOARD_GROUP_CD = "CMUG01";
+
     private static final String TARGET_TABLE = "PST";
+    private static final int DASHBOARD_RECENT_LIMIT = 5;
 
     private final PostMapper postMapper;
     private final ReportMapper reportMapper;
@@ -134,5 +141,22 @@ public class AdminPostService {
      */
     private String escapeLike(String keyword) {
         return keyword.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+    }
+
+    /**
+     * 관리자 대시보드 게시글 현황 조회
+     */
+    @Transactional(readOnly = true)
+    public AdminDashboardPostResponse getDashboardSummary() {
+        return new AdminDashboardPostResponse(postMapper.countAll(),
+                postMapper.selectRecentPosts(DASHBOARD_RECENT_LIMIT));
+    }
+
+    /**
+     * 관리자 대시보드 게시판별 게시글 수 조회 (fromDt 이상 toDt 미만)
+     */
+    @Transactional(readOnly = true)
+    public List<AdminBoardPostCountSummary> getBoardPostCounts(LocalDateTime fromDt, LocalDateTime toDt) {
+        return postMapper.selectBoardPostCounts(BOARD_GROUP_CD, fromDt, toDt);
     }
 }

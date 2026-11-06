@@ -7,7 +7,7 @@
 | 메서드 | 경로 | 설명 | 기능 ID | 담당 | 요청 DTO | 응답 DTO |
 | --- | --- | --- | --- | --- | --- | --- |
 | GET | /common-codes | 공통코드 하위 목록 조회 `?prntComCd=PETG03` *통합 때 추가* | MYP-003-03 | LJS | - | List<CommonCodeSummary> |
-| GET | /regions | 하위 지역 목록(`?upRgnSn=`, 없으면 시도). 시도 → 시군구 → 읍면동 연동 콤보박스 | CMU-002-03 (issues 14) | KSJ | - | List<RegionSummary> |
+| GET | /regions | 하위 지역 목록(`?upRgnSn=`, 없으면 시도). 시도 → 시군구 → 읍면동 연동 콤보박스. 서비스 지역이 전북특별자치도뿐이라 행정구역코드가 52로 시작하는 지역만 준다(시도는 전북 1곳, 전북 밖 `upRgnSn`은 빈 목록) | CMU-002-03 (issues 14) | KSJ | - | List<RegionSummary> |
 | GET | /files/public/{atchFileSn} | 공개 이미지 파일(게시글 사진·생성된 캐릭터 이미지). 로그인 없이 열린다. 공개가 아니거나 없는 번호는 404 `FILE_NOT_FOUND`. 응답의 `atchFileSn`을 그대로 `<img src="/api/files/public/{atchFileSn}">`에 쓴다 | 연결 작업(파일 저장 외부 디렉토리) | LJS | - | 이미지 파일 |
 | GET | /admin/settings | 운영 설정 조회. 회원·반려동물, 커뮤니티, 알림, AI, 파일 다섯 묶음과 수정일시·수정자. 관리자만(일반 회원 403, 비로그인 401) | ADM-110-01 | LJS | - | AdminSettingResponse |
 | PATCH | /admin/settings | 운영 설정 수정. 보낸 필드만 바꾸고 바뀐 항목의 전·후 값을 감사 로그(`MNGR_TASK_LOG`)에 남긴다. 바뀐 게 없으면 저장·로그 없이 현재 값을 돌려준다. 범위 밖은 400 `INVALID_INPUT_VALUE` | ADM-110-02·03·04 | LJS | AdminSettingUpdateRequest | AdminSettingResponse |
@@ -21,6 +21,7 @@
 | GET | /admin/external-api-usage/daily | 일별·종류별 사용량(최신 날짜순, 호출이 있는 날만). 조건은 위와 같다. 관리자만 | ADM-112-01 | LJS | - | List<ExternalApiDailyUsage> |
 | GET | /admin/external-api-usage/tokens | AI 대화·AI 분류의 일별 입력·출력 토큰 합계(최신 날짜순). 조건은 위와 같다. 관리자만 | ADM-112-02 | LJS | - | List<ExternalApiDailyToken> |
 | GET | /admin/external-api-usage/failures | 실패·시간초과 목록. 조건은 위와 같고 `page=&size=`를 더 받는다. 기본 20건, 최신순. 요청·응답 본문은 없다. 관리자만 | ADM-112-03 | LJS | - | PageResponse<ExternalApiFailureSummary> |
+| GET | /admin/processing/pdf-analyses?fromYmd=&toYmd=&page=&size=20 | 관리자 처리 현황 검사결과지 분석 탭. Python이 통지한 PDF 분석 호출(SYSC0025)만 센다. 건수 묶음 `summary`(요청·성공·시간초과·API 오류)와 실패·시간초과 목록(`CALL_DT` 최신순, 같으면 번호 내림차순). 기간은 호출일 양끝 포함, 모두 생략 가능(생략한 쪽은 제한 없음). 검사결과지가 아닌 파일은 Python이 성공(SYSC0021)으로 통지해 실패에서 빠진다. 분석 결과 내용은 주지 않는다(결정 26). 관리자만(일반 회원 403). 오류: `INVALID_INPUT_VALUE`(400, `fromYmd`가 `toYmd`보다 뒤) | ADM-082-03 | LJS | PdfAnalysisSearchCond | PdfAnalysisListResponse |
 | POST | /internal/ai/external-api-calls | Python 외부 호출 통지(사용자 쿠키 그대로, 201). 없는 코드는 400 `INVALID_INPUT_VALUE`. 통지 실패가 사용자 응답을 막으면 안 된다(Python 쪽 책임) | ADM-112-01·02 | LJS | ExternalApiCallRequest | ExternalApiCallResponse |
 
 ## DTO
@@ -188,6 +189,35 @@
 | extlApiNm | String | Y | 화면 이름 | 코드 enum |
 | callRsltCd | String | Y | 결과. 공통코드 SYSG06(실패·시간초과) | EXTL_API_CALL_LOG.CALL_RSLT_CD |
 | failRsn | String | N | 실패 사유 | EXTL_API_CALL_LOG.FAIL_RSN |
+
+### PdfAnalysisSearchCond
+쓰는 API: GET /admin/processing/pdf-analyses (쿼리 파라미터, 모두 선택)
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| fromYmd | LocalDate | N | 시작일(yyyy-MM-dd), 이날 포함 | EXTL_API_CALL_LOG.CALL_DT |
+| toYmd | LocalDate | N | 종료일(yyyy-MM-dd), 이날 포함. `fromYmd`보다 앞이면 400 | EXTL_API_CALL_LOG.CALL_DT |
+| page | Integer | N | 기본 1 | - |
+| size | Integer | N | 기본 20 | - |
+
+### PdfAnalysisListResponse
+쓰는 API: GET /admin/processing/pdf-analyses. `{ summary, content, page, size, totalElements, totalPages, hasNext }`
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| summary.totCnt | long | Y | 요청(기간 안 SYSC0025 전부) | EXTL_API_CALL_LOG |
+| summary.scsCnt | long | Y | 성공 SYSC0021(검사결과지가 아닌 파일 포함) | EXTL_API_CALL_LOG.CALL_RSLT_CD |
+| summary.tmotCnt | long | Y | 시간초과 SYSC0023 | EXTL_API_CALL_LOG.CALL_RSLT_CD |
+| summary.errCnt | long | Y | API 오류(실패) SYSC0022 | EXTL_API_CALL_LOG.CALL_RSLT_CD |
+| content | List<PdfAnalysisFailureRow> | Y | 실패·시간초과 행 | - |
+| page·size·totalElements·totalPages·hasNext | | Y | 목록 쪽 페이지 정보 | - |
+
+### PdfAnalysisFailureRow
+쓰는 API: GET /admin/processing/pdf-analyses
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| extlApiCallLogSn | Long | Y | | EXTL_API_CALL_LOG.EXTL_API_CALL_LOG_SN |
+| callRsltCd | String | Y | SYSC0022 실패, SYSC0023 시간초과 | EXTL_API_CALL_LOG.CALL_RSLT_CD |
+| failRsn | String | N | 실패 사유 | EXTL_API_CALL_LOG.FAIL_RSN |
+| callDt | LocalDateTime | Y | 호출 시각 | EXTL_API_CALL_LOG.CALL_DT |
 
 ### ExternalApiCallRequest
 쓰는 API: POST /internal/ai/external-api-calls

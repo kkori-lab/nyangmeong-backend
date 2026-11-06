@@ -2,6 +2,8 @@ package com.nyangmeong.health.dto;
 
 import java.time.LocalDateTime;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import jakarta.validation.constraints.Size;
 
 /**
@@ -11,12 +13,12 @@ import jakarta.validation.constraints.Size;
  */
 public record CareScheduleUpdateRequest(
         Long petSn,
-        String schdlKndCd,
+        @AiCode("HLTG19") String schdlKndCd,
         LocalDateTime schdlDt,
         Boolean hrInptYn,
-        String ckupTypeCd,
+        @AiCode("HLTG01") String ckupTypeCd,
         @Size(max = 80) String hsptlNm,
         @Size(max = 40) String schdlNm,
         @Size(max = 500) String memoCn,
-        String cldrBadgeColrCd) {
+        @AiCode("HLTG21") String cldrBadgeColrCd) {
 }

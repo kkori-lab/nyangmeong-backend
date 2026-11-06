@@ -136,7 +136,7 @@ public class CareItemService {
     public CareItemResponse create(Long mbrSn, Long petSn, CareItemCreateRequest req) {
         petAuthorizer.checkCaregiver(mbrSn, petSn);
         LocalDate today = today();
-        CareZone zone = CareZone.of(req.careZoneCd()).orElseThrow(this::invalid);
+        CareZone zone = CareZone.of(req.careZoneCd()).orElseThrow(() -> invalid("careZoneCd"));
 
         CareItem item = new CareItem();
         item.setPetSn(petSn);
@@ -194,7 +194,7 @@ public class CareItemService {
                 item.setRprsIconId(iconOf(req.rprsIconId()));
             }
             if (req.careZoneCd() != null) {
-                item.setCareZoneCd(CareZone.of(req.careZoneCd()).orElseThrow(this::invalid).getCode());
+                item.setCareZoneCd(CareZone.of(req.careZoneCd()).orElseThrow(() -> invalid("careZoneCd")).getCode());
             }
         }
 
@@ -472,9 +472,9 @@ public class CareItemService {
      * 주기 검증·반영
      */
     private CareCycle applyCycle(CareItem item, String careCycleCd, Integer dayCnt) {
-        CareCycle cycle = CareCycle.of(careCycleCd).orElseThrow(this::invalid);
+        CareCycle cycle = CareCycle.of(careCycleCd).orElseThrow(() -> invalid("careCycleCd"));
         if (cycle == CareCycle.CUSTOM && (dayCnt == null || dayCnt < 1 || dayCnt > 9999)) {
-            throw invalid();
+            throw invalid("cycleDrctInptDayCnt");
         }
         item.setCareCycleCd(cycle.getCode());
         item.setCycleDrctInptDayCnt(cycle == CareCycle.CUSTOM ? dayCnt : null);
@@ -520,7 +520,7 @@ public class CareItemService {
 
     private String nameOf(String careArtclNm) {
         if (careArtclNm == null || careArtclNm.isBlank()) {
-            throw invalid();
+            throw invalid("careArtclNm");
         }
         return careArtclNm.trim();
     }
@@ -533,8 +533,8 @@ public class CareItemService {
         return LocalDate.now(ZONE);
     }
 
-    private CustomException invalid() {
-        return new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+    private CustomException invalid(String... fields) {
+        return new CustomException(ErrorCode.INVALID_INPUT_VALUE, fields);
     }
 
     private CustomException notFoundCompletion() {

@@ -19,6 +19,7 @@
         <result column="PET_SN"           property="petSn" />
         <result column="BSC_CHAR_SBST_YN" property="bscCharSbstYn" />
         <result column="BODY_SHEET_FILE_SN" property="bodySheetFileSn" />
+        <result column="WEAR_IMG_FILE_SN" property="wearImgFileSn" />
         <result column="SHEET_SCALE"      property="sheetScale" />
         <result column="SHEET_ORIGIN_X"   property="sheetOriginX" />
         <result column="SHEET_ORIGIN_Y"   property="sheetOriginY" />
@@ -89,6 +90,7 @@
              , PET_SN
              , BSC_CHAR_SBST_YN
              , BODY_SHEET_FILE_SN
+             , WEAR_IMG_FILE_SN
              , SHEET_SCALE
              , SHEET_ORIGIN_X
              , SHEET_ORIGIN_Y
@@ -206,6 +208,16 @@
              , SHEET_SCALE = #{sheetScale}
              , SHEET_ORIGIN_X = #{sheetOriginX}
              , SHEET_ORIGIN_Y = #{sheetOriginY}
+             , MDFR_ID = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE PIXEL_CHAR_SN = #{pixelCharSn}
+           AND DEL_YN = 'N'
+    </update>
+
+    <update id="updateWearImage">
+        /* 착용 모습 대표 이미지 저장·삭제 : NULL이면 삭제 */
+        UPDATE PIXEL_CHAR
+           SET WEAR_IMG_FILE_SN = #{wearImgFileSn}
              , MDFR_ID = #{actorId}
              , MDFCN_DT = NOW()
          WHERE PIXEL_CHAR_SN = #{pixelCharSn}
@@ -591,5 +603,44 @@
             ON CC.COM_CD = P.COLR_CD
          WHERE P.PET_SN = #{petSn}
            AND P.DEL_YN = 'N'
+    </select>
+
+    <select id="selectAdminJobStatusCounts" resultType="com.nyangmeong.pet.dto.AdminCharacterJobStatusCount">
+        /* 관리자 캐릭터 생성 작업 상태별 건수(있는 상태만) */
+        SELECT J.CRT_JOB_STTS_CD AS crtJobSttsCd
+             , COUNT(*)          AS cnt
+          FROM CHAR_CRT_JOB J
+         WHERE J.DEL_YN = 'N'
+         GROUP BY J.CRT_JOB_STTS_CD
+    </select>
+
+    <resultMap id="adminJobRowMap" type="com.nyangmeong.pet.dto.AdminCharacterJobRow">
+        <id     column="CHAR_CRT_JOB_SN" property="charCrtJobSn" />
+        <result column="MBR_SN"          property="mbrSn" />
+        <result column="MBR_NCNM"        property="mbrNcnm" />
+        <result column="CRT_JOB_STTS_CD" property="crtJobSttsCd" />
+        <result column="FAIL_RSN"        property="failRsn" />
+        <result column="OTO_INQRY_SN"    property="otoInqrySn" />
+        <result column="REG_DT"          property="regDt" />
+    </resultMap>
+
+    <select id="selectAdminJobList" resultMap="adminJobRowMap">
+        /* 관리자 캐릭터 생성 작업 목록(상태 필터, 최신순, 이미지 미조회) */
+        SELECT J.CHAR_CRT_JOB_SN
+             , J.MBR_SN
+             , M.MBR_NCNM
+             , J.CRT_JOB_STTS_CD
+             , J.FAIL_RSN
+             , J.OTO_INQRY_SN
+             , J.REG_DT
+          FROM CHAR_CRT_JOB J
+          JOIN MBR M
+            ON M.MBR_SN = J.MBR_SN
+         WHERE J.DEL_YN = 'N'
+        <if test="cond.crtJobSttsCd != null">
+           AND J.CRT_JOB_STTS_CD = #{cond.crtJobSttsCd}
+        </if>
+         ORDER BY J.REG_DT DESC
+                , J.CHAR_CRT_JOB_SN DESC
     </select>
 </mapper>

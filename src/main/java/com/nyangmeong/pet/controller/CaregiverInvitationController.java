@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
 import com.nyangmeong.pet.dto.CaregiverInvitationAcceptRequest;
@@ -52,6 +54,7 @@ public class CaregiverInvitationController {
     }
 
     @Operation(summary = "보낸 공동양육 초대 목록")
+    @AiTool(name = "list_sent_caregiver_invitations", domain = "pet", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<List<CaregiverInvitationSummary>>> searchSentInvitations(
             @AuthenticationPrincipal LoginMember me) {

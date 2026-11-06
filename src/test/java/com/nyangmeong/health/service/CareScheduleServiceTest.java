@@ -9,6 +9,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -34,6 +35,8 @@ import com.nyangmeong.health.dto.CareScheduleSearchCond;
 import com.nyangmeong.health.dto.CareScheduleSummary;
 import com.nyangmeong.health.dto.CareScheduleUpdateRequest;
 import com.nyangmeong.health.mapper.CareScheduleMapper;
+import com.nyangmeong.pet.domain.CareMission;
+import com.nyangmeong.pet.service.CareMissionService;
 
 /**
  * [검사 - 케어 캘린더 일정]
@@ -49,7 +52,8 @@ class CareScheduleServiceTest {
 
     private final CareScheduleMapper mapper = mock(CareScheduleMapper.class);
     private final PetAuthorizer petAuthorizer = mock(PetAuthorizer.class);
-    private final CareScheduleService service = new CareScheduleService(mapper, petAuthorizer);
+    private final CareMissionService careMissionService = mock(CareMissionService.class);
+    private final CareScheduleService service = new CareScheduleService(mapper, petAuthorizer, careMissionService);
 
     @BeforeEach
     void setUp() {
@@ -153,6 +157,23 @@ class CareScheduleServiceTest {
     }
 
     @Test
+    void 서비스_검사_400은_틀린_칸_이름을_담는다() {
+        assertInvalidField(() -> service.create(MBR, PET, hospital(null, "튼튼동물병원", true)), "ckupTypeCd");
+        assertInvalidField(() -> service.create(MBR, PET, hospital("HLTC9999", "튼튼동물병원", true)), "ckupTypeCd");
+        assertInvalidField(() -> service.create(MBR, PET, hospital(CHECKUP_TYPE, " ", true)), "hsptlNm");
+        assertInvalidField(() -> service.create(MBR, PET, grooming(" ", null, null)), "schdlNm");
+        assertInvalidField(() -> service.create(MBR, PET, grooming("미용", "HLTC9999", null)), "schdlSrcCd");
+        assertInvalidField(() -> service.create(MBR, PET, grooming("미용", null, "HLTC9999")), "cldrBadgeColrCd");
+    }
+
+    private void assertInvalidField(Runnable call, String field) {
+        assertThatThrownBy(call::run).isInstanceOfSatisfying(CustomException.class, e -> {
+            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+            assertThat(e.getFields()).containsExactly(field);
+        });
+    }
+
+    @Test
     void 병원_외_일정은_일정명이_필수이고_병원_필드를_비운다() {
         assertInvalid(() -> service.create(MBR, PET, grooming(null, null, null)));
 
@@ -176,6 +197,29 @@ class CareScheduleServiceTest {
                 grooming("미용 예약", ScheduleSource.AI_GENERATED.getCode(), null));
 
         assertThat(res.schdlSrcCd()).isEqualTo(ScheduleSource.AI_GENERATED.getCode());
+    }
+
+    @Test
+    void 직접_등록은_케어미션에_반영한다() {
+        service.create(MBR, PET, grooming("미용 예약", null, null));
+        service.create(MBR, PET, grooming("미용 예약", ScheduleSource.DIRECT.getCode(), null));
+
+        verify(careMissionService, times(2)).reflect(PET, CareMission.SCHEDULE_CREATE, MBR);
+    }
+
+    @Test
+    void AI_생성과_검진기록_연동_출처는_케어미션에_반영하지_않는다() {
+        service.create(MBR, PET, grooming("미용 예약", ScheduleSource.AI_GENERATED.getCode(), null));
+        service.create(MBR, PET, grooming("미용 예약", ScheduleSource.CHECKUP.getCode(), null));
+
+        verify(careMissionService, never()).reflect(anyLong(), any(), anyLong());
+    }
+
+    @Test
+    void 입력이_틀려_등록하지_못하면_케어미션에_반영하지_않는다() {
+        assertInvalid(() -> service.create(MBR, PET, grooming(null, null, null)));
+
+        verify(careMissionService, never()).reflect(anyLong(), any(), anyLong());
     }
 
     @Test
@@ -260,5 +304,15 @@ class CareScheduleServiceTest {
 
         verify(mapper).selectHospitalSchedules(schdlYmd, ScheduleKind.HOSPITAL.getCode());
         verify(petAuthorizer, never()).checkCaregiver(anyLong(), anyLong());
+    }
+
+    @Test
+    void 수정_서비스_검사_400은_틀린_칸_이름을_담는다() {
+        when(mapper.selectSchedule(SCHDL)).thenReturn(saved(PET, ScheduleKind.HOSPITAL));
+
+        assertInvalidField(() -> service.update(MBR, PET, SCHDL, new CareScheduleUpdateRequest(null, "HLTC9999",
+                null, null, null, null, null, null, null)), "schdlKndCd");
+        assertInvalidField(() -> service.update(MBR, PET, SCHDL, new CareScheduleUpdateRequest(null, null, null,
+                null, null, "", null, null, null)), "hsptlNm");
     }
 }

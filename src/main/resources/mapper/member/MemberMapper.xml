@@ -111,6 +111,39 @@
            AND USE_YN = 'Y'
          ORDER BY SNS_ACNT_LINK_SN
     </select>
+    <select id="selectBySnsAccount" resultMap="memberResultMap">
+        /* SNS 제공자 계정에 연결된 회원 조회 */
+        SELECT M.MBR_SN
+             , M.ATCH_FILE_SN
+             , M.MBR_STTS_CD
+             , M.MBR_AUTHRT_CD
+             , M.JOIN_PATH_CD
+             , M.ACNT_EML_ENC
+             , M.MBL_TELNO_ENC
+             , M.PSWD_HASH
+             , M.MBR_NCNM
+             , M.LAST_LGN_DT
+             , M.WHDWL_DT
+             , M.NCNM_STNG_CMPTN_YN
+             , M.REG_DT
+          FROM SNS_ACNT_LINK L
+          JOIN MBR M ON M.MBR_SN = L.MBR_SN
+         WHERE L.SNS_OFFR_CD = #{snsOffrCd}
+           AND L.OFFR_ACNT_ID = #{offrAcntId}
+           AND L.USE_YN = 'Y'
+    </select>
+    <insert id="insertSnsLink">
+        /* SNS 연동 등록 */
+        INSERT INTO SNS_ACNT_LINK (
+               MBR_SN
+             , SNS_OFFR_CD
+             , OFFR_ACNT_ID
+        ) VALUES (
+               #{mbrSn}
+             , #{snsOffrCd}
+             , #{offrAcntId}
+        )
+    </insert>
 
     <!-- 로그인 이력(LAST_LGN_DT)은 비워 둔다 : 첫 로그인 닉네임 재안내 판정 기준 -->
     <insert id="insert" parameterType="com.nyangmeong.member.domain.Member"
@@ -187,6 +220,17 @@
              , MDFCN_DT = NOW()
          WHERE MBR_SN = #{mbrSn}
            AND MBR_STTS_CD != #{withdrawnSttsCd}
+    </update>
+
+    <update id="updateWithdraw">
+        /* 회원탈퇴 : 정상 회원만 탈퇴로, 탈퇴 시각이 30일 보관의 기준 */
+        UPDATE MBR
+           SET MBR_STTS_CD = #{withdrawnSttsCd}
+             , WHDWL_DT = NOW()
+             , MDFR_ID = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE MBR_SN = #{mbrSn}
+           AND MBR_STTS_CD = #{normalSttsCd}
     </update>
 
     <update id="updateRecover">
@@ -478,4 +522,75 @@
           FROM MBR
          WHERE MBR_STTS_CD = #{mbrSttsCd}
     </select>
+    <resultMap id="adminDashboardMemberResultMap" type="com.nyangmeong.member.dto.AdminDashboardMemberSummary">
+        <result column="TOT_MBR_CNT"    property="totMbrCnt" />
+        <result column="NRML_MBR_CNT"   property="nrmlMbrCnt" />
+        <result column="STOP_MBR_CNT"   property="stopMbrCnt" />
+        <result column="TODAY_JOIN_CNT" property="todayJoinCnt" />
+        <result column="WEEK_JOIN_CNT"  property="weekJoinCnt" />
+    </resultMap>
+
+    <select id="selectDashboardCounts" resultMap="adminDashboardMemberResultMap">
+        /* 관리자 대시보드 회원 건수 : 가입 수는 상태 무관, 최근 7일은 오늘 포함 */
+        SELECT COALESCE(SUM(CASE WHEN MBR_STTS_CD IN (#{nrmlSttsCd}, #{stopSttsCd}) THEN 1 ELSE 0 END), 0) AS TOT_MBR_CNT
+             , COALESCE(SUM(CASE WHEN MBR_STTS_CD = #{nrmlSttsCd} THEN 1 ELSE 0 END), 0) AS NRML_MBR_CNT
+             , COALESCE(SUM(CASE WHEN MBR_STTS_CD = #{stopSttsCd} THEN 1 ELSE 0 END), 0) AS STOP_MBR_CNT
+             , COALESCE(SUM(CASE WHEN REG_DT &gt;= CURDATE() THEN 1 ELSE 0 END), 0) AS TODAY_JOIN_CNT
+             , COALESCE(SUM(CASE WHEN REG_DT &gt;= DATE_SUB(CURDATE(), INTERVAL 6 DAY) THEN 1 ELSE 0 END), 0) AS WEEK_JOIN_CNT
+          FROM MBR
+         WHERE MBR_AUTHRT_CD = #{mbrAuthrtCd}
+    </select>
+
+    <resultMap id="adminRecentMemberResultMap" type="com.nyangmeong.member.dto.AdminRecentMemberSummary">
+        <id     column="MBR_SN"   property="mbrSn" />
+        <result column="MBR_NCNM" property="mbrNcnm" />
+        <result column="REG_DT"   property="regDt" />
+    </resultMap>
+
+    <select id="selectRecentMembers" resultMap="adminRecentMemberResultMap">
+        /* 관리자 대시보드 최근 가입 회원 */
+        SELECT MBR_SN
+             , MBR_NCNM
+             , REG_DT
+          FROM MBR
+         WHERE MBR_AUTHRT_CD = #{mbrAuthrtCd}
+           AND MBR_STTS_CD IN
+        <foreach collection="mbrSttsCds" item="mbrSttsCd" open="(" separator="," close=")">
+            #{mbrSttsCd}
+        </foreach>
+         ORDER BY REG_DT DESC
+                , MBR_SN DESC
+         LIMIT #{limit}
+    </select>
+
+    <resultMap id="adminDailyMemberResultMap" type="com.nyangmeong.member.dto.AdminDailyMemberSummary">
+        <result column="YMD"       property="ymd" />
+        <result column="JOIN_CNT"  property="joinCnt" />
+        <result column="WHDWL_CNT" property="whdwlCnt" />
+    </resultMap>
+
+    <select id="selectDailyJoinWithdrawCounts" resultMap="adminDailyMemberResultMap">
+        /* 관리자 대시보드 일별 가입·탈퇴 수 : 가입은 상태 무관, 둘 다 없는 날은 행이 없다 */
+        SELECT T.YMD
+             , SUM(T.JOIN_CNT)  AS JOIN_CNT
+             , SUM(T.WHDWL_CNT) AS WHDWL_CNT
+          FROM (SELECT DATE(REG_DT) AS YMD
+                     , 1            AS JOIN_CNT
+                     , 0            AS WHDWL_CNT
+                  FROM MBR
+                 WHERE MBR_AUTHRT_CD = #{mbrAuthrtCd}
+                   AND REG_DT &gt;= #{fromDt}
+                   AND REG_DT &lt; #{toDt}
+                 UNION ALL
+                SELECT DATE(WHDWL_DT) AS YMD
+                     , 0              AS JOIN_CNT
+                     , 1              AS WHDWL_CNT
+                  FROM MBR
+                 WHERE MBR_AUTHRT_CD = #{mbrAuthrtCd}
+                   AND WHDWL_DT &gt;= #{fromDt}
+                   AND WHDWL_DT &lt; #{toDt}) T
+         GROUP BY T.YMD
+         ORDER BY T.YMD
+    </select>
+
 </mapper>

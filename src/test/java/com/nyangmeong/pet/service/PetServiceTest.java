@@ -65,6 +65,8 @@ class PetServiceTest {
     private static final String MALE = "PETC0003";
     private static final String WHITE = "PETC0006";
     private static final String DIRECT_COLOR = "PETC0017";
+    private static final String DOG_ONLY_COLOR = "PETC0011";
+    private static final String CAT_ONLY_COLOR = "PETC0014";
     private static final String PRIMARY = "PETC0018";
     private static final String CO_PARENT = "PETC0019";
     private static final String ACCEPTED = "PETC0024";
@@ -85,7 +87,7 @@ class PetServiceTest {
     void setUp() {
         when(codes.search("PETG01")).thenReturn(codeList(DOG, CAT));
         when(codes.search("PETG02")).thenReturn(codeList(MALE, "PETC0004"));
-        when(codes.search("PETG03")).thenReturn(codeList(WHITE, DIRECT_COLOR));
+        when(codes.search("PETG03")).thenReturn(codeList(WHITE, DIRECT_COLOR, DOG_ONLY_COLOR, CAT_ONLY_COLOR));
         when(mapper.existsVrty(15L, DOG)).thenReturn(true);
         when(mapper.selectVrtyNm(15L)).thenReturn("푸들");
         doAnswer(inv -> {
@@ -243,6 +245,47 @@ class PetServiceTest {
                 true, kg("4.2"), null, kg("3"), kg("5"), "PETC9999", null, null, null, null);
 
         assertCode(() -> service.createPet(MBR, req), ErrorCode.INVALID_INPUT_VALUE);
+    }
+
+    @Test
+    void 강아지에_고양이_전용_털색을_보내면_400() {
+        assertCode(() -> service.createPet(MBR, colorCreate(DOG, CAT_ONLY_COLOR)), ErrorCode.INVALID_INPUT_VALUE);
+        verify(mapper, never()).insertPet(any());
+    }
+
+    @Test
+    void 고양이에_강아지_전용_털색을_보내면_400() {
+        assertCode(() -> service.createPet(MBR, colorCreate(CAT, DOG_ONLY_COLOR)), ErrorCode.INVALID_INPUT_VALUE);
+        verify(mapper, never()).insertPet(any());
+    }
+
+    @Test
+    void 고양이에_직접_입력과_공통_털색은_저장된다() {
+        when(mapper.existsVrty(15L, CAT)).thenReturn(true);
+
+        service.createPet(MBR, colorCreate(CAT, DIRECT_COLOR));
+        service.createPet(MBR, colorCreate(CAT, WHITE));
+
+        verify(mapper, times(2)).insertPet(any());
+    }
+
+    @Test
+    void 수정에서_털색만_바꿔_구분과_어긋나면_400() {
+        assertCode(() -> service.updatePet(MBR, PET, colorUpdate(null, CAT_ONLY_COLOR)),
+                ErrorCode.INVALID_INPUT_VALUE);
+        verify(mapper, never()).updatePet(any(), anyString());
+    }
+
+    @Test
+    void 수정에서_구분만_바꿔_기존_털색과_어긋나면_400() {
+        when(mapper.selectPet(PET)).thenAnswer(inv -> {
+            Pet pet = storedPet();
+            pet.setColrCd(DOG_ONLY_COLOR);
+            return pet;
+        });
+
+        assertCode(() -> service.updatePet(MBR, PET, colorUpdate(CAT, null)), ErrorCode.INVALID_INPUT_VALUE);
+        verify(mapper, never()).updatePet(any(), anyString());
     }
 
     @Test
@@ -612,6 +655,25 @@ class PetServiceTest {
         verify(domainEvents, never()).publishEvent(any(Object.class));
     }
 
+    @Test
+    void 체중_동기화는_펫_체중과_수정자를_그대로_mapper에_넘긴다() {
+        BigDecimal weight = new BigDecimal("5.250");
+        when(mapper.updatePetWeight(PET, weight, "7")).thenReturn(1);
+
+        service.syncWeight(PET, weight, 7L);
+
+        verify(mapper).updatePetWeight(PET, weight, "7");
+        verify(authorizer, never()).checkCaregiver(anyLong(), anyLong());
+    }
+
+    @Test
+    void 체중_동기화는_삭제됐거나_없는_반려동물이면_404() {
+        BigDecimal weight = new BigDecimal("5.250");
+        when(mapper.updatePetWeight(PET, weight, "7")).thenReturn(0);
+
+        assertCode(() -> service.syncWeight(PET, weight, 7L), ErrorCode.PET_NOT_FOUND);
+    }
+
     private void assertCode(Runnable action, ErrorCode code) {
         assertThatThrownBy(action::run).isInstanceOf(CustomException.class)
                 .satisfies(e -> assertThat(((CustomException) e).getErrorCode()).isEqualTo(code));
@@ -626,6 +688,17 @@ class PetServiceTest {
             String dssCn) {
         return new PetUpdateRequest(null, null, null, null, null, null, null, nutrYn, petBdwg, null, minBdwg, null,
                 null, null, null, algyCn, dssCn, null);
+    }
+
+    private PetCreateRequest colorCreate(String petSeCd, String colrCd) {
+        return new PetCreateRequest("뭉치", petSeCd, 15L, null, LocalDate.of(2023, 5, 1), null, MALE, true,
+                kg("4.2"), null, kg("3"), kg("5"), colrCd,
+                DIRECT_COLOR.equals(colrCd) ? "얼룩덜룩" : null, null, null, null);
+    }
+
+    private PetUpdateRequest colorUpdate(String petSeCd, String colrCd) {
+        return new PetUpdateRequest(null, petSeCd, null, null, null, null, null, null, null, null, null, null,
+                colrCd, null, null, null, null, null);
     }
 
     private PetUpdateRequest goalUpdate(BigDecimal goalBdwg, Boolean goalBdwgReset) {
@@ -676,5 +749,23 @@ class PetServiceTest {
 
     private BigDecimal kg(String value) {
         return new BigDecimal(value);
+    }
+
+    @Test
+    void 수정_서비스_검사_400은_틀린_칸_이름을_담는다() {
+        assertFields(() -> service.updatePet(MBR, PET, colorUpdate(null, CAT_ONLY_COLOR)), "colrCd");
+        assertFields(() -> service.updatePet(MBR, PET, new PetUpdateRequest(null, null, null, null, null, null,
+                "PETC9999", null, null, null, null, null, null, null, null, null, null, null)), "petGndrCd");
+        assertFields(() -> service.updatePet(MBR, PET, update(kg("6"), null, null, null, null)), "minBdwg",
+                "maxBdwg");
+        assertFields(() -> service.updatePet(MBR, PET, new PetUpdateRequest(null, null, 15L, "직접", null, null,
+                null, null, null, null, null, null, null, null, null, null, null, null)), "vrtySn", "vrtyDrctInptNm");
+    }
+
+    private static void assertFields(org.assertj.core.api.ThrowableAssert.ThrowingCallable call, String... fields) {
+        assertThatThrownBy(call).isInstanceOfSatisfying(CustomException.class, e -> {
+            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+            assertThat(e.getFields()).containsExactly(fields);
+        });
     }
 }

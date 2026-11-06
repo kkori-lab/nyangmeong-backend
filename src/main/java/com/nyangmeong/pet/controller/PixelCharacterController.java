@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiCode;
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
 import com.nyangmeong.pet.dto.EquippedItemSaveRequest;
@@ -41,12 +44,14 @@ public class PixelCharacterController {
     private final ItemService itemService;
 
     @Operation(summary = "내 캐릭터·공동양육 캐릭터 목록")
+    @AiTool(name = "list_pixel_characters", domain = "pet", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<List<PixelCharacterSummary>>> search(@AuthenticationPrincipal LoginMember me) {
         return ResponseEntity.ok(ApiResponse.success(pixelCharacterService.search(me.id())));
     }
 
     @Operation(summary = "캐릭터 꾸미기 상세")
+    @AiTool(name = "get_pixel_character", domain = "pet", kind = AiToolKind.READ)
     @GetMapping("/{pixelCharSn}")
     public ResponseEntity<ApiResponse<PixelCharacterResponse>> getPixelCharacter(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long pixelCharSn) {
@@ -61,9 +66,10 @@ public class PixelCharacterController {
     }
 
     @Operation(summary = "상점 아이템 목록")
+    @AiTool(name = "list_shop_items", domain = "pet", kind = AiToolKind.READ)
     @GetMapping("/{pixelCharSn}/shop-items")
     public ResponseEntity<ApiResponse<ShopItemListResponse>> searchShopItems(@AuthenticationPrincipal LoginMember me,
-            @PathVariable Long pixelCharSn, @RequestParam(required = false) String itemRegnCd) {
+            @PathVariable Long pixelCharSn, @AiCode("MYPG01") @RequestParam(required = false) String itemRegnCd) {
         return ResponseEntity.ok(ApiResponse.success(itemService.searchShopItems(me.id(), pixelCharSn, itemRegnCd)));
     }
 

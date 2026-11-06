@@ -423,6 +423,16 @@
            AND DEL_YN = 'N'
     </update>
 
+    <update id="updatePetWeight">
+        /* 반려동물 체중 수정 */
+        UPDATE PET
+           SET PET_BDWG = #{weight}
+             , MDFR_ID  = #{actorId}
+             , MDFCN_DT = NOW()
+         WHERE PET_SN = #{petSn}
+           AND DEL_YN = 'N'
+    </update>
+
     <update id="updatePetDelete">
         /* 반려동물 삭제 */
         UPDATE PET
@@ -493,4 +503,33 @@
              , #{chgRsn}
              )
     </insert>
+
+    <resultMap id="adminPetDistributionResultMap" type="com.nyangmeong.pet.dto.AdminPetDistributionSummary">
+        <result column="PET_SE_NM" property="petSeNm" />
+        <result column="VRTY_NM"   property="vrtyNm" />
+        <result column="CNT"       property="cnt" />
+    </resultMap>
+
+    <select id="selectDistribution" resultMap="adminPetDistributionResultMap">
+        /* 관리자 대시보드 종·품종 분포 : 기간 무관, 품종 없음(직접 입력)은 종마다 한 묶음 */
+        SELECT S.COM_CD_NM                            AS PET_SE_NM
+             , COALESCE(V.VRTY_NM, #{drctInptVrtyNm}) AS VRTY_NM
+             , COUNT(*)                               AS CNT
+          FROM PET P
+          JOIN COM_CD S
+            ON S.COM_CD = P.PET_SE_CD
+           AND S.COM_CD_PRNT_SN IS NOT NULL
+          LEFT JOIN VRTY V
+            ON V.VRTY_SN = P.VRTY_SN
+         WHERE P.DEL_YN = 'N'
+         GROUP BY P.PET_SE_CD
+                , S.COM_CD_NM
+                , P.VRTY_SN
+                , V.VRTY_NM
+         ORDER BY CNT DESC
+                , P.PET_SE_CD
+                , P.VRTY_SN
+         LIMIT #{limit}
+    </select>
+
 </mapper>

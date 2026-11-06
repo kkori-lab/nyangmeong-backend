@@ -326,11 +326,6 @@
 - 기다리는 것: 약관 2종 코드 migration, `member` 약관 협의 (YAY)
 - 완료 조건: 새 버전을 등록하면 이전 버전은 이력으로 남고 가입 화면은 새 버전을 보여 준다
 
-## SCR-ADM-060 장소 — 대기
-- 기능: FN-ADM-060-01 장소 목록 조회, FN-ADM-060-02 장소 노출 설정, FN-ADM-060-03 place_url 수동 매칭, FN-ADM-060-04 공공데이터 수집 실행, FN-ADM-060-05 장소 직접 등록 제외
-- 기다리는 것: `place` 협의 (YAY)
-- 완료 조건: 노출을 끈 장소는 사용자 장소 검색에서 빠진다
-
 ## SCR-ADM-071 케어미션 — 대기
 - 기능: FN-ADM-071-01 케어미션 목록 조회, FN-ADM-071-02 케어미션 수정, FN-ADM-071-03 변경 반영 시점
 - 기다리는 것: `pet` 케어미션 협의 (SJM)
@@ -353,7 +348,7 @@
 
 ## SCR-ADM-082 처리 현황 — 대기
 - 기능: FN-ADM-082-01 영수증 OCR 현황, FN-ADM-082-02 캐릭터 생성 현황, FN-ADM-082-03 검사결과지 분석 현황
-- 기다리는 것: 검진 PDF 분석 실패 집계 service (JAJ)
+- 기다리는 것: 없음(JAJ 집계 service 불필요. 팀장 결정 2026-11-04: FN-ADM-082-03은 LJS가 `EXTL_API_CALL_LOG`(SYSC0025, Python 통지)로 직접 센다. 실제 작업은 아래 `· 검사결과지 분석 현황 API` 절)
 - 완료 조건: 상태별 건수와 실패율이 나온다
 
 ## SCR-ADM-001 대시보드 — 대기
@@ -392,10 +387,12 @@
 - 완료 조건 결과: 끝. `member/MemberPurgeJob` 매일 03:30, 배치 구분 SYSC0027, 처리 건수는 파기한 회원 수. `MBR` 행은 남기고 식별값만 없앤다(2026-11-02)
 - 연결 남음: FN-ADM-013-02 (프론트 연결 배치 현황 링크 `?batch=SYSC0027`, 프론트 저장소에서 /start)
 
-## SCR-ADM-011 회원 상세 · 응답에 회원 권한 추가 — 대기
+## SCR-ADM-011 회원 상세 · 응답에 회원 권한 추가 — 끝
 - 기능: 명세 기능 ID 추가 없음. FN-ADM-011-01
 - 기다리는 것: 프론트 SCR-ADM-011 회원 상세 연결(끝, 2026-11-02)
 - 완료 조건: `GET /api/admin/members/{mbrSn}` 응답 `AdminMemberDetailResponse`에 `mbrAuthrtCd`가 온다. `docs/api/member.md` DTO 표도 같이 고친다. 프론트는 이 값이 관리자면 [정지]를 숨긴다
+- 완료 조건 결과: 검증 `통과`(2026-11-05, 1회차), 사람 확인 2026-11-05. Mapper·DB 변경 없음(`selectBySn`이 이미 `MBR_AUTHRT_CD`를 읽음). 값은 USRG02(`USRC0004` 일반회원·`USRC0005` 관리자)
+- 연결 남음: FN-ADM-011-01 (프론트 연결 회원 상세 [정지] 숨김 `pages/admin/AdminMemberDetailPage.jsx`, 프론트 저장소에서 /start. 프론트 코드는 이미 `mbrAuthrtCd`로 판정하므로 확인만)
 
 ## SCR-MYP-011 아이템 상점 모달 · 캐릭터 작업·시트 내부 API (SCR-MYP-010 공통) — 끝
 - 기능: 명세 기능 ID 추가 없음. FN-MYP-010-08·09·12·13·17, FN-MYP-011-01·06
@@ -453,15 +450,22 @@
 - 연결 남음: FN-ADM-022-01·02 (프론트 연결 `features/adminCommunity/api.js` 펫돌봄 목록·매칭 상세 모달, 프론트 저장소에서 /start)
 - 연결 남음: FN-ADM-022-02 완료 사진 보기 (완료 사진 업로드가 아직 없어 저장 경로 미정, `/api/files/public/{atchFileSn}`은 `public/` 경로만 열어 지금 시드 사진은 404, KSJ와 정한다)
 
-## SCR-ADM-023 노출 콘텐츠 · 프론트 연결 API 계약 — 대기
+## SCR-ADM-023 노출 콘텐츠 · 프론트 연결 API 계약 — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-023-01·02·03·04·05·06
 - 기다리는 것: 프론트 SCR-ADM-023(끝, 가짜 응답 `features/adminCommunity/api.js` 노출 콘텐츠 절)
 - 완료 조건: `GET /api/admin/community/exposure/health-tips`(노출 자리 순서 3건 `[{ pstSn, pstTtl, hlthInfoExpsrSeq }]`, 지정 글은 `hlthInfoExpsrSeq` 값, 자동 선정은 null), `PUT …/health-tips/{pstSn}` `{ hlthInfoExpsrSeq }`(같은 순서의 기존 지정·같은 글의 다른 순서 지정은 풀림), `DELETE …/health-tips/{pstSn}`, 지정 글이 삭제·블라인드되면 지정을 풀고 자동 선정 글로 채움(결정 10). 오늘의 한마디 후보 문구 테이블과 `GET …/phrases`(`{ todayPhrs: { todayPhrsSn, phrsCn } | null, content: [{ todayPhrsSn, phrsCn, useYn }] }`)·`POST …/phrases` `{ phrsCn, useYn }` → `{ todayPhrsSn }`·`PATCH …/phrases/{todayPhrsSn}` `{ phrsCn, useYn }`, 매일 00:00 사용 중 문구 1건 무작위 선택(결정 11). `GET …/commentaries?page=&size=20`(최근 일자순 `{ content: [{ cmntyAiCmtrySn, cmtryCrtrYmd, cmtryCn, useYn }], page, size, totalElements, totalPages, hasNext }`)·`PATCH …/commentaries/{cmntyAiCmtrySn}` `{ useYn }`. `useYn`은 true/false. 후보 문구 필드 이름(프론트 가정 `todayPhrsSn`·`phrsCn`)과 글자 수(가정 200자)를 정해 프론트에 알린다
+- 완료 조건 결과: 검증 `통과`(2026-11-03, 2회차. 1회차는 공용 DB에 `TODAY_PHRS` 미반영으로 FN-ADM-023-04·05 확인 못 함 → 사람이 v0.12 (4) SQL 실행 뒤 재검증), 사람 확인 2026-11-03. 위 `## SCR-ADM-023 노출 콘텐츠 — 대기` 절의 FN-ADM-023-01~06도 이 절로 끝냈다(절 정리는 사람). 정한 것: 후보 문구 새 테이블 `TODAY_PHRS`(물리명 초안, DB v0.12 (4)), 배치 SYSC0030 매일 00:00 → `CMNTY_AI_CMTRY` 출처 AIMC0029, 건강 키워드는 `KWRD_DICT` 뉴스 분류 건강(CMUC0018) 행 재사용, 사용자 `GET /api/posts/health-tips`도 지정 + 자동 선정. 필드 이름은 프론트 가정 그대로 `todayPhrsSn`·`phrsCn`(200자). 추가-1: `AdminBatchServiceTest` 기대 목록에 SYSC0030
+- 연결 남음: FN-ADM-023-01·02 (프론트 연결 `features/adminCommunity/api.js` 노출 콘텐츠 절 건강팁 표·지정 모달·[지정 해제], 프론트 저장소에서 /start)
+- 연결 남음: FN-ADM-023-04 (프론트 연결 `features/adminCommunity/api.js` 오늘의 한마디 탭, 프론트 저장소에서 /start)
+- 연결 남음: FN-ADM-023-06 (프론트 연결 `features/adminCommunity/api.js` AI 코멘트 탭, 프론트 저장소에서 /start)
 
-## SCR-ADM-050 펫뉴스 · 프론트 연결 API 계약 — 대기
+## SCR-ADM-050 펫뉴스 · 프론트 연결 API 계약 — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-050-01·02·03·05
 - 기다리는 것: 프론트 SCR-ADM-050(끝, 가짜 응답 `features/adminNews/api.js`). FN-ADM-050-07 뉴스 수집 실행은 기존 `POST /api/admin/batches/SYSC0028/run`으로 이미 연결됨
 - 완료 조건: `GET /api/admin/news?newsSrcCd=&newsClsfCd=&page=&size=20`(최신순 `{ content, page, size, totalElements, totalPages, hasNext }`, content 행은 `News` 필드 `{ newsSn, atchFileSn, newsClsfCd, newsSrcCd, newsTtl, newsCn, srcPressNm, orgtxtPath, pblcnDt, useYn, regDt, mdfcnDt, thmbUrlPath }`, 숨긴 기사 포함), `POST /api/admin/news`(관리자 등록 `{ newsTtl, newsCn, newsClsfCd }` + 썸네일 파일 선택, 출처 CMUC0023, → `{ newsSn }`), `PATCH /api/admin/news/{newsSn}`(관리자 등록은 제목·요약·카테고리·썸네일, 수집 기사는 `useYn`·`newsClsfCd`), `GET /api/admin/news/keywords`(`[{ kwrdDictSn, mpngCd, kwrdCn, sortSeq }]`, KWRD_DICT `DICT_USG_CD` AIMC0039)·`POST` `{ mpngCd, kwrdCn }` → `{ kwrdDictSn }`(같은 카테고리 중복은 409)·`DELETE …/keywords/{kwrdDictSn}`. `useYn`은 true/false. 숨긴 수집 기사는 사용자 뉴스에서 빠진다. 글자 수(프론트 가정 제목 200·요약 1000·키워드 50)와 필드 이름을 정해 프론트에 알린다
+- 결정: 썸네일은 공지사항과 같이 `POST /api/admin/news/images`(multipart `image`) → `{ atchFileSn }`로 먼저 올리고 등록·수정에 `atchFileSn`을 넣는다(프론트 가정 "등록 요청에 파일"과 다름). 목록 행에 `newsSrcCdNm` 추가, 등록 최신순(`REG_DT`). 제목 200·요약 1000·키워드 50자(앞뒤 공백 지운 뒤). 제목·요약·썸네일은 관리자 등록 기사만, 숨김·카테고리는 모든 기사. 분류 키워드는 한 행에 하나로 바꿨다(DB 변경 v0.12 (5): AIMC0039 세 행 → 40행), 새 키워드의 `SORT_SEQ`는 그 카테고리 기존 값(없으면 최대+10), 쉼표 400·같은 카테고리 중복 409 `DUPLICATE_NEWS_KEYWORD`(대소문자 무시), 삭제 404 `NEWS_KEYWORD_NOT_FOUND`. 뉴스 제외 키워드(AIMC0040) 편집은 명세에 없어 하지 않음
+- 완료 조건 결과: 검증 `통과`(2026-11-04, 1회차, 로컬 DB에서 API로 확인), 사람 확인 2026-11-04
+- 연결 남음: FN-ADM-050-01·02·03·05 (프론트 연결 `features/adminNews/api.js` 목록·등록/수정 모달·수집 기사 행·분류 키워드 탭, 프론트 저장소에서 /start)
 
 ## SCR-MYP-031 영수증 업로드 · 가계부 출처 다시 열기 — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-AIM-013-06(결과 다시 열기), FN-MYP-031-03(가계부 출처, 화면 SJM)
@@ -470,15 +474,131 @@
 - 완료 조건 결과: 검증 `통과`(2026-11-03, 잠금을 버린 뒤 1회차. 처음 1회차는 권한 검사를 영수증 조회보다 먼저 해 없는 영수증 + 남의 반려동물이 403이라 실패), 사람 확인 2026-11-03. 바뀐 것: 없는 영수증 + 남의 반려동물은 404 `RECEIPT_NOT_FOUND`
 - 연결 남음: FN-AIM-013-06 (프론트 연결 가계부 화면의 영수증 다시 열기, 화면 SJM, 프론트 저장소에서 /start)
 
-## SCR-ADM-101 품종·지역 · 프론트 연결 품종 관리 API — 대기
+## SCR-ADM-101 품종·지역 · 프론트 연결 품종 관리 API — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-101-01
-- 기다리는 것: 프론트 SCR-ADM-101(끝, 가짜 응답 `features/adminBreedRegion/api.js`). FN-ADM-101-02 지역 조회는 기존 공용 `GET /api/regions?upRgnSn=`로 이미 연결됨(프론트는 전북 `admdstCd` 5200000000 하위만 보임)
+- 기다리는 것: 프론트 SCR-ADM-101(끝, 가짜 응답 `features/adminBreed/api.js`). FN-ADM-101-02 지역 조회는 프론트 화면에서 뺐다(프론트 2026-11-03 사람 결정, 화면 `품종`·`/admin/breeds`. 명세에서 빼는 것은 문서 담당이 DMS에 올린다)
 - 완료 조건: `GET /api/admin/breeds?petSeCd=`(사용 안 함 포함, 정렬순 `[{ vrtySn, vrtyCd, vrtyNm, petSeCd, sortSeq, useYn }]`), `POST /api/admin/breeds` `{ petSeCd, vrtyNm, sortSeq, useYn }` → 품종 행(`vrtyCd`는 서버가 매김), `PATCH /api/admin/breeds/{vrtySn}` `{ vrtyNm, sortSeq, useYn }`(종·코드는 안 바꿈). 같은 종에 같은 이름(공백 무시)이면 409, 없는 품종 404. `useYn`은 true/false. 사용을 끈 품종은 공용 `GET /api/breeds`에서 빠진다. 이름 글자 수(프론트 가정 50)를 정해 프론트에 알린다
+- 결정: 관리자 품종은 새 `AdminBreedService`(기존 `BreedService`는 그대로). 이름 50자(앞뒤 공백 지운 뒤), `sortSeq` 생략 시 그 종 최대 + 10, `useYn` 생략 시 사용. 품종 코드는 `DOGV`·`CATV` + 그 접두 최대 번호 + 1. 같은 종 같은 이름(공백 무시, 사용 안 함 포함) 409 `DUPLICATE_VRTY_NM`(프론트 가짜 코드 그대로), 없는 품종 404 `BREED_NOT_FOUND`. 등록·수정 응답은 품종 행. DB 변경 없음
+- 완료 조건 결과: 검증 `통과`(2026-11-04, 1회차, 8082에서 API로 확인), 사람 확인 2026-11-04
+- 연결 남음: FN-ADM-101-01 (프론트 연결 `features/adminBreed/api.js` 품종 목록·[품종 추가]·[수정] 모달, 프론트 저장소에서 /start)
 
-## SCR-ADM-051 약관 · 프론트 연결 관리자 약관 API — 대기
+## SCR-ADM-051 약관 · 프론트 연결 관리자 약관 API — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-051-01·02·03·04
 - 기다리는 것: 프론트 SCR-ADM-051(끝, 가짜 응답 `features/adminTerms/api.js`, 종류 키는 `features/adminTerms/termsKinds.js` 가정 값 SERVICE·PRIVACY·AGE·MARKETING·CARE_RULE·LOST_PRIVACY)
 - 완료 조건: `GET /api/admin/terms`(종류별 사용 중 버전 `[{ trmsSn, trmsFixIdntfKey, trmsVerId, trmsTtl, esntlAgreYn, useYn, regDt }]`), `GET /api/admin/terms/history?trmsFixIdntfKey=`(그 종류 모든 버전 최신순, 내용 제외), `GET /api/admin/terms/{trmsSn}`(내용 `trmsCn` 포함), `POST /api/admin/terms` `{ trmsFixIdntfKey, trmsVerId, trmsTtl, trmsCn, esntlAgreYn }` → 등록 행, 같은 종류 이전 버전 `useYn=N`, 같은 종류 같은 버전이면 409 `DUPLICATE_TRMS_VER`. 등록일 필드 이름(`regDt` 가정)과 종류 키 실제 값을 프론트에 알린다
+- 결정: 가입 약관 4종(`SERVICE`·`PRIVACY`·`AGE_14`·`MARKETING`)만 관리한다(사람 2026-11-04). 기능별 동의 2종은 `TRMS`에 넣으면 가입 쪽 쿼리에 섞이고 지금 읽는 곳도 없어 넣지 않았다. 새 `AdminTermsService`(기존 `TermsService`는 그대로), 없는 종류 404 `TERMS_NOT_FOUND`, 같은 종류 같은 버전 409 `DUPLICATE_TRMS_VER`, 새 버전은 이전 버전 정렬순서를 이어받는다. `useYn`·`esntlAgreYn`은 true/false. DB 변경 없음
+- 완료 조건 결과: 검증 `통과`(2026-11-04, 1회차, 8082에서 API로 확인), 사람 확인 2026-11-04
+- 연결 남음: FN-ADM-051-01·02·03 (프론트 연결 `features/adminTerms/api.js` 약관 목록·새 버전 등록·[이력] 모달, `termsKinds.js`, 프론트 저장소에서 /start)
+- 남김: FN-ADM-051-04 기능별 동의 2종(`CARE_RULE`·`LOST_PRIVACY`). 커뮤니티가 동의 문구를 `TRMS`에서 읽게 될 때(KSJ)
+
+## SCR-ADM-071 케어미션 · 프론트 연결 관리자 케어미션 API — 끝
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-071-01·02
+- 기다리는 것: 프론트 SCR-ADM-071(끝, 가짜 응답 `features/adminCareMission/api.js`, 처음 값은 `db/` 기준 데이터 v0.12의 CARE_MSN 21행)
+- 완료 조건: `GET /api/admin/care-missions?msnPoolCd=`(없으면 전체, 번호순 `[{ careMsnSn, msnPoolCd, msnNm, cmpnPnt, achvCrtrNmtm, mvmnPath, useYn }]`, `useYn`은 'Y'/'N' 가정), `PATCH /api/admin/care-missions/{careMsnSn}` `{ cmpnPnt, achvCrtrNmtm, useYn }`(미션명·풀·경로는 안 바꿈, 없는 미션 404). 허용 범위를 정해 프론트에 알린다(프론트 가정: 1 이상 정수, 보상 1000P·횟수 10회 이하). 출제 배치 `CareMissionJob`이 `CARE_MSN`의 `useYn`·`cmpnPnt`·`achvCrtrNmtm`을 다음 날 00:00 출제부터 읽고 이미 낸 미션은 그대로인지 확인한다(FN-ADM-071-03)
+- 결정: `useYn`은 true/false(프론트 가정 'Y'/'N'과 다름), `cmpnPnt` 1~1000·`achvCrtrNmtm` 1~10(프론트 가정 그대로), 없는 미션 404 `CARE_MISSION_NOT_FOUND`, 추가·삭제 API 없음. 출제 때 달성 기준을 `DAY_MSN.ACHV_CRTR_NMTM`에 복사하고(DB v0.12 (7), 공용 DB 반영됨) 진행·정산·회원 목록은 그 값을 쓴다. 진행 반영은 사용 여부와 상관없이 미션을 찾는다
+- 완료 조건 결과: 검증 `통과`(2026-11-04, 3회차. 1회차 공용 DB에 v0.12 (7) 미실행, 2회차 공용 DB 쓰기 막힘·오늘 출제분 없음으로 화면 확인 못 함), 사람 확인 2026-11-04
+- 연결 남음: FN-ADM-071-01·02 (프론트 연결 `features/adminCareMission/api.js` 케어미션 목록·수정 모달, 프론트 저장소에서 /start)
+
+## SCR-ADM-072 포인트 · 프론트 연결 관리자 포인트 API — 끝
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-072-01·02·03
+- 기다리는 것: 프론트 SCR-ADM-072(끝, 가짜 응답 `features/adminPoint/api.js`)
+- 완료 조건: `GET /api/admin/points?mbrSn=&mbrNcnm=&pntDlngTypeCd=&fromDt=&toDt=&page=&size=`(최신순 `PageResponse`, 한 줄은 `AdminPointLedgerSummary` 필드 + 회원 `mbrSn`·`mbrNcnm`, 닉네임 부분 일치, 기간은 YYYY-MM-DD), `POST /api/admin/points/adjustments` `{ mbrSn, dlngPnt(지급 +, 차감 -), memoCn(사유 필수) }`(거래 유형 MYPC0009, 보유 포인트 갱신, 차감 후 잔액 0 미만이면 거절, 감사 로그). 조정 화면의 현재 잔액을 줄 필드(회원 보유 포인트)를 정한다. 상한을 정해 프론트에 알린다(프론트 가정: 1회 100,000P, 사유 200자). 회원 포인트 내역(FN-MYP-020)에 "관리자 조정"으로 보이는지 확인한다(FN-ADM-072-03)
+- 이미 바뀐 것: 회원 한 명 원장 `GET /api/admin/members/{mbrSn}/point-ledgers`(`AdminPointController`, SCR-ADM-011)
+- 완료 조건 결과: 검증 `통과`(2026-11-05. 1회차 실패는 기획과 다른 서비스 분리 → 루프를 버리고 추가-1로 받아 재검증), 사람 확인 2026-11-05. 위 `## SCR-ADM-072 포인트 — 대기` 절의 FN-ADM-072-01~03도 이 절로 끝냈다(절 정리는 사람). 정한 것: 현재 잔액은 `GET /api/admin/members/{mbrSn}`의 `hldPnt`, 상한 ±100,000·사유 1~200자(가정 그대로), 잔액 부족 400 `POINT_NOT_ENOUGH`, 탈퇴 회원 404 `MEMBER_NOT_FOUND`, 멱등 ID 서버 `ADJ-<UUID>`. 추가-1: 검증·감사 로그·검색은 새 `AdminPointService`, `PointService.adjustByAdmin`은 원장 기록만(기존 `PointServiceTest` 생성자 보존)
+- 연결 남음: FN-ADM-072-01·02 (프론트 연결 `features/adminPoint/api.js` 원장 목록·조정 모달·현재 잔액 `hldPnt`, 프론트 저장소에서 /start)
+
+## SCR-ADM-080 라우팅 매핑표 · 프론트 연결 관리자 매핑표 API — 끝
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-080-01·02·03·04·05
+- 기다리는 것: 프론트 SCR-ADM-080(끝, 가짜 응답 `features/adminAiRoute/api.js`)
+- 완료 조건: `GET /api/admin/ai/routes?q=`(우선순위 순 전체 목록, `q`는 지시어 공백 무시 부분 일치, 한 줄은 `AI_ROUT_MPNG` 필드 `aiRoutMpngSn`·`domnNm`·`trgtScrnNm`·`scrnId`·`scrnParamCn`·`instKwrdCn`·`mvmnMthdCd`(AIMG09)·`rprsChipYn`·`prrtSeq`·`rmrkCn`·`useYn`·`mdfcnDt`), `POST /api/admin/ai/routes`·`PATCH /api/admin/ai/routes/{aiRoutMpngSn}`(본문에 `prrtSeq`를 받으면 그 자리에 넣고 나머지를 한 칸씩 밀어 1부터 빈틈없이, 등록 기본값은 맨 아래), `DELETE /api/admin/ai/routes/{aiRoutMpngSn}`(뒤 순위를 당김), 감사 로그. 지시어 저장 형식(프론트 가정: 쉼표 구분 한 줄)과 `domnNm` 정하는 규칙(프론트 가정: 화면 ID 가운데 세 글자), 화면 ID 선택지 출처를 정해 프론트에 알린다. AI 서버·대화창용 조회 API(FN-ADM-080-04)와 부록 A 초기 데이터 INSERT(FN-ADM-080-05). 나중에 우선순위를 지시어별로 둘지(프론트 후속 메모) 함께 본다
+- 완료 조건 결과: 검증 `확인 못 함 있음`(2026-11-05, 1회차. 내 몫 확인 못 함 없음, 남은 것은 연결뿐), 사람 확인 2026-11-05. 정한 것: `ai` 도메인 `/api/admin/ai/routes` 네 개와 `/internal/ai/routes`(사용 중 행, `instKwrds` 배열), 계약은 `docs/api/ai.md`. 지시어는 쉼표 구분 한 줄(프론트 가정 그대로), `domnNm`은 서버가 `scrnId`의 `SCR-` 뒤 세 글자(없으면 `ETC`), 화면 ID 선택지는 서버 API 없이 프론트 목록, `rprsChipYn`·`useYn`은 true/false, 없는 행 404 `AI_ROUTE_NOT_FOUND`. 초기 데이터는 기준 데이터 v0.13 `[3]` 45행 그대로(공용 DB `PRRT_SEQ`는 첫 저장으로 1~45로 다시 매겨짐). 지시어별 우선순위는 하지 않음
+- 연결 남음: FN-ADM-080-01·02·03 (프론트 연결 `features/adminAiRoute/api.js` 목록·등록/수정 모달·삭제, `routeLabels.js` 'Y'/'N' 비교, 프론트 저장소에서 /start)
+- 연결 남음: FN-ADM-080-04 (ai 연결 `app/chat/rules.py` `routing_table()`이 `data/routing.yaml` 대신 `GET /internal/ai/routes`를 읽게, ai 저장소에서 /start)
+
+## SCR-MAN-001 메인 · AI 건강분석 리포트 내부 API — 끝
+- 기능: 명세 기능 ID 추가 없음(명세 밖 추가 요청, ai-f2 2026-11-04), 걸치는 기능 FN-MAN-006(AI 건강분석 리포트 위젯 MANC0007)
+- 기다리는 것: 없음. 정본 초안은 ai 저장소 `docs/api/internal.md` 맨 아래 두 행과 `docs/api/healthreport.md`
+- 완료 조건: `GET /internal/ai/pets/{petSn}/health-report-input?baseYmd=`가 양육 회원에게 `{ input, report, rfrshPsblYn, autoRgnrPsblYn }`(14일 기록·최근 검진 참고 범위 밖 수치·저장본)을 주고, `PUT /internal/ai/pets/{petSn}/health-report`가 반려동물당 1행에 덮어쓰며 기준일별 새로고침 1회·자동 재생성 5회를 센다. `docs/api/issues.md` 4번을 닫는다
+- 결정: 하루 값은 체중 그날 마지막 기록·식사량·음수량·산책 그날 합계·배변 기록마다 한 줄, 검진은 `baseYmd` 이전 가장 최근 완료(HLTC0006) 1회, `ageMm`·`tips` 이름 유지. 초안에 더한 것: PUT 새로고침 두 번째·자동 재생성 6회째 409(`HEALTH_REPORT_REFRESH_LIMIT`·`HEALTH_REPORT_AUTO_LIMIT`), 저장본보다 이른 기준일 400. DB v0.12 (6) `AI_HLTH_RPT`(공용 DB 실행함 2026-11-04)
+- 완료 조건 결과: 검증 `통과`(2026-11-04, 2회차. 1회차는 공용 DB에 `AI_HLTH_RPT` 미반영으로 화면 확인 못 함 → 사람이 v0.12 (6) SQL 실행 뒤 재검증, 문서 400 코드 `BAD_REQUEST`로 고침), 사람 확인 2026-11-04
+
+## SCR-ADM-081 키워드 사전 · 프론트 연결 관리자 키워드 사전 API — 끝
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-081-01·02·03
+- 기다리는 것: 프론트 SCR-ADM-081(끝, 가짜 응답 `features/adminAiKeyword/api.js`)
+- 완료 조건: `GET /api/admin/ai/keywords?dictUsgCd=&kwrdClsfNm=`(용도·분류가 같은 행, `sortSeq`·`kwrdDictSn` 순, 한 줄은 `KWRD_DICT` 필드 `kwrdDictSn`·`dictUsgCd`·`kwrdClsfNm`·`artclNm`·`kwrdCn`·`intrpRsltCn`·`mpngCd`·`sortSeq`·`rmrkCn`·`useYn`), `POST /api/admin/ai/keywords`(본문 `dictUsgCd`·`kwrdClsfNm`·`artclNm`·`kwrdCn`·`intrpRsltCn`·`mpngCd`·`rmrkCn`, 새 행 `sortSeq`는 프론트 가정 그 탭 맨 아래), `PATCH`·`DELETE /api/admin/ai/keywords/{kwrdDictSn}`, 감사 로그. 프론트 탭은 AIMC0037의 등록 동사·날짜·주기·일정 종류·검진유형(판정 규칙·시간 행은 뺌)과 AIMC0038 "가계부 카테고리". 가계부 분류(AIMC0038) 초기 키워드 INSERT. AI 서버·대화창용 조회 API: 예시 문구 형식 차이: AI 서버 `ai/data/register_dict.yaml`은 정규식(`(잡아|등록해)(줘|주|줄)`·`\d+일후`), DB `KWRD_CN`은 부록 B 예시 문구(`잡아줘, 등록해줘`·`○일 후`)라 그대로 못 쓴다. 사전에 정규식을 저장할지, 예시를 정규식으로 바꾸는 규칙을 둘지 정한다
+- 완료 조건 결과: 검증 `확인 못 함 있음`(2026-11-05, 2회차. 1회차는 공용 DB에 v0.13 (2) 미실행 → 사람이 실행 뒤 재검증, 내 몫 확인 못 함 없음), 사람 확인 2026-11-05. 정한 것: `useYn`은 true/false, 행에 `mpngCdNm` 추가, 404 `AI_KEYWORD_NOT_FOUND`, 다루는 분류는 AIMC0037 등록 동사·날짜·주기·일정 종류·검진유형과 AIMC0038 가계부 카테고리('판정 규칙'·'시간'은 목록에 없고 수정·삭제 404, 그 분류로 등록하면 400), 새 행 `sortSeq`는 탭 최댓값+1(빈 탭 10), 가계부 분류 초기 데이터 6건(v0.13 (2), 기타 없음). AI 서버용 `GET /internal/ai/keywords?dictUsgCd=`는 사용 중 행을 예시 문구 그대로 준다(결정 ① 추천안). 계약은 `docs/api/ai.md`
+- 연결 남음: FN-ADM-081-01·02 (프론트 연결 `features/adminAiKeyword/api.js` 목록·등록/수정 모달·삭제, 프론트 저장소에서 /start)
+- 연결 남음: FN-ADM-081-01 내부 제공 (ai 연결 `app/chat/rules.py`가 `register_dict.yaml` 대신 `GET /internal/ai/keywords`를 읽게, 정규식 변환 규칙은 ai가 정함, ai 저장소에서 /start)
+
+## SCR-ADM-082 처리 현황 · 영수증 OCR 현황 API — 끝
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-082-01
+- 기다리는 것: 프론트 SCR-ADM-082(가짜 응답으로 완료, `features/adminProcessing/api.js`)
+- 완료 조건: `GET /api/admin/processing/receipts?fromYmd=&toYmd=&ocrRqstSrcCd=&ocrPrcsSttsCd=&page=&size=`가 기간·출처 기준 summary(`totCnt`·`scsCnt`·`failCnt`·`prcsCnt`, 상태 필터와 무관)와 상태까지 건 목록(`recptSn`·`mbrSn`·`mbrNcnm`·`ocrRqstSrcCd`·`ocrPrcsSttsCd`·`frstRegDt`)을 준다. `GET /api/admin/processing/receipts/{recptSn}/image`가 비공개 원본 이미지를 준다. 가계부 출처 코드를 정한다
+- 완료 조건 결과: 검증 `통과`(2026-11-05, 1회차), 사람 확인 2026-11-05. 정한 것: 필드·파라미터 이름은 DB 컬럼대로 `ocrDmndSrcCd`·`regDt`(가정 `ocrRqstSrcCd`·`frstRegDt`와 다름), 가계부 출처 `AIMC0027`, summary는 현재 상태 기준 `scsCnt`(AIMC0002·0003·0007)·`failCnt`(AIMC0004)·`prcsCnt`(AIMC0001)에 `errCnt`(AIMC0005) 추가, 모르는 출처·상태 코드와 `fromYmd > toYmd`는 400. 계약은 `docs/api/receipt.md` `/admin/processing/receipts` 두 행
+- 연결 남음: FN-ADM-082-01 (프론트 연결 `features/adminProcessing/api.js` `getAdminReceipts`·`processingLabels.js` 출처·상태 코드·`ReceiptImageModal.jsx`, 프론트 저장소에서 /start)
+
+## SCR-ADM-082 처리 현황 · 캐릭터 생성 현황 API — 끝
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-082-02
+- 기다리는 것: 프론트 SCR-ADM-082(가짜 응답으로 완료)
+- 완료 조건: `GET /api/admin/processing/character-jobs?jobSttsCd=&page=&size=`가 상태별 건수 `sttsCnts`([{ jobSttsCd, cnt }])와 목록(`charCrtJobSn`·`mbrNcnm`·`jobSttsCd`·`failRsn`·`otoInqrySn`·`frstRegDt`)을 준다. 결과 이미지는 주지 않는다. CHAR_CRT_JOB 상태 공통코드를 정한다
+- 완료 조건 결과: 검증 `통과`(2026-11-05, 1회차), 사람 확인 2026-11-05. 정한 것: 필드·파라미터 이름은 DB 컬럼대로 `crtJobSttsCd`·`regDt`(가정 `jobSttsCd`·`frstRegDt`와 다름), 행에 `mbrSn` 포함, 상태 코드는 기존 CHRG01(CHRC0001 요청·0002 생성 중·0003 생성 완료·0004 생성 실패, 새 공통코드 없음), `sttsCnts`는 네 상태를 순서대로 늘 주고 없는 상태 0, 모르는 상태 코드 400. 계약은 `docs/api/pet.md` `/admin/processing/character-jobs` 행
+- 연결 남음: FN-ADM-082-02 (프론트 연결 `features/adminProcessing/api.js` `getAdminCharacterJobs`·`processingLabels.js` `CHAR_JOB_STTS`·`CharacterJobTable.jsx`, 프론트 저장소에서 /start)
+
+## SCR-ADM-082 처리 현황 · 검사결과지 분석 현황 API — 끝
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-082-03
+- 기다리는 것: 프론트 SCR-ADM-082(가짜 응답으로 완료)
+- 완료 조건: Python→Java 통지 내부 API로 EXTL_API_CALL_LOG에 PDF 분석 호출이 쌓인다(검사결과지가 아닌 파일은 제외). `GET /api/admin/processing/pdf-analyses?fromYmd=&toYmd=&page=&size=`가 summary(`totCnt`·`scsCnt`·`tmotCnt`·`errCnt`)와 실패 목록(`extlApiCallLogSn`·`callRsltCd`·`failRsn`·`callDt`)을 준다. 분석 결과 내용은 주지 않는다
+- 완료 조건 결과: 검증 `통과`(2026-11-05, 1회차), 사람 확인 2026-11-05. 정한 것: 통지는 기존 `POST /internal/ai/external-api-calls`(SYSC0025) 그대로, 검사결과지가 아닌 파일은 Python이 성공(SYSC0021)으로 통지해 실패에서 빠진다(새 컬럼·코드 없음). 기간은 `fromYmd`·`toYmd` 모두 선택, 호출일 양끝 포함. 계약은 `docs/api/global.md` `/admin/processing/pdf-analyses` 행
+- 연결 남음: FN-ADM-082-03 (프론트 연결 `features/adminProcessing/api.js` `getAdminPdfAnalyses` 검사결과지 분석 탭, 프론트 저장소에서 /start)
+- 연결 남음: FN-ADM-082-03 (ai 연결 `app/checkup` PDF 분석 호출마다 SYSC0025 통지, 검사결과지 아님 판정은 SYSC0021, ai 저장소에서 /start)
+
+## SCR-ADM-001 대시보드 · 운영 현황·처리 대기 API — 끝
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-001-02·03
+- 기다리는 것: 프론트 SCR-ADM-001(끝, 가짜 응답 `features/adminDashboard/api.js`)
+- 완료 조건: `GET /api/admin/dashboard`(기간 무관)가 운영 현황 `totMbrCnt`·`nrmlMbrCnt`·`stopMbrCnt`·`todayJoinCnt`·`weekJoinCnt`·`totPstCnt`, 최근 가입 회원 5명 `recentMbrs`[`mbrSn`·`mbrNcnm`·`regDt`], 최근 게시글 5건 `recentPsts`[`pstSn`·`bbsCd`·`bbsNm`·`pstTtl`·`regDt`], 처리 대기 `dclrRcptCnt`(CMUC0015)·`unansInqryCnt`(CSCC0012)·`pixelInqryCnt`(그중 CSCC0006)·`charFailCnt`·`ocrFailCnt`(AIMC0004)·`notiFailCnt`(AIMC0019, 최근 24시간)·`btchFailCnt`를 준다. 처리 대기 건수는 각 목록 화면 필터 건수와 같다. 일반 회원은 403
+- 완료 조건 결과: 검증 `통과`(2026-11-05, 2회차. 1회차는 게시글 수가 삭제 글을 빼 관리자 게시글 목록과 달라 실패), 사람 확인 2026-11-05. 정한 것: `admin` 패키지 `GET /api/admin/dashboard`, 회원 수는 일반 회원(USRC0004)만·가입 수는 상태 무관, 게시글은 관리자 게시글 목록 기본 조건(삭제 글 포함), 배치 실패는 마지막 실행이 실패한 배치 수, 알림 실패는 지금-24시간. 계약은 `docs/api/admin.md`
+- 연결 남음: FN-ADM-001-02·03 (프론트 연결 `features/adminDashboard/api.js` `getAdminDashboard` 운영 현황·처리 대기 카드, 프론트 저장소에서 /start)
+
+## SCR-ADM-001 대시보드 · 이용 통계 API — 끝
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-001-04·05
+- 기다리는 것: 프론트 SCR-ADM-001(끝, 가짜 응답 `features/adminDashboard/api.js`)
+- 완료 조건: `GET /api/admin/dashboard/stats?fromYmd=&toYmd=`(양끝 포함, 최대 90일)가 `daily`[`ymd`·`joinCnt`·`whdwlCnt`·`aiChatCnt`·`ocrRqstCnt`](날짜 순서대로 빠짐없이, 없는 날은 0), `pstCntByBbs`[`bbsCd`·`bbsNm`·`cnt`], `expnsCntByCtgry`[`ctgryCd`·`ctgryNm`·`cnt`], `petDstrb`[`petSeNm`·`vrtyNm`·`cnt`], `fvrtPlcs`[`plcSn`·`plcNm`·`cnt`]를 준다. 기간이 잘못되면 400
+- 완료 조건 결과: 검증 `통과`(2026-11-06, 1회차), 사람 확인 2026-11-06. 정한 것: 새 `AdminDashboardStatsController`·`AdminDashboardStatsService`로 분리(기존 대시보드 테스트가 생성자·mock bean을 직접 써서). 종료일은 오늘까지, 날짜 형식 오류도 400. 가입은 일반 회원·상태 무관, AI 대화는 사용자 메시지 수(지운 대화방은 빠짐), OCR 요청은 영수증 등록 수, 게시글은 상태 무관, 지출은 지출일자·삭제 제외, 게시판·카테고리는 사용 중인 코드 전부(0 포함). 종·품종 분포(상위 20, 품종 없음은 "직접 입력")와 즐겨찾기 상위 장소(상위 10)는 기간 무관. 계약은 `docs/api/admin.md`
+- 연결 남음: FN-ADM-001-04·05 (프론트 연결 `features/adminDashboard/api.js` 이용 통계 그래프·표·기간 선택, 프론트 저장소에서 /start)
+
+## SCR-MYP-010 픽셀 캐릭터 관리 · 착용 모습 대표 이미지·전체 굽기 관리자 허용·얼굴 영역 — 끝
+- 기능: 명세 기능 ID 추가 없음(명세 밖 추가 요청, ai-f2 2026-11-04), 걸치는 기능 FN-MYP-010-16·13, FN-ADM-070-02
+- 기다리는 것: 없음. 정본 초안은 ai 저장소 `docs/api/internal.md` 32~36행. Python 합성은 AI PR #37 병합됨
+- 완료 조건: `PUT /internal/ai/characters/{pixelCharSn}/equipped-image`(multipart `image` 512×512 PNG·`itemSns`)가 지금 착용 목록과 같을 때만 대표 이미지를 저장하고 다르면 409 `EQUIPPED_ITEMS_CHANGED`, `PUT equipped-items` 때 대표 이미지가 지워지며, `GET /api/pets/{petSn}/character-image`는 저장본이 있으면 그것을 준다. 관리자 쿠키로 남의 캐릭터 시트 4개 API를 부를 수 있다. 얼굴 영역이 `(96, 32, 320, 320)`이다
+- 남김: 무료 재생성 계약 FN-MYP-010-23(SCR-ADM-042 전), 신발 정리(`SCR-ADM-070 아이템 · 신발 부위 제외` 절)
+- 완료 조건 결과: 검증 1회차 `실패`(2026-11-04, 추가-① 화면 확인 못 함: 검증의 공용 DB 쓰기 거부·로컬 DB에 v0.13 (1) 없음, 추가-0·②·③은 확인함), 사람이 공용 DB로 확인함(2026-11-04). 함께 정한 것: DB 기준 파일 v0.13(사람 결정), 이전 대표 이미지 파일은 디스크에 남김(`FileStore` 삭제 없음)
+- 완료 조건 결과(2회차): 검증 `통과`(2026-11-04, 2회차, 로컬 DB v0.13 (1) 적용·8082에서 추가-0·①·②·③ 확인), 사람 확인 2026-11-04(공용 DB 8080). PR #149 병합. 기준 변경 목록의 `DailyHealthRecordServiceTest`는 develop 병합으로 들어온 JAJ PR #148 변경이라 세지 않음
+- 연결 남음: 추가-② FN-ADM-070-02 (프론트 연결 SCR-ADM-070 전체 굽기 나눠 호출, 프론트 저장소에서 /start)
+- 연결 남음: FN-MYP-010-16 (프론트 연결 꾸미기 화면 착용 확정 뒤 Python 대표 이미지 합성 요청·이미지 다시 불러오기, 화면 SJM, 프론트 저장소에서 /start)
+- 연결 남음: 추가-①·③ (ai 저장소 `internal.md` 32~36행 확정·`schemas.py` FACE·나눠 굽기, ai 세션 #149 병합 뒤 /start)
+
+## SCR-AIM-011 AI 대화창 · 가계부·반려동물·커뮤니티·플레이스·FAQ 읽기 도구 표시 — 끝
+- 기능: 명세 기능 ID 추가 없음(설계 `nyangmeong-ai` `docs/design/tool-catalog.md` 2-1절·8절 4번 건강 외 도메인), 걸치는 기능 FN-AIM-004-02
+- 기다리는 것: 없음(Python 설명이 없는 도구는 Python이 싣지 않으므로 먼저 붙여도 지금 동작은 그대로. 도메인을 여는 시점은 ai `tool_eval` 기준)
+- 완료 조건: `GET /internal/ai/tools`에 설계 2-1절 가계부·반려동물·캐릭터·커뮤니티·플레이스·고객센터(FAQ) 조회 API가 `kind: READ`로 쿼리 칸·필수·코드 값과 함께 있고, 기존 15개는 그대로다. 제외(알림·1:1 채팅)는 없다. 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-06, 1회차), 사람 확인 2026-11-06(도구 42개 = 건강 15 + pet 10 + community 8 + expense 6 + place 2 + support 1). 정한 것: 검색 조건 6곳에 `@ModelAttribute`(없으면 도구 목록이 칸을 오류 없이 뺀다), `YearMonth` 칸은 `string` + pattern(새 타입 이름 없음), 보유 아이템 GET이 없어 `get_pixel_character`·`list_shop_items`(`hldYn`)로 대신, `GET /api/caregiver-invitations`는 보낸 초대라 `list_sent_caregiver_invitations`. YearMonth 테스트는 기존 `AiToolCatalogControllerTest` 대신 `PetAiToolCatalogTest`에 둠(기존 기대값 유지)
+- 연결 남음: FN-AIM-004-02 (ai 연결 27개 도구 Python 설명 `data/tool_prompts.yaml`·스냅샷, READ 실행 경로 뒤, 설계 2-1절 held-items·받은 초대 표기 수정, LJS ai 저장소에서 /start)
+
+## SCR-AIM-012 AI 일정 생성 확인 · 건강 쓰기 도구 표시 — 끝
+- 기능: 명세 기능 ID 추가 없음(설계 `nyangmeong-ai` `docs/design/tool-catalog.md` 2-2절 건강·3-3절·8절 5번), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 기다리는 것: 관찰 회차 등록(`POST /observation-cycles`)은 `@NotNull MultipartFile file`이라 도구 목록이 타입 미지원으로 뺀다 — 사진 선택으로 바꿀지·이번에 뺄지·파일 칸을 지원할지(사람). 대화로 쓴 기록의 출처 코드는 `SCHDL.SCHDL_SRC_CD`만 있어 다른 테이블은 DB 변경이 필요하다(사람). 프론트 범용 카드·응답 계약(프론트·ai)은 Python 설명이 없는 도구를 싣지 않으므로 먼저 붙여도 지금 동작은 그대로
+- 완료 조건: `GET /internal/ai/tools`에 일정 수정(`PATCH /{schdlSn}`)·케어 항목 수정·케어 완료 체크·건강 일지 기록·반려동물 정보 수정(`PATCH /api/pets/{petSn}`)(+ 정한 경우 관찰 회차 추가)이 `kind: CARD`로 칸·필수·규칙과 함께 있고, 그 서비스 검사 400이 `data: [{field, message}]`에 칸 이름을 담는다. 기존 READ 40개·CARD 2개는 그대로, 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-06, 2회차. 1회차는 종료된 관찰 항목 400에 칸 이름 없음으로 실패 뒤 수정), 도구 52개(READ 40·CARD 12), 사람 확인 2026-11-06. 관찰 회차는 파일 칸(`type: file`)으로 넣음, 출처 코드(DB 변경)는 이번 범위 밖
+- 연결 남음: FN-AIM-012-05·06·07·13 (프론트 연결 쓰기 도구 범용 확인 카드: multipart·array·generated 키 채우기·지출 중복 확인 먼저, 프론트 저장소에서 /start)
+- 연결 남음: FN-AIM-012-05·06·07·13 (ai 연결 10개 도구 설명 `data/tool_prompts.yaml`·`file`·`array` 타입 지원, ai 저장소에서 /start)
+
+## SCR-AIM-012 AI 일정 생성 확인 · 가계부 쓰기 도구 표시 — 끝
+- 합침: 2026-11-06 사람 결정으로 `건강 쓰기 도구 표시` 절에서 함께 한다(기획은 handoff). 그 절이 끝나면 이 절도 끝
+- 기능: 명세 기능 ID 추가 없음(설계 2-2절 가계부·3-3절), 걸치는 기능 FN-AIM-012-05·06·07, FN-AIM-013(영수증 저장)
+- 기다리는 것: 건강 쓰기 도구 절(같은 방식으로 붙인다). 지출 등록 전 중복 확인(`/duplicate-check`)을 카드 흐름에서 어떻게 부를지(ai·LJS)
+- 완료 조건: `GET /internal/ai/tools`에 지출 등록(`POST /api/expenses`)·지출 수정(`PATCH /{expndSn}`)·월 지출 한도(`PUT /api/members/me/expense-limit`)·영수증 인식 결과 저장(`POST /api/receipts/{recptSn}/save`)이 `kind: CARD`로 있고, 그 서비스 검사 400이 칸 이름을 담는다. 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 건강 쓰기 도구 절과 함께 끝(2026-11-06). 중복 확인은 도구로 싣지 않고 React가 `draft_expense` 전에 부른다(결정 G)
+- 연결 남음: FN-AIM-012-05·06·07, FN-AIM-013 (프론트·ai 연결은 건강 쓰기 도구 절과 같음)
 
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
@@ -518,6 +638,7 @@
 - FN-AIM-013-01·02·03·05·07: 대화창 화면과 Python AI 서버(첨부 버튼·분기·반려동물 되묻기·결과 카드·실패 안내). 파일 검증과 결과 데이터는 SCR-AIM-008 `POST /receipts` 그대로
 - FN-AIM-013-09: 요약 메시지 작성은 Python AI 서버, 저장은 SCR-AIM-011 대화 저장 내부 API 그대로
 - FN-HLT-002-01·05·06·09~33, FN-HLT-003-01·12·13·21~24·29~40, FN-HLT-005-01~05·11~15, FN-HLT-007-01~06, FN-HLT-011-01~10: 건강기록은 JAJ(영수증 결과 확인인 002-34~46만 LJS)
+- FN-ADM-060-01~05: 장소 화면은 사람 결정 2026-11-04로 없앴다(사용자 장소는 카카오 로컬 검색을 바로 쓴다. 프론트 메뉴·`docs/routes.md` 행 삭제). 기능명세서·화면설계서에서 빼는 것은 문서 담당이 DMS에서 한다
 
 ## 대조
 - 공통레이아웃: 명세 117 = 마일스톤 35 + 제외 82
@@ -525,4 +646,27 @@
 - 마이페이지: 명세 112 = 마일스톤 23 + 제외 89
 - AI매니저 v0.10 SCR-AIM-013(v0.9 신설): 명세 9 = 마일스톤 3 + 제외 6
 - 건강기록: 명세 86 = 마일스톤 13 + 제외 73
-- 관리자: 명세 135 = 마일스톤 128 + 제외 7 (FN-ADM-100-01~04 공통코드 화면, 2026-11-01 사람 결정: 코드 변경이 드물어 SQL로 처리 / FN-ADM-023-07·050-04·073-01, 2026-10-30 결정, 구현 계획 B-3·B-4·B-5). 기능명세서 v0.4 사본 기준, DMS 업로드 전
+- 관리자: 명세 135 = 마일스톤 123 + 제외 12 (FN-ADM-100-01~04 공통코드 화면, 2026-11-01 사람 결정: 코드 변경이 드물어 SQL로 처리 / FN-ADM-023-07·050-04·073-01, 2026-10-30 결정, 구현 계획 B-3·B-4·B-5 / FN-ADM-060-01~05 장소 화면, 2026-11-04 사람 결정). 기능명세서 v0.4 사본 기준, DMS 업로드 전
+
+## SCR-AIM-012 AI 일정 생성 확인 · 도구 목록 내부 API — 끝
+- 기능: 명세 기능 ID 추가 없음(설계 `nyangmeong-ai` `docs/design/tool-catalog.md` 8절 2번, 8절 0번 기능 ID 추가 전. ai-50 요청 2026-11-05), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 기다리는 것: 없음(ai 저장소 8절 1번은 가짜 Java 응답으로 진행 중)
+- 완료 조건: 쿠키 없이 `GET /internal/ai/tools`가 200으로 `version`·`structureVersion`·`tools`를 주고, `tools`에 `draft_schedule`(`POST /api/pets/{petSn}/care-schedules`)·`draft_care_item`(`POST /api/pets/{petSn}/care-items`)이 `kind: CARD`로 칸·필수·조건부 규칙·공통코드 값과 함께 있다
+- 완료 조건 결과: 검증 `통과`(2026-11-05, 1회차), 사람 확인 2026-11-05(Postman: 쿠키 없이 `GET /internal/ai/tools` 200·두 도구 응답, 등록 API 두 개의 빈 본문 400 칸이 도구 목록 `required`와 같음). 정한 것: 어노테이션·수집·API는 `global/aitool`(health 2층이 붙이므로 ai 3층에 두지 않음), 400 오류 모양은 기존 `data: [{field, message}]` 유지, 칸 type에 `datetime`, `@Min`·`@Max` → `min`·`max`, 응답은 `ApiResponse`로 감쌈·도구 이름순, 해시는 `TokenHashUtil`(SHA-256), 열린 경로는 `SecurityPathProperties` 기본값과 `.example`(설정 방식 유지). 계약은 `docs/api/ai.md`
+- 추가: 추가-1 로컬 `application.properties`(git 제외) 열린 경로에 `/api/auth/sns-login`·`/internal/ai/tools`
+- 연결 남음: 걸치는 기능 FN-AIM-012-05·06·07·13 (ai 저장소 가짜 응답 `data/tools.snapshot.json` → 실제 `GET /internal/ai/tools`, ai `docs/api/internal.md` 행 확정, 설계 8절 3번, ai 세션)
+
+## SCR-AIM-012 AI 일정 생성 확인 · 서비스 검사 오류 칸 이름 — 끝
+- 기능: 명세 기능 ID 추가 없음(ai 저장소 `docs/design/tool-catalog.md` 3-3절 "오류에 필드 이름", 2026-11-05 사람 결정으로 분리), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 기다리는 것: 없음
+- 완료 조건: 서비스 검사로 나는 400 `INVALID_INPUT_VALUE`도 `data: [{field, message}]`에 칸 이름을 담는다. 정기관리 케어 항목 등록에 `careCycleCd` 없이 보내면 `data[0].field`가 `careCycleCd`다
+- 완료 조건 결과: 검증 `통과`(2026-11-06, 1회차), 사람 확인 2026-11-06(Postman: 일정 등록 칸 빠짐 400 `data[0].field`). 정한 것: `message`는 `ErrorCode` 문구, 칸 없는 예외는 `data` 없이 그대로, 범위는 AI 도구가 붙은 일정·케어 항목 서비스만(다른 `INVALID_INPUT_VALUE`는 그대로), 테스트는 서비스 테스트에(컨트롤러 테스트는 서비스를 목으로 바꿔 칸을 확인 못 함)
+- 추가: 없음
+
+## SCR-AIM-011 AI 대화창 · 건강 읽기 도구 표시 — 끝
+- 기능: 명세 기능 ID 추가 없음(설계 `nyangmeong-ai` `docs/design/tool-catalog.md` 8절 4번 건강 도메인, 8절 0번 기능 ID 추가 전), 걸치는 기능 FN-AIM-004-02
+- 기다리는 것: 없음(8절 3번 연결은 ai 저장소에서 따로. Python 설명이 없는 도구는 Python이 싣지 않으므로 먼저 붙여도 지금 동작은 그대로)
+- 완료 조건: `GET /internal/ai/tools`에 건강 조회 API 13개가 `kind: READ`로 쿼리 칸(검색 조건·페이지)·필수·코드 값과 함께 있고, 기존 `draft_schedule`·`draft_care_item`은 그대로다. 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-06, 1회차), 사람 확인 2026-11-06(Postman: 쿠키 없이 `GET /internal/ai/tools` 200·도구 15개, 카드 2개는 바뀌기 전과 같음, 기동·첫 호출 뒤 `[AiTool] 제외` 없음). 정한 것: 경로 변수와 같은 이름의 검색 조건 필드는 뺌(서비스가 덮어씀), `PageQuery`는 `page`·`size`(max 50)만, 읽기 결과 자르기는 Java 기존 상한 그대로·나머지 Python 요약, 기존 테스트 `search_fake` 기대값 변경(사람 결정, 별도 커밋). 계약은 `docs/api/ai.md`
+- 추가: 없음
+- 연결 남음: 걸치는 기능 FN-AIM-004-02 (ai 저장소 ① READ 실행 경로 → ② `data/tool_prompts.yaml` 13개 설명·스냅샷 갱신, ai 세션)

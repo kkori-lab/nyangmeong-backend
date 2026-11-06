@@ -2,6 +2,8 @@ package com.nyangmeong.health.dto;
 
 import java.time.LocalDate;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.Data;
@@ -18,8 +20,10 @@ public class CareScheduleSearchCond {
     /** 종료일(포함) */
     private LocalDate toYmd;
     /** 일정종류공통코드 */
+    @AiCode("HLTG19")
     private String schdlKndCd;
     /** 검진유형공통코드 */
+    @AiCode("HLTG01")
     private String ckupTypeCd;
     /** 최대 건수 */
     @Min(1)

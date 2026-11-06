@@ -21,6 +21,7 @@ public class SecurityPathProperties {
     private List<String> permitAllPaths = List.of(
             "/api/auth/dev-tokens",
             "/api/auth/login",
+            "/api/auth/sns-login",
             "/api/auth/login-attempt-limits",
             "/api/auth/captchas",
             "/api/auth/refresh",
@@ -40,5 +41,6 @@ public class SecurityPathProperties {
             "/api/members/me/nickname",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/v3/api-docs/**");
+            "/v3/api-docs/**",
+            "/internal/ai/tools");
 }

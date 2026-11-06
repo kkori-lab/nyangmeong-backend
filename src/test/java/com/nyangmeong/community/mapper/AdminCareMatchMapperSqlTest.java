@@ -22,6 +22,11 @@ class AdminCareMatchMapperSqlTest {
     @BeforeAll
     static void loadMappers() throws Exception {
         configuration = new Configuration();
+        // 작성자 표시 공통 조각(MemberDisplay)을 먼저 불러와야 include 가 풀린다
+        String displayPath = "mapper/global/MemberDisplay.xml";
+        try (InputStream in = AdminCareMatchMapperSqlTest.class.getResourceAsStream("/" + displayPath)) {
+            new XMLMapperBuilder(in, configuration, displayPath, configuration.getSqlFragments()).parse();
+        }
         for (String name : new String[] { "CareRecruitmentMapper", "CareMatchMapper" }) {
             String path = "mapper/community/" + name + ".xml";
             try (InputStream in = AdminCareMatchMapperSqlTest.class.getResourceAsStream("/" + path)) {

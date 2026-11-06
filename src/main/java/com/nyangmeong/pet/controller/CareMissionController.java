@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
 import com.nyangmeong.pet.dto.DailyMissionSummary;
@@ -31,6 +33,7 @@ public class CareMissionController {
     private final CareMissionService careMissionService;
 
     @Operation(summary = "그날의 케어미션")
+    @AiTool(name = "list_daily_missions", domain = "pet", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<List<DailyMissionSummary>>> search(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @RequestParam(required = false) LocalDate msnCrtrYmd) {

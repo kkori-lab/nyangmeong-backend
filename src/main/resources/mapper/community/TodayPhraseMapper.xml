@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nyangmeong.community.mapper.TodayPhraseMapper">
+
+    <resultMap id="todayPhraseResultMap" type="com.nyangmeong.community.domain.TodayPhrase">
+        <id     column="TODAY_PHRS_SN" property="todayPhrsSn" />
+        <result column="PHRS_CN"       property="phrsCn" />
+        <result column="USE_YN"        property="useYn" />
+        <result column="REG_DT"        property="regDt" />
+        <result column="MDFCN_DT"      property="mdfcnDt" />
+        <result column="RGTR_ID"       property="rgtrId" />
+        <result column="MDFR_ID"       property="mdfrId" />
+    </resultMap>
+
+    <sql id="columns">
+          TODAY_PHRS_SN
+        , PHRS_CN
+        , USE_YN
+        , REG_DT
+        , MDFCN_DT
+        , RGTR_ID
+        , MDFR_ID
+    </sql>
+
+    <select id="selectList" resultMap="todayPhraseResultMap">
+        /* 후보 문구 목록 : 등록순 */
+        SELECT <include refid="columns" />
+          FROM TODAY_PHRS
+         ORDER BY TODAY_PHRS_SN
+    </select>
+
+    <select id="selectById" parameterType="long" resultMap="todayPhraseResultMap">
+        /* 번호로 후보 문구 조회 */
+        SELECT <include refid="columns" />
+          FROM TODAY_PHRS
+         WHERE TODAY_PHRS_SN = #{todayPhrsSn}
+    </select>
+
+    <select id="selectRandomInUse" resultMap="todayPhraseResultMap">
+        /* 사용 중 후보 문구 1건 무작위 : 후보 수가 적어 RAND() 정렬 */
+        SELECT <include refid="columns" />
+          FROM TODAY_PHRS
+         WHERE USE_YN = 'Y'
+         ORDER BY RAND()
+         LIMIT 1
+    </select>
+
+    <insert id="insert" parameterType="com.nyangmeong.community.domain.TodayPhrase" useGeneratedKeys="true" keyProperty="todayPhrsSn">
+        /* 후보 문구 등록 */
+        INSERT INTO TODAY_PHRS (PHRS_CN, USE_YN, RGTR_ID, MDFR_ID)
+        VALUES (#{phrsCn}, #{useYn}, #{rgtrId}, #{mdfrId})
+    </insert>
+
+    <update id="update" parameterType="com.nyangmeong.community.domain.TodayPhrase">
+        /* 후보 문구 수정 : 보낸 칸만 */
+        UPDATE TODAY_PHRS
+        <set>
+            <if test="phrsCn != null">PHRS_CN = #{phrsCn},</if>
+            <if test="useYn != null">USE_YN = #{useYn},</if>
+            MDFR_ID = #{mdfrId},
+            MDFCN_DT = NOW()
+        </set>
+         WHERE TODAY_PHRS_SN = #{todayPhrsSn}
+    </update>
+</mapper>

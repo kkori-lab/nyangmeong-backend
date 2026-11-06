@@ -390,4 +390,22 @@ class ReceiptSaveServiceTest {
                         e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.ALREADY_PROCESSED));
         verify(receiptService, never()).markSavedByExpense(anyLong(), anyLong(), any());
     }
+
+    @Test
+    void 저장_서비스_검사_400은_틀린_칸_이름을_담는다() {
+        owned(ReceiptStatus.RECOGNIZED);
+
+        assertFields(() -> service.save(1L, 3L, request(pet(10L, null, false, null), pet(10L, null, false, null))),
+                "pets[1].petSn");
+        ReceiptSaveDrugRequest drug = new ReceiptSaveDrugRequest("항생제", YMD, YMD.minusDays(1), 2, "HLTC0010");
+        assertFields(() -> service.save(1L, 3L, request(pet(10L, null, false, List.of(drug)))),
+                "pets[0].drugs[0].mdcnEndYmd");
+    }
+
+    private static void assertFields(org.assertj.core.api.ThrowableAssert.ThrowingCallable call, String... fields) {
+        assertThatThrownBy(call).isInstanceOfSatisfying(CustomException.class, e -> {
+            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+            assertThat(e.getFields()).containsExactly(fields);
+        });
+    }
 }

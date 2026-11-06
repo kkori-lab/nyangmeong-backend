@@ -1,5 +1,7 @@
 package com.nyangmeong.member.controller;
 
+import java.util.List;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -9,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,6 +21,8 @@ import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
 import com.nyangmeong.global.security.session.LoginSessionManager;
+import com.nyangmeong.member.dto.DashboardWidgetSaveRequest;
+import com.nyangmeong.member.dto.DashboardWidgetSummary;
 import com.nyangmeong.member.dto.MemberCreateRequest;
 import com.nyangmeong.member.dto.MemberJoinResult;
 import com.nyangmeong.member.dto.MemberNicknameAvailabilityResponse;
@@ -30,12 +35,15 @@ import com.nyangmeong.member.dto.MemberRecoveryInfoRequest;
 import com.nyangmeong.member.dto.MemberRecoveryResponse;
 import com.nyangmeong.member.dto.MemberResponse;
 import com.nyangmeong.member.dto.MemberUpdateRequest;
+import com.nyangmeong.member.dto.MemberWithdrawRequest;
 import com.nyangmeong.member.dto.PasswordChangeRequest;
 import com.nyangmeong.member.dto.PasswordVerifyRequest;
+import com.nyangmeong.member.service.DashboardWidgetService;
 import com.nyangmeong.member.service.MemberJoinService;
 import com.nyangmeong.member.service.MemberPasswordService;
 import com.nyangmeong.member.service.MemberRecoveryService;
 import com.nyangmeong.member.service.MemberService;
+import com.nyangmeong.member.service.MemberWithdrawService;
 import com.nyangmeong.member.service.NicknameSetupTokenManager;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -51,6 +59,8 @@ import lombok.RequiredArgsConstructor;
  * - 위는 모두 로그인 없이 열려 있고, 닉네임 설정과 닉네임 중복확인의 본인은 로그인 회원 또는 가입 직후 쿠키(ncnm_setup)로 가린다
  * - 회원정보 수정 조회·저장(GET·PATCH /api/members/me, SCR-MYP-040)은 로그인 회원만
  * - 현재 비밀번호 확인·변경(POST /api/members/me/password-verification, PATCH /api/members/me/password)도 로그인 회원만
+ * - 메인 위젯 순서 조회·저장(GET·PUT /api/members/me/dashboard-widgets)도 로그인 회원만
+ * - 회원탈퇴(POST /api/members/me/withdraw)도 로그인 회원만, 성공하면 요청한 기기의 쿠키도 지운다
  */
 @RestController
 @RequiredArgsConstructor
@@ -61,6 +71,8 @@ public class MemberController {
     private final MemberJoinService memberJoinService;
     private final MemberRecoveryService memberRecoveryService;
     private final MemberPasswordService memberPasswordService;
+    private final MemberWithdrawService memberWithdrawService;
+    private final DashboardWidgetService dashboardWidgetService;
     private final LoginSessionManager loginSessionManager;
     private final NicknameSetupTokenManager nicknameSetupTokenManager;
 
@@ -126,6 +138,30 @@ public class MemberController {
             HttpServletResponse response, @Valid @RequestBody PasswordChangeRequest req) {
         memberPasswordService.change(me.id(), req);
         loginSessionManager.issue(me.id(), response);
+        return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    @Operation(summary = "메인 위젯 순서 조회")
+    @GetMapping("/me/dashboard-widgets")
+    public ResponseEntity<ApiResponse<List<DashboardWidgetSummary>>> getDashboardWidgets(
+            @AuthenticationPrincipal LoginMember me) {
+        return ResponseEntity.ok(ApiResponse.success(dashboardWidgetService.getWidgets(me.id())));
+    }
+
+    @Operation(summary = "메인 위젯 순서 저장")
+    @PutMapping("/me/dashboard-widgets")
+    public ResponseEntity<ApiResponse<List<DashboardWidgetSummary>>> saveDashboardWidgets(
+            @AuthenticationPrincipal LoginMember me, @Valid @RequestBody DashboardWidgetSaveRequest req) {
+        return ResponseEntity.ok(ApiResponse.success(dashboardWidgetService.saveWidgets(me.id(), req)));
+    }
+
+    @Operation(summary = "회원탈퇴")
+    @PostMapping("/me/withdraw")
+    public ResponseEntity<ApiResponse<Void>> withdraw(@AuthenticationPrincipal LoginMember me,
+            HttpServletRequest request, HttpServletResponse response,
+            @Valid @RequestBody MemberWithdrawRequest req) {
+        memberWithdrawService.withdraw(me.id(), req);
+        loginSessionManager.revoke(request, response);
         return ResponseEntity.ok(ApiResponse.success());
     }
 

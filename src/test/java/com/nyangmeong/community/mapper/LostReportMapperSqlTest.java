@@ -26,9 +26,11 @@ class LostReportMapperSqlTest {
     @BeforeAll
     static void loadMapper() throws Exception {
         configuration = new Configuration();
-        String path = "mapper/community/LostReportMapper.xml";
-        try (InputStream in = LostReportMapperSqlTest.class.getResourceAsStream("/" + path)) {
-            new XMLMapperBuilder(in, configuration, path, configuration.getSqlFragments()).parse();
+        // 작성자 표시 공통 조각(MemberDisplay)을 먼저 불러와야 include 가 풀린다
+        for (String path : new String[] { "mapper/global/MemberDisplay.xml", "mapper/community/LostReportMapper.xml" }) {
+            try (InputStream in = LostReportMapperSqlTest.class.getResourceAsStream("/" + path)) {
+                new XMLMapperBuilder(in, configuration, path, configuration.getSqlFragments()).parse();
+            }
         }
     }
 

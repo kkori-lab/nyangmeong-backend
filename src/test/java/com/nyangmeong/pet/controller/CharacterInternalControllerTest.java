@@ -1,7 +1,9 @@
 package com.nyangmeong.pet.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -189,7 +191,7 @@ class CharacterInternalControllerTest {
         mockMvc.perform(multipart(HttpMethod.PUT, BASE + "/3/item-sheets/7").file(sheet).header(REQUESTED_WITH, XHR))
                 .andExpect(status().isOk());
 
-        verify(characterSheetService).saveItemSheet(eq(1L), eq(3L), eq(7L), any());
+        verify(characterSheetService).saveItemSheet(eq(1L), eq(false), eq(3L), eq(7L), any());
     }
 
     @Test
@@ -198,13 +200,13 @@ class CharacterInternalControllerTest {
         mockMvc.perform(post(BASE + "/3/item-sheets/7/failure").header(REQUESTED_WITH, XHR))
                 .andExpect(status().isOk());
 
-        verify(characterSheetService).failItemSheet(1L, 3L, 7L);
+        verify(characterSheetService).failItemSheet(1L, false, 3L, 7L);
     }
 
     @Test
     @WithMockLoginMember
     void 시트_정보는_반복된_itemSns를_받는다() throws Exception {
-        when(characterSheetService.getSheets(1L, 3L, List.of(7L, 8L)))
+        when(characterSheetService.getSheets(1L, false, 3L, List.of(7L, 8L)))
                 .thenReturn(new CharacterSheetsResponse("PETC0002", 50L, 1.5, 2.0, 3.0,
                         List.of(new CharacterSheetItem(7L, 60L, false), new CharacterSheetItem(8L, null, true))));
 
@@ -221,7 +223,7 @@ class CharacterInternalControllerTest {
     @Test
     @WithMockLoginMember
     void 시트_파일은_PNG_파일_자체다() throws Exception {
-        when(characterSheetService.getSheetFile(1L, 3L, 50L))
+        when(characterSheetService.getSheetFile(1L, false, 3L, 50L))
                 .thenReturn(new StoredFile(new byte[] {9}, "image/png", "sheet.png"));
 
         mockMvc.perform(get(BASE + "/3/sheet-files/50"))
@@ -233,10 +235,50 @@ class CharacterInternalControllerTest {
     @Test
     @WithMockLoginMember
     void 남의_시트_파일_번호는_404() throws Exception {
-        when(characterSheetService.getSheetFile(1L, 3L, 99L)).thenThrow(new CustomException(ErrorCode.FILE_NOT_FOUND));
+        when(characterSheetService.getSheetFile(1L, false, 3L, 99L)).thenThrow(new CustomException(ErrorCode.FILE_NOT_FOUND));
 
         mockMvc.perform(get(BASE + "/3/sheet-files/99"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("FILE_NOT_FOUND"));
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 대표_이미지_저장은_반복된_itemSns를_받는다() throws Exception {
+        mockMvc.perform(multipart(HttpMethod.PUT, BASE + "/3/equipped-image").file(image)
+                .param("itemSns", "7").param("itemSns", "8").header(REQUESTED_WITH, XHR))
+                .andExpect(status().isOk());
+
+        verify(pixelCharacterService).saveEquippedImage(eq(1L), eq(3L),
+                argThat(req -> List.of(7L, 8L).equals(req.itemSns())));
+    }
+
+    @Test
+    void 대표_이미지_저장도_쿠키가_없으면_401() throws Exception {
+        mockMvc.perform(multipart(HttpMethod.PUT, BASE + "/3/equipped-image").file(image).header(REQUESTED_WITH, XHR))
+                .andExpect(status().isUnauthorized());
+        verifyNoInteractions(pixelCharacterService);
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 착용이_바뀌었으면_409_EQUIPPED_ITEMS_CHANGED() throws Exception {
+        doThrow(new CustomException(ErrorCode.EQUIPPED_ITEMS_CHANGED)).when(pixelCharacterService)
+                .saveEquippedImage(eq(1L), eq(3L), any());
+
+        mockMvc.perform(multipart(HttpMethod.PUT, BASE + "/3/equipped-image").file(image).header(REQUESTED_WITH, XHR))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("EQUIPPED_ITEMS_CHANGED"));
+    }
+
+    @Test
+    @WithMockLoginMember(id = 9L, mbrAuthrtCd = "USRC0005")
+    void 관리자_쿠키면_관리자로_넘긴다() throws Exception {
+        mockMvc.perform(get(BASE + "/3/sheets"));
+        mockMvc.perform(post(BASE + "/3/item-sheets/7/failure").header(REQUESTED_WITH, XHR))
+                .andExpect(status().isOk());
+
+        verify(characterSheetService).getSheets(9L, true, 3L, null);
+        verify(characterSheetService).failItemSheet(9L, true, 3L, 7L);
     }
 }

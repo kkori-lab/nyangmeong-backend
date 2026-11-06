@@ -61,6 +61,13 @@ class CheckupMapperXmlTest {
     }
 
     @Test
+    void 목록은_진료_내용을_함께_돌려준다() throws Exception {
+        String sql = sql("select", "selectList");
+
+        assertThat(sql).contains(", C.CKUP_CN FROM CKUP_RCD C");
+    }
+
+    @Test
     void 목록은_검진일_최신순_같으면_번호_큰_순으로_정렬하고_LIMIT을_직접_쓰지_않는다() throws Exception {
         String sql = sql("select", "selectList");
 

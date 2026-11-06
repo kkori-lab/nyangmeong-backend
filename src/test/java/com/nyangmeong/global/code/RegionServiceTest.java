@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -40,6 +41,36 @@ class RegionServiceTest {
         when(regionMapper.selectRgnSnByAdmdstCd("5211100000")).thenReturn(20L);
 
         assertThat(service.findJeonbukRgnSn(LAT, LOT)).isEqualTo(20L);
+    }
+
+    @Test
+    void 일반구가_있는_시는_구_행이_표에_없어도_시로_올려_찾는다() {
+        when(regionResolver.resolveAdmdstCd(LAT, LOT)).thenReturn("5211199000");
+        when(regionMapper.selectRgnSnByAdmdstCd("5211199000")).thenReturn(null);
+        when(regionMapper.selectRgnSnByAdmdstCd("5211100000")).thenReturn(null);
+        when(regionMapper.selectRgnSnByAdmdstCd("5211000000")).thenReturn(10L);
+
+        assertThat(service.findJeonbukRgnSn(LAT, LOT)).isEqualTo(10L);
+        verify(regionMapper, never()).selectRgnSnByAdmdstCd("5200000000");
+    }
+
+    @Test
+    void 군은_시군구_단계에서_찾고_시_단계까지_가지_않는다() {
+        when(regionResolver.resolveAdmdstCd(LAT, LOT)).thenReturn("5271025000");
+        when(regionMapper.selectRgnSnByAdmdstCd("5271025000")).thenReturn(null);
+        when(regionMapper.selectRgnSnByAdmdstCd("5271000000")).thenReturn(40L);
+
+        assertThat(service.findJeonbukRgnSn(LAT, LOT)).isEqualTo(40L);
+        verify(regionMapper, never()).selectRgnSnByAdmdstCd("5200000000");
+    }
+
+    @Test
+    void 시군구_코드가_그대로_오면_같은_코드를_두_번_조회하지_않는다() {
+        when(regionResolver.resolveAdmdstCd(LAT, LOT)).thenReturn("5211000000");
+        when(regionMapper.selectRgnSnByAdmdstCd(any())).thenReturn(null);
+
+        assertThat(service.findJeonbukRgnSn(LAT, LOT)).isNull();
+        verify(regionMapper, times(1)).selectRgnSnByAdmdstCd("5211000000");
     }
 
     @Test

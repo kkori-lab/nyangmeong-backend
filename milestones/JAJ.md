@@ -38,7 +38,7 @@
 - 기능: FN-HLT-002-01 반려동물 선택 탭, FN-HLT-002-09 건강기록 변화, FN-HLT-002-10 그래프 원칙 · 조회기간, FN-HLT-002-11 오늘 기록하기, FN-HLT-002-12 오늘의 기록, FN-HLT-002-13 최근 건강기록 (날짜별 표)
 - 기다리는 것: pet 프로필 체중 동기화 (SJM)
 - 완료 조건: 지표별 최근 기록 조회가 기록 시각 순으로 돌려준다. 하루 여러 건 기록이 날짜별 합계로 묶인다
-- 연결 남음: FN-HLT-002-01·09~13 (프론트 연결 건강 일지 반려동물 드롭다운·건강기록 변화 그래프·오늘의 기록 카드·[오늘 기록추가] 입력 영역·최근 건강기록 표·상세 기록 모달, 프론트 저장소에서 /start), 프로필 체중 동기화 `PetWeightFake`를 pet service 메서드로 바꾸기 (SJM)
+- 연결 남음: FN-HLT-002-01·09~13 (프론트 연결 건강 일지 반려동물 드롭다운·건강기록 변화 그래프·오늘의 기록 카드·[오늘 기록추가] 입력 영역·최근 건강기록 표·상세 기록 모달, 프론트 저장소에서 /start)
 
 ## SCR-HLT-002 건강 일지 (지속 관찰) — 끝
 - 기능: FN-HLT-002-15 관찰 항목 목록, FN-HLT-002-16 선택 항목 헤더, FN-HLT-002-17 회차별 사진 필름스트립, FN-HLT-002-18 크기 변화 그래프, FN-HLT-002-19 선택 회차 상세, FN-HLT-002-20 관찰 항목, FN-HLT-002-21 관찰 부위, FN-HLT-002-22 사진 촬영, FN-HLT-002-23 크기 · 변화, FN-HLT-002-24 메모, FN-HLT-002-25 취소 / 저장하기, FN-HLT-002-32 관찰일
@@ -78,49 +78,55 @@
 - 완료 조건: `POST /api/receipts/{recptSn}/save`가 실제 CKUP_RCD(영수증 연결·출처 영수증)·PRSC(`CARE_RFLT_YN='N'`)·병원 일정을 만들고, 저장 전 확인이 실제 가까운 미연결 병원 일정을 준다. `POST /api/receipts/{recptSn}/checkups`가 인식 실패 영수증을 저장완료로 바꾸고 영수증이 연결된 검진기록을 만든다. 같은 반려동물·날짜·금액의 병원 지출이 있으면 `save-check`의 `duplicateExpenses`에 나오고, `save` 뒤 가계부에 지출이 생긴다
 - 연결 남음: FN-HLT-002-31 (프론트 연결 검진기록 등록 모달을 영수증 실패 화면의 [직접 입력]으로 열었을 때 저장을 `POST /api/receipts/{recptSn}/checkups?petSn=`로, 프론트 저장소에서 /start)
 
-## SCR-HLT-002 건강 일지 · 검진 포인트 연결 — 대기
+## SCR-HLT-002 건강 일지 · 검진 포인트 연결 — 끝
 - 기능: 명세 기능 ID 추가 없음, FN-MYP-020-08 검진기록 등록 포인트(화면은 SCR-MYP-020, API는 SJM `PointService.earnCheckupPoint`)를 검진기록 등록에서 부른다. FN-HLT-002-26~31 직접 등록, FN-HLT-002-31 영수증 [직접 입력] 저장, FN-HLT-002-45·46 영수증 저장에 걸침(모두 `CheckupService.create`·`createFromReceipt`를 지난다)
 - 기다리는 것: 없음 (SJM `earnCheckupPoint`는 이미 있다. 이 연결이 SJM SCR-MYP-020 "기다리는 것"을 푼다)
 - 완료 조건: 검진일이 오늘~7일 전인 검진기록을 등록하면 주양육자에게 검진 포인트가 쌓이고, 같은 반려동물·검진일로 두 번 등록해도 한 번만 쌓인다. 검진일이 8일 이상 지났거나 미래면 포인트 없이 등록만 된다
-- 정할 것: 검진기록 수정으로 검진일을 바꿀 때 포인트를 줄지(SJM과 맞춘다)
+- 결정: 등록할 때만 지급한다. 수정으로 검진일이 바뀌어도 다시 주지 않고, 수정·삭제해도 이미 준 포인트는 회수하지 않는다(기능명세서 FN-MYP-020-08 "등록하면" 기준, SJM 확인 2026-11-04)
 
-## SCR-HLT-003 케어 캘린더 · 일정 등록 케어미션 반영 — 대기
+## SCR-HLT-003 케어 캘린더 · 일정 등록 케어미션 반영 — 끝
 - 기능: 명세 기능 ID 추가 없음, FN-MYP-020-04 케어미션 기록(화면은 SCR-MYP-020, API는 SJM)의 `CareMission.SCHEDULE_CREATE`("케어 캘린더 일정 등록하기")를 FN-HLT-003-33~37 일정 등록에서 반영한다. 지금 일상 기록·케어리스트·관찰 기록은 `CareMissionService.reflect`를 부르지만 `CareScheduleService.create`는 부르지 않는다
 - 기다리는 것: 없음
 - 완료 조건: 오늘 미션에 "케어 캘린더 일정 등록하기"가 있는 반려동물에 일정을 등록하면 그 미션이 완료된다. 미션이 없는 날은 일정 등록만 된다
-- 정할 것: 검진기록 등록·영수증 저장·AI 대화(FN-AIM-012-13·14)가 만드는 병원 일정도 반영할지(SJM과 맞춘다)
+- 결정: 케어 캘린더 직접 등록 경로에만 반영한다. 검진기록 등록·영수증 저장·AI 대화(FN-AIM-012-13·14)가 만드는 일정은 반영하지 않는다. 그래서 공통 저장 메서드가 아니라 직접 등록 전용 service 메서드(`CareScheduleService.create`, 지금 `CareScheduleController`만 부른다)에서 부른다(SJM 확인 2026-11-04)
 
-## SCR-HLT-005 검진상세 · PDF 분석 실패 집계 — 대기
-- 기능: 명세 기능 ID 추가 없음, FN-ADM-082-03 검사결과지 분석 현황(화면·API는 LJS, `docs/admin/implementation-plan.md` 협의 표 JAJ 082). FN-HLT-005-04 PDF 분석(화면이 Python `POST /ai/checkups/lab-results` 직접)에 걸침
-- 기다리는 것: LJS 확인. develop(2026-11-03)에서 PDF 분석 호출·실패는 Python 통지 `POST /internal/ai/external-api-calls`로 `global`의 `EXTL_API_CALL_LOG`(`EXTL_API_SE_CD`=SYSC0025)에 남는다. health에는 분석 시도·결과 기록이 없다(Java 분석 API 없음, `INSP_NVL`에 출처 컬럼 없음). 그래서 실패 집계는 LJS가 그 로그로 만들 수 있고 health에 둘 것이 없다. LJS가 맞다고 하면 이 절을 `제외`로 옮긴다. health에 둘 수 있는 것은 검사결과지 PDF 첨부 수(`CKUP_RCD_ATCH.ATCH_TYPE_CD`=HLTC0061)뿐이다
-- 완료 조건: (LJS가 첨부 수를 원할 때만) 기간을 주면 검사결과지 PDF 첨부 수를 돌려주고, 삭제된(`DEL_YN='Y'`) 검진기록·첨부는 세지 않는다
-
-## SCR-HLT-002 건강 일지 · 메인 건강 지표 — 대기
+## SCR-HLT-002 건강 일지 · 메인 건강 지표 — 끝
 - 기능: 명세 기능 ID 추가 없음, FN-MAN-005 건강 대시보드 기준일·업데이트 시각, FN-MAN-006 건강 지표 위젯 노출(화면·위젯 설정 API는 YAY SCR-MAN-001, 지표 값은 JAJ). FN-HLT-002-09~11 일상 기록 조회에 걸침
 - 기다리는 것: YAY와 지표 범위 결정. `docs/api/`에 건강 지표 요약 API가 없고 `docs/api/issues.md` 12번(조합 조회를 둘지)·4번("AI 건강분석 리포트" 위젯 정의 없음)이 열려 있다. 위젯 6종(MANG01)마다 어느 health 값을 쓰는지, 기존 일상 기록 조회 재사용인지 요약 API 신설인지 정한다
 - 완료 조건: 반려동물의 최신 체중·식사·음수·배변 등 위젯 값과 기준일·마지막 기록 시각을 돌려주고, 기록이 없는 지표는 null이다 (YAY와 정한 뒤 고친다)
+- 결정: 메인페이지 기능명세서 v0.10 FN-MAN-006이 표시 기준을 정해 YAY와 범위 결정을 명세로 갈음했다. 요약 API 1개 `GET /pets/{petSn}/health-indicators`로 둔다(issues.md 12번 2026-11-04 결정). AI 건강분석 리포트(LJS)·토탈 케어리스트·위젯 순서(YAY)는 범위 밖
+- 연결 남음: FN-MAN-005·006 (프론트 연결 메인 건강 대시보드 위젯 5종·기준일 표시, 프론트 저장소에서 /start, 화면 YAY)
 
-## SCR-HLT-002 건강 일지 · 프로필 체중 동기화 연결 — 대기
-- 기능: 명세 기능 ID 추가 없음, FN-HLT-002-09~11 체중 기록(`dailyRcdIdctCd=HLTC0014`) 등록·수정·삭제 뒤 프로필 체중 동기화. `health/service/PetWeightFake`를 SJM pet service 메서드로 바꾸고 가짜를 지운다
-- 기다리는 것: pet 프로필 체중 동기화 service 메서드 (SJM, `PetService`에 아직 없다)
+## SCR-HLT-002 건강 일지 · 프로필 체중 동기화 연결 — 끝
+- 기능: 명세 기능 ID 추가 없음, FN-HLT-002-09~11 체중 기록(`dailyRcdIdctCd=HLTC0014`) 등록·수정·삭제 뒤 프로필 체중 동기화. `health/service/PetWeightFake`를 지우고 `PetService`를 주입해 `PetService.syncWeight(Long petSn, BigDecimal weight, Long actorMbrSn)`을 부른다. `actorMbrSn`은 체중 기록을 등록·수정·삭제한 회원의 mbrSn이다(`MDFR_ID`에 남는다). `DailyHealthRecordServiceTest`의 mock도 `PetService`로 바꾼다. 삭제된 반려동물이면 `PET_NOT_FOUND`(404)가 나서 같은 트랜잭션이 롤백된다(권한 검사에서 먼저 걸리는 게 정상이고, 이건 안전망). 자세한 건 SJM PR #137 본문 Breaking Changes
+- 기다리는 것: 없음 (SJM `syncWeight`는 PR #137로 develop에 병합됨)
 - 완료 조건: 체중 기록을 등록·수정·삭제하면 프로필 체중(`PET.PET_BDWG`)이 남은 기록 중 가장 최근 체중이 된다. 체중 기록이 하나도 안 남으면 프로필 체중을 바꾸지 않는다(`PET_BDWG`는 NOT NULL. 지금 `DailyHealthRecordService.syncWeight`도 그렇게 한다)
 
-## SCR-HLT-003 케어 캘린더 · AI 등록 케어 항목 출처 — 대기
-- 기능: 명세 기능 ID 추가 없음, FN-HLT-003-21~24 관리 항목 추가와 FN-AIM-012 AI 대화 케어 항목 등록(화면은 SCR-AIM-012, LJS 질문)에 걸침. `CARE_ARTCL`에 출처 컬럼이 없어 AI로 등록한 항목인지 저장하지 않는다(일정은 `schdlSrcCd`=HLTC0067로 이미 저장)
-- 기다리는 것: 저장할지 팀 결정 (LJS). 저장하면 `db/` 기준 SQL 두 파일의 "변경" 절에 컬럼을 넣는다(`docs/convention/shared-files.md`). 저장하지 않기로 하면 이 절을 지운다
-- 완료 조건: AI 대화로 등록한 케어 항목은 출처가 AI로, 케어리스트에서 직접 등록한 항목은 직접 입력으로 저장되고 조회 응답에 나온다
-
-## SCR-HLT-003 케어 캘린더 · 일정 뱃지 색상 — 대기
+## SCR-HLT-003 케어 캘린더 · 일정 뱃지 색상 — 끝
 - 기능: 명세 기능 ID 추가 없음, FN-HLT-003-36 일정 메모 · 뱃지 색상. HLTG21(캘린더뱃지색상) 하위 코드가 `db/` 공통코드에 없어(`insert_base_data` 설명 "코드 미확정") `SCHDL.CLDR_BADGE_COLR_CD`를 저장할 수 없다
-- 기다리는 것: 팀 결정 (색 이름·팔레트·일정 종류별 기본색. 화면설계서 목업은 무채색 칩 5개뿐). 정하면 `db/` 기준 SQL "변경" 절에 코드를 넣는다
+- 기다리는 것: 없음 (색 5개 팀 확정 2026-11-04: HLTC0079 보라·HLTC0080 초록·HLTC0081 빨강·HLTC0082 파랑·HLTC0083 회색, `db/` 변경 절 v0.12 (6), `docs/api/issues.md` 21번)
 - 완료 조건: HLTG21 코드로 일정을 등록·수정하면 색상이 저장되어 월간 조회에 나오고, 없는 코드는 400이다
+- 결과: 2026-11-04 검증 통과(사람 확인 항목만 남음), 사람 확인 끝
+- 연결 남음: FN-HLT-003-36 (프론트 연결 일정 등록·수정 모달 색 칩과 캘린더 칩 표시, 프론트 저장소에서 /start — 마일스톤 "SCR-HLT-003 케어 캘린더 · 일정 뱃지 색상 연결")
+
+## SCR-HLT-002 건강 일지 · 영수증 save-check 저장완료 409 — 끝
+- 기능: 명세 기능 ID 추가 없음, FN-HLT-002-44 가계부 중복 확인·002-46 가까운 예정 일정 확인(저장 전 확인)에 걸침. `POST /api/receipts/{recptSn}/save-check`도 이미 저장된(저장완료) 영수증이면 `save`와 같이 409 `RECEIPT_ALREADY_SAVED`를 준다. 지금은 `save`만 409를 준다
+- 기다리는 것: 없음 (프론트는 이미 `save-check` 409를 `save`와 같은 안내로 처리한다, 프론트 "SCR-HLT-002 건강 일지 · 영수증 일괄 저장 연결" 추가-2)
+- 완료 조건: 저장완료 영수증으로 `save-check`를 부르면 409 `RECEIPT_ALREADY_SAVED`, 저장 전 영수증은 지금처럼 200
+
+## SCR-HLT-011 종합 건강기록 · 검진기록 목록 진료 내용 — 끝
+- 기능: 명세 기능 ID 추가 없음, FN-HLT-011-03 건강 이력 타임라인에 걸침. 검진기록 목록 `GET /pets/{petSn}/checkups` 응답 content 각 행에 `ckupCn`(진료 내용)을 더한다
+- 기다리는 것: 프론트 "SCR-HLT-011·002 종합 건강기록·건강 일지 · 화면 다듬기" 추가-6(타임라인이 이미 `ckupCn` 첫 줄을 상세 줄로 그림)
+- 완료 조건: 목록 응답 각 행에 `ckupCn`이 오고(없으면 null), 기존 필드·페이징은 그대로
 
 ## 제외
 - FN-HLT-002-33 등록 방법 선택: 화면만 있다(서버 동작 없음, 화면은 JAJ 프론트)
 - FN-HLT-002-34~45 영수증 인식 결과 확인 모달: API는 LJS (담당 표 HLT-002-34~46)
 - SCR-AIM-008 4행(대상 반려동물 선택·촬영 · 파일 선택·분석 요청·직접 입력하기, "AI매니저 FN-AIM-008 참조"): AI매니저 명세 소관, API는 LJS
+- FN-ADM-082-03 검사결과지 분석 현황의 PDF 분석 실패 집계: health에 service를 두지 않고 첨부 수도 주지 않는다(팀장 결정 2026-11-04). LJS가 `EXTL_API_CALL_LOG`로 센다. 실패율에는 504 `PDF_ANALYZE_TIMEOUT`·502 `PDF_ANALYZE_API_ERROR`만 넣고, 검사결과지가 아닌 파일(Python 422 `NOT_LAB_RESULT`)은 따로 센다
+- AI 등록 케어 항목 출처: 저장하지 않는다. `CARE_ARTCL`에 출처 컬럼을 추가하지 않고, 일정은 지금처럼 `schdlSrcCd`=HLTC0067로 저장한다(팀장 결정 2026-11-04)
 
 ## 대조
 - 건강기록: 명세 90 = 마일스톤 73 + 제외 17
 - AI매니저(담당 표 AIM-012-13·14): 2 = 마일스톤 2
-- 연결·결정 절 7개(검진 포인트 ~ 일정 뱃지 색상): 명세 기능 ID 추가 없음, 대조 수 그대로
+- 연결·결정 절 6개(검진 포인트 ~ 영수증 save-check 저장완료 409. PDF 분석 실패 집계·AI 등록 케어 항목 출처는 제외로 옮김): 명세 기능 ID 추가 없음, 대조 수 그대로

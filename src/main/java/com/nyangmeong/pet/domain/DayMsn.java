@@ -20,6 +20,8 @@ public class DayMsn {
     private Integer prgrsNmtm;
     private Integer givePnt;
     private Integer scorPnt;
+    /** 출제 때 CARE_MSN에서 복사한 달성 기준 횟수 (FN-ADM-071-03) */
+    private Integer achvCrtrNmtm;
     private LocalDateTime cmptnDt;
     private String cmptnYn;
     private String clclnCfmtnYn;

@@ -97,6 +97,24 @@ class CheckupControllerTest {
 
     @Test
     @WithMockLoginMember
+    void 목록은_행마다_진료_내용을_돌려주고_없으면_null이다() throws Exception {
+        CheckupSummary withCn = new CheckupSummary();
+        withCn.setCkupRcdSn(501L);
+        withCn.setCkupCn("종합백신 접종, 컨디션 양호");
+        CheckupSummary withoutCn = new CheckupSummary();
+        withoutCn.setCkupRcdSn(502L);
+        when(checkupService.search(eq(1L), eq(10L), any(), any()))
+                .thenReturn(new PageResponse<>(List.of(withCn, withoutCn), 1, 10, 2, 1, false));
+
+        mockMvc.perform(get("/api/pets/10/checkups"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content[0].ckupCn").value("종합백신 접종, 컨디션 양호"))
+                .andExpect(jsonPath("$.data.content[1].ckupCn").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.data.totalElements").value(2));
+    }
+
+    @Test
+    @WithMockLoginMember
     void 목록은_연도를_생략해도_조회한다() throws Exception {
         when(checkupService.search(eq(1L), eq(10L), any(), any()))
                 .thenReturn(new PageResponse<>(List.of(), 1, 10, 0, 0, false));

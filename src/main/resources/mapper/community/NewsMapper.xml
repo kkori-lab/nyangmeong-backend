@@ -34,6 +34,46 @@
         <result column="KWRD_CN" property="kwrdCn" />
     </resultMap>
 
+    <resultMap id="adminNewsSummaryResultMap" type="com.nyangmeong.community.dto.AdminNewsSummary">
+        <id     column="NEWS_SN"         property="newsSn" />
+        <result column="ATCH_FILE_SN"    property="atchFileSn" />
+        <result column="NEWS_CLSF_CD"    property="newsClsfCd" />
+        <result column="NEWS_SRC_CD"     property="newsSrcCd" />
+        <result column="NEWS_SRC_CD_NM"  property="newsSrcCdNm" />
+        <result column="NEWS_TTL"        property="newsTtl" />
+        <result column="NEWS_CN"         property="newsCn" />
+        <result column="SRC_PRESS_NM"    property="srcPressNm" />
+        <result column="ORGTXT_PATH"     property="orgtxtPath" />
+        <result column="PBLCN_DT"        property="pblcnDt" />
+        <result column="USE_YN"          property="useYn" />
+        <result column="REG_DT"          property="regDt" />
+        <result column="MDFCN_DT"        property="mdfcnDt" />
+        <result column="THMB_URL_PATH"   property="thmbUrlPath" />
+    </resultMap>
+
+    <resultMap id="newsResultMap" type="com.nyangmeong.community.domain.News">
+        <id     column="NEWS_SN"         property="newsSn" />
+        <result column="ATCH_FILE_SN"    property="atchFileSn" />
+        <result column="NEWS_CLSF_CD"    property="newsClsfCd" />
+        <result column="NEWS_SRC_CD"     property="newsSrcCd" />
+        <result column="NEWS_TTL"        property="newsTtl" />
+        <result column="NEWS_CN"         property="newsCn" />
+        <result column="SRC_PRESS_NM"    property="srcPressNm" />
+        <result column="ORGTXT_PATH"     property="orgtxtPath" />
+        <result column="PBLCN_DT"        property="pblcnDt" />
+        <result column="USE_YN"          property="useYn" />
+        <result column="REG_DT"          property="regDt" />
+        <result column="MDFCN_DT"        property="mdfcnDt" />
+        <result column="THMB_URL_PATH"   property="thmbUrlPath" />
+    </resultMap>
+
+    <resultMap id="adminNewsKeywordResultMap" type="com.nyangmeong.community.domain.NewsKeyword">
+        <id     column="KWRD_DICT_SN" property="kwrdDictSn" />
+        <result column="MPNG_CD"      property="mpngCd" />
+        <result column="KWRD_CN"      property="kwrdCn" />
+        <result column="SORT_SEQ"     property="sortSeq" />
+    </resultMap>
+
     <resultMap id="newsRecentResultMap" type="com.nyangmeong.community.domain.News">
         <result column="NEWS_TTL" property="newsTtl" />
         <result column="NEWS_CN"  property="newsCn" />
@@ -126,6 +166,157 @@
           FROM NEWS N
          WHERE N.PBLCN_DT &gt;= #{since}
     </select>
+
+    <select id="selectAdminList" resultMap="adminNewsSummaryResultMap">
+        /* 관리자 뉴스 목록 조회 : 숨긴 기사 포함 */
+        SELECT N.NEWS_SN
+             , N.ATCH_FILE_SN
+             , N.NEWS_CLSF_CD
+             , N.NEWS_SRC_CD
+             , C.COM_CD_NM AS NEWS_SRC_CD_NM
+             , N.NEWS_TTL
+             , N.NEWS_CN
+             , N.SRC_PRESS_NM
+             , N.ORGTXT_PATH
+             , N.PBLCN_DT
+             , CASE WHEN N.USE_YN = 'Y' THEN TRUE ELSE FALSE END AS USE_YN
+             , N.REG_DT
+             , N.MDFCN_DT
+             , N.THMB_URL_PATH
+          FROM NEWS N
+          LEFT JOIN COM_CD C
+            ON C.COM_CD = N.NEWS_SRC_CD
+           AND C.COM_CD_PRNT_SN IS NOT NULL
+        <where>
+            <if test="newsSrcCd != null">
+               AND N.NEWS_SRC_CD = #{newsSrcCd}
+            </if>
+            <if test="newsClsfCd != null">
+               AND N.NEWS_CLSF_CD = #{newsClsfCd}
+            </if>
+        </where>
+         ORDER BY N.REG_DT DESC, N.NEWS_SN DESC
+    </select>
+
+    <select id="selectById" resultMap="newsResultMap">
+        /* 뉴스 한 건 조회 : 사용 여부 무관 */
+        SELECT N.NEWS_SN
+             , N.ATCH_FILE_SN
+             , N.NEWS_CLSF_CD
+             , N.NEWS_SRC_CD
+             , N.NEWS_TTL
+             , N.NEWS_CN
+             , N.SRC_PRESS_NM
+             , N.ORGTXT_PATH
+             , N.PBLCN_DT
+             , N.USE_YN
+             , N.REG_DT
+             , N.MDFCN_DT
+             , N.THMB_URL_PATH
+          FROM NEWS N
+         WHERE N.NEWS_SN = #{newsSn}
+    </select>
+
+    <insert id="insertAdmin" parameterType="com.nyangmeong.community.domain.News" useGeneratedKeys="true" keyProperty="newsSn">
+        /* 관리자 뉴스 등록 : 원문 경로 없음 */
+        INSERT INTO NEWS (ATCH_FILE_SN, NEWS_CLSF_CD, NEWS_SRC_CD, NEWS_TTL, NEWS_CN, PBLCN_DT, USE_YN)
+        VALUES (#{atchFileSn}, #{newsClsfCd}, #{newsSrcCd}, #{newsTtl}, #{newsCn}, #{pblcnDt}, #{useYn})
+    </insert>
+
+    <update id="updateAdmin" parameterType="com.nyangmeong.community.domain.News">
+        /* 관리자 뉴스 수정 : 보낸 칸만 */
+        UPDATE NEWS
+        <set>
+            <if test="atchFileSn != null">ATCH_FILE_SN = #{atchFileSn},</if>
+            <if test="newsClsfCd != null">NEWS_CLSF_CD = #{newsClsfCd},</if>
+            <if test="newsTtl != null">NEWS_TTL = #{newsTtl},</if>
+            <if test="newsCn != null">NEWS_CN = #{newsCn},</if>
+            <if test="useYn != null">USE_YN = #{useYn},</if>
+        </set>
+         WHERE NEWS_SN = #{newsSn}
+    </update>
+
+    <select id="selectAdminKeywords" resultMap="adminNewsKeywordResultMap">
+        /* 관리자 분류 키워드 목록 */
+        SELECT K.KWRD_DICT_SN
+             , K.MPNG_CD
+             , K.KWRD_CN
+             , K.SORT_SEQ
+          FROM KWRD_DICT K
+         WHERE K.DICT_USG_CD = 'AIMC0039'
+           AND K.USE_YN = 'Y'
+           AND K.DEL_YN = 'N'
+           AND K.MPNG_CD IS NOT NULL
+         ORDER BY K.SORT_SEQ ASC, K.KWRD_DICT_SN ASC
+    </select>
+
+    <select id="selectKeywordById" resultMap="adminNewsKeywordResultMap">
+        /* 분류 키워드 한 건 조회 */
+        SELECT K.KWRD_DICT_SN
+             , K.MPNG_CD
+             , K.KWRD_CN
+             , K.SORT_SEQ
+          FROM KWRD_DICT K
+         WHERE K.KWRD_DICT_SN = #{kwrdDictSn}
+           AND K.DICT_USG_CD = 'AIMC0039'
+           AND K.USE_YN = 'Y'
+           AND K.DEL_YN = 'N'
+    </select>
+
+    <select id="existsKeyword" resultType="boolean">
+        /* 같은 카테고리 키워드 중복 확인 : 쉼표로 이어진 지난 행도 본다, 콜레이션이 대소문자 무시 */
+        SELECT EXISTS (
+            SELECT 1
+              FROM KWRD_DICT K
+             WHERE K.DICT_USG_CD = 'AIMC0039'
+               AND K.MPNG_CD = #{mpngCd}
+               AND K.USE_YN = 'Y'
+               AND K.DEL_YN = 'N'
+               AND FIND_IN_SET(#{kwrdCn}, REPLACE(K.KWRD_CN, ', ', ',')) &gt; 0
+        )
+    </select>
+
+    <select id="selectKeywordSortSeq" resultType="int">
+        /* 새 키워드 정렬 순서 : 그 카테고리 기존 값, 없으면 뉴스 분류 최대 + 10 */
+        SELECT COALESCE(
+                 (SELECT MIN(K.SORT_SEQ)
+                    FROM KWRD_DICT K
+                   WHERE K.DICT_USG_CD = 'AIMC0039'
+                     AND K.MPNG_CD = #{mpngCd}
+                     AND K.DEL_YN = 'N')
+               , (SELECT COALESCE(MAX(K.SORT_SEQ), 0) + 10
+                    FROM KWRD_DICT K
+                   WHERE K.DICT_USG_CD = 'AIMC0039'))
+    </select>
+
+    <insert id="insertKeyword" useGeneratedKeys="true" keyProperty="keyword.kwrdDictSn" keyColumn="KWRD_DICT_SN">
+        /* 분류 키워드 등록 : 항목명은 카테고리 이름 */
+        INSERT INTO KWRD_DICT (DICT_USG_CD, KWRD_CLSF_NM, ARTCL_NM, KWRD_CN, INTRP_RSLT_CN, MPNG_CD, SORT_SEQ, RMRK_CN, RGTR_ID, MDFR_ID)
+        SELECT 'AIMC0039'
+             , '뉴스 카테고리'
+             , C.COM_CD_NM
+             , #{keyword.kwrdCn}
+             , CONCAT('카테고리 = ', C.COM_CD_NM, '(CMUG06)')
+             , #{keyword.mpngCd}
+             , #{keyword.sortSeq}
+             , '관리자 등록 (SCR-ADM-050)'
+             , #{actorId}
+             , #{actorId}
+          FROM COM_CD C
+         WHERE C.COM_CD = #{keyword.mpngCd}
+           AND C.COM_CD_PRNT_SN IS NOT NULL
+    </insert>
+
+    <update id="deleteKeyword">
+        /* 분류 키워드 삭제 */
+        UPDATE KWRD_DICT
+           SET DEL_YN = 'Y'
+             , MDFR_ID = #{actorId}
+         WHERE KWRD_DICT_SN = #{kwrdDictSn}
+           AND DICT_USG_CD = 'AIMC0039'
+           AND USE_YN = 'Y'
+           AND DEL_YN = 'N'
+    </update>
 
     <insert id="insert" parameterType="com.nyangmeong.community.domain.News" useGeneratedKeys="true" keyProperty="newsSn">
         /* 수집한 뉴스 등록 : 원문 경로가 같은 기사는 건너뜀 */

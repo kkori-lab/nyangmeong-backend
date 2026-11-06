@@ -14,6 +14,7 @@
 | GET | /pets/{petSn}/checkups | 검진기록 목록(최신순). `?year=&ckupTypeCd=&page=&size=` (year 생략 시 전체 연도) — 리스트·필터 칩 건수·타임라인·예방/정기검진 이력 | HLT-002-05·06·14, HLT-011-03·04 | JAJ | - | Page<CheckupSummary> |
 | GET | /pets/{petSn}/checkups/{ckupRcdSn} | 검진상세 기본정보 | HLT-005-01·15 | JAJ | - | CheckupResponse |
 | GET | /pets/{petSn}/daily-health-records | 일상 건강기록 목록. `?dailyRcdIdctCd=&fromYmd=&toYmd=&size=` — 그래프(최근 14개)·오늘의 기록·날짜별 표·최신 체중 | HLT-002-09·10·12·13, HLT-011-02 | JAJ | - | List<DailyHealthRecordSummary> |
+| GET | /pets/{petSn}/health-indicators | 메인 건강 지표. 기준일(KST 오늘)·조회 시각과 위젯 5종(체중·식사량·음수량·산책·혈액검사 CREA) 값. 기록 없는 지표는 null, 비교 대상 없으면 대비 값 null. 권장 범위는 쓰지 않음. 남의 반려동물 403, 없는 반려동물 404 | MAN-005·006 | JAJ | - | HealthIndicatorResponse |
 | GET | /pets/{petSn}/etc-inspections | 기타검사 목록. `?ckupRcdSn=` — `ckupRcdSn` 필수 | HLT-005-02 | JAJ | - | List<EtcInspectionSummary> |
 | GET | /pets/{petSn}/inspection-values | 혈액검사 수치 목록. `?ckupRcdSn=&inspArtclCd=` — 검진상세 결과·최근 검사·수치 추이. `ckupRcdSn` 생략 시 반려동물 전체(완료 검진기록, 연결 일정이 삭제된 것 포함). 전체 조회는 검진일 오름차순 | HLT-005-02, HLT-011-02·06·07 | JAJ | - | List<InspectionValueSummary> |
 | GET | /pets/{petSn}/observation-cycles | 관찰 회차 목록(관찰일 순). `?obsrvArtclSn=` | HLT-002-17~19 | JAJ | - | List<ObservationCycleSummary> |
@@ -311,6 +312,7 @@
 | ckupTypeCd | String | Y | HLTG01. 예방접종·정기검진 이력 구분 | CKUP_RCD.CKUP_TYPE_CD, HLT-002-06, HLT-011-04 |
 | ckupTypeCdNm | String | Y | | COM_CD.COM_CD_NM, HLT-011-03 |
 | schdlDelYn | boolean | Y | 연결 일정이 삭제됐으면 true → "연결된 일정 삭제됨" | SCHDL.DEL_YN, HLT-002-05 (issues 12) |
+| ckupCn | String | N | 진료 내용. 타임라인 상세 줄(첫 줄) | CKUP_RCD.CKUP_CN, HLT-011-03 |
 
 ### CheckupUpdateRequest
 쓰는 API: PATCH /pets/{petSn}/checkups/{ckupRcdSn}
@@ -353,6 +355,24 @@
 | crsdSttsCd | String | N | HLTG10 | DAILY_HLTH_RCD.CRSD_STTS_CD (배변상태) |
 | crsdSttsCdNm | String | N | 표·타일의 배변상태 이름 | COM_CD.COM_CD_NM, HLT-002-12·13 (추가) |
 | rcdDt | LocalDateTime | Y | | DAILY_HLTH_RCD.RCD_DT |
+
+### HealthIndicatorResponse
+쓰는 API: GET /pets/{petSn}/health-indicators (메인 건강 지표 위젯, 2026-11-04 추가)
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| baseYmd | LocalDate | Y | 기준일(KST 오늘) | MAN-005 |
+| inqDt | LocalDateTime | Y | 조회 시각(화면의 "최근 업데이트 시각") | MAN-005 |
+| weight | WeightIndicator | N | 체중. 기록이 없으면 null | DAILY_HLTH_RCD(HLTC0014), MAN-006 |
+| meal | DailySumIndicator | N | 식사량(HLTC0015). 기록이 없으면 null | DAILY_HLTH_RCD, MAN-006 |
+| water | DailySumIndicator | N | 음수량(HLTC0016). 기록이 없으면 null | DAILY_HLTH_RCD, MAN-006 |
+| walk | DailySumIndicator | N | 산책(HLTC0018). 기록이 없으면 null | DAILY_HLTH_RCD, MAN-006 |
+| creatinine | CreatinineIndicator | N | 혈액검사 CREA(HLTC0030). 수치가 없으면 null | INSP_NVL, MAN-006 |
+
+WeightIndicator: `latestNvl`(최신값), `prevDiff`(직전 기록 대비, 직전 기록이 없으면 null), `points[{rcdDt, rcdNvl}]`(최근 5건, 오래된 순)
+
+DailySumIndicator: `todaySum`(오늘 일 합계, 오늘 기록이 없으면 null), `prevDaySum`(오늘 이전 가장 최근 기록일 합계), `prevDiff`(둘 중 하나라도 null이면 null), `points[{rcdYmd, sumNvl}]`(기록 있는 최근 5일, 오래된 순, 오늘 이후 기록 제외)
+
+CreatinineIndicator: `latestNvl`, `unitNm`, `refLlmtNvl`, `refUplmtNvl`(최신 검사 기준), `prevDiff`(지난 검사 대비), `points[{schdlDt, rsltNvl, unitNm, refLlmtNvl, refUplmtNvl}]`(최근 5회, 검진 일정일시 오래된 순)
 
 ### DailyHealthRecordUpdateRequest
 쓰는 API: PATCH /pets/{petSn}/daily-health-records/{dailyHlthRcdSn}

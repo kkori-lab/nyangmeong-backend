@@ -8,9 +8,12 @@ import org.apache.ibatis.annotations.Param;
 
 import com.nyangmeong.member.domain.Member;
 import com.nyangmeong.member.dto.AdminAccountSummary;
+import com.nyangmeong.member.dto.AdminDailyMemberSummary;
+import com.nyangmeong.member.dto.AdminDashboardMemberSummary;
 import com.nyangmeong.member.dto.AdminMemberSearchCond;
 import com.nyangmeong.member.dto.AdminMemberStatusHistorySummary;
 import com.nyangmeong.member.dto.AdminMemberSummary;
+import com.nyangmeong.member.dto.AdminRecentMemberSummary;
 import com.nyangmeong.member.dto.AdminSuspensionSummary;
 import com.nyangmeong.member.dto.AdminWithdrawnMemberSummary;
 
@@ -56,6 +59,17 @@ public interface MemberMapper {
     List<String> selectSnsOffrCds(Long mbrSn);
 
     /**
+     * SNS 제공자 계정에 연결된 회원 조회 (연동 중인 연결만, 탈퇴·정지 포함), 없으면 null
+     */
+    Member selectBySnsAccount(@Param("snsOffrCd") String snsOffrCd, @Param("offrAcntId") String offrAcntId);
+
+    /**
+     * SNS 연동 등록, 같은 제공자 계정이 이미 있으면 DuplicateKeyException
+     */
+    int insertSnsLink(@Param("mbrSn") Long mbrSn, @Param("snsOffrCd") String snsOffrCd,
+            @Param("offrAcntId") String offrAcntId);
+
+    /**
      * 회원 등록 (mbrSn 채움)
      */
     int insert(Member member);
@@ -83,6 +97,12 @@ public interface MemberMapper {
      * 비밀번호 해시 변경, 탈퇴 회원은 바꾸지 않는다
      */
     int updatePassword(@Param("mbrSn") Long mbrSn, @Param("pswdHash") String pswdHash,
+            @Param("withdrawnSttsCd") String withdrawnSttsCd, @Param("actorId") String actorId);
+
+    /**
+     * 정상 → 탈퇴, 정상 회원만 바뀐다 (0이면 이미 탈퇴·정지). 탈퇴 시각을 30일 보관 기준으로 남긴다
+     */
+    int updateWithdraw(@Param("mbrSn") Long mbrSn, @Param("normalSttsCd") String normalSttsCd,
             @Param("withdrawnSttsCd") String withdrawnSttsCd, @Param("actorId") String actorId);
 
     /**
@@ -197,4 +217,22 @@ public interface MemberMapper {
      * 상태별 회원 수 조회
      */
     int countByStatus(String mbrSttsCd);
+
+    /**
+     * 관리자 대시보드 회원 건수 조회
+     */
+    AdminDashboardMemberSummary selectDashboardCounts(@Param("mbrAuthrtCd") String mbrAuthrtCd,
+            @Param("nrmlSttsCd") String nrmlSttsCd, @Param("stopSttsCd") String stopSttsCd);
+
+    /**
+     * 관리자 대시보드 최근 가입 회원 조회
+     */
+    List<AdminRecentMemberSummary> selectRecentMembers(@Param("mbrAuthrtCd") String mbrAuthrtCd,
+            @Param("mbrSttsCds") List<String> mbrSttsCds, @Param("limit") int limit);
+
+    /**
+     * 관리자 대시보드 일별 가입·탈퇴 수 조회 (fromDt 이상 toDt 미만)
+     */
+    List<AdminDailyMemberSummary> selectDailyJoinWithdrawCounts(@Param("mbrAuthrtCd") String mbrAuthrtCd,
+            @Param("fromDt") LocalDateTime fromDt, @Param("toDt") LocalDateTime toDt);
 }

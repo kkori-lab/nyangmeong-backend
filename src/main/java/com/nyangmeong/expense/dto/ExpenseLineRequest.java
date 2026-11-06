@@ -1,5 +1,7 @@
 package com.nyangmeong.expense.dto;
 
+import com.nyangmeong.global.aitool.AiGenerated;
+
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -14,5 +16,5 @@ import jakarta.validation.constraints.Size;
 public record ExpenseLineRequest(
         Long petSn,
         @NotNull @Min(value = 1, message = "금액은 1원 이상이어야 해요") @Max(9_999_999_999_999L) Long expndAmt,
-        @NotBlank @Size(max = 100) String idmptDmndId) {
+        @NotBlank @Size(max = 100) @AiGenerated String idmptDmndId) {
 }

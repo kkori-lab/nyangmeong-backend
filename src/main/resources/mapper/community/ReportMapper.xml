@@ -348,4 +348,12 @@
          WHERE DCLR_SN = #{dclrSn}
            AND DCLR_PRCS_STTS_CD = #{beforeCd}
     </update>
+
+    <select id="countByStatus" resultType="long">
+        /* 처리 상태별 신고 수 */
+        SELECT COUNT(*)
+          FROM DCLR D
+         WHERE D.DCLR_PRCS_STTS_CD = #{dclrPrcsSttsCd}
+    </select>
+
 </mapper>

@@ -2,36 +2,35 @@
 
 ## 지금 하는 것
 
-SCR-CMU-004 우리동네 펫돌봄 — 끝남 (승인 2026-11-03 09:46, 시작 2026-11-03 09:33, 검증 통과 1회차(새 루프), 사람 확인 2026-11-03)
-기준: 커뮤니티 기능명세서·화면설계서 v0.8(20261101). 걸치는 기능 FN-CMU-004-01·02·04·05·06~11·13, FN-COM-009-02. 제외 FN-CMU-004-12 좋아요·신고(기존 `/posts/{pstSn}/likes`·`/reports`가 펫돌봄 글에도 동작)
-- API: `GET·POST /care-recruitments`, `GET·PATCH·DELETE /care-recruitments/{petPrtcRcrtSn}`(등록·수정은 multipart), `POST /chat-rooms`(새 방 201, 기존 방 200). 목록·상세는 `mbrNcnm`과 `mbrAtchFileSn`을 준다
-- 결정: 강아지 크기는 컬럼 추가 없이 대표 체중(5·15·30kg, 고양이 0)으로 저장하고 `petSizeCd`로 주고받는다(`issues.md` 커뮤니티 11번). 「채팅 n명」은 메시지가 1건 이상 오간 방만 센다. 수정은 모집중인 글만, 삭제는 상태 무관. 블라인드·삭제 글에는 새 채팅방을 만들지 않고 기존 방은 계속 연다. 신고 누적 처리는 펫이야기와 같다
-- DB: 게시판 코드 `CMUC0028`(우리동네 펫돌봄)을 기준 SQL 본문과 변경 절 v0.12 (3)에 추가했고 공용 DB에 실행했다(`COM_CD_SN` 391)
-- 1회차 검증이 `ErrorCode` 이름이 기획과 달라 실패해 사람이 루프를 버리고 새 루프로 통과했다. 기존 `CARE_WAGE_BELOW_MINIMUM`·`CHAT_SELF_NOT_ALLOWED`·`CARE_RECRUITMENT_CLOSED`는 새 코드와 뜻이 겹치나 쓰지 않는다
-- 알려 둔 것: 중복 키 뒤 방을 다시 읽을 때 `FOR SHARE`를 쓴다. 단위 테스트는 mock이라 실제 격리 수준 동작은 로컬 MySQL에서 동시 요청으로 따로 봐야 한다
-이번에 하지 않은 것: FN-CMU-004-12(위), 메시지·채팅 목록·매칭(SCR-CMU-005)
-새 의존성: 없음
+SCR-CMU-005 우리동네 펫돌봄 채팅 · 14일 무응답 자동 종료 — 끝남 (승인 2026-11-06 09:19, 시작 2026-11-06 09:10, 검증 1회차 통과, 사람 확인 2026-11-06)
+- 한 일: 새 배치 `CareMatchNoResponseJob`(`SYSC0031`, 매일 03:00)이 수락 대기 → 요청 취소, 확인 대기 → 무응답 종료(기준 `SYS_STNG.MTCH_NO_RSPNS_END_CRTR_DAY_CNT`, 지금 상태가 된 이력 시각 기준). 수령 대기는 종료하지 않고 무응답 종료 뒤 모집글은 매칭완료 그대로(사람 결정 2026-11-06). `CareMatchService`·`CareMatchMapper`·`BatchType`, db v0.13 (3), 테스트
 
-### 추가 요청
-| 추가-1 | `ChatRoomMapper`(java·XML), `ChatRoomService`, `ChatRoomServiceTest`, `CareRecruitmentMapperSqlTest` | 명령: `./gradlew build -q` 통과. 중복 키 뒤 다시 조회는 `FOR SHARE` 잠금 읽기라 상대 트랜잭션이 커밋한 방을 읽고, 그래도 없으면 NPE 대신 `CustomException`을 던진다 | 요청 2026-11-03 10:21 "동시 채팅 요청에서 중복 키 뒤 다시 조회가 방을 못 보는 문제를 이번에 고침" |
+## 지난 작업
+
+SCR-CMU-001·002·004·005 탈퇴 회원 표시(PR #164·#166·#170·#172)·SCR-ADM-022 완료 사진 열람(2026-11-05), SCR-CMU-004 펫돌봄 대기 4건(2026-11-04), SCR-CMU-002 전북 밖 좌표 거절(PR #154)·시드 게시판 코드(PR #147), SCR-CMU-005 펫돌봄 채팅(PR #139) — 모두 끝남
 
 ## 다음에 할 것
+- 사람이 할 일: PR 병합 직후 공용 DB에 `db/20261104_insert_base_data_v0.13.sql` 변경 절 「v0.13 (3)」 `SYSC0031` INSERT 한 줄을 실행(`SET NAMES utf8mb4;` 먼저, 이미 넣었으면 PR에 완료 댓글만). 팀에 "무응답 배치가 첫 실행 때 시드의 오래된 수락 대기·확인 대기 매칭(2026-11-06 확인 15건)을 정리한다"고 알린다. 사람 확인 때 바뀐 15건은 되돌렸다
+- 연결 남음: FN-CMU-005-06·09 요청 취소(`PCAC0017`)·무응답 종료(`PCAC0018`) 배지(무응답 종료는 거래 완료와 다른 문구), 두 상태에서 실행 버튼 숨김, 시스템 메시지(`CHTC0009`, 보낸 회원 없음) 말풍선 (프론트 연결 SCR-CMU-005 채팅 모달, LJS, 프론트 저장소에서 /start)
+- 확인 방법 메모: 배치 수동 실행은 대상 전체를 바로 처리한다. 사람 확인 전에 대상 건수부터 조회한다
+- 다음 작업: 로그아웃 때 소켓 끊기(공통 모듈 변경이라 담당 확인). 알림 `mvmnPath`는 프론트 채팅 모달 경로가 정해진 뒤 채운다. 탈퇴 회원 표시는 커뮤니티 끝남(문의·신고는 관리자 전용이라 대상 없음), 남은 후보는 공동 보호자 목록(`PetMapper.selectCaregivers`, pet 담당 확인)·세 회원 DB 테스트(새 의존성, 팀 합의)
+- 사람이 할 일: 프론트에 「작성자를 눌러 이동하는 곳이 있나, 탈퇴 회원을 막아야 하나」를 묻는다(필요하면 후속으로 그 응답에만 탈퇴 여부 필드. 상세·댓글 응답에는 `mbrSn`이 그대로 나간다). LJS에게 `PostMapper.xml`·`CommentMapper.xml` 관리자 쿼리 병합 충돌을 미리 알린다
+- 연결 남음: SCR-ADM-022 관리자 매칭 상세 완료 사진 (프론트 연결: LJS `CareMatchDetailModal.jsx`의 `publicFileUrl`을 `useFileImage` + `GET /api/admin/care-matches/{petPrtcRcrtSn}/images/{atchFileSn}`로 교체, 프론트 저장소에서 /start)
+- 사람이 할 일: 시드 완료 사진 78장의 이미지 파일을 `uploads/seed/care/{ATCH_FILE_SN}.jpg`로 채울지 정한다(진짜 JPG, `uploads/`는 git 제외). 저장소 루트의 추적하지 않는 `3293.jpg`는 커밋하지 말고 지우거나 옮긴다
+- 연결 남음: FN-CMU-004-05 상세의 [채팅하기]·「채팅 중」, 매칭 돌보미 표시 (프론트 연결: 상세 응답 `chatting`·`mtchSitterNcnm`, 프론트 저장소에서 /start)
+- 연결 남음: FN-CMU-004-08 등록·수정 화면의 시급 안내 (프론트 연결: `GET /api/care-recruitments/minimum-wage`, 프론트 저장소에서 /start)
+- 연결 남음: FN-CMU-002-03·FN-CMU-004-02 지역 콤보박스 (프론트 연결: `GET /regions`가 전북만 주므로 시도 콤보박스는 전북특별자치도 1곳, 자동 선택하거나 숨김, 시군구는 `?upRgnSn=`로 14곳, 프론트 저장소에서 /start)
+- 사람이 할 일: PR 병합 뒤 팀에 "공용 DB 펫돌봄·실종 시드 글 지역을 전북 읍면동으로 바꿨고, `GET /regions`가 전북만 준다"고 알린다. 로컬 `app.region.client`는 `fake`로 되돌린다
+- 연결 남음: SCR-CMU-005 채팅 모달 목록·채팅방·거래 카드와 STOMP 연결 (프론트 저장소에서 /start)
+- 연결 남음: FN-CMU-005-05 주소 공유 모달 장소 검색 (YAY `GET /places`, 프론트 저장소에서 /start)
+- 연결 남음: FN-COM-002-11·FN-COM-009-17 헤더 채팅 아이콘·안 읽은 수 배지 (LJS 대기, 프론트 저장소에서 /start)
 - 연결 남음: FN-CMU-004-10 주소 찾기·장소 선택 (글쓰기 장소 모달에서 YAY의 `GET /places` 결과 좌표를 등록 요청에 넣음, 프론트 저장소에서 /start)
 - 연결 남음: SCR-CMU-004 리스트·상세·글쓰기·[채팅하기] 버튼 (프론트 연결, 지역 필터는 `GET /regions`, 프론트 저장소에서 /start)
-- 사람이 할 일: PR 본문에 "DB 변경 있음, `db/20261102_insert_base_data_v0.12.sql` 변경 절 v0.12 (3)"와 공용 DB 실행 완료 댓글(2026-11-03, `COM_CD_SN` 391). 확인용 글 `pstSn` 1003(공용 DB)과 채팅방 행은 정리했다
-- 확인 남음: 공용 DB 시드에서 회원 1의 사진 25는 공개 주소가 404일 수 있다(시드 이미지 묶음 문제). 응답에 번호가 오면 백엔드는 맞다
-- 다음 작업: SCR-CMU-002 실종센터 · 전북 밖 좌표 거절(`/start CMU-002 전북`). 우선순위 낮음. 그 뒤 SCR-CMU-005 펫돌봄 채팅(메시지·채팅 목록·매칭, 장소 검색은 YAY `GET /places`)
-- 이번 작업 메모: 상세 응답 `mbrSn` 추가로 프론트 `CommentSection`의 `authorSn={post.mbrSn}`에 값이 들어가 글쓴이 댓글에 「작성자」 배지가 붙는다. 프론트 변경 없음
-- SCR-CMU-003 주제 무관 기사 거르기(PR #104 병합): 제외 키워드는 `KWRD_DICT` `AIMC0040` 분류별 4행, 공용 DB 실행 완료. 키워드를 늘릴 때는 수집 로그의 `주제 무관 건너뜀`을 보고 정상 기사가 걸리는지 먼저 본다. 쌓인 무관 기사는 2026-11-02 확인에서 0건이라 정리할 것 없음
 - 사람이 할 일(공용 DB, 일회성이라 `db/`에 넣지 않음): 시드와 확인용으로 쌓인 기존 뉴스를 지우고 새 중복 판정으로 다시 수집한다(사람 결정 2026-11-02). 대상은 외부 언론사(`CMUC0022`) 143건만이다. 관리자 등록(`CMUC0023`) 시드 14건은 프론트의 「관리자 등록」 배지·원문보기 미노출 확인용으로 남긴다(사람 결정 2026-11-02). 지운 뒤 로컬에서 `app.news.batch-enabled=true` 또는 `POST /api/admin/batches/SYSC0028/run`을 한 번 돌려 로그의 `중복 건너뜀 K건`과 `GET /api/news`를 확인하고, 팀에 공용 DB를 비웠다고 알린다
 - 연결 남음: SCR-CMU-003 펫뉴스 화면 (프론트 연결 리스트(카테고리 칩 `newsClsfCd`, 검색 `keyword`, 언론사 `srcPressNm`·「관리자 등록」 `newsSrcCdNm` 배지, 요약 줄 `newsCn`, 썸네일 없으면 기본 이미지, 페이지네이션)와 상세(원문보기는 외부 기사만, 하단 최신 5건은 `?size=5`), 프론트 저장소에서 /start)
-- 사람이 할 일: 병합 직후 PR에 "DB 변경 있음, v0.11 (6)"와 완료 댓글(공용 DB에 `SYSC0028` 뉴스 수집·뉴스 분류 키워드 3행 실행 완료, 2026-11-02). 공용 DB `NEWS`에 확인용으로 수집한 기사 약 107건이 프론트 개발용으로 남아 있다
-- 사람이 할 일: `origin/LJS`의 `BatchType`(`SYSC0027` 탈퇴 회원 파기)·`AdminBatchServiceTest`·`db/…sql`과 병합 때 겹친다. 병합 뒤 배치 코드는 `SYSC0026`·`SYSC0027`·`SYSC0028` 순이다. 새 코드는 쓰기 전에 공용 DB `SELECT MAX(COM_CD) FROM COM_CD WHERE COM_CD LIKE 'SYSC%'`로 확인한다
-- 이번에 안 한 것: FN-CMU-003-05 공유하기(화면만), 관리자 뉴스 등록·숨김·키워드 편집(SCR-ADM-050, LJS), 영상 기사 제외(`og:type=video*`), 외부 API 호출 기록(`EXTL_API_CALL_LOG`), AI 요약, 썸네일 공통 이미지(`noimg.png`) 거르기
 - 연결 남음: SCR-CSC-002 FAQ 화면 (프론트 연결 카테고리 탭 → `faqClsfCd`, 검색 `keyword`, 아코디언 Q/A는 목록 `ansCn`, 0건 「찾는 질문이 없어요」·[전체 질문 보기], 페이지네이션, 항목 안 카테고리 칩은 뺐으니 `faqClsfCdNm`은 안 써도 됨, 프론트 저장소에서 /start)
 - 연결 남음: SCR-CSC-001 공지사항 화면 (프론트 연결 공지 리스트(검색·고정 배경·전체 n건·0건 안내·페이지네이션)와 상세, 상세 하단 최신 5개는 `?latestYn=true&size=5`, 조회수 표시는 뺀다, 프론트 저장소에서 /start)
 - 사람이 할 일: 공지 정렬 확인으로 `UPEND_FIX_YN='Y'`로 바꾼 공지가 있으면 `UPDATE NTC_MTTR SET UPEND_FIX_YN='N' WHERE NTC_MTTR_SN=<번호>;`로 되돌린다. 공지 작성은 DB가 아닌 관리자 화면이 생기기 전까지 직접 넣는다
-- 이번에 안 한 것: FN-CSC-001-07 조회수(사람 결정으로 제외, 명세·설계서의 「조회」 표시와 다르니 기획자와 문서 정리), FN-CSC-001-08 관리자 작성, 비로그인 공지 열람, 공지 본문 이미지(issues 10)
 - 연결 남음: SCR-CMU-002 실종센터 · 내 글만 보기 (프론트 연결 리스트의 「내 글만 보기」 토글(`mineYn=true`), 만료 배지(`CMUC0008`), 목록 `owner`로 「내 글」 배지(전체 목록에서도), 프론트 저장소에서 /start)
 - 연결 남음: SCR-CMU-002 실종센터 화면 전체 (프론트 연결 리스트·상세·작성자 상세·글쓰기·찾았어요/연장 모달·목격 장소 모달, 프론트 저장소에서 /start). 목격 장소 선택은 YAY의 `GET /places` 결과 좌표를 등록 요청에 넣는다
 - 사람이 할 일: 병합 직후 공용 DB에 `db/migration/20261029_02_add_cmug01_lost.sql` 실행(PR에 완료 댓글), PR 본문에 "DB 변경 있음". 공용 DB `RGN`에 전북 시군구·읍면동이 거의 없다(시드에 전북 2건). 지역 데이터 적재 담당을 정한다
@@ -40,7 +39,6 @@ SCR-CMU-004 우리동네 펫돌봄 — 끝남 (승인 2026-11-03 09:46, 시작 2
 - 연결 남음: SCR-CSC-003 1:1 문의 삭제 (프론트 연결 문의 상세의 삭제 버튼(미답변일 때만)과 삭제 뒤 목록 이동, 프론트 저장소에서 /start)
 - 사람이 할 일: 삭제 API PR 병합 직후 공용 DB에 `OTO_INQRY.DEL_YN` ALTER 실행(이미 실행했으면 PR에 완료 댓글만), ERD에 `OTO_INQRY.DEL_YN` 추가. 기준 파일 `db/20261029_create_tables_v0.10.sql`에 직접 반영했으므로 PR 본문에 "DB 변경 있음"을 적는다
 - 사람이 할 일: 디스코드에 공유한 `application.properties`와 팀원 각자 설정의 `spring.servlet.multipart.max-request-size`를 100MB로 바꾼다(배포 서버 설정이 있으면 같이)
-- 확인 남음: 펫이야기 글 사진 중 `PostService`가 `storePublic`으로 바꾸기 전에 `store`로 올린 것(`public/` 아님)은 `GET /api/files/public/{atchFileSn}`가 404일 수 있다
 - 정리: 검증·확인용으로 만든 문의 223·225·226·227·229·203(203은 삭제 확인 중 DEL_YN='Y'로 이미 지움, 공용 DB, 첨부 파일 4082~4085·4088~4097 포함)와 `uploads/`의 테스트 이미지. 문의 삭제 API가 없어 직접 정한다
 - 연결 남음: FN-CMU-001-14·09·11 작성·좋아요·댓글 뒤 케어미션·포인트 반영 (`pet` service에 메서드가 생기면 붙인다, SJM)
 - 연결 남음: FN-CMU-001-01~11 비로그인 열람 (`SecurityPathProperties`가 메서드를 구분하지 않아 `GET /api/posts/**`만 열 수 없음, 담당 미정)
