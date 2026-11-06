@@ -2,8 +2,10 @@ package com.nyangmeong.global.external;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -30,6 +32,7 @@ import tools.jackson.databind.json.JsonMapper;
  * - 제공자가 인증하지 않은 이메일은 받지 않은 것으로 본다 (구글 email_verified, 카카오 is_email_verified·is_email_valid)
  * - 연령 확인은 항상 false. 세 제공자 모두 연령을 받아 오지 않으므로 화면에서 만 14세 이상 약관(AGE_14) 체크로 받는다
  * - 어떤 실패든 SNS_AUTH_FAILED. 로그에는 제공자 오류 코드·설명만 남기고 토큰·인가 코드는 남기지 않는다
+ * - redirect-uri 를 비워 두면 app.front-base-url + /login/sns/{naver|kakao|google}/callback (환경마다 프론트 주소만 바꾼다)
  */
 @Slf4j
 @Component
@@ -47,11 +50,16 @@ public class RealSnsOAuthClient implements SnsOAuthClient {
     /** 오류 설명 속 code=값·token=값 (인가 코드·토큰). error_code= 처럼 앞에 단어가 붙은 필드 이름은 건드리지 않는다 */
     private static final Pattern CODE_VALUE = Pattern.compile("(?i)(\\b(?:code|token)\\s*[=:]\\s*)[^\\s,&;\"']+");
 
+    private static final String CALLBACK_PATH = "/login/sns/%s/callback";
+
     private final SnsOAuthProperties properties;
+    private final String frontBaseUrl;
     private final RestClient restClient;
 
-    public RealSnsOAuthClient(SnsOAuthProperties properties) {
+    public RealSnsOAuthClient(SnsOAuthProperties properties,
+            @Value("${app.front-base-url:http://localhost:5173}") String frontBaseUrl) {
         this.properties = properties;
+        this.frontBaseUrl = frontBaseUrl;
         RestClient.Builder builder = RestClient.builder();
         if (properties.getTimeoutMs() > 0) {
             Duration timeout = Duration.ofMillis(properties.getTimeoutMs());
@@ -99,11 +107,11 @@ public class RealSnsOAuthClient implements SnsOAuthClient {
             yield NAVER_TOKEN_URL;
         }
         case KAKAO -> {
-            form.add("redirect_uri", keys.getRedirectUri());
+            form.add("redirect_uri", redirectUri(provider, keys, frontBaseUrl));
             yield KAKAO_TOKEN_URL;
         }
         case GOOGLE -> {
-            form.add("redirect_uri", keys.getRedirectUri());
+            form.add("redirect_uri", redirectUri(provider, keys, frontBaseUrl));
             yield GOOGLE_TOKEN_URL;
         }
         };
@@ -116,6 +124,21 @@ public class RealSnsOAuthClient implements SnsOAuthClient {
             throw new CustomException(ErrorCode.SNS_AUTH_FAILED);
         }
         return accessToken;
+    }
+
+    /**
+     * 토큰 교환에 넘길 redirect-uri : 설정값이 있으면 그 값, 없으면 프론트 주소의 콜백 경로 (인가 요청 때 프론트가 쓴 값과 같아야 한다)
+     */
+    static String redirectUri(SnsProvider provider, SnsOAuthProperties.Provider keys, String frontBaseUrl) {
+        String configured = keys.getRedirectUri();
+        if (configured != null && !configured.isBlank()) {
+            return configured.strip();
+        }
+        String base = frontBaseUrl.strip();
+        if (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        return base + CALLBACK_PATH.formatted(provider.name().toLowerCase(Locale.ROOT));
     }
 
     private JsonNode requestMe(SnsProvider provider, String accessToken) {
