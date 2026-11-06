@@ -32,6 +32,6 @@ public class EmailCertProperties {
     /** 인증 완료 결과를 가입에 쓸 수 있는 시간(분) */
     private long verifiedKeepMinutes = 30;
 
-    /** 인증번호를 이 횟수만큼 틀리면 그 인증을 무효화 */
-    private int failLimit = 5;
+    /** 인증번호를 이 횟수만큼 틀리면 그 인증을 무효화(1이면 한 번 틀리는 즉시 새 인증번호를 받아야 한다) */
+    private int failLimit = 1;
 }

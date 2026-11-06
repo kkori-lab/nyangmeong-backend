@@ -35,14 +35,15 @@ app.email-cert.resend-interval-seconds=60
 app.email-cert.resend-window-minutes=60
 app.email-cert.resend-max-count=5
 app.email-cert.verified-keep-minutes=30
-app.email-cert.fail-limit=5
+app.email-cert.fail-limit=1
 app.signup.nickname-token-valid-minutes=30
 app.signup.sns-token-valid-minutes=30
 
 # 메일 발송. 이 줄이 없거나 log 면 보내지 않고 로그만 남긴다(받는 사람에게 실제로 나가지 않는다). 실제 발송은 smtp (아래 spring.mail 계정 필요, 계정은 디스코드 파일)
 app.mail.client=log
 app.mail.from=
-app.mail.from-name=냥멍케어
+# 보낸 사람 표시 이름(app.mail.from-name)은 적지 않는다. 기본값 "냥멍케어"는 MailSenderProperties에 있다.
+# Spring Boot는 .properties를 ISO-8859-1로 읽어 여기 적은 한글이 깨진다. 바꿔야 하면 냥 같은 유니코드 이스케이프로 쓴다
 spring.mail.host=
 spring.mail.port=587
 spring.mail.username=

@@ -47,6 +47,10 @@ public class MemberPasswordService {
             throw new CustomException(ErrorCode.PASSWORD_MISMATCH);
         }
         checkCurrentPassword(mbrSn, req.currentPswd());
+        /** 현재 비밀번호가 맞다고 확인했으므로 원문이 같으면 바뀌는 것이 없다 */
+        if (req.pswd().equals(req.currentPswd())) {
+            throw new CustomException(ErrorCode.PASSWORD_SAME_AS_CURRENT);
+        }
         if (memberMapper.updatePassword(mbrSn, passwordEncoder.encode(req.pswd()),
                 MemberStatus.WITHDRAWN.getCode(), String.valueOf(mbrSn)) != 1) {
             throw new CustomException(ErrorCode.MEMBER_NOT_FOUND);
