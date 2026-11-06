@@ -25,7 +25,7 @@ class TokenCookiesTest {
     }
 
     @Test
-    void Access_쿠키는_httpOnly_Lax_path_루트이고_만료는_토큰_만료와_같다() {
+    void Access_쿠키는_httpOnly_Lax_path_루트이고_만료는_Refresh_수명과_같다() {
         ResponseCookie cookie = cookies.accessToken("token-value");
 
         assertThat(cookie.getName()).isEqualTo("access_token");
@@ -33,7 +33,7 @@ class TokenCookiesTest {
         assertThat(cookie.isHttpOnly()).isTrue();
         assertThat(cookie.getSameSite()).isEqualTo("Lax");
         assertThat(cookie.getPath()).isEqualTo("/");
-        assertThat(cookie.getMaxAge()).isEqualTo(Duration.ofMinutes(30));
+        assertThat(cookie.getMaxAge()).isEqualTo(Duration.ofDays(1));
         assertThat(cookie.isSecure()).isFalse();
     }
 

@@ -30,8 +30,13 @@ public class TokenCookies {
     @Value("${app.cookie.secure:false}")
     private boolean secure;
 
+    /**
+     * Access 쿠키는 Refresh 수명만큼 남긴다
+     * - 토큰보다 먼저 사라지면 401 UNAUTHORIZED 가 되어 재발급 신호(TOKEN_EXPIRED)를 못 보낸다
+     * - 토큰 자체 만료는 access-token-expiry-ms 그대로
+     */
     public ResponseCookie accessToken(String token) {
-        return build(ACCESS_TOKEN, token, ACCESS_PATH, Duration.ofMillis(jwtProperties.getAccessTokenExpiryMs()));
+        return build(ACCESS_TOKEN, token, ACCESS_PATH, Duration.ofMillis(jwtProperties.getRefreshTokenExpiryMs()));
     }
 
     public ResponseCookie refreshToken(String token) {
