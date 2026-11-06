@@ -9,7 +9,7 @@ import lombok.Setter;
 /**
  * [SNS 로그인 설정]
  * - app.sns.client : real(실제 호출, 기본), fake(가짜 제공자, 로컬 확인용으로 직접 정했을 때만)
- * - app.sns.{naver,kakao,google}.client-id·client-secret·redirect-uri : 제공자 앱 키, redirect-uri 는 인가 요청과 같은 값
+ * - app.sns.{naver,kakao,google}.client-id·client-secret·redirect-uri : 제공자 앱 키, redirect-uri 는 인가 요청과 같은 값, 비우면 app.front-base-url 의 /login/sns/{제공자}/callback
  * - app.sns.timeout-ms : 요청 제한 시간(0이면 기본값)
  */
 @Getter
