@@ -312,6 +312,7 @@
 | ckupTypeCd | String | Y | HLTG01. 예방접종·정기검진 이력 구분 | CKUP_RCD.CKUP_TYPE_CD, HLT-002-06, HLT-011-04 |
 | ckupTypeCdNm | String | Y | | COM_CD.COM_CD_NM, HLT-011-03 |
 | schdlDelYn | boolean | Y | 연결 일정이 삭제됐으면 true → "연결된 일정 삭제됨" | SCHDL.DEL_YN, HLT-002-05 (issues 12) |
+| ckupCn | String | N | 진료 내용. 타임라인 상세 줄(첫 줄) | CKUP_RCD.CKUP_CN, HLT-011-03 |
 
 ### CheckupUpdateRequest
 쓰는 API: PATCH /pets/{petSn}/checkups/{ckupRcdSn}

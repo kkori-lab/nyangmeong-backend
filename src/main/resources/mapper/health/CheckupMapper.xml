@@ -10,6 +10,7 @@
         <result column="CKUP_TYPE_CD"    property="ckupTypeCd" />
         <result column="CKUP_TYPE_CD_NM" property="ckupTypeCdNm" />
         <result column="SCHDL_DEL_YN"    property="schdlDelYn" />
+        <result column="CKUP_CN"         property="ckupCn" />
     </resultMap>
 
     <resultMap id="checkupResponseResultMap" type="com.nyangmeong.health.dto.CheckupResponse">
@@ -34,6 +35,7 @@
              , C.CKUP_TYPE_CD
              , T.COM_CD_NM AS CKUP_TYPE_CD_NM
              , CASE WHEN S.DEL_YN = 'Y' THEN TRUE ELSE FALSE END AS SCHDL_DEL_YN
+             , C.CKUP_CN
           FROM CKUP_RCD C
           JOIN SCHDL S
             ON S.SCHDL_SN = C.SCHDL_SN
