@@ -16,6 +16,8 @@ import com.nyangmeong.expense.dto.ReceiptSaveCheckResponse;
 import com.nyangmeong.expense.dto.ReceiptSaveRequest;
 import com.nyangmeong.expense.dto.ReceiptSaveResponse;
 import com.nyangmeong.expense.service.ReceiptSaveService;
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
 import com.nyangmeong.health.dto.CheckupResponse;
@@ -45,6 +47,7 @@ public class ReceiptSaveController {
     }
 
     @Operation(summary = "영수증 확인 후 저장(검진기록·가계부 일괄)")
+    @AiTool(name = "draft_receipt_save", domain = "expense", kind = AiToolKind.CARD)
     @PostMapping("/{recptSn}/save")
     public ResponseEntity<ApiResponse<ReceiptSaveResponse>> save(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long recptSn, @Valid @RequestBody ReceiptSaveRequest req) {

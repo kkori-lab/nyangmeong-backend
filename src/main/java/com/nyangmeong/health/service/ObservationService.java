@@ -117,7 +117,7 @@ public class ObservationService {
     @Transactional
     public ObservationItemResponse createItem(Long mbrSn, Long petSn, ObservationItemCreateRequest req) {
         petAuthorizer.checkCaregiver(mbrSn, petSn);
-        checkCode(HealthCodeGroup.OBSERVATION_REGION, req.obsrvRegnCd());
+        checkCode(HealthCodeGroup.OBSERVATION_REGION, req.obsrvRegnCd(), "obsrvRegnCd");
         checkCycleValue(req.obsrvDt(), req.obsrvSz());
         if (req.file().isEmpty()) {
             throw invalid();
@@ -167,11 +167,11 @@ public class ObservationService {
         petAuthorizer.checkCaregiver(mbrSn, petSn);
         ObservationItem item = getItem(petSn, req.obsrvArtclSn());
         if (ObservationStatus.ENDED.getCode().equals(item.getObsrvSttsCd())) {
-            throw new CustomException(ErrorCode.OBSERVATION_ITEM_ENDED);
+            throw new CustomException(ErrorCode.OBSERVATION_ITEM_ENDED, "obsrvArtclSn");
         }
         checkCycleValue(req.obsrvDt(), req.obsrvSz());
         if (req.obsrvChgCd() != null) {
-            checkCode(HealthCodeGroup.OBSERVATION_CHANGE, req.obsrvChgCd());
+            checkCode(HealthCodeGroup.OBSERVATION_CHANGE, req.obsrvChgCd(), "obsrvChgCd");
         }
 
         ObservationCycle cycle = newCycle(item.getObsrvArtclSn(), req.file(), req.obsrvDt(), req.obsrvSz(),
@@ -201,7 +201,7 @@ public class ObservationService {
             cycle.setObsrvSz(req.obsrvSz());
         }
         if (req.obsrvChgCd() != null) {
-            checkCode(HealthCodeGroup.OBSERVATION_CHANGE, req.obsrvChgCd());
+            checkCode(HealthCodeGroup.OBSERVATION_CHANGE, req.obsrvChgCd(), "obsrvChgCd");
             cycle.setObsrvChgCd(req.obsrvChgCd());
         }
         if (req.memoCn() != null) {
@@ -276,7 +276,7 @@ public class ObservationService {
     private ObservationCycle newCycle(Long obsrvArtclSn, MultipartFile file, LocalDateTime obsrvDt,
             BigDecimal obsrvSz, String obsrvChgCd, String memoCn, String actorId) {
         if (file.isEmpty()) {
-            throw invalid();
+            throw invalid("file");
         }
         ObservationCycle cycle = new ObservationCycle();
         cycle.setObsrvArtclSn(obsrvArtclSn);
@@ -295,16 +295,16 @@ public class ObservationService {
      */
     private void checkCycleValue(LocalDateTime obsrvDt, BigDecimal obsrvSz) {
         if (obsrvDt != null && obsrvDt.toLocalDate().isAfter(LocalDate.now(ZONE))) {
-            throw invalid();
+            throw invalid("obsrvDt");
         }
         if (obsrvSz != null && obsrvSz.signum() <= 0) {
-            throw invalid();
+            throw invalid("obsrvSz");
         }
     }
 
-    private void checkCode(HealthCodeGroup group, String comCd) {
+    private void checkCode(HealthCodeGroup group, String comCd, String field) {
         if (!observationMapper.existsChildCode(group.getCode(), comCd)) {
-            throw invalid();
+            throw invalid(field);
         }
     }
 
@@ -339,7 +339,7 @@ public class ObservationService {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
-    private CustomException invalid() {
-        return new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+    private CustomException invalid(String... fields) {
+        return new CustomException(ErrorCode.INVALID_INPUT_VALUE, fields);
     }
 }

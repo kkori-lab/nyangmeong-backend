@@ -2,7 +2,7 @@
 
 ## 지금 하는 것
 
-SCR-HLT-002 건강 일지 · 영수증 save-check 저장완료 409 — 끝남: 검증 통과(1회차), 사람 확인 통과. LJS 커밋 a621aad에 이미 반영돼 있어(`ReceiptSaveService.check` 409, 테스트 2개, `docs/api/receipt.md`) 코드·문서·`db/`는 바꾸지 않았다. 확인용 데이터 없음(save-check는 저장하지 않음) (승인 2026-11-04 15:29, 시작 2026-11-04 15:28)
+SCR-HLT-011 종합 건강기록 · 검진기록 목록 진료 내용 — 끝남: 검증 통과(1회차), 사람 확인 통과. FN-HLT-011-03 `GET /pets/{petSn}/checkups` 각 행에 `ckupCn`(없으면 null) 추가(`CheckupSummary`, `CheckupMapper.xml` `selectList`, `docs/api/health.md`, 테스트 2개). 프론트 연결 없음(타임라인이 이미 `ckupCn`을 그림), `db/` 변경 없음 (승인 2026-11-06 10:36, 시작 2026-11-06 10:35)
 
 ## 다음에 할 것
 

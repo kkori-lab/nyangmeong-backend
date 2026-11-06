@@ -9,6 +9,7 @@ import org.apache.ibatis.annotations.Param;
 import com.nyangmeong.pet.domain.BrupLinkSttsHstry;
 import com.nyangmeong.pet.domain.BrupRel;
 import com.nyangmeong.pet.domain.Pet;
+import com.nyangmeong.pet.dto.AdminPetDistributionSummary;
 import com.nyangmeong.pet.dto.AdminPetSummary;
 import com.nyangmeong.pet.dto.CaregiverSummary;
 import com.nyangmeong.pet.dto.PetSummary;
@@ -138,4 +139,10 @@ public interface PetMapper {
      * 양육 연동 상태 이력 등록
      */
     int insertLinkHistory(BrupLinkSttsHstry history);
+
+    /**
+     * 관리자 대시보드 종·품종 분포 조회 (많은 순 상위 limit)
+     */
+    List<AdminPetDistributionSummary> selectDistribution(@Param("drctInptVrtyNm") String drctInptVrtyNm,
+            @Param("limit") int limit);
 }

@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -18,6 +20,6 @@ public record ObservationCycleCreateRequest(
         @NotNull MultipartFile file,
         @NotNull LocalDateTime obsrvDt,
         @Digits(integer = 5, fraction = 3) BigDecimal obsrvSz,
-        @Size(max = 8) String obsrvChgCd,
+        @Size(max = 8) @AiCode("HLTG17") String obsrvChgCd,
         @Size(max = 200) String memoCn) {
 }

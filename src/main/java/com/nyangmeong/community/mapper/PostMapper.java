@@ -1,5 +1,6 @@
 package com.nyangmeong.community.mapper;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
@@ -8,6 +9,7 @@ import org.apache.ibatis.annotations.Param;
 import com.nyangmeong.community.domain.Post;
 import com.nyangmeong.community.domain.PostImage;
 import com.nyangmeong.community.domain.PostStatusHistory;
+import com.nyangmeong.community.dto.AdminBoardPostCountSummary;
 import com.nyangmeong.community.dto.AdminPostSearchCond;
 import com.nyangmeong.community.dto.AdminPostStatusHistorySummary;
 import com.nyangmeong.community.dto.AdminPostSummary;
@@ -194,4 +196,10 @@ public interface PostMapper {
      * 관리자 대시보드 최근 게시글 조회
      */
     List<AdminRecentPostSummary> selectRecentPosts(@Param("limit") int limit);
+
+    /**
+     * 관리자 대시보드 게시판별 게시글 수 조회 (fromDt 이상 toDt 미만)
+     */
+    List<AdminBoardPostCountSummary> selectBoardPostCounts(@Param("bbsGrpCd") String bbsGrpCd,
+            @Param("fromDt") LocalDateTime fromDt, @Param("toDt") LocalDateTime toDt);
 }

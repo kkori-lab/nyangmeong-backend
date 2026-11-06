@@ -750,4 +750,22 @@ class PetServiceTest {
     private BigDecimal kg(String value) {
         return new BigDecimal(value);
     }
+
+    @Test
+    void 수정_서비스_검사_400은_틀린_칸_이름을_담는다() {
+        assertFields(() -> service.updatePet(MBR, PET, colorUpdate(null, CAT_ONLY_COLOR)), "colrCd");
+        assertFields(() -> service.updatePet(MBR, PET, new PetUpdateRequest(null, null, null, null, null, null,
+                "PETC9999", null, null, null, null, null, null, null, null, null, null, null)), "petGndrCd");
+        assertFields(() -> service.updatePet(MBR, PET, update(kg("6"), null, null, null, null)), "minBdwg",
+                "maxBdwg");
+        assertFields(() -> service.updatePet(MBR, PET, new PetUpdateRequest(null, null, 15L, "직접", null, null,
+                null, null, null, null, null, null, null, null, null, null, null, null)), "vrtySn", "vrtyDrctInptNm");
+    }
+
+    private static void assertFields(org.assertj.core.api.ThrowableAssert.ThrowingCallable call, String... fields) {
+        assertThatThrownBy(call).isInstanceOfSatisfying(CustomException.class, e -> {
+            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+            assertThat(e.getFields()).containsExactly(fields);
+        });
+    }
 }

@@ -7,6 +7,7 @@ import lombok.Data;
 /**
  * [검진기록 목록 행]
  * - 검진기록 리스트·필터 칩 (FN-HLT-002-05·06)
+ * - 건강 이력 타임라인 진료 내용 (FN-HLT-011-03)
  */
 @Data
 public class CheckupSummary {
@@ -25,4 +26,6 @@ public class CheckupSummary {
     private String ckupTypeCdNm;
     /** 연결 일정 삭제 여부 */
     private boolean schdlDelYn;
+    /** 진료내용 */
+    private String ckupCn;
 }

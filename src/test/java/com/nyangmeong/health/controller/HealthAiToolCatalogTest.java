@@ -46,7 +46,7 @@ import com.nyangmeong.health.service.RepeatPreventionService;
 
 /**
  * [검사 - 건강 도메인 AI 도구 목록]
- * - 실제 건강 컨트롤러의 @AiTool이 빠짐없이 실리는지 (READ 13 + CARD 2)
+ * - 실제 건강 컨트롤러의 @AiTool이 빠짐없이 실리는지 (READ 13 + CARD 7)
  */
 @WebMvcTest(controllers = {AiToolCatalogController.class, CareScheduleController.class, CareItemController.class,
         DailyHealthRecordController.class, CheckupController.class, CheckupAttachmentController.class,
@@ -102,11 +102,13 @@ class HealthAiToolCatalogTest {
     }
 
     @Test
-    void 건강_READ_13개와_CARD_2개가_빠짐없이_실린다() throws Exception {
+    void 건강_READ_13개와_CARD_7개가_빠짐없이_실린다() throws Exception {
         givenCodes();
         mockMvc.perform(get(PATH))
-                .andExpect(jsonPath("$.data.tools.length()").value(15))
-                .andExpect(jsonPath("$.data.tools[*].name", containsInAnyOrder("draft_care_item", "draft_schedule",
+                .andExpect(jsonPath("$.data.tools.length()").value(20))
+                .andExpect(jsonPath("$.data.tools[*].name", containsInAnyOrder("draft_care_completion", "draft_care_item",
+                        "draft_care_item_update", "draft_daily_health_record", "draft_observation_cycle",
+                        "draft_schedule", "draft_schedule_update",
                         "get_checkup", "get_health_indicators", "list_care_completions", "list_care_items",
                         "list_care_schedules", "list_checkups", "list_daily_health_records",
                         "list_etc_inspections", "list_inspection_values", "list_observation_cycles",

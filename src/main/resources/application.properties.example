@@ -54,6 +54,7 @@ spring.mail.properties.mail.smtp.timeout=5000
 spring.mail.properties.mail.smtp.writetimeout=5000
 
 # SNS 로그인. 이 줄이 없으면 실제 호출(real, 앱 키 필요)이다. 로컬에서 앱 키 없이 확인할 때만 fake 로 두고 code 를 fake-이름 으로 보낸다. 배포 서버에는 fake 를 두지 않는다
+# redirect-uri 는 비워 두면 app.front-base-url + /login/sns/{naver|kakao|google}/callback 이다. 환경마다 app.front-base-url 만 바꾸고, 그 주소를 제공자 콘솔에도 등록한다
 app.sns.client=fake
 app.sns.timeout-ms=3000
 app.sns.naver.client-id=
@@ -83,7 +84,7 @@ app.kakao-local.client=fake
 app.kakao-local.rest-api-key=
 app.kakao-local.timeout-ms=3000
 
-# 알림 메일(SCR-AIM-006). 메일 본문 링크(케어 캘린더·알림 설정)의 프론트 주소. 생략하면 아래와 같은 기본값
+# 프론트 주소. 알림 메일(SCR-AIM-006) 본문 링크와 SNS 로그인 콜백 주소에 쓴다. 생략하면 아래와 같은 기본값, 배포 서버는 배포 프론트 주소
 app.front-base-url=http://localhost:5173
 
 # 케어미션 정산·출제 배치(SCR-MYP-020). 생략하면 false(꺼짐). 배포는 application-prod.properties가 켠다
