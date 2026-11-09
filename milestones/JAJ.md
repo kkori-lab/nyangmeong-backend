@@ -124,7 +124,7 @@
 - 기다리는 것: 13개 코드 `db/` 공통코드 등록(코드 값은 이 마일스톤에서 정한다). 기존 `member` `DashboardWidget`(`GET·PUT /members/me/dashboard-widgets`, YAY)과의 관계는 YAY와 확인한다(메인은 이제 이 API를 부르지 않는다, LJS 메인 개편 2026-11-08)
 - 완료 조건(초안, /start에서 확정): GET은 저장된 행이 없는 회원과 있는 회원을 구분해 준다(없으면 프론트가 튜토리얼을 연다). 각 항목은 `indctYn`·순서와 함께 오고, 회원의 반려동물 중 기록이 있는 항목도 같은 응답에 담는다(요청 1개). PUT은 항목별 `INDCT_YN`과 `SORT_SEQ`를 저장하고 보낸 배열 순서가 그대로 `SORT_SEQ`가 된다. 모르는 코드·중복 코드는 400
 - 결정: 기록 있는 항목을 GET 응답에 넣는 이유는 프론트가 지금 반려동물마다 11개 API를 불러 확인하기 때문이다(아이 수 × 11개. 2026-11-07 검증에서 토큰 만료와 겹쳐 콘솔 401이 85건 났다). 이 응답으로 프론트 `getRecordedItems`를 지운다
-- 결과(2026-11-09): `GET·PUT /api/members/me/dashboard-widgets`(health), 공통코드 HLTG25·HLTC0079~0091, 메인 위젯(MANG01) 코드·API 삭제(YAY 승인). 공용 DB는 PR 병합 직후 `db/` 변경 절 v0.13 (5)·(6) 실행. 신규 정책 처리(기능 ID)는 회의 결정 전
+- 결과(2026-11-09): `GET·PUT /api/members/me/dashboard-widgets`(health), 공통코드 HLTG25·HLTC0079~0091, 메인 위젯(MANG01) 코드·API 삭제(YAY 승인). 공용 DB는 PR 병합 직후 `db/` 변경 절 v0.14 (2)·(3) 실행(develop merge로 v0.13에서 옮김). 신규 정책 처리(기능 ID)는 회의 결정 전
 - 연결 남음: 새 기능(ID 없음, ※신규 정책) 건강기록 대시보드 고른 항목 저장 (프론트 연결 `features/health/dashboard/widgetStore.js`·`queries.js` `useHealthWidgets`·`useSaveHealthWidgets`를 `GET·PUT /members/me/dashboard-widgets`로, 항목 키 → HLTG25 코드, `dashboardApi.js` `getRecordedItems` 삭제, `widgetItems.js:138` `vacc` `nm` → 「예방접종·정기검진」, 프론트 저장소에서 /start)
 
 ## SCR-HLT-003 케어 캘린더 · 케어 일정 알림 반려동물 연결 — 대기
