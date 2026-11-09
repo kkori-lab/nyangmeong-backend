@@ -29,7 +29,7 @@
 | GET | /pets/{petSn}/daily-missions | 그날의 케어미션 8개와 진행 상태. 쿼리 `msnCrtrYmd` | MYP-020-03·04 | SJM | - | List<DailyMissionSummary> |
 | GET | /pixel-characters | 내 캐릭터·공동양육 캐릭터 목록(캐릭터 없는 반려동물 포함, 생성 상태·오류 확인 중 표시) | MYP-010-02·03·07·12·23 | LJS | - | List<PixelCharacterSummary> |
 | GET | /pixel-characters/{pixelCharSn} | 꾸미기 상세. 결과 이미지·보유/착용 아이템·오류 문의 접수 여부 | MYP-010-10·13·14·23 | LJS | - | PixelCharacterResponse |
-| GET | /pixel-characters/{pixelCharSn}/shop-items | 상점 아이템 목록(판매 중, 이 캐릭터 기준 보유중 표시, 보유 포인트). `?itemRegnCd=` | MYP-011-02·03 | LJS | - | ShopItemListResponse |
+| GET | /pixel-characters/{pixelCharSn}/shop-items | 상점 아이템 목록(판매 중, 사용 안 하는 부위(신발 MYPC0006) 제외, 이 캐릭터 기준 보유중 표시, 보유 포인트). `?itemRegnCd=` | MYP-011-02·03 | LJS | - | ShopItemListResponse |
 | GET | /point-ledgers | 선택한 월의 포인트 적립·사용 내역(최신순). 쿼리 `yearMonth` | MYP-020-02 | SJM | - | List<PointLedgerSummary> |
 | POST | /caregiver-invitations | 이메일로 공동양육 초대 발송. 대상 반려동물 여러 마리를 한 초대로 묶음. 가입 회원은 인앱 알림, 미가입은 메일. 고른 반려동물을 모두 검사해 충돌을 모아 409 오류 data에 CaregiverInvitationConflictResponse. 이미 가족이 하나라도 있으면 `CAREGIVER_ALREADY_LINKED`, 대기 초대만 있으면 `CAREGIVER_INVITATION_DUPLICATED`. 충돌이 있으면 초대를 만들지 않음 | MYP-005-01·02 | SJM | CaregiverInvitationCreateRequest | CaregiverInvitationResponse |
 | POST | /caregiver-invitations/{jntBrupInvtnSn}/accept | 초대 수락. 고른 반려동물만 연동하고 나머지는 반려동물별 거절 | MYP-005-05 | SJM | CaregiverInvitationAcceptRequest | - |
@@ -42,9 +42,9 @@
 | PATCH | /pets/{petSn} | 반려동물 수정(양육자 전원, 체중 잠금은 화면에서) | MYP-002-04, MYP-003-01·04~07 | SJM | PetUpdateRequest | PetResponse |
 | DELETE | /pets/{petSn} | 반려동물 삭제(주양육자만). 캐릭터·보유 아이템 삭제, 공동양육 연동 해제, 대표 승계 | MYP-002-07·08 | SJM | - | - |
 | DELETE | /pets/{petSn}/caregivers/{brupRelSn} | 공동양육 연동 해제. 주양육자의 강제 해제와 공동양육자의 자진 해제 | MYP-004-01, MYP-006-02 | SJM | - | - |
-| GET | /admin/items?itemRegnCd= | 관리자 아이템 목록(판매 중지 포함, 부위·정렬 순서·번호순, 페이지 없음). 부위 코드가 MYPG01이 아니면 400 `INVALID_INPUT_VALUE`. 부위 이름 "신발"은 서버에서 거르지 않는다 | ADM-070-01 | LJS | - | List<AdminItemSummary> |
+| GET | /admin/items?itemRegnCd= | 관리자 아이템 목록(판매 중지 포함, 부위·정렬 순서·번호순, 페이지 없음). 부위 코드가 MYPG01이 아니거나 신발(MYPC0006, 사용 안 함)이면 400 `INVALID_INPUT_VALUE`. 전체 목록에서도 사용 안 하는 부위(`COM_CD.USE_YN='N'`) 아이템은 뺀다 | ADM-070-01 | LJS | - | List<AdminItemSummary> |
 | GET | /admin/items/{itemSn}/image | 관리자 아이템 이미지(판매 중지도, ApiResponse 아님). 없으면 404 `ITEM_NOT_FOUND` | ADM-070-01 | LJS | - | 이미지 파일 |
-| POST | /admin/items | 아이템 등록(`multipart/form-data`). 정렬은 그 부위 마지막 다음. 201. 오류: `INVALID_INPUT_VALUE`(400, 신발에 굽기 지시 포함), `FILE_TYPE_NOT_ALLOWED`·`FILE_TOO_LARGE`(400), `ITEM_NAME_DUPLICATED`(409) | ADM-070-02 | LJS | AdminItemCreateRequest | AdminItemCreateResponse |
+| POST | /admin/items | 아이템 등록(`multipart/form-data`). 정렬은 그 부위 마지막 다음. 201. 오류: `INVALID_INPUT_VALUE`(400, 신발 MYPC0006은 사용 안 하는 부위), `FILE_TYPE_NOT_ALLOWED`·`FILE_TOO_LARGE`(400), `ITEM_NAME_DUPLICATED`(409) | ADM-070-02 | LJS | AdminItemCreateRequest | AdminItemCreateResponse |
 | PATCH | /admin/items/{itemSn} | 아이템 수정·판매 중지(`multipart/form-data`, 보낸 칸만). 판매 중지해도 이미 산 회원의 보유는 그대로. 부위를 바꾸면 새 부위 마지막 다음 순서. 굽기 지시가 바뀌면 그 아이템의 착용 시트를 지워 다시 굽기 대상이 된다. 오류: `ITEM_NOT_FOUND`(404), `ITEM_REGION_LOCKED`(409, 보유 회원이 있는데 부위 변경), `ITEM_NAME_DUPLICATED`(409) | ADM-070-03 | LJS | AdminItemUpdateRequest | - |
 | PUT | /admin/items/order | 부위 안 상점 순서 저장(1부터 다시 매김). 그 부위 아이템 전부(판매 중지 포함)를 빠짐·중복 없이 보내야 하고 아니면 400 `INVALID_INPUT_VALUE` | ADM-070-04 | LJS | AdminItemOrderRequest | - |
 
@@ -57,7 +57,7 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 | POST | /internal/ai/characters/jobs | 생성 작업을 만든다. 주양육자만, 201. 이미 있음 `PIXEL_CHARACTER_ALREADY_EXISTS`, 생성 중 `PIXEL_CHARACTER_CREATING`(409). 실패로 끝나 결과가 없으면 다시 요청할 수 있다 | MYP-010-08·09 | LJS | CharacterJobCreateRequest | CharacterJobResponse |
 | POST | /internal/ai/characters/jobs/{charCrtJobSn}/success | 생성 성공 보고. 작업을 만든 회원만. 이미 완료면 같은 번호, 실패로 끝났으면 409 `ALREADY_PROCESSED`, 규격 밖 400 `FILE_TYPE_NOT_ALLOWED` | MYP-010-09·17 | LJS | CharacterSuccessRequest | CharacterSuccessResponse |
 | POST | /internal/ai/characters/jobs/{charCrtJobSn}/failure | 생성 실패 보고. 작업을 만든 회원만. 끝난 작업이면 바꾸지 않고 200. 시작 뒤 10분이 넘은 작업은 `CharacterJobTimeoutJob`이 `CHARACTER_TIMEOUT`으로 실패 처리한다 | MYP-010-12 | LJS | CharacterFailureRequest | - |
-| GET | /internal/ai/characters/bake-items | 굽기 대상(판매 중이고 굽기 지시 `BAKE_HINT` 있음, 신발은 지시가 없다) | MYP-011-01, ADM-070-02 | LJS | - | List<BakeItemSummary> |
+| GET | /internal/ai/characters/bake-items | 굽기 대상(판매 중이고 굽기 지시 `BAKE_HINT` 있음, 신발은 사용 안 하는 부위) | MYP-011-01, ADM-070-02 | LJS | - | List<BakeItemSummary> |
 | GET | /internal/ai/items/{itemSn}/bake-targets?page= | 그 아이템을 아직 안 구운 캐릭터(맨몸 시트가 있고 그 아이템의 착용 시트·굽기 실패 표시가 없음). 관리자 쿠키만, 아니면 403 `ADMIN_ONLY`. `page`는 0부터(기본 0), 한 페이지 100개, 캐릭터 번호순. 굽기 대상 아이템이 아니면 404 `ITEM_NOT_FOUND`, `page` 음수 400 | ADM-070-02 | LJS | - | BakeTargetPageResponse |
 | PUT | /internal/ai/characters/{pixelCharSn}/item-sheets/{itemSn} | 착용 시트 저장(주양육자만, 관리자 쿠키면 남의 캐릭터도(전체 굽기 FN-ADM-070-02), 다시 받으면 교체). 굽기 대상이 아니면 404 `ITEM_NOT_FOUND`, 1024 PNG가 아니면 400 | MYP-011-01 | LJS | ItemSheetSaveRequest | - |
 | POST | /internal/ai/characters/{pixelCharSn}/item-sheets/{itemSn}/failure | 굽기 실패 표시(주양육자만, 관리자 쿠키면 남의 캐릭터도(전체 굽기 FN-ADM-070-02)). 구운 시트가 있으면 유지 | MYP-011-01 | LJS | - | - |
@@ -238,11 +238,11 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 `multipart/form-data`
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| itemRegnCd | String | Y | MYPG01 코드 | ITEM.ITEM_REGN_CD |
+| itemRegnCd | String | Y | MYPG01 코드. 신발(MYPC0006)은 사용 안 함, 400 | ITEM.ITEM_REGN_CD |
 | itemNm | String | Y | 1~50자, 앞뒤 공백 제거. 같은 이름 409 | ITEM.ITEM_NM |
 | needPnt | Long | Y | 0~1,000,000 | ITEM.NEED_PNT |
 | ntslYn | Boolean | Y | | ITEM.NTSL_YN |
-| bakeHint | String | N | 300자 이하, 비우면 굽지 않음. 신발(MYPC0006)은 넣을 수 없다. 초안은 AI `/ai/items/bake-hints` | ITEM.BAKE_HINT |
+| bakeHint | String | N | 300자 이하, 비우면 굽지 않음. 신발(MYPC0006)은 사용 안 하는 부위라 등록 400(부위 검사). 초안은 AI `/ai/items/bake-hints` | ITEM.BAKE_HINT |
 | image | MultipartFile | Y | 이미지 파일(형식·용량은 공통 파일 규칙) | ITEM.ATCH_FILE_SN |
 
 ### AdminItemCreateResponse
@@ -254,7 +254,7 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 `multipart/form-data`, 보낸 칸만 바뀐다
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| itemRegnCd | String | N | MYPG01 코드. 보유 회원이 있으면 바꿀 수 없다 | ITEM.ITEM_REGN_CD |
+| itemRegnCd | String | N | MYPG01 코드. 보유 회원이 있으면 바꿀 수 없다. 신발(MYPC0006)로는 바꿀 수 없다(400) | ITEM.ITEM_REGN_CD |
 | itemNm | String | N | 1~50자 | ITEM.ITEM_NM |
 | needPnt | Long | N | 0~1,000,000 | ITEM.NEED_PNT |
 | ntslYn | Boolean | N | false면 판매 중지 | ITEM.NTSL_YN |
@@ -264,7 +264,7 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 ### AdminItemOrderRequest
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| itemRegnCd | String | Y | MYPG01 코드 | ITEM.ITEM_REGN_CD |
+| itemRegnCd | String | Y | MYPG01 코드. 신발(MYPC0006)은 사용 안 함, 400 | ITEM.ITEM_REGN_CD |
 | itemSns | List<Long> | Y | 그 부위 아이템 전부를 상점 순서대로 | ITEM.SORT_SEQ |
 
 ### AdminPetSummary
@@ -588,7 +588,7 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 | crtJobSttsCd | String | Y | 생성 작업 상태(CHRG01) | CHAR_CRT_JOB.CRT_JOB_STTS_CD |
 | bscCharSbstYn | boolean | Y | 오류 확인 중(기본 캐릭터로 대체) | PIXEL_CHAR.BSC_CHAR_SBST_YN |
 | inqryRcptYn | boolean | Y | 현재 결과에 오류 문의 접수됨(이름은 issues 3번) | MYP-010-24, CHAR_CRT_JOB.OTO_INQRY_SN 유무 |
-| heldItems | List<HeldItemSummary> | Y | 보관함. 생성 직후는 빈 목록 | MYP-010-14, HLD_ITEM |
+| heldItems | List<HeldItemSummary> | Y | 보관함. 생성 직후는 빈 목록. 사용 안 하는 부위(신발 MYPC0006) 보유 아이템은 빼고, 착용 저장에 보내면 `ITEM_NOT_HELD` | MYP-010-14, HLD_ITEM |
 | heldItems[].hldItemSn | Long | Y | | HLD_ITEM.HLD_ITEM_SN |
 | heldItems[].itemSn | Long | Y | | HLD_ITEM.ITEM_SN |
 | heldItems[].itemNm | String | Y | | ITEM.ITEM_NM |
