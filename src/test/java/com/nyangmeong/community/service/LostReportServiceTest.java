@@ -763,7 +763,7 @@ class LostReportServiceTest {
         assertThat(event.type()).isEqualTo(NotificationType.LOST_EXPIRY);
         assertThat(event.notiTtl()).isEqualTo("실종 제보 게시 종료 안내");
         assertThat(event.notiCn()).isEqualTo("콩이 제보가 7일 뒤(2026.11.13) 게시 종료돼요. 아직 찾고 계시면 30일 더 게시할 수 있어요.");
-        assertThat(event.mvmnPath()).isEqualTo("/community/lost/" + LOST);
+        assertThat(event.mvmnPath()).isEqualTo("/community/missing/" + LOST);
     }
 
     @Test
