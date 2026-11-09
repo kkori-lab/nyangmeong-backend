@@ -96,6 +96,30 @@ class AdminItemServiceTest {
     }
 
     @Test
+    void 신발은_사용하지_않는_부위라_등록하면_400() {
+        assertThatThrownBy(
+                () -> service.create(1L, new AdminItemCreateRequest("MYPC0006", "장화", 300L, true, null, image)))
+                .extracting("errorCode").isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+        verify(itemMapper, never()).insert(any());
+    }
+
+    @Test
+    void 신발로_부위를_바꾸면_400() {
+        when(itemMapper.selectItem(7L)).thenReturn(stored("MYPC0001", null));
+
+        assertThatThrownBy(() -> service.update(1L, 7L, update("MYPC0006", null, null)))
+                .extracting("errorCode").isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+        verify(itemMapper, never()).update(any(), anyBoolean());
+    }
+
+    @Test
+    void 신발_부위로_목록을_조회하면_400() {
+        assertThatThrownBy(() -> service.search("MYPC0006"))
+                .extracting("errorCode").isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+        verify(itemMapper, never()).selectAdminList(any());
+    }
+
+    @Test
     void 없는_부위면_400() {
         assertThatThrownBy(
                 () -> service.create(1L, new AdminItemCreateRequest("MYPC9999", "모자", 300L, true, null, image)))
