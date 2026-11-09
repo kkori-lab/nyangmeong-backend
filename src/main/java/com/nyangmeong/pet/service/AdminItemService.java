@@ -74,7 +74,6 @@ public class AdminItemService {
     public AdminItemCreateResponse create(Long actorSn, AdminItemCreateRequest req) {
         checkRegion(req.itemRegnCd());
         String bakeHint = normalizeHint(req.bakeHint());
-        checkBakeHint(req.itemRegnCd(), bakeHint);
 
         String actorId = String.valueOf(actorSn);
         Item item = new Item();
@@ -116,7 +115,6 @@ public class AdminItemService {
         boolean hintSent = req.bakeHint() != null;
         String bakeHint = hintSent ? normalizeHint(req.bakeHint()) : before.getBakeHint();
         boolean hintChanged = hintSent && !Objects.equals(bakeHint, before.getBakeHint());
-        checkBakeHint(regionChanged ? req.itemRegnCd() : before.getItemRegnCd(), bakeHint);
 
         Item item = new Item();
         item.setItemSn(itemSn);
@@ -171,17 +169,11 @@ public class AdminItemService {
         return item;
     }
 
-    private void checkRegion(String itemRegnCd) {
-        if (ItemRegion.from(itemRegnCd).isEmpty()) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
-        }
-    }
-
     /**
-     * 신발은 굽지 않음
+     * 신발은 서비스에서 뺀 부위 (코드 USE_YN='N', 기준 데이터 v0.14 (2))
      */
-    private void checkBakeHint(String itemRegnCd, String bakeHint) {
-        if (bakeHint != null && ItemRegion.SHOES.is(itemRegnCd)) {
+    private void checkRegion(String itemRegnCd) {
+        if (ItemRegion.from(itemRegnCd).isEmpty() || ItemRegion.SHOES.is(itemRegnCd)) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
     }

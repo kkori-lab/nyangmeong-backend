@@ -50,9 +50,19 @@ public interface CareMissionMapper {
     List<MissionTargetSummary> selectIssueTargets(@Param("primaryRoleCd") String primaryRoleCd);
 
     /**
+     * 반려동물 1마리의 미션 출제 대상 조회 (주양육 관계가 없으면 null)
+     */
+    MissionTargetSummary selectIssueTarget(@Param("petSn") Long petSn, @Param("primaryRoleCd") String primaryRoleCd);
+
+    /**
      * 그날 미션이 출제된 반려동물 조회
      */
     List<Long> selectIssuedPetSns(@Param("msnCrtrYmd") LocalDate msnCrtrYmd);
+
+    /**
+     * 반려동물의 그날 출제된 미션 수 조회
+     */
+    int countDayMissions(@Param("petSn") Long petSn, @Param("msnCrtrYmd") LocalDate msnCrtrYmd);
 
     /**
      * 일별미션 등록

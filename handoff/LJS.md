@@ -2,28 +2,18 @@
 
 ## 지금 하는 것
 
-SCR-MAN-001 메인 · 반려동물 바로가기 조회·저장 API — 끝 (2026-11-09). `GET·PUT /api/pets/main-shortcuts`(pet 도메인), 새 테이블 `PET_MAIN_SHRTC`·공통코드 MANG02(MANC0008~0010), DB 기준 파일 v0.14로 올림(v0.13은 `db/archive/v0.13/`). 검증 `통과`(2회차, 1회차는 공용 DB 미실행), 사람 확인 2026-11-09. 추가-1 기초 데이터 머리말 원천 문구(`./gradlew build -q` 0, 재검증은 사람이 생략)
+SCR-ADM-070 아이템 · 신발 부위 제외 — 끝 (2026-11-09). 기준 데이터 v0.14 (2)(MYPC0006 `USE_YN='N'`, 신발 판매 중지·착용 해제, 공용 DB 실행함), `AdminItemService.checkRegion` 신발 400(`checkBakeHint` 삭제), 상점·보관함·관리자 목록이 사용 중인 부위만. 검증 `통과`(2회차), 사람 확인 2026-11-09
 
 ## 다음에 할 것
 
+- 팀에 알린다(PR 본문 "DB 변경 있음, v0.14 (2)", 공용 DB에는 2026-11-09 실행함): 기준 데이터 v0.14 (2) 신발 부위 사용 안 함. 각자 로컬 DB에도 그 절의 UPDATE 3줄을 실행한다. 실행 전 DB에서는 신발이 상점·보관함·관리자 목록에 그대로 나온다
+- 프론트에 알린다(SCR-ADM-070 신발): 서버가 사용 안 하는 부위(신발)를 공통코드·상점·보관함·관리자 목록에서 빼고 등록·조회에 400을 낸다. 관리자 화면의 "신발" 이름 거르기(프론트 SCR-ADM-070 추가-1)는 지워도 된다(프론트 저장소에서 정함)
+- ai-47에 알린다(SCR-ADM-070 신발): 신발(MYPC0006)은 사용 안 하는 부위가 됐다. `bake-items`에는 원래 신발이 없어 응답은 그대로
+- SJM·JAJ에게 알린다(PR 전, SCR-AIM-012 가계부 검사 오류 칸 이름): 가계부 `ExpenseQueryService`·`ReceiptService.get`·`ReceiptSaveService.validate`의 400에 칸 이름만 넣었다(동작 그대로). JAJ: `CheckupService`에 공개 `isMovableSchedule(petSn, schdlSn, ymd)`를 열고 `moveAndLinkSchedule`이 같은 검사를 쓰게 했다(동작 그대로). 끝나면 ai-50에 알린다(읽기 도구 `list_expenses`·`get_expense_total`·`get_expense_statistics`·`get_receipt`, 쓰기 `draft_receipt_save`의 `pets[i].schdlSn`)
 - SCR-MAN-001 연결 남음: FN-MAN-008 (프론트 연결 `features/dashboard/api.js` 가짜 두 함수·`shortcutTypes.js` 임시 코드 `HEALTH`·`DIARY`·`CALENDAR`를 `MANC0008`·`MANC0009`·`MANC0010`으로, 프론트 저장소에서 /start). 계약은 `docs/api/pet.md` 두 행: 저장 400의 `data[].field`는 `[i].petSn`·`[i].shrtcCds`·`[i].shrtcCds[j]`, 코드 이름은 `GET /api/common-codes?prntComCd=MANG02`
 - 팀에 알린다(PR 본문 "DB 변경 있음, v0.14 (1)", 공용 DB에는 2026-11-09 실행함): DB 기준 파일이 v0.14로 바뀌었다(`db/20261109_*_v0.14.sql`, v0.13은 `db/archive/v0.13/`). v0.13 파일을 고치던 브랜치는 v0.14 파일로 옮긴다. KSJ: `handoff/KSJ.md` 13행의 v0.13 기초 데이터 경로가 `db/archive/v0.13/`으로 옮겨졌다
 - ERDCloud(사람): 버전 v0.14와 `PET_MAIN_SHRTC`(MBR·PET FK, SHRTC_CD MANG02) 반영
-- SCR-ADM-070 보관 기획을 다시 /start할 때 v0.13 SQL 파일 이름을 v0.14(`db/20261109_*_v0.14.sql`)로 바꾼다
-- 다음 백엔드 작업(사람 결정 2026-11-06, 2026-11-09 다시 확인): 가계부 도구 서비스 검사 400에 칸 이름을 담는다(SCR-AIM-012, ai-50 요청). 쓰기 도구 4개는 `bd57d24`에서 이미 들어갔다. 남은 것은 읽기 도구 경로 `ExpenseQueryService.normalize`·`parseMonth`(`petSn`·`common`·`expndClsfCd`·`yearMonth`), `ReceiptService.get`(`petSn`), 영수증 저장의 일정 옮겨 연결(`pets[i].schdlSn`, `CheckupService`에 검사 메서드를 열어야 함·JAJ). 건강 서비스의 `invalid("칸")` 방식에 맞춘다. SJM·JAJ에게 PR 전에, 끝나면 ai-50에 알린다. 마일스톤 `가계부 검사 오류 칸 이름` 절(대기). `/start AIM-012`
-- 다음 백엔드 작업(2026-11-06): 대기 절 중 실제로 남은 것은 SCR-ADM-070 신발 부위 제외(사람 결정 대기: 등록된 신발 아이템·회원 보유·착용 처리)와 SCR-ADM-112 Java 호출 기록(실제 구현을 붙일 때)뿐이다. 나머지 대기 절은 아래 "마일스톤 정리(사람)" 대로 이미 끝났다. `/start`가 대기 맨 위(SCR-ADM-021)를 고르면 이 줄을 보고 다시 고른다
-  - SCR-ADM-070 승인 전 기획 보관(2026-11-06 작성, 2026-11-08 대기로 되돌림). 다시 /start할 때 이것을 바탕으로 쓴다
-  - 근거: 명세(관리자_기능명세서 v0.4 FN-ADM-070-02, 화면설계서 v0.3)는 아직 부위에 신발을 넣는다. 프론트 SCR-ADM-070 추가-1이 관리자 화면에서 "신발"을 이름으로 걸러 숨긴다. 시드에 신발 아이템 4개(ITEM 21~24), 신발 보유 HLD_ITEM 10행(착용 6행). 공용 DB 건수는 확인 못 함
-  - 결정 ①(사람): 코드 처리 — 추천 `COM_CD.USE_YN='N'`(MYPC0006, 삭제 금지·결번 규칙). 공통코드 API(`CommonCodeMapper.selectChildren`)가 `USE_YN='Y'`만 내므로 상점·보관함·관리자 부위 탭에서 빠진다
-  - 결정 ②(사람): 등록된 신발 아이템 — 추천 `NTSL_YN='N'`(판매 중지, 행은 남김). 대안: 그대로 둠(상점 "전체" 탭에 계속 나옴)
-  - 결정 ③(사람): 회원 보유·착용 — 추천 보유 행은 남기고 착용만 해제(`EQUIP_YN='N'`), 보관함 목록에서 사용 안 하는 부위 제외. 신발은 굽지 않아 착용 해제해도 착용 모습 이미지는 그대로. 대안: 포인트 환불 + 보유 삭제(포인트 원장 행 추가, SJM 영역)
-  - FN-ADM-070-01·02 `db/20261104_insert_base_data_v0.13.sql`: 본문 MYPC0006에 USE_YN 'N', 맨 위 변경 절 v0.13 (3)에 `UPDATE COM_CD`·`UPDATE ITEM`·`UPDATE HLD_ITEM` SQL. 완료 조건 — 명령: `./gradlew build -q` 0 / 화면: 공용 DB에 사람이 실행 후 `GET /api/common-codes?prntComCd=MYPG01`에 신발 없음
-  - FN-ADM-070-02 `pet/service/AdminItemService.checkRegion`: 사용 안 하는 부위(SHOES)로 등록·부위 변경 400 `INVALID_INPUT_VALUE`. 완료 조건 — 명령: `AdminItemServiceTest` 신발 등록 400 (기존 신발+bakeHint 테스트는 그대로 400이라 기대값 안 바뀜) / 화면: `POST /api/admin/items` itemRegnCd=MYPC0006 → 400
-  - 상점 `ItemMapper.selectShopItems`·`selectShopItemsBySn`, 보관함 `PixelCharacterMapper.selectHeldItems`: `COM_CD.USE_YN='Y'` 부위만. 완료 조건 — 화면: 상점 전체 탭·보관함에 신발 없음, `updateEquip`에 신발 hldItemSn을 보내도 착용 안 됨
-  - 관리자 목록 `ItemMapper.selectAdminList`: 신발 행을 뺄지 남길지(결정 ②에 따름, 추천: 뺌 — 프론트가 탭만 숨겨 "전체"에 신발 행이 남음)
-  - 문서: `docs/api/` 아이템 행의 부위 목록에 신발 제외 메모. 명세서 수정(FN-ADM-070-02 부위 목록)은 사람(DMS)
-  - 경로: 큰 변경(비테스트 파일 4개 이상 + 기준 데이터 변경). `.sap/config` 없음 → 한 세션
-  - 새 의존성: 없음
+- 다음 백엔드 작업(2026-11-06): 대기 절 중 실제로 남은 것은 SCR-ADM-112 Java 호출 기록(실제 구현을 붙일 때)뿐이다(SCR-ADM-070 신발은 2026-11-09 끝). 나머지 대기 절은 아래 "마일스톤 정리(사람)" 대로 이미 끝났다. `/start`가 대기 맨 위(SCR-ADM-021)를 고르면 이 줄을 보고 다시 고른다
 - SCR-ADM-001 이용 통계 연결 남음: FN-ADM-001-04·05 (프론트 연결 `features/adminDashboard/api.js` 이용 통계 그래프·표·기간 선택, 프론트 저장소에서 /start. 프론트 `milestones/LJS.md`에 `SCR-ADM-001 대시보드 · 이용 통계 API 연결 — 대기` 절 넣음). 프론트에 알릴 것: 기간 `fromYmd`·`toYmd` 양끝 포함 최대 90일·종료일 오늘까지, 종·품종 분포와 즐겨찾기 상위 장소는 기간 무관 지금 값
 - SCR-AIM-012 도구 목록 사본 갱신 남음 (ai 연결, ai 저장소에서 /start): `data/tools.snapshot.json`(지금 15개, Java 52개)은 실행 중 Java의 `GET /internal/ai/tools` 응답에서 코드 값을 빼고 저장해 갱신한다. Java 내보내기·`repository_dispatch`는 하지 않음(사람 결정 2026-11-06). ai 설계 `docs/design/tool-catalog.md` 6절·8절 6번도 이에 맞게 고칠 것
 - SCR-AIM-012 쓰기 도구 연결 남음: FN-AIM-012-05·06·07·13, FN-AIM-013 (프론트 연결 쓰기 도구 범용 확인 카드, 프론트 저장소에서 /start. 프론트 `milestones/LJS.md`에 `쓰기 도구 범용 확인 카드 — 대기` 절 넣음): `call.contentType` multipart면 form-data·`type: file`은 사진 선택, `type: array`는 `items` 줄 목록, `generated: "uuid"`는 실행 때 채움, `draft_expense` 전에 `/api/expenses/duplicate-check`
@@ -40,7 +30,6 @@ SCR-MAN-001 메인 · 반려동물 바로가기 조회·저장 API — 끝 (2026
 - JAJ에게 알린다(PR 전, SCR-AIM-012 도구 목록): `CareScheduleController`·`CareItemController`의 `create`와 `CareScheduleCreateRequest`·`CareItemCreateRequest`에 AI 도구 표시 어노테이션만 붙였다(동작 그대로). DTO 검증·조건부 필수를 바꾸면 `@AiRequiredIf`도 같이 고친다. 시드 `CARE_ARTCL` 2번 빗질하기가 일상관리(HLTC0036)인데 주기 HLTC0038이 있다(`db/seed/20261028_seed_data.sql:88`, 등록 API로는 생기지 않는 조합)
 
 - SCR-ADM-001 연결 남음: FN-ADM-001-02·03 (프론트 연결 `features/adminDashboard/api.js` `getAdminDashboard`, 프론트 저장소에서 /start). 프론트 마일스톤에 절 넣음(`SCR-ADM-001 대시보드 · 운영 현황·처리 대기 API 연결`). 프론트에 알릴 것: 필드는 가짜 그대로, 게시글 수·최근 게시글은 삭제 글 포함(관리자 게시글 목록과 같음), 회원 수는 관리자 계정 제외, 계약은 `docs/api/admin.md`
-- 다음 백엔드 작업: `SCR-ADM-001 대시보드 · 이용 통계 API`(FN-ADM-001-04·05, `GET /api/admin/dashboard/stats`)
 - 판단 필요(SCR-ADM-001): 대시보드 전체 게시글 수에 삭제 글을 넣을지. 지금은 기획 완료 조건(관리자 게시글 목록 기본 건수와 같게)대로 넣는다. 빼려면 `PostMapper.countAll`·`selectRecentPosts`에 상태 조건을 넣고 `docs/api/admin.md`를 고친다
 - YAY·KSJ·SJM에게 알린다(PR 전, SCR-ADM-001): 대시보드용 조회 메서드만 추가했다(기존 동작 그대로). `MemberService.getDashboardSummary`·`MemberMapper` 쿼리 2개(YAY), `AdminPostService.getDashboardSummary`·`AdminReportService.countReceived`·`PostMapper.countAll`·`selectRecentPosts`·`ReportMapper.countByStatus`(KSJ 영역의 관리자 클래스)
 - SCR-ADM-082 연결 남음: FN-ADM-082-03 (프론트 연결 `features/adminProcessing/api.js` `getAdminPdfAnalyses` 검사결과지 분석 탭, 프론트 저장소에서 /start). 프론트 마일스톤에 절 넣음(`SCR-ADM-082 처리 현황 · 검사결과지 분석 현황 API 연결`). 프론트에 알릴 것: 경로·필드는 가짜 그대로, 검사결과지가 아닌 파일은 서버가 따로 빼지 않고 Python이 성공으로 통지해 `scsCnt`·`totCnt`에 들어가고 실패 목록에는 없다, 계약은 `docs/api/global.md` `/admin/processing/pdf-analyses` 행

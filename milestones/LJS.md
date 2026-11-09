@@ -413,10 +413,12 @@
 - 완료 조건: `GET /api/admin/items?itemRegnCd=`(판매 중지 포함, 부위·SORT_SEQ·번호순 `[{ itemSn, itemNm, itemRegnCd, itemRegnCdNm, needPnt, ntslYn, sortSeq, atchFileSn, 보유 회원 수 }]`), `GET /api/admin/items/{itemSn}/image`(판매 중지도 blob), `POST /api/admin/items`(multipart itemRegnCd·itemNm·needPnt·ntslYn·image, 201 `{ itemSn }`), `PATCH /api/admin/items/{itemSn}`(multipart, 보낸 칸만), `PUT /api/admin/items/order`(`{ itemRegnCd, itemSns }` 부위 안 순서)가 프론트 가짜와 같은 모양으로 동작한다. 보유 회원 수 필드 이름을 정해 프론트에 알린다(가짜는 `hldMbrCnt`)
 - 완료 조건 결과: `SCR-ADM-070 아이템`과 같이 구현·검증(2026-11-03). 필드 이름은 가짜 그대로 `hldMbrCnt`, `ntslYn`은 boolean. 응답에 `bakeHint`가 더 있고 등록·수정 multipart에 `bakeHint`(선택, 빈 값이면 지움)를 받는다. `PATCH` 응답은 data 없음
 
-## SCR-ADM-070 아이템 · 신발 부위 제외 — 대기
+## SCR-ADM-070 아이템 · 신발 부위 제외 — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-070-01·02
 - 기다리는 것: 프론트 SCR-ADM-070 추가-1(관리자 화면은 부위 이름 "신발"을 걸러 숨김)
 - 완료 조건: 공통코드 MYPG01에서 신발이 빠져 상점·보관함·관리자 부위 목록에 나오지 않는다. 이미 등록된 신발 아이템과 회원 보유·착용 처리를 사람과 정한다
+- 완료 조건 결과: 2026-11-09 검증 `통과`(2회차, 1회차는 `checkBakeHint` 남음·공용 DB 변경 절 미실행), 사람 확인 2026-11-09. 근거 관리자_기능명세서 v0.6 "신발은 서비스에서 빼 부위가 5개". 기준 데이터 v0.14 (2): MYPC0006 `USE_YN='N'`, 신발 아이템 판매 중지, 보유는 남기고 착용 해제(환불 없음, 공용 DB 2026-11-09 실행). `checkRegion`이 신발 400, 상점·보관함·관리자 목록 SQL이 `COM_CD.USE_YN='Y'` 부위만, `checkBakeHint`는 지움(사람 결정)
+- 연결 남음: 없음
 
 ## SCR-ADM-090 알림 템플릿 · 프론트 연결 API 계약 — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-090-01·02·03
@@ -671,11 +673,13 @@
 - 완료 조건 결과: 검증 `통과`(2026-11-06, 1회차), 사람 확인 2026-11-06(Postman: 일정 등록 칸 빠짐 400 `data[0].field`). 정한 것: `message`는 `ErrorCode` 문구, 칸 없는 예외는 `data` 없이 그대로, 범위는 AI 도구가 붙은 일정·케어 항목 서비스만(다른 `INVALID_INPUT_VALUE`는 그대로), 테스트는 서비스 테스트에(컨트롤러 테스트는 서비스를 목으로 바꿔 칸을 확인 못 함)
 - 추가: 없음
 
-## SCR-AIM-012 AI 일정 생성 확인 · 가계부 검사 오류 칸 이름 — 대기
+## SCR-AIM-012 AI 일정 생성 확인 · 가계부 검사 오류 칸 이름 — 끝
 - 기능: 명세 기능 ID 추가 없음(ai `docs/design/tool-catalog.md` 3-3절, 2026-11-06 사람 결정), 걸치는 기능 FN-AIM-012-05·06·07·13, FN-AIM-004-02
 - 기다리는 것: 없음
 - 완료 조건: 가계부 도구 경로의 서비스 검사 400 `INVALID_INPUT_VALUE`가 `data: [{field, message}]`에 칸 이름을 담는다. `GET /api/expenses/statistics?yearMonth=2099-01`이 400 `data[0].field`=`yearMonth`다
+- 완료 조건 결과: 검증 `통과`(2026-11-09, 1회차), 사람 확인 2026-11-09. 정한 것: 칸은 `petSn`·`common`(함께 거름), `expndClsfCd`, `yearMonth`(빈 값·형식·미래 달), `get_receipt`의 `petSn`, 영수증 저장 `pets[i].schdlSn`(저장 상태 변경 전 검사, `CheckupService.isMovableSchedule` 공개). 업로드 `ReceiptService.create`·검진 직접 등록 `schdlSn`·`pets[i].ckupTypeCd`(DTO `@Pattern`)는 그대로
 - 추가: 없음
+- 연결 남음: 걸치는 기능 FN-AIM-012-05·06·07·13, FN-AIM-004-02 (ai-50에 칸 이름 범위 알림, LJS)
 
 ## SCR-AIM-011 AI 대화창 · 건강 읽기 도구 표시 — 끝
 - 기능: 명세 기능 ID 추가 없음(설계 `nyangmeong-ai` `docs/design/tool-catalog.md` 8절 4번 건강 도메인, 8절 0번 기능 ID 추가 전), 걸치는 기능 FN-AIM-004-02

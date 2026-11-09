@@ -144,12 +144,12 @@ public class ExpenseQueryService {
         }
         boolean common = Boolean.TRUE.equals(cond.getCommon());
         if (common && cond.getPetSn() != null) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "petSn", "common");
         }
         String clsfCd = cond.getExpndClsfCd() == null || cond.getExpndClsfCd().isBlank() ? null
                 : cond.getExpndClsfCd();
         if (clsfCd != null && !ExpenseCategory.exists(clsfCd)) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "expndClsfCd");
         }
         LocalDate start = cond.getStartYmd();
         LocalDate end = cond.getEndYmd();
@@ -171,16 +171,16 @@ public class ExpenseQueryService {
      */
     private static YearMonth parseMonth(String yearMonth) {
         if (yearMonth == null) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "yearMonth");
         }
         YearMonth month;
         try {
             month = YearMonth.parse(yearMonth);
         } catch (DateTimeParseException e) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "yearMonth");
         }
         if (month.isAfter(YearMonth.now(ExpenseService.ZONE))) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "yearMonth");
         }
         return month;
     }
