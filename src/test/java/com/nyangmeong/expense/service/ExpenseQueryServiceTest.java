@@ -197,4 +197,32 @@ class ExpenseQueryServiceTest {
         assertThat(options).extracting(ExpensePetOption::getPetDelYn).containsExactly(false, false, true, false);
         assertThat(options.get(3).getPetNm()).isEqualTo("두부");
     }
+
+    @Test
+    void 통계_연월_400은_칸_이름_yearMonth를_담는다() {
+        String nextMonth = YearMonth.now(ExpenseService.ZONE).plusMonths(1).toString();
+
+        for (String yearMonth : new String[] {"2026-13", nextMonth, null}) {
+            assertFields(() -> service.getStatistics(MBR, yearMonth), "yearMonth");
+        }
+    }
+
+    @Test
+    void 검색_조건_400은_칸_이름을_담는다() {
+        ExpenseSearchCond both = new ExpenseSearchCond();
+        both.setPetSn(10L);
+        both.setCommon(true);
+        ExpenseSearchCond badCategory = new ExpenseSearchCond();
+        badCategory.setExpndClsfCd("MYPC9999");
+
+        assertFields(() -> service.getTotal(MBR, both), "petSn", "common");
+        assertFields(() -> service.getTotal(MBR, badCategory), "expndClsfCd");
+    }
+
+    private static void assertFields(org.assertj.core.api.ThrowableAssert.ThrowingCallable call, String... fields) {
+        assertThatThrownBy(call).isInstanceOfSatisfying(CustomException.class, e -> {
+            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+            assertThat(e.getFields()).containsExactly(fields);
+        });
+    }
 }
