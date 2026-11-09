@@ -208,4 +208,19 @@ class ExternalApiUsageServiceTest {
                         e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT_VALUE));
         verifyNoInteractions(mapper);
     }
+
+    @Test
+    void 새_트랜잭션_기록은_회원_없이_저장한다() {
+        ExternalApiCallRequest req = new ExternalApiCallRequest("SYSC0020", "SYSC0022", null, 12L, null, null, null,
+                "MailAuthenticationException");
+
+        service.recordInNewTransaction(req);
+
+        ArgumentCaptor<ExternalApiCallLog> captor = ArgumentCaptor.forClass(ExternalApiCallLog.class);
+        verify(mapper).insert(captor.capture());
+        assertThat(captor.getValue().getMbrSn()).isNull();
+        assertThat(captor.getValue().getExtlApiSeCd()).isEqualTo("SYSC0020");
+        assertThat(captor.getValue().getCallRsltCd()).isEqualTo("SYSC0022");
+        assertThat(captor.getValue().getFailRsn()).isEqualTo("MailAuthenticationException");
+    }
 }
