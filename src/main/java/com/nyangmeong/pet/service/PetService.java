@@ -1,6 +1,8 @@
 package com.nyangmeong.pet.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,6 +30,7 @@ import com.nyangmeong.pet.domain.BrupRel;
 import com.nyangmeong.pet.domain.LinkChangeType;
 import com.nyangmeong.pet.domain.Pet;
 import com.nyangmeong.pet.domain.PetCodeGroup;
+import com.nyangmeong.pet.domain.PetCreatedEvent;
 import com.nyangmeong.pet.domain.PetDeletedEvent;
 import com.nyangmeong.pet.domain.PetColor;
 import com.nyangmeong.pet.dto.AdminPetDistributionSummary;
@@ -60,6 +63,9 @@ public class PetService {
     private static final int DISTRIBUTION_LIMIT = 20;
     /** 품종을 직접 입력한 반려동물의 분포 품종 이름 */
     private static final String DRCT_INPT_VRTY_NM = "직접 입력";
+
+    /** 케어미션 기준일 시간대 */
+    private static final ZoneId MISSION_ZONE = ZoneId.of("Asia/Seoul");
 
     /** 계정당 주양육 반려동물 상한 */
     private static final int MAX_PET_COUNT = 10;
@@ -147,6 +153,8 @@ public class PetService {
         rel.setRprsPetYn(primaryCount == 0 ? "Y" : "N");
         rel.setMdfrId(actorId);
         petMapper.insertBrupRel(rel);
+        /** 커밋된 뒤 오늘 케어미션 출제 : 실패해도 등록은 성공 (PetCreatedEventListener) */
+        applicationEventPublisher.publishEvent(new PetCreatedEvent(pet.getPetSn(), LocalDate.now(MISSION_ZONE)));
 
         return toResponse(mbrSn, loadPet(pet.getPetSn()));
     }
