@@ -94,7 +94,7 @@ app.front-base-url=http://localhost:5173
 
 # 펫뉴스 수집(SCR-CMU-003). 검색 RSS 주소·검색어(OR로 연결)·기사 사이 대기(ms)·요청 제한 시간(ms). 생략하면 아래와 같은 기본값
 app.news.rss-url=https://news.google.com/rss/search
-app.news.query=반려동물 OR 반려견 OR 반려묘 OR 강아지 OR 고양이
+app.news.query=반려동물 OR 반려견 OR 반려묘 OR "반려 동물"
 app.news.request-interval-ms=1000
 app.news.timeout-ms=5000
 # 뉴스 수집 배치(매일 06시·18시). 생략하면 false(꺼짐). 배포는 application-prod.properties가 켠다

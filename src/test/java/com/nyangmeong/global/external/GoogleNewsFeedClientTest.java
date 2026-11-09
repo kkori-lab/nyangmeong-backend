@@ -42,6 +42,14 @@ class GoogleNewsFeedClientTest {
             new ObjectMapper());
 
     @Test
+    void 기본_검색어는_반려_낱말만이고_강아지_고양이_단독_검색어는_없다() {
+        String query = new NewsFeedProperties().getQuery();
+
+        assertThat(query).isEqualTo("반려동물 OR 반려견 OR 반려묘 OR \"반려 동물\"");
+        assertThat(query.split(" OR ")).doesNotContain("강아지", "고양이");
+    }
+
+    @Test
     void RSS는_제목_언론사_링크_발행일을_읽고_발행일은_한국_시간이다() {
         List<NewsFeedItem> items = GoogleNewsFeedClient.parseFeed(FEED);
 
