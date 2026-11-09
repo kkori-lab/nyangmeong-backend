@@ -152,6 +152,59 @@ class CareMissionServiceTest {
     }
 
     @Test
+    void 등록_직후_한_마리만_일상케어_5개와_활동기반_3개를_낸다() {
+        issueTarget(PetSe.DOG, true);
+
+        service.issueFor(PET, TODAY, false);
+
+        List<DayMsn> issued = inserted();
+        assertThat(issued).hasSize(8);
+        assertThat(issued).allSatisfy(d -> {
+            assertThat(d.getPetSn()).isEqualTo(PET);
+            assertThat(d.getMbrSn()).isEqualTo(PRIMARY);
+            assertThat(d.getMsnCrtrYmd()).isEqualTo(TODAY);
+        });
+        assertThat(issued.stream().filter(d -> poolOf(d) == CareMissionPool.DAILY)).hasSize(5);
+        assertThat(issued.stream().filter(d -> poolOf(d) == CareMissionPool.ACTIVITY)).hasSize(3);
+        assertThat(issued).extracting(DayMsn::getCareMsnSn).doesNotHaveDuplicates();
+        verify(mapper, never()).selectIssueTargets(any());
+    }
+
+    @Test
+    void 그날_미션이_이미_있으면_등록_직후_출제는_건너뛴다() {
+        issueTarget(PetSe.DOG, true);
+        when(mapper.countDayMissions(PET, TODAY)).thenReturn(8);
+
+        service.issueFor(PET, TODAY, false);
+
+        verify(mapper, never()).insertDayMission(any());
+    }
+
+    @Test
+    void 주양육_관계가_없으면_등록_직후_출제는_아무것도_하지_않는다() {
+        when(mapper.selectIssueTarget(PET, BrupRole.PRIMARY.getCode())).thenReturn(null);
+
+        service.issueFor(PET, TODAY, false);
+
+        verify(mapper, never()).insertDayMission(any());
+    }
+
+    @Test
+    void 등록_직후_출제한_뒤_배치가_돌아도_미션이_늘지_않는다() {
+        issueTarget(PetSe.DOG, true);
+        target(PetSe.DOG, true);
+        service.issueFor(PET, TODAY, false);
+        int afterRegister = inserted().size();
+        /** 등록 직후 출제로 DAY_MSN 이 생겼으니 배치의 출제 완료 조회에 잡힌다 */
+        when(mapper.selectIssuedPetSns(TODAY)).thenReturn(List.of(PET));
+
+        service.issue(TODAY, Set.of());
+
+        assertThat(afterRegister).isEqualTo(8);
+        assertThat(inserted()).hasSize(8);
+    }
+
+    @Test
     void 마지막_1회로_완료되면_즉시_주양육자에게_배점만큼_적립한다() {
         reflectable(CareMission.TOOTH_BRUSHING, 1, day(77L, 0, 5, "N"));
 
@@ -334,6 +387,15 @@ class CareMissionServiceTest {
         target.setPetSeCd(petSe.getCode());
         target.setRprsPetYn(representative);
         when(mapper.selectIssueTargets(BrupRole.PRIMARY.getCode())).thenReturn(List.of(target));
+    }
+
+    private void issueTarget(PetSe petSe, boolean representative) {
+        MissionTargetSummary target = new MissionTargetSummary();
+        target.setPetSn(PET);
+        target.setMbrSn(PRIMARY);
+        target.setPetSeCd(petSe.getCode());
+        target.setRprsPetYn(representative);
+        when(mapper.selectIssueTarget(PET, BrupRole.PRIMARY.getCode())).thenReturn(target);
     }
 
     private void reflectable(CareMission mission, int achvCrtrNmtm, DayMsn dayMsn) {

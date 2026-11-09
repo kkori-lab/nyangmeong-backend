@@ -3,6 +3,7 @@ package com.nyangmeong.pet.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -17,6 +18,7 @@ import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,6 +42,7 @@ import com.nyangmeong.member.service.MemberService;
 import com.nyangmeong.pet.domain.BrupLinkSttsHstry;
 import com.nyangmeong.pet.domain.BrupRel;
 import com.nyangmeong.pet.domain.Pet;
+import com.nyangmeong.pet.domain.PetCreatedEvent;
 import com.nyangmeong.pet.domain.PetDeletedEvent;
 import com.nyangmeong.pet.dto.AdminPetSummary;
 import com.nyangmeong.pet.dto.CaregiverSummary;
@@ -196,6 +199,32 @@ class PetServiceTest {
         assertThat(rel.getValue().getBrupRoleCd()).isEqualTo(BrupRole.PRIMARY.getCode());
         assertThat(rel.getValue().getRprsPetYn()).isEqualTo("N");
         assertThat(res.petSn()).isEqualTo(PET);
+    }
+
+    @Test
+    void 등록하면_오늘_날짜로_등록_이벤트를_발행한다() {
+        service.createPet(MBR, create(15L, null, null, null));
+
+        verify(domainEvents).publishEvent(new PetCreatedEvent(PET, LocalDate.now(ZoneId.of("Asia/Seoul"))));
+    }
+
+    @Test
+    void 출제_중_예외가_나도_반려동물_등록은_성공한다() {
+        CareMissionService failing = mock(CareMissionService.class);
+        doThrow(new IllegalStateException("UK_DAY_MSN_1 중복")).when(failing).issueFor(anyLong(), any(), anyBoolean());
+        PetCreatedEventListener listener = new PetCreatedEventListener(failing);
+        /** 커밋 뒤 리스너를 바로 부르는 이벤트 발행기 : 실제로는 AFTER_COMMIT 이라 등록 응답과 무관하다 */
+        doAnswer(inv -> {
+            if (inv.getArgument(0) instanceof PetCreatedEvent event) {
+                listener.onPetCreated(event);
+            }
+            return null;
+        }).when(domainEvents).publishEvent(any(Object.class));
+
+        PetResponse res = service.createPet(MBR, create(15L, null, null, null));
+
+        assertThat(res.petSn()).isEqualTo(PET);
+        verify(failing).issueFor(eq(PET), any(), eq(false));
     }
 
     @Test

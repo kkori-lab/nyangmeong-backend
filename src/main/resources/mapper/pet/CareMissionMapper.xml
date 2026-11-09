@@ -104,6 +104,30 @@
          ORDER BY R.PET_SN
     </select>
 
+    <select id="selectIssueTarget" resultMap="missionTargetSummaryResultMap">
+        /* 반려동물 1마리의 미션 출제 대상 조회(주양육 관계) */
+        SELECT R.PET_SN
+             , R.MBR_SN
+             , P.PET_SE_CD
+             , CASE WHEN R.RPRS_PET_YN = 'Y' THEN TRUE ELSE FALSE END AS RPRS_PET_YN
+          FROM BRUP_REL R
+          JOIN PET P
+            ON P.PET_SN = R.PET_SN
+           AND P.DEL_YN = 'N'
+         WHERE R.PET_SN = #{petSn}
+           AND R.BRUP_ROLE_CD = #{primaryRoleCd}
+           AND R.USE_YN = 'Y'
+    </select>
+
+    <select id="countDayMissions" resultType="int">
+        /* 반려동물의 그날 출제된 미션 수 조회 */
+        SELECT COUNT(*)
+          FROM DAY_MSN
+         WHERE PET_SN = #{petSn}
+           AND MSN_CRTR_YMD = #{msnCrtrYmd}
+           AND DEL_YN = 'N'
+    </select>
+
     <select id="selectIssuedPetSns" resultType="java.lang.Long">
         /* 그날 미션이 출제된 반려동물 조회 */
         SELECT DISTINCT PET_SN
