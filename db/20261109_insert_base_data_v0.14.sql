@@ -44,7 +44,7 @@
 --     ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG25') p),'HLTC0089','알레르기·기저질환','프론트 id: allergy',110),
 --     ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG25') p),'HLTC0090','예방접종·정기검진','프론트 id: vacc',120),
 --     ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG25') p),'HLTC0091','케어리스트','프론트 id: care',130);
--- v0.14 (5) 건강기록 대시보드 항목 하위 코드 번호 변경 HLTC0079~0091 → HLTC0084~0096 (2026-11-09, JAJ, 근거: 공용 DB에서 (4)의 하위 13개 INSERT가 Duplicate entry 'HLTC0079'로 실패. HLTC0079~0083은 HLTG21 캘린더 뱃지 색상(v0.12 (6))이 쓰고 있었다). (4)는 하위 13개 INSERT 직전까지 실행된 상태(HLTG25 그룹은 있음)라 이 항목은 하위 13개만 넣는다. 공용 DB 미실행
+-- v0.14 (5) 건강기록 대시보드 항목 하위 코드 번호 변경 HLTC0079~0091 → HLTC0084~0096 (2026-11-09, JAJ, 근거: 공용 DB에서 (4)의 하위 13개 INSERT가 Duplicate entry 'HLTC0079'로 실패. HLTC0079~0083은 HLTG21 캘린더 뱃지 색상(v0.12 (6))이 쓰고 있었다). (4)는 하위 13개 INSERT 직전까지 실행된 상태(HLTG25 그룹은 있음)라 이 항목은 하위 13개만 넣는다. 공용 DB 실행함(2026-11-09)
 --   SET NAMES utf8mb4;
 --   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES
 --     ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG25') p),'HLTC0084','체중','프론트 id: weight',10),
