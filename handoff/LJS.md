@@ -13,7 +13,6 @@ SCR-ADM-112 외부 API 사용량 · Java 메일 호출 기록 — 끝 (2026-11-0
 - SJM·JAJ에게 알린다(PR 전, SCR-AIM-012 가계부 검사 오류 칸 이름): 가계부 `ExpenseQueryService`·`ReceiptService.get`·`ReceiptSaveService.validate`의 400에 칸 이름만 넣었다(동작 그대로). JAJ: `CheckupService`에 공개 `isMovableSchedule(petSn, schdlSn, ymd)`를 열고 `moveAndLinkSchedule`이 같은 검사를 쓰게 했다(동작 그대로). 끝나면 ai-50에 알린다(읽기 도구 `list_expenses`·`get_expense_total`·`get_expense_statistics`·`get_receipt`, 쓰기 `draft_receipt_save`의 `pets[i].schdlSn`)
 - SCR-MAN-001 연결 남음: FN-MAN-008 (프론트 연결 `features/dashboard/api.js` 가짜 두 함수·`shortcutTypes.js` 임시 코드 `HEALTH`·`DIARY`·`CALENDAR`를 `MANC0008`·`MANC0009`·`MANC0010`으로, 프론트 저장소에서 /start). 계약은 `docs/api/pet.md` 두 행: 저장 400의 `data[].field`는 `[i].petSn`·`[i].shrtcCds`·`[i].shrtcCds[j]`, 코드 이름은 `GET /api/common-codes?prntComCd=MANG02`
 - 팀에 알린다(PR 본문 "DB 변경 있음, v0.14 (1)", 공용 DB에는 2026-11-09 실행함): DB 기준 파일이 v0.14로 바뀌었다(`db/20261109_*_v0.14.sql`, v0.13은 `db/archive/v0.13/`). v0.13 파일을 고치던 브랜치는 v0.14 파일로 옮긴다. KSJ: `handoff/KSJ.md` 13행의 v0.13 기초 데이터 경로가 `db/archive/v0.13/`으로 옮겨졌다
-- ERDCloud(사람): 버전 v0.14와 `PET_MAIN_SHRTC`(MBR·PET FK, SHRTC_CD MANG02) 반영
 - 다음 백엔드 작업(2026-11-09): 대기 절 중 남은 백엔드 일은 없다. 남은 Java 호출 기록은 캐릭터 생성(`CharacterGenerator`, 지금 가짜만) 실제 구현을 붙일 때뿐이다. 나머지 대기 절은 아래 "마일스톤 정리(사람)" 대로 이미 끝났다. `/start`가 대기 맨 위(SCR-ADM-021)를 고르면 이 줄을 보고 다시 고른다
 - SCR-ADM-001 이용 통계 연결 남음: FN-ADM-001-04·05 (프론트 연결 `features/adminDashboard/api.js` 이용 통계 그래프·표·기간 선택, 프론트 저장소에서 /start. 프론트 `milestones/LJS.md`에 `SCR-ADM-001 대시보드 · 이용 통계 API 연결 — 대기` 절 넣음). 프론트에 알릴 것: 기간 `fromYmd`·`toYmd` 양끝 포함 최대 90일·종료일 오늘까지, 종·품종 분포와 즐겨찾기 상위 장소는 기간 무관 지금 값
 - SCR-AIM-012 도구 목록 사본 갱신 남음 (ai 연결, ai 저장소에서 /start): `data/tools.snapshot.json`(지금 15개, Java 52개)은 실행 중 Java의 `GET /internal/ai/tools` 응답에서 코드 값을 빼고 저장해 갱신한다. Java 내보내기·`repository_dispatch`는 하지 않음(사람 결정 2026-11-06). ai 설계 `docs/design/tool-catalog.md` 6절·8절 6번도 이에 맞게 고칠 것
@@ -55,13 +54,11 @@ SCR-ADM-112 외부 API 사용량 · Java 메일 호출 기록 — 끝 (2026-11-0
 - SCR-MYP-010 연결 남음: FN-MYP-010-16 (프론트 연결 꾸미기 화면 착용 확정 뒤 Python 대표 이미지 합성 요청, 화면 SJM, 프론트 저장소에서 /start). 프론트 SJM 마일스톤 절은 넣지 않았다(사람이 SJM과 정한다). 정할 것: ai 쪽은 "React는 합성 응답을 기다리지 않는다"고 해서 착용 확정 직후 `character-image`를 언제 다시 불러올지(응답 대기·나중 갱신·미리보기 이미지 유지) 프론트·ai가 정한다. frontend-74·ai-de에 계약 전달함(2026-11-04)
 - SCR-MYP-010 연결 남음: 추가-①·③ (ai 저장소 `docs/api/internal.md` 32~36행 확정·`schemas.py` FACE (눈 위치 상수 분리)·관리자 쿠키 나눠 굽기, ai 세션이 #149 병합 뒤 /start, 2026-11-04 ai-de 수신 확인)
 - 남김(SCR-MYP-010, 사람이 정한 뒤): ④ 무료 재생성 FN-MYP-010-23 계약(SCR-ADM-042 전) ⑤ 신발 정리(`SCR-ADM-070 아이템 · 신발 부위 제외` 절)
-- ERDCloud·표준사전(사람): `PIXEL_CHAR.WEAR_IMG_FILE_SN`(bigint NULL, 착용이미지첨부파일일련번호, FK ATCH_FILE)을 `BODY_SHEET_FILE_SN` 뒤에 추가하고 물리명(WEAR·IMG)을 표준사전에 맞춘다. ERD 버전을 v0.13으로 올릴지 정한다
 
 - SCR-ADM-071 연결 남음: FN-ADM-071-01·02 (프론트 연결 `features/adminCareMission/api.js` 케어미션 목록·수정 모달, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트에 알릴 것: `useYn`은 true/false(가정 'Y'/'N' 아님), `cmpnPnt` 1~1000·`achvCrtrNmtm` 1~10, 없는 미션 404 `CARE_MISSION_NOT_FOUND`, 바꾼 값은 다음 날 00:00 출제부터, 계약은 `docs/api/pet.md` `/admin/care-missions` 두 행
 - 공용 DB 되돌리기(사람): SCR-ADM-071 확인으로 `CARE_MSN` 34번(발톱 관리하기)이 20/3/사용 안 함이다. 관리자 쿠키로 `PATCH /api/admin/care-missions/34` `{"cmpnPnt": 15, "achvCrtrNmtm": 1, "useYn": true}`(이미 되돌렸으면 이 줄을 지운다)
 - 데이터 문제(SCR-ADM-071, SJM·팀과 정한다): 공용 DB `CARE_MSN`을 다시 넣어 번호가 22부터라 기존 `DAY_MSN`(약 22,772행)이 없는 `CARE_MSN_SN`(1~21)을 가리킨다. 그 때문에 11-04 12:00 케어미션 배치(`BTCH_EXCN_HSTRY` 826)가 `master is null` NPE로 실패해 출제가 안 됐다. 새 코드도 `settle`에서 마스터 없는 미완료 행의 정산 포인트가 0보다 크면 `memo(petSn, null)`에서 NPE다. 고아 행 정리 또는 정산 방어(추가 요청으로)를 정한다
 - SJM에게 알린다(SCR-ADM-071, PR 전): `CareMissionService`·`CareMissionMapper`를 고쳤다. 출제 때 `DAY_MSN.ACHV_CRTR_NMTM`에 달성 기준 복사, `progress`·`settle`·`selectDailyMissions`는 `DAY_MSN` 값, `selectMissionByName`은 `USE_YN` 조건 없음(사용을 꺼도 오늘 출제분은 진행), `DayMsn.achvCrtrNmtm`·관리자 쿼리 3개(`selectAdminMissions`·`selectMission`·`updateMission`) 추가. 테스트 고정값에 달성 기준만 넣었다(기대값 그대로)
-- ERDCloud(사람): `DAY_MSN.ACHV_CRTR_NMTM`(decimal(4,0) NOT NULL DEFAULT 1, 달성기준횟수)을 `SCOR_PNT` 뒤에 추가한다
 
 - SCR-ADM-051 연결 남음: FN-ADM-051-01·02·03 (프론트 연결 `features/adminTerms/api.js` 약관 목록·새 버전 등록·[이력] 모달, `termsKinds.js` 종류 키, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음(`SCR-ADM-051 약관 · 약관 API 연결`). 프론트에 알릴 것: 종류 키 실제 값은 `SERVICE`·`PRIVACY`·`AGE_14`·`MARKETING`(가정 `AGE` 아님) 4종, `CARE_RULE`·`LOST_PRIVACY`는 아직 없음(등록 404), `useYn`·`esntlAgreYn`은 true/false, `regDt` 그대로, 같은 종류 같은 버전 409 `DUPLICATE_TRMS_VER`, 계약은 `docs/api/member.md` 관리자 약관 4행
 - SCR-ADM-051 남김: FN-ADM-051-04 기능별 동의 2종(펫돌봄 이용수칙 `CARE_RULE`·실종 개인정보 공개 동의 `LOST_PRIVACY`). 커뮤니티가 동의 문구를 `TRMS`에서 읽게 될 때(KSJ) 넣는다. 그때 가입 쪽 쿼리 4개(`TermsMapper.xml` 가입 목록·가입 동의 검사·복구 빠진 필수 약관·관리자 회원 상세 약관 동의)가 섞이지 않게 가르는 방법(컬럼 추가 등)을 YAY와 정한다
@@ -70,14 +67,12 @@ SCR-ADM-112 외부 API 사용량 · Java 메일 호출 기록 — 끝 (2026-11-0
 
 - ai-f2에 알린다(SCR-MAN-001 끝, PR 번호와 함께): 계약은 `docs/api/ai.md` 두 행과 DTO 절. 초안과 다른 점: PUT도 그날 두 번째 새로고침 409 `HEALTH_REPORT_REFRESH_LIMIT`·자동 재생성 6회째 409 `HEALTH_REPORT_AUTO_LIMIT`·저장본보다 이른 기준일 400(Python은 저장 실패여도 200이니 그대로), 하루 값은 체중 그날 마지막 기록·식사량·음수량·산책 그날 합계·배변 기록마다 한 줄, `baseYmd` 없으면 400 `BAD_REQUEST`, `inputHash`는 소문자로 저장. 필드 이름은 `tips`·`ageMm` 그대로(`anlsCns`로 바꾸지 않음). ai 저장소 `docs/api/internal.md` 두 행을 확정으로 바꾸는 것은 ai 세션
 - 공용 DB(사람): v0.12 (6) `AI_HLTH_RPT`는 2026-11-04 실행함(PR 전, 사람). PR 본문에 "DB 변경 있음 v0.12 (6), 공용 DB 실행함"을 적고, 팀에 각자 로컬 DB에 그 절을 실행하라고 알린다. 사람 확인으로 남은 행은 `DELETE FROM AI_HLTH_RPT WHERE PET_SN = 573;`
-- ERDCloud·표준사전(사람): 새 테이블 `AI_HLTH_RPT`(AI건강리포트: `AI_HLTH_RPT_SN`·`PET_SN`(UK, FK PET)·`BASE_YMD` date·`RPT_TTL` varchar(20)·`ANLS_CN` varchar(1000)·`INPT_HASH` char(64)·`RFRSH_NMTM`·`AUTO_RGNR_NMTM` int·`CRT_DT` datetime·공통 4컬럼)를 추가하고 물리명(HLTH_RPT·INPT_HASH·RFRSH·RGNR)을 표준사전에 맞춘다
 - SCR-ADM-101 연결 남음: FN-ADM-101-01 (프론트 연결 `features/adminBreed/api.js` 품종 목록·[품종 추가]·[수정] 모달, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트에 알릴 것: 이름 50자, `sortSeq`는 빼도 됨(그 종 마지막 + 10), 중복 409 `DUPLICATE_VRTY_NM`(가짜 그대로), 없는 품종은 가짜 `NOT_FOUND`가 아니라 404 `BREED_NOT_FOUND`, 등록·수정 응답은 품종 행. 계약은 `docs/api/pet.md` `/admin/breeds` 행
 - 로컬·공용 DB 정리(사람): SCR-ADM-101 검증이 만든 품종 `VRTY_SN=38`(`DOGV0024` "검증용품종", 사용 안 함)과 사람 확인으로 만든 품종. `DELETE FROM VRTY WHERE VRTY_SN IN (38, <번호>);`, 감사 로그는 `TRGT_TBL_NM='VRTY'` 행
 - SCR-ADM-050 연결 남음: FN-ADM-050-01·02·03·05 (프론트 연결 `features/adminNews/api.js` 목록·등록/수정 모달·수집 기사 행·분류 키워드 탭, 프론트 저장소에서 /start). 프론트에 알릴 것: 썸네일은 `POST /api/admin/news/images`(form-data `image`) → `{ atchFileSn }`로 먼저 올리고 등록·수정 본문에 `atchFileSn`을 넣는다(가짜의 "등록 요청에 파일"과 다름). 목록 행에 `newsSrcCdNm` 추가, `useYn`은 true/false. 글자 수 제목 200·요약 1000·키워드 50(가정 그대로). 제목·요약·썸네일 수정은 관리자 등록 기사만(수집 기사에 보내면 400). 키워드 쉼표 400, 같은 카테고리 중복 409 `DUPLICATE_NEWS_KEYWORD`, 삭제한 키워드 다시 삭제 404 `NEWS_KEYWORD_NOT_FOUND`. 계약은 `docs/api/community.md` `/admin/news` 행
 - 정하기: 뉴스 제외 키워드(AIMC0040) 편집 화면. 기준 데이터 주석에 "관리자 SCR-ADM-050에서 편집"이라고 돼 있지만 기능명세서·화면설계서·프론트 가정에 없어 만들지 않았다. 넣는다면 명세에 기능 ID를 추가하고 같은 키워드 API에 용도 구분을 더한다
 - 로컬 DB 정리(사람): SCR-ADM-050 검증이 올린 `ATCH_FILE` 4181과 감사 로그(`MNGR_TASK_LOG`) 행이 남아 있다. 사람 확인으로 만든 뉴스는 숨기거나 `DELETE FROM NEWS WHERE NEWS_SN=<번호>`
 - SCR-ADM-023 연결 남음: FN-ADM-023-01·02·04·06 (프론트 연결 `features/adminCommunity/api.js` 노출 콘텐츠 절 건강팁 표·지정 모달·오늘의 한마디 탭·AI 코멘트 탭, 프론트 저장소에서 /start). 프론트에 알릴 것: 후보 문구 필드 이름은 가정 그대로 `todayPhrsSn`·`phrsCn`(200자), `todayPhrs`는 오늘 노출 문구(없으면 null, 같은 문구 후보가 없으면 `todayPhrsSn` null), 건강팁 지정 모달의 글 검색은 기존 `GET /api/admin/posts?bbsCd=CMUC0001`
-- ERDCloud·표준사전(사람): 새 테이블 `TODAY_PHRS`(오늘의한마디후보: `TODAY_PHRS_SN`·`PHRS_CN` varchar(200)·`USE_YN`·`REG_DT`·`MDFCN_DT`·`RGTR_ID`·`MDFR_ID`)를 추가하고 물리명(TODAY·PHRS)을 표준사전에 맞춘다
 - 공용 DB 정리(사람): SCR-ADM-023 검증 데이터. `DELETE FROM TODAY_PHRS WHERE TODAY_PHRS_SN = 1;`("[verify] test phrase"), `DELETE FROM CMNTY_AI_CMTRY WHERE CMNTY_AI_CMTRY_SN = 31;`(2026-11-03 행, 사용 안 함). 글 8 블라인드·복구 상태 이력, 배치 이력 382·383, 감사 로그는 남겨도 된다. 사람 확인으로 등록한 후보 문구도 같은 방식
 - SCR-ADM-082 정리 남은 것(사람 또는 다음 관리자 작업): `docs/admin/implementation-plan.md` 협의 표 JAJ 082 줄("PDF 분석 실패 집계용 조회 service")을 지운다(팀장 결정 2026-11-04로 필요 없음)
 - JAJ에게 답한다(AI 등록 케어 항목 출처): 명세상 저장하지 않아도 된다(FN-AIM-012-13은 일정 출처만, FN-AIM-012-17 출처 배지 없음, 관리자 명세에도 쓰는 곳 없음). `CARE_ARTCL` 컬럼은 추가하지 않고 닫는다
@@ -101,7 +96,7 @@ SCR-ADM-112 외부 API 사용량 · Java 메일 호출 기록 — 끝 (2026-11-0
 - ai-47에 알린다: 굽기 계약 구현 끝(SCR-ADM-070). `bake-items` 응답 `{itemSn, regnCd, bakeHint}`(판매 중이고 지시 있음 30개), `GET /internal/ai/items/{itemSn}/bake-targets?page=`(관리자 쿠키, 100개씩 `{pixelCharSns, last}`, 아니면 403 `ADMIN_ONLY`, 굽기 대상 아님 404). 굽기 지시가 바뀌면 그 아이템 착용 시트를 지워 다시 굽기 대상이 된다. 시드에만 있던 6개(빨간 리본·작은 왕관·털모자·줄무늬 티셔츠·꼬까 한복·곰돌이 후드티)의 지시 문장은 LJS 초안이라 검토를 부탁한다. 백엔드 PR이 AI PR보다 먼저 병합돼야 한다
 - 공용 DB 정리(사람): SCR-ADM-070 사람 확인으로 만든 아이템(예: "확인용 가방")은 삭제 API가 없다. `DELETE FROM MNGR_TASK_LOG WHERE TRGT_TBL_NM='ITEM' AND TRGT_SN=<번호>; DELETE FROM ITEM WHERE ITEM_SN=<번호>;` 또는 판매 중지. 바꾼 순서·판매 여부·굽기 지시를 되돌린다
 - SCR-ADM-070 연결 남음: FN-ADM-070-01~04 (프론트 연결 `features/adminItem/api.js` 목록·등록·수정·순서 저장, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
-- 판단 필요(SCR-ADM-070, ai-47 검토 2026-11-03, 사람이 보류): 곰돌이 후드티 굽기 지시는 모자를 쓴 모습으로 구워져 귀·머리 아이템과 겹칠 수 있어 `a brown pullover dog hoodie with the hood down and small round bear ears on the hood`로 고치기를 권함. 선택: 빨간 리본·작은 왕관은 위치 말 빼기(`a red satin ribbon bow`, `a small shiny golden crown`), 꼬까 한복은 끝에 `with a tied front ribbon`. 고치면 공용 DB `UPDATE ITEM SET BAKE_HINT=... WHERE ITEM_NM=...`와 변경 절 새 항목·시드 파일을 같이 고친다. ERDCloud `내용V300` 도메인을 새로 만들었다(표준사전에 넣을지 `내용V500`으로 맞출지 사람이 정한다)
+- 판단 필요(SCR-ADM-070, ai-47 검토 2026-11-03, 사람이 보류): 곰돌이 후드티 굽기 지시는 모자를 쓴 모습으로 구워져 귀·머리 아이템과 겹칠 수 있어 `a brown pullover dog hoodie with the hood down and small round bear ears on the hood`로 고치기를 권함. 선택: 빨간 리본·작은 왕관은 위치 말 빼기(`a red satin ribbon bow`, `a small shiny golden crown`), 꼬까 한복은 끝에 `with a tied front ribbon`. 고치면 공용 DB `UPDATE ITEM SET BAKE_HINT=... WHERE ITEM_NM=...`와 변경 절 새 항목·시드 파일을 같이 고친다.
 - 판단 필요(SCR-ADM-070): 순서 저장 400 `INVALID_INPUT_VALUE`는 어떤 번호가 빠졌는지 알려 주지 않는다(사람 확인 때 헷갈림). 메시지를 붙일지 정한다. 새 아이템 12개는 이미지가 빨간 리본·노란 우비와 같다(디자인 이미지가 오면 교체)
 - 시험 데이터 정리(사람): 로컬 DB 문의 202(회원 4, 캐릭터 601)는 local 프로필에서 회원 4로 `DELETE /api/inquiries/202`. 공용 DB에서 사람 확인으로 캐릭터 601 오류 문의를 접수했다면 `POST /api/admin/inquiries/{번호}/character-error`에 `{"charErrPrcsRsltCd":"CHRC0009"}`로 원래 캐릭터로 복원하고 문의를 지운다(ai-47의 시험 캐릭터)
 - SCR-ADM-042 연결 남음: FN-ADM-042-07 무료 재생성. 생성 흐름이 원본 사진(`FILC0006`)을 Java에 남기지 않아 관리자 [무료 재생성]은 404 FILE_NOT_FOUND로 롤백된다(복원만 실제 동작). FN-MYP-010-23 계약과 함께 정한다(LJS·ai)
@@ -109,11 +104,9 @@ SCR-ADM-112 외부 API 사용량 · Java 메일 호출 기록 — 끝 (2026-11-0
 - SCR-ADM-041 연결 남음: FN-ADM-041-01 (프론트 연결 관리자 FAQ 목록 `/admin/faqs`, 프론트 저장소에서 /start), FN-ADM-041-02 (프론트 연결 등록·수정 모달, 프론트 저장소에서 /start), FN-ADM-041-03 (프론트 연결 목록·모달의 사용 토글, 프론트 저장소에서 /start), FN-ADM-041-04 (프론트 연결 카테고리 탭·모달 선택지, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음
 - 공용 DB 정리(사람): 검증으로 생긴 FAQ 41번(비노출, "[검증] 4000자 답변 FAQ")과 그 감사 로그. 지우려면 `DELETE FROM MNGR_TASK_LOG WHERE TRGT_TBL_NM='FAQ' AND TRGT_SN=41; DELETE FROM FAQ WHERE FAQ_SN=41;`. 사람 확인으로 만든 FAQ도 같은 방식
 - 정하기(공용 DB 정리, 사람): 구현·확인 중 생긴 공지 31·32번과 `/notices/32` 알림 191건(최적화 전 방식으로 실제 회원에게 감)을 지울지 정한다. 지우면 `INAPP_NOTI`의 `MVMN_PATH='/notices/<번호>'`와 `NTC_MTTR` 행
-- ERDCloud(사람): `NTC_MTTR.NOTI_SNDNG_DT`(datetime NULL, 알림발송일시)·`NOTI_TRGT_CNT`(decimal(10,0) NULL, 알림대상수)를 추가한다
 - YAY에게 알린다(PR 전): `MemberService.countNormalMembers()`·`MemberMapper.countByStatus` 추가(공지 알림 대상 수)
 - 팀에 알린다(알림): 여러 회원에게 같은 알림을 보낼 때는 회원마다 `NotificationEvent`를 발행하지 않는다(커밋 뒤 회원마다 트랜잭션, 191명 46초). 공지는 `NoticeNotificationEvent` + `NotificationMapper.insertForNormalMembers` 한 번이다
 - 팀에 알린다(PR): DB 기준 파일이 v0.12로 바뀌었다. v0.11 두 파일은 `db/archive/v0.11/`에 있고, 아직 병합 안 된 브랜치의 v0.11 변경 항목은 v0.12 파일의 변경 절로 옮겨야 한다. `handoff/KSJ.md`에 옛 v0.11 경로가 남아 있다(KSJ)
-- ERDCloud(사람): `PIXEL_CHAR.BODY_SHEET_FILE_SN`·`SHEET_SCALE`·`SHEET_ORIGIN_X`·`SHEET_ORIGIN_Y`, 새 테이블 `CHAR_ITEM_SHEET`, `ITEM.BAKE_HINT`(varchar(300) NULL, 굽기지시)를 추가한다. `ITEM.ENGINE_ITEM_KEY`는 넣지 않는다(v0.12 (3)에서 삭제)
 - 병합 순서(ai-d1): 백엔드 PR 먼저, 그다음 AI 저장소 `LJS`(`b2f2e84`, 쿠키 전환) PR. Python이 먼저 들어가면 캐릭터 생성이 실패한다. 백엔드 PR 번호를 ai-d1 세션에 알린다
 - 정하기: 옛 흐름으로 만든 캐릭터(시드 포함)는 맨몸 시트가 없어 미리보기가 404 `PIXEL_CHARACTER_NOT_FOUND`이고, 결과 사진이 있어 다시 생성도 `PIXEL_CHARACTER_ALREADY_EXISTS`로 막힌다(ai-d1 확인, 2026-11-02). 시트를 채울지(재생성), 시드를 새 흐름으로 다시 만들지 정한다
 - 굽기 켜기 전(AI 저장소와 함께): 백그라운드 호출이 쿠키를 쓰므로 `access_token`(30분)이 생성·굽기 중에 만료되면 성공 보고·시트 저장이 401이다. 성공 보고를 잃은 작업은 10분 뒤 시간 초과로 실패하고 다시 요청할 수 있다
@@ -121,7 +114,6 @@ SCR-ADM-112 외부 API 사용량 · Java 메일 호출 기록 — 끝 (2026-11-0
 - 로컬 DB 정리(`nyangmeong_local`, 사람): 검증·확인으로 생긴 반려동물 5의 `PIXEL_CHAR` 601·`CHAR_CRT_JOB` 780·`ATCH_FILE` 4178과 결과 사진, 반려동물 10의 캐릭터 데이터. 반려동물 삭제 API나 `DEL_YN='Y'`로 지운다
 - 로컬 Python 서버(사람): 8000은 `--reload`로 띄운다. 14:29에 띄운 옛 프로세스가 가짜 저장소로 돌아 미리보기가 `PIXEL_CHARACTER_NOT_FOUND`였다
 - 판단 필요(시드): 시드의 자동 블라인드 이력 18건은 사유가 `신고 누적으로 블라인드`라 `신고 누적`과 달라 자동 블라인드 탭에 나오지 않는다. 시드를 고칠지 탭 판별을 넓힐지 정한다. 이 코드 이전에 자동 삭제된 댓글도 나오지 않는다
-- ERDCloud(사람): `DCLR.DCLR_ACTN_CD` 신고조치공통코드(CMUG08)를 추가한다
 - 명세 정리(사람): 설정 화면 FN-COM-008-11 항상 받는 알림에 신고 처리 결과를 넣을지 정한다(2026-11-02 결정: 댓글 알림 설정과 무관하게 보낸다. 앱 알림 채널을 끄면 안 간다)
 - 테스트 부족: 복구 뒤 재삭제 판별(`autoTargetCondition`의 `MDFCN_DT` 비교)은 SQL 조건이라 자동 테스트가 없다
 - 실제 DB 확인 범위(SCR-ADM-020): 사람 확인 내용은 `확인`이라고만 기록됐다. 검증 에이전트는 공용 DB라 블라인드·복구·댓글 삭제 성공 경로를 실행하지 않았다
@@ -136,7 +128,6 @@ SCR-ADM-112 외부 API 사용량 · Java 메일 호출 기록 — 끝 (2026-11-0
 - 회원 탈퇴 처리가 코드에 없다: `POST /members/me/withdraw` 초안은 있으나 `src/main`에 `WHDWL_DT`를 채우는 코드가 없다(YAY에게 확인)
 - 테스트 부족: `selectWithdrawnList`의 보관 기간 경계를 검사하는 매퍼 테스트가 없다. 검증은 같은 조건을 바꾼 읽기 전용 SELECT로 했다
 - 위험, PR 병합 전(사람): v0.11 (4) 없는 DB에서는 `selectBySn`이 `Unknown column`이라 `GET /api/members/me` 등 기존 API도 500이다. 공용 DB에는 규칙의 "병합 직후"가 아니라 병합 전에 실행하고 팀에 각자 로컬 DB 실행을 알린다. 사람이 실행했다고 답했으나(2026-11-02) 어느 DB인지는 기록이 없다
-- ERDCloud(사람): `MBR.SUSPN_END_DT` 정지종료일시를 추가한다
 - 판단 필요: 구현 계획에는 정지 안내 알림이 있으나 기능명세서에 없어 넣지 않았다. `suspnDayCnt`가 빠진 정지 요청은 영구 정지로 처리된다(프론트 계약). 만료 배치는 하루 한 번이라 00:00에 서버가 내려가 있으면 수동 실행 전까지 정지가 이어진다
 - 로컬 `application.properties` 정리(사람): `springdoc.*.enabled=false` 두 줄 때문에 Swagger가 404다. `spring.profiles.default`도 없어 로컬 프로필이 적용되지 않을 수 있다. 디스코드 최신 파일로 받는다
 - 판단 필요: 잘못 인코딩된 `q`(UTF-8 아님)는 400이 아니라 500이다(Tomcat 디코딩 실패, 이번 기획 밖). 검증의 `dev-tokens`(회원 1·2)가 공용 DB에 세션을 남겼는지 확인 못 함
@@ -171,7 +162,6 @@ SCR-ADM-112 외부 API 사용량 · Java 메일 호출 기록 — 끝 (2026-11-0
 - 로컬 테스트 DB `nyangmeong_seedtest`가 필요 없으면 `DROP DATABASE nyangmeong_seedtest`(사람)
 - 프론트 저장소: 같은 이름 스크립트에 같은 macOS 수정(`$( )` 안 `case (패턴)`, `sed -E`, `sed -i` 대신 임시 파일·`mv`, `{…;}`, 한글 앞 `cut -c` 대신 `sed`)을 적용하고, 커밋 전인 `verify-loop.sh` `scripts` 보호·verify·end 스킬 수정과 함께 프론트 PR
 - 하네스 아직 못 돌려 본 것: `pr-prep.sh --allow-dirty`(다음 PR 때), 검증 3회 실패 넘기기(다음 화면 작업)
-- ERDCloud `EXPND.IDMPT_DMND_ID`를 `EXPND_YMD` 뒤로, `EXPND.EXPND_PLCUS_NM`을 `DTL_MTTR` 앞으로 옮긴다(화면에서 끌기, 사람)
 - 팀에 알린다(2026-10-22): `docs/convention/api.md` 새 규칙 4가지, `docs/api/README.md`(구현하며 달라지면 같은 PR에서 초안도 고친다), `/start`가 `docs/api`를 기능 ID로 찾아 쓴다, 테이블 변경 SQL은 `db/migration/`에(공용 DB에는 이것만 실행)
 - YAY에게 알린다: 로그인·SNS 로그인 응답에 토큰을 넣지 않는다(`TokenResponse` 삭제, `/auth/refresh`는 `data` 없음). SNS 흐름을 정할 때 `issues.md` 로그인 2번 2026-10-22 추가 4가지를 함께 정한다
 - SJM에게 알린다: 지출 다중 삭제는 `DELETE /expenses?expndSn=`와 `POST /expenses/bulk-delete`(`expectedCnt` 확인, LJS가 더한 안전장치), 지출 등록은 줄마다 `idmptDmndId`. 사용처 `expndPlcusNm`(80자, `EXPND_PLCUS_NM`)을 등록·수정·응답·목록 DTO에 추가(`docs/api/expense.md`), 중복 확인 표시는 "내용 · 사용처"
