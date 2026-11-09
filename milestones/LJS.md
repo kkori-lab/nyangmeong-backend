@@ -515,6 +515,14 @@
 - 연결 남음: FN-ADM-080-01·02·03 (프론트 연결 `features/adminAiRoute/api.js` 목록·등록/수정 모달·삭제, `routeLabels.js` 'Y'/'N' 비교, 프론트 저장소에서 /start)
 - 연결 남음: FN-ADM-080-04 (ai 연결 `app/chat/rules.py` `routing_table()`이 `data/routing.yaml` 대신 `GET /internal/ai/routes`를 읽게, ai 저장소에서 /start)
 
+## SCR-MAN-001 메인 · 반려동물 바로가기 조회·저장 API — 끝
+- 기능: 명세 기능 ID 추가 없음(팀 회의 2026-11-08 메인 개편, 메인페이지_기능명세서 v0.10 미반영), 걸치는 기능 FN-MAN-008
+- 기다리는 것: 없음(테이블·공통코드·기본값·도메인은 2026-11-09 사람 결정)
+- 완료 조건: `PUT /api/pets/main-shortcuts`로 반려동물별 바로가기 순서를 저장하면 `GET`이 같은 순서로 주고, 저장한 적 없는 반려동물은 기본값을 준다
+- 완료 조건 결과: 검증 `통과`(2026-11-09, 2회차. 1회차는 공용 DB에 v0.14 (1) 미실행으로 화면 확인 못 함), 사람 확인 2026-11-09(Postman: 저장 전 `[MANC0008]`, 순서 저장·조회, `[]` 저장 뒤 `[]`, 400 세 가지·403·404). 정한 것: 새 테이블 `PET_MAIN_SHRTC`(종류 전부를 행으로, 보이는 것만 `INDCT_YN='Y'`), 공통코드 MANG02·MANC0008~0010, 기본값은 서버가 `[MANC0008]`, `pet` 도메인 `GET·PUT /api/pets/main-shortcuts`, DB 기준 파일 v0.14로 올림(사람 결정). 본문이 배열이라 `@Valid` 대신 서비스가 검사하고 칸 이름은 `[i].petSn` 형식. 계약은 `docs/api/pet.md`
+- 추가: 추가-1 기초 데이터 v0.14 머리말 원천 문구(`./gradlew build -q` 0, 재검증은 사람이 생략)
+- 연결 남음: FN-MAN-008 (프론트 연결 `features/dashboard/api.js`·`shortcutTypes.js`, 프론트 저장소에서 /start)
+
 ## SCR-MAN-001 메인 · AI 건강분석 리포트 내부 API — 끝
 - 기능: 명세 기능 ID 추가 없음(명세 밖 추가 요청, ai-f2 2026-11-04), 걸치는 기능 FN-MAN-006(AI 건강분석 리포트 위젯 MANC0007)
 - 기다리는 것: 없음. 정본 초안은 ai 저장소 `docs/api/internal.md` 맨 아래 두 행과 `docs/api/healthreport.md`
@@ -662,6 +670,14 @@
 - 완료 조건: 서비스 검사로 나는 400 `INVALID_INPUT_VALUE`도 `data: [{field, message}]`에 칸 이름을 담는다. 정기관리 케어 항목 등록에 `careCycleCd` 없이 보내면 `data[0].field`가 `careCycleCd`다
 - 완료 조건 결과: 검증 `통과`(2026-11-06, 1회차), 사람 확인 2026-11-06(Postman: 일정 등록 칸 빠짐 400 `data[0].field`). 정한 것: `message`는 `ErrorCode` 문구, 칸 없는 예외는 `data` 없이 그대로, 범위는 AI 도구가 붙은 일정·케어 항목 서비스만(다른 `INVALID_INPUT_VALUE`는 그대로), 테스트는 서비스 테스트에(컨트롤러 테스트는 서비스를 목으로 바꿔 칸을 확인 못 함)
 - 추가: 없음
+
+## SCR-AIM-012 AI 일정 생성 확인 · 가계부 검사 오류 칸 이름 — 끝
+- 기능: 명세 기능 ID 추가 없음(ai `docs/design/tool-catalog.md` 3-3절, 2026-11-06 사람 결정), 걸치는 기능 FN-AIM-012-05·06·07·13, FN-AIM-004-02
+- 기다리는 것: 없음
+- 완료 조건: 가계부 도구 경로의 서비스 검사 400 `INVALID_INPUT_VALUE`가 `data: [{field, message}]`에 칸 이름을 담는다. `GET /api/expenses/statistics?yearMonth=2099-01`이 400 `data[0].field`=`yearMonth`다
+- 완료 조건 결과: 검증 `통과`(2026-11-09, 1회차), 사람 확인 2026-11-09. 정한 것: 칸은 `petSn`·`common`(함께 거름), `expndClsfCd`, `yearMonth`(빈 값·형식·미래 달), `get_receipt`의 `petSn`, 영수증 저장 `pets[i].schdlSn`(저장 상태 변경 전 검사, `CheckupService.isMovableSchedule` 공개). 업로드 `ReceiptService.create`·검진 직접 등록 `schdlSn`·`pets[i].ckupTypeCd`(DTO `@Pattern`)는 그대로
+- 추가: 없음
+- 연결 남음: 걸치는 기능 FN-AIM-012-05·06·07·13, FN-AIM-004-02 (ai-50에 칸 이름 범위 알림, LJS)
 
 ## SCR-AIM-011 AI 대화창 · 건강 읽기 도구 표시 — 끝
 - 기능: 명세 기능 ID 추가 없음(설계 `nyangmeong-ai` `docs/design/tool-catalog.md` 8절 4번 건강 도메인, 8절 0번 기능 ID 추가 전), 걸치는 기능 FN-AIM-004-02
