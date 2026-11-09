@@ -163,8 +163,8 @@ public class PostService {
     @Transactional
     public PostResponse getPost(Long mbrSn, Long pstSn) {
         Post post = getPetStoryOrThrow(pstSn);
-        /** 같은 회원·같은 날 이력이 이미 있으면 0건 */
-        if (postMapper.insertViewIgnore(pstSn, mbrSn) > 0) {
+        /** 작성자 본인 조회는 조회수에 넣지 않는다. 같은 회원·같은 날 이력이 이미 있으면 0건 */
+        if (!mbrSn.equals(post.getMbrSn()) && postMapper.insertViewIgnore(pstSn, mbrSn) > 0) {
             postMapper.updateInqCnt(pstSn);
             post.setInqCnt(post.getInqCnt() + 1);
         }
