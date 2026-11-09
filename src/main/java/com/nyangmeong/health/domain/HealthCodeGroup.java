@@ -12,7 +12,8 @@ public enum HealthCodeGroup {
     OBSERVATION_CHANGE("HLTG17"),
     IMAGE_KIND("HLTG23"),
     SHOOTING_REGION("HLTG24"),
-    BADGE_COLOR("HLTG21");
+    BADGE_COLOR("HLTG21"),
+    DASHBOARD_ITEM("HLTG25");
 
     private final String code;
 
