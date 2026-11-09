@@ -362,11 +362,12 @@
 - 완료 조건: `GET /api/admin/audit-logs`, `/admins`, `/{mngrTaskLogSn}`가 develop에 있다
 - 이미 바뀐 것: 커밋 38f930a (origin/LJS)
 
-## SCR-ADM-112 외부 API 사용량 · 사용량 조회 API·SYSG05 코드 수정·호출 로그 — 대기
+## SCR-ADM-112 외부 API 사용량 · 사용량 조회 API·SYSG05 코드 수정·호출 로그 — 끝
 - 기능: 명세 기능 ID 추가 없음. FN-ADM-112-01·02·03
 - 기다리는 것: 프론트 SCR-ADM-112 외부 API 사용량 화면(끝, 2026-11-01)
 - 완료 조건: 프론트 `features/apiUsage/api.js` 가짜를 바꿀 수 있게 `/api/admin/external-api-usage` 사용량·일별·토큰·실패 목록이 나온다. SYSG05가 명세 7종(AI 대화·AI 분류·OCR·캐릭터 생성·PDF 분석·카카오 로컬·메일)과 맞는다. Java 호출과 Python 통지가 `EXTL_API_CALL_LOG`에 남는다
 - 남은 것(2026-11-02): 조회 API 4종·SYSG05·Python 통지 API는 SCR-ADM-112에서 끝. Java 호출 기록만 남았다. 지금 구현이 전부 가짜라 하지 않기로 했고(2026-11-01 사람), 실제 구현을 붙일 때 한다. 먼저 고를 작업이 아니다
+- 결과(2026-11-09): Java 호출 기록은 카카오 로컬(이미 기록)과 SMTP 메일(`SmtpMailSender`, 새 트랜잭션 저장)까지 끝. 검증 `통과`(1회차), 사람 확인 2026-11-09. 캐릭터 생성은 Java 실제 구현이 없어 붙일 때 기록한다(핸드오프 "다음 백엔드 작업")
 
 ## SCR-ADM-010 회원 목록 · 회원 목록 조회 API — 끝
 - 기능: 명세 기능 ID 추가 없음. FN-ADM-010-01·02·03·04
