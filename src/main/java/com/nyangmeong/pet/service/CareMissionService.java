@@ -72,16 +72,41 @@ public class CareMissionService {
             if (!issuedPetSns.add(target.getPetSn())) {
                 continue;
             }
-            for (CareMsn master : pick(masters, target, obsrvPetSns.contains(target.getPetSn()))) {
-                DayMsn dayMsn = new DayMsn();
-                dayMsn.setCareMsnSn(master.getCareMsnSn());
-                dayMsn.setPetSn(target.getPetSn());
-                dayMsn.setMbrSn(target.getMbrSn());
-                dayMsn.setMsnCrtrYmd(msnCrtrYmd);
-                dayMsn.setScorPnt(master.getCmpnPnt());
-                dayMsn.setAchvCrtrNmtm(master.getAchvCrtrNmtm());
-                careMissionMapper.insertDayMission(dayMsn);
-            }
+            insertMissions(masters, target, msnCrtrYmd, obsrvPetSns.contains(target.getPetSn()));
+        }
+    }
+
+    /**
+     * 반려동물 1마리의 그날 케어미션 출제
+     * - 이미 출제된 날, 주양육 관계가 없는 반려동물은 건너뜀 (배치와 중복 출제 없음)
+     * - 대상 선정·pick 은 issue 와 같음
+     */
+    @Transactional
+    public void issueFor(Long petSn, LocalDate msnCrtrYmd, boolean observing) {
+        if (careMissionMapper.countDayMissions(petSn, msnCrtrYmd) > 0) {
+            return;
+        }
+        MissionTargetSummary target = careMissionMapper.selectIssueTarget(petSn, BrupRole.PRIMARY.getCode());
+        if (target == null) {
+            return;
+        }
+        insertMissions(usableMasters(), target, msnCrtrYmd, observing);
+    }
+
+    /**
+     * 반려동물 1마리의 미션 고르기와 일별미션 등록
+     */
+    private void insertMissions(Map<CareMission, CareMsn> masters, MissionTargetSummary target,
+            LocalDate msnCrtrYmd, boolean observing) {
+        for (CareMsn master : pick(masters, target, observing)) {
+            DayMsn dayMsn = new DayMsn();
+            dayMsn.setCareMsnSn(master.getCareMsnSn());
+            dayMsn.setPetSn(target.getPetSn());
+            dayMsn.setMbrSn(target.getMbrSn());
+            dayMsn.setMsnCrtrYmd(msnCrtrYmd);
+            dayMsn.setScorPnt(master.getCmpnPnt());
+            dayMsn.setAchvCrtrNmtm(master.getAchvCrtrNmtm());
+            careMissionMapper.insertDayMission(dayMsn);
         }
     }
 

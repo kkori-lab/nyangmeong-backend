@@ -29,7 +29,7 @@
 --   ALTER TABLE `PET_MAIN_SHRTC` ADD CONSTRAINT `FK_PET_MAIN_SHRTC_MBR` FOREIGN KEY (`MBR_SN`) REFERENCES `MBR` (`MBR_SN`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 --   ALTER TABLE `PET_MAIN_SHRTC` ADD CONSTRAINT `FK_PET_MAIN_SHRTC_PET` FOREIGN KEY (`PET_SN`) REFERENCES `PET` (`PET_SN`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 --   ALTER TABLE `PET_MAIN_SHRTC` ADD CONSTRAINT `FK_PET_MAIN_SHRTC_SHRTC_CD` FOREIGN KEY (`SHRTC_CD`) REFERENCES `COM_CD` (`COM_CD`) ON DELETE RESTRICT ON UPDATE RESTRICT;
--- v0.14 (2) 회원대시보드위젯 코드 그룹을 건강기록 대시보드 항목(HLTG25)으로 변경 (2026-11-09, JAJ, 근거: 마일스톤 JAJ SCR-HLT-011 건강기록 대시보드 고른 항목 저장). 컬럼 주석만 바뀐다. 공통코드는 기준 데이터 v0.14 (3). 공용 DB 미실행
+-- v0.14 (3) 회원대시보드위젯 코드 그룹을 건강기록 대시보드 항목(HLTG25)으로 변경 (2026-11-09, JAJ, 근거: 마일스톤 JAJ SCR-HLT-011 건강기록 대시보드 고른 항목 저장). 컬럼 주석만 바뀐다. 공통코드는 기준 데이터 v0.14 (4). 공용 DB 미실행
 --   SET NAMES utf8mb4;
 --   ALTER TABLE `MBR_DSHBD_WDGT` MODIFY COLUMN `DSHBD_WDGT_CD` char(8) NOT NULL COMMENT '대시보드위젯공통코드(HLTG25)';
 -- =====================================================================
