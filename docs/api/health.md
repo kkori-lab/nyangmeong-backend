@@ -6,7 +6,7 @@
 
 | 메서드 | 경로 | 설명 | 기능 ID | 담당 | 요청 DTO | 응답 DTO |
 | --- | --- | --- | --- | --- | --- | --- |
-| GET | /members/me/dashboard-widgets | 건강기록 대시보드 고른 항목·순서와 반려동물별 기록 있는 항목. 저장한 적 없으면 `savedYn=false`와 13개 전부(기본 순서, `indctYn=true`)를 주고 프론트가 튜토리얼을 연다. 기록 있는 항목은 회원이 양육하는 반려동물마다 한 번에 준다 | 새 기능(ID 없음, ※신규 정책) | JAJ | - | HealthDashboardWidgetResponse |
+| GET | /members/me/dashboard-widgets | 건강기록 대시보드 고른 항목·순서. 저장한 적 없으면 `savedYn=false`와 13개 전부(기본 순서, `indctYn=true`)를 주고 프론트가 튜토리얼을 연다 | 새 기능(ID 없음, ※신규 정책) | JAJ | - | HealthDashboardWidgetResponse |
 | GET | /pets/{petSn}/care-completions | 케어 완료 기록 목록(기록 내용). `?careArtclSn=&fromYmd=&toYmd=` | HLT-003-12 | JAJ | - | List<CareCompletionSummary> |
 | GET | /pets/{petSn}/care-items | 케어 항목 목록(토탈 케어리스트, 오늘 투약 횟수 포함). `?mainExpsrYn=&careArtclNm=` | HLT-003-12·13, AIM-012-08 | JAJ | - | List<CareItemSummary> |
 | GET | /pets/{petSn}/care-schedules | 케어 캘린더 일정 목록. `?fromYmd=&toYmd=&schdlKndCd=&ckupTypeCd=&size=` — 월간·날짜 상세·다가오는 일정·다음 예정일·가까운 예정 일정 후보 | HLT-003-29~31·39·40, HLT-011-04, HLT-002-46 | JAJ | - | List<CareScheduleSummary> |
@@ -364,9 +364,6 @@
 | --- | --- | --- | --- | --- |
 | savedYn | boolean | Y | 저장한 행이 있으면 true. false면 프론트가 튜토리얼을 연다 | MBR_DSHBD_WDGT |
 | widgets | List<HealthDashboardWidgetSummary> | Y | 항목 13개를 보일 순서대로. 저장한 적 없으면 기본 순서·`indctYn=true` | MBR_DSHBD_WDGT, COM_CD(HLTG25) |
-| recordedItems | List<PetRecordedItems> | Y | 회원의 반려동물마다 기록 있는 항목. 반려동물이 없으면 빈 목록 | 항목별 목록·지표 조회와 같은 조건 |
-
-PetRecordedItems: `petSn`, `dshbdWdgtCds[]`(기록 있는 항목 코드, 기본 순서). 알레르기·기저질환(HLTC0089)은 PET.ALGY_CN·DSS_CN 중 하나라도 있으면, 예방접종·정기검진(HLTC0090)은 완료된 검진기록의 검진유형이 예방접종(HLTC0002) 또는 정기검진(HLTC0001)이면 기록 있음. 구충(반복예방관리)은 판정에 넣지 않는다
 
 ### HealthDashboardWidgetSaveRequest
 쓰는 API: PUT /members/me/dashboard-widgets

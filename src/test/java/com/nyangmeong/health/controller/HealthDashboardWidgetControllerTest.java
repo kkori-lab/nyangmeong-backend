@@ -32,6 +32,7 @@ import com.nyangmeong.global.security.jwt.JwtProperties;
 import com.nyangmeong.global.security.jwt.JwtTokenProvider;
 import com.nyangmeong.global.security.jwt.TokenCookies;
 import com.nyangmeong.health.dto.HealthDashboardWidgetResponse;
+import com.nyangmeong.health.dto.HealthDashboardWidgetSummary;
 import com.nyangmeong.health.service.HealthDashboardWidgetService;
 
 /**
@@ -57,20 +58,25 @@ class HealthDashboardWidgetControllerTest {
     AuthMemberMapper authMemberMapper;
 
     private HealthDashboardWidgetResponse response() {
-        return new HealthDashboardWidgetResponse(false, List.of(),
-                List.of(new HealthDashboardWidgetResponse.PetRecordedItems(10L, List.of("HLTC0079"))));
+        HealthDashboardWidgetSummary widget = new HealthDashboardWidgetSummary();
+        widget.setDshbdWdgtCd("HLTC0079");
+        widget.setDshbdWdgtCdNm("체중");
+        widget.setIndctYn(true);
+        widget.setSortSeq(10);
+        return new HealthDashboardWidgetResponse(false, List.of(widget));
     }
 
     @Test
     @WithMockLoginMember
-    void 조회는_200과_savedYn_recordedItems를_준다() throws Exception {
+    void 조회는_200과_savedYn_widgets만_준다() throws Exception {
         when(healthDashboardWidgetService.get(1L)).thenReturn(response());
 
         mockMvc.perform(get(URL).header(XHR, "XMLHttpRequest"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.savedYn").value(false))
-                .andExpect(jsonPath("$.data.recordedItems[0].petSn").value(10))
-                .andExpect(jsonPath("$.data.recordedItems[0].dshbdWdgtCds[0]").value("HLTC0079"));
+                .andExpect(jsonPath("$.data.widgets[0].dshbdWdgtCd").value("HLTC0079"))
+                .andExpect(jsonPath("$.data.widgets[0].indctYn").value(true))
+                .andExpect(jsonPath("$.data.widgets[0].savedYn").doesNotExist());
     }
 
     @Test
