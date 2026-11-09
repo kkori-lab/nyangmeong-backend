@@ -3,11 +3,13 @@ package com.nyangmeong.pet.domain;
 /**
  * [반려동물 공통코드 그룹]
  * - 등록·수정 요청의 코드 값 검사용
+ * - 메인 바로가기(MANG02)도 저장 요청 검사용
  */
 public enum PetCodeGroup {
     PET_SE("PETG01"),
     GENDER("PETG02"),
-    COLOR("PETG03");
+    COLOR("PETG03"),
+    MAIN_SHORTCUT("MANG02");
 
     private final String code;
 

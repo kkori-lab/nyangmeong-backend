@@ -2,24 +2,15 @@
 
 ## 지금 하는 것
 
-SCR-MAN-001 메인 · 반려동물 바로가기 조회·저장 API — 기획 (시작 2026-11-08 23:39)
-
-- 근거: 메인페이지_기능명세서 v0.10(DMS)에 바로가기 기능 ID 없음(팀 회의 2026-11-08 메인 개편, 명세 미반영). 걸치는 기능 FN-MAN-008(건강기록 이동). 프론트 PR #260 가정: 회원 단위 GET·전체 PUT, 본문 `[{ petSn, shrtcCds }]`(보일 순서), 종류 종합 건강기록·건강 일지·케어 캘린더(임시 `HEALTH`·`DIARY`·`CALENDAR`), 다 지우면 `shrtcCds: []`. `docs/api`에 MAN-001 행 없음(`api-row.sh`)
-- 결정 ①(사람) 저장 테이블(스키마 변경): 추천 새 테이블 `PET_MAIN_SHRTC`(`PET_MAIN_SHRTC_SN` PK, `MBR_SN`·`PET_SN`·`SHRTC_CD` char(8) MANG02·`INDCT_YN`·`SORT_SEQ`·`REG_DT`·`MDFCN_DT`, UK(MBR_SN, PET_SN, SHRTC_CD), FK MBR·PET·COM_CD). `MBR_DSHBD_WDGT`와 같은 방식: 저장하면 종류 전부를 행으로 쓰고 보이는 것만 `INDCT_YN='Y'`. 행이 없으면 "저장 안 함", 행은 있는데 전부 'N'이면 빈 목록이라 둘이 구별된다. 대안: 반려동물마다 한 행에 코드를 쉼표 문자열로(테이블은 작지만 코드 FK를 못 건다)
-- 결정 ②(사람) 공통코드: 추천 그룹 `MANG02 메인바로가기`(사용 컬럼 PET_MAIN_SHRTC.SHRTC_CD), `MANC0008 종합 건강기록`(10)·`MANC0009 건강 일지`(20)·`MANC0010 케어 캘린더`(30). 경로(`/health` 등)는 프론트가 코드로 고른다(서버는 경로를 모름)
-- 결정 ③(사람) 기본값: 추천 서버가 채움. 저장한 적 없는 반려동물은 `[MANC0008]`. 응답은 늘 실제 목록이라 프론트의 기본값 분기가 없어진다
-- 결정 ④(사람) 위치·경로: 추천 `pet` 도메인(양육관계 `BRUP_REL`을 같은 도메인에서 읽음, `pet` 안 LJS 몫 선례 픽셀 캐릭터·아이템). `GET·PUT /api/pets/main-shortcuts`. 대안: `member`(위젯과 같은 곳, `/api/members/me/pet-shortcuts`)는 0층이라 `BRUP_REL`(pet 소유)을 자기 Mapper로 읽어야 해서 테이블 소유 규칙에 어긋난다
-- FN-MAN-008 조회 `pet/controller/PetShortcutController`·`pet/service/PetShortcutService`·`pet/mapper/PetShortcutMapper`(+XML)·`pet/dto/PetShortcutSummary`: 내 양육 반려동물(`BRUP_REL.USE_YN='Y'`, `PET.DEL_YN='N'`) 전부를 `[{ petSn, shrtcCds }]`로, `INDCT_YN='Y'`만 `SORT_SEQ` 순. 연동 해제·삭제된 반려동물의 행은 무시. 완료 조건 — 명령: `PetShortcutServiceTest` 저장 안 함 → `[MANC0008]`, 빈 목록 저장 → `[]` / 화면: `GET /api/pets/main-shortcuts`
-- FN-MAN-008 저장 `PetShortcutService.save`·`pet/dto/PetShortcutSaveRequest`: 본문 `[{ petSn, shrtcCds }]`. 반려동물마다 `PetAuthorizer.checkCaregiver`(남의 petSn 403 `PET_ACCESS_DENIED`, 없는 번호 404 `PET_NOT_FOUND`). 400 `INVALID_INPUT_VALUE`: 같은 petSn 두 번, 한 반려동물 안 같은 코드 두 번, MANG02에 없는(또는 `USE_YN='N'`) 코드. 본문에 없는 반려동물은 그대로 둔다. 종류 전부를 upsert(보이는 것 'Y'·순서, 나머지 'N'). 응답은 조회와 같은 모양. 완료 조건 — 명령: `PetShortcutServiceTest` 400 3가지·403 / 화면: `PUT` 후 `GET`이 같은 순서, `shrtcCds: []` 저장 후 `GET`이 `[]`
-- `db/20261104_create_tables_v0.13.sql`: 본문에 CREATE·DROP·FK, 맨 위 변경 절 v0.13 (2) `CREATE TABLE`+FK. `db/20261104_insert_base_data_v0.13.sql`: MANG02 4행, 맨 위 변경 절에 같은 INSERT. 공용 DB 실행은 사람. 완료 조건 — 명령: `PetShortcutMapperSqlTest`(XML 쿼리 검사 선례 `*MapperSqlTest`) / `./gradlew build -q` 0
-- 문서: `docs/api/pet.md`에 두 행과 DTO, `docs/api/README.md` 개수. 프론트 연결: `features/dashboard/api.js` 가짜 두 함수·`shortcutTypes.js` 코드 교체 (프론트 저장소에서 /start). 공통코드 이름은 `GET /api/common-codes?prntComCd=MANG02`
-- 함정: 탈퇴 30일 파기는 `MBR` 행을 지우지 않는다(`MemberMapper.xml` 삭제는 `SNS_ACNT_LINK`뿐)라 새 FK가 파기를 막지 않는다. 회원 탈퇴로 생긴 남은 행은 조회가 `BRUP_REL`로 거르므로 보이지 않는다
-- 경로: 큰 변경(비테스트 파일 6개 이상 + 스키마·공개 API 추가). `.sap/config` 없음 → 한 세션
-- 새 의존성: 없음
+SCR-MAN-001 메인 · 반려동물 바로가기 조회·저장 API — 끝 (2026-11-09). `GET·PUT /api/pets/main-shortcuts`(pet 도메인), 새 테이블 `PET_MAIN_SHRTC`·공통코드 MANG02(MANC0008~0010), DB 기준 파일 v0.14로 올림(v0.13은 `db/archive/v0.13/`). 검증 `통과`(2회차, 1회차는 공용 DB 미실행), 사람 확인 2026-11-09. 추가-1 기초 데이터 머리말 원천 문구(`./gradlew build -q` 0, 재검증은 사람이 생략)
 
 ## 다음에 할 것
 
-- 다음 백엔드 작업(사람 결정 2026-11-06): 가계부 쓰기 도구 서비스 검사 400에 칸 이름을 담는다(SCR-AIM-012, ai-50 요청). 대상 `ExpenseService`·`ReceiptService`·`ExpenseQueryService`의 칸 이름 없는 `INVALID_INPUT_VALUE`(draft_expense·draft_expense_update·draft_expense_limit·draft_receipt_save). 건강 4개 서비스의 `invalid("칸")` 방식에 맞춘다. 가계부 담당 SJM에게 PR 전에 알린다. 끝나면 ai-50에 알린다
+- SCR-MAN-001 연결 남음: FN-MAN-008 (프론트 연결 `features/dashboard/api.js` 가짜 두 함수·`shortcutTypes.js` 임시 코드 `HEALTH`·`DIARY`·`CALENDAR`를 `MANC0008`·`MANC0009`·`MANC0010`으로, 프론트 저장소에서 /start). 계약은 `docs/api/pet.md` 두 행: 저장 400의 `data[].field`는 `[i].petSn`·`[i].shrtcCds`·`[i].shrtcCds[j]`, 코드 이름은 `GET /api/common-codes?prntComCd=MANG02`
+- 팀에 알린다(PR 본문 "DB 변경 있음, v0.14 (1)", 공용 DB에는 2026-11-09 실행함): DB 기준 파일이 v0.14로 바뀌었다(`db/20261109_*_v0.14.sql`, v0.13은 `db/archive/v0.13/`). v0.13 파일을 고치던 브랜치는 v0.14 파일로 옮긴다. KSJ: `handoff/KSJ.md` 13행의 v0.13 기초 데이터 경로가 `db/archive/v0.13/`으로 옮겨졌다
+- ERDCloud(사람): 버전 v0.14와 `PET_MAIN_SHRTC`(MBR·PET FK, SHRTC_CD MANG02) 반영
+- SCR-ADM-070 보관 기획을 다시 /start할 때 v0.13 SQL 파일 이름을 v0.14(`db/20261109_*_v0.14.sql`)로 바꾼다
+- 다음 백엔드 작업(사람 결정 2026-11-06, 2026-11-09 다시 확인): 가계부 도구 서비스 검사 400에 칸 이름을 담는다(SCR-AIM-012, ai-50 요청). 쓰기 도구 4개는 `bd57d24`에서 이미 들어갔다. 남은 것은 읽기 도구 경로 `ExpenseQueryService.normalize`·`parseMonth`(`petSn`·`common`·`expndClsfCd`·`yearMonth`), `ReceiptService.get`(`petSn`), 영수증 저장의 일정 옮겨 연결(`pets[i].schdlSn`, `CheckupService`에 검사 메서드를 열어야 함·JAJ). 건강 서비스의 `invalid("칸")` 방식에 맞춘다. SJM·JAJ에게 PR 전에, 끝나면 ai-50에 알린다. 마일스톤 `가계부 검사 오류 칸 이름` 절(대기). `/start AIM-012`
 - 다음 백엔드 작업(2026-11-06): 대기 절 중 실제로 남은 것은 SCR-ADM-070 신발 부위 제외(사람 결정 대기: 등록된 신발 아이템·회원 보유·착용 처리)와 SCR-ADM-112 Java 호출 기록(실제 구현을 붙일 때)뿐이다. 나머지 대기 절은 아래 "마일스톤 정리(사람)" 대로 이미 끝났다. `/start`가 대기 맨 위(SCR-ADM-021)를 고르면 이 줄을 보고 다시 고른다
   - SCR-ADM-070 승인 전 기획 보관(2026-11-06 작성, 2026-11-08 대기로 되돌림). 다시 /start할 때 이것을 바탕으로 쓴다
   - 근거: 명세(관리자_기능명세서 v0.4 FN-ADM-070-02, 화면설계서 v0.3)는 아직 부위에 신발을 넣는다. 프론트 SCR-ADM-070 추가-1이 관리자 화면에서 "신발"을 이름으로 걸러 숨긴다. 시드에 신발 아이템 4개(ITEM 21~24), 신발 보유 HLD_ITEM 10행(착용 6행). 공용 DB 건수는 확인 못 함
