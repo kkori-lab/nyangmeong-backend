@@ -8,12 +8,13 @@ import java.util.Objects;
  * - EventPublisher.publish() 로만 발행 -> notification 도메인이 커밋 뒤 수신자 설정 판정·발송
  * - bfhdDayCnt : 일정일까지 남은 일수 (0·1·3·7)
  */
-public record CareScheduleAlarmEvent(Long mbrSn, Long schdlSn, LocalDateTime schdlDt, boolean hrInptYn,
+public record CareScheduleAlarmEvent(Long mbrSn, Long schdlSn, Long petSn, LocalDateTime schdlDt, boolean hrInptYn,
         String petNm, String ckupTypeNm, String hsptlNm, int bfhdDayCnt) {
 
     public CareScheduleAlarmEvent {
         Objects.requireNonNull(mbrSn, "mbrSn");
         Objects.requireNonNull(schdlSn, "schdlSn");
+        Objects.requireNonNull(petSn, "petSn");
         Objects.requireNonNull(schdlDt, "schdlDt");
         Objects.requireNonNull(petNm, "petNm");
     }

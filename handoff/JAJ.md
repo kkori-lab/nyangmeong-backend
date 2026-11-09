@@ -2,12 +2,11 @@
 
 ## 지금 하는 것
 
-SCR-HLT-011 종합 건강기록 · 건강기록 대시보드 항목 코드 번호 수정 — 끝남(2026-11-09): 공용 DB에서 v0.14 (4)의 하위 13개가 Duplicate entry 'HLTC0079'로 실패. HLTC0079~0083은 HLTG21 캘린더 뱃지 색상(v0.12 (6), JAJ 2026-11-04)이 쓰는데, v0.12 (6)이 v0.13 기준 파일을 만든 뒤(LJS 330070e) 들어가 v0.13·v0.14 본문에서 빠져 있었고 번호를 정할 때 지금 기준 파일 본문만 봤다. 대시보드 항목을 HLTC0084~0096으로 바꿈(본문·enum·테스트·health.md, 변경 절 v0.14 (5) 추가, (4)는 병합된 항목이라 그대로), HLTG21 그룹 설명과 5개를 본문에 복원(v0.14 (6), 공용 DB 실행 없음). 앞 작업: 고른 항목 저장 API(PR #195 병합). 2026-11-09 develop 기준 API 확인 끝(GET·PUT 13개·400 다섯 경우·Swagger, 사람 확인). 확인용 저장 행(회원 1)과 백업 테이블 `MBR_DSHBD_WDGT_BAK_20261109`는 공용 DB에서 지움
+SCR-HLT-003 케어 캘린더 · 케어 일정 알림 반려동물 연결 — 끝남(2026-11-09): 케어 일정 알림(인앱 `mvmnPath`·메일 캘린더 링크)이 `/health/calendar?petSn=<그 일정의 반려동물 번호>`로 간다. `CareScheduleAlarmEvent`에 `petSn` 추가, `CareScheduleAlarmJob`이 일정의 `petSn`을 넘김. 검증 통과(재기획 뒤 1회차), 사람 확인 끝. 다른 건강기록 알림은 없어 바꾼 것 없음(마일스톤 절에 적음). 이 변경 전에 생긴 케어 일정 알림은 `/health/calendar` 그대로다
 
 ## 다음에 할 것
 
 - 연결 남음: 새 기능(ID 없음, ※신규 정책) 건강기록 대시보드 고른 항목 저장 (프론트 연결 `features/health/dashboard/widgetStore.js`·`queries.js` `useHealthWidgets`·`useSaveHealthWidgets`를 `GET·PUT /members/me/dashboard-widgets`로, 항목 키 → HLTG25 코드, `dashboardApi.js` `getRecordedItems`는 대체 없이 삭제(기본 선택은 추천 3개), `widgetItems.js:138` `vacc` `nm` → 「예방접종·정기검진」, 프론트 저장소에서 /start)
-- 다음 백엔드 작업: SCR-HLT-003 케어 일정 알림 반려동물 연결(대기). 2026-11-09 기획만 하고 승인 전에 보류함. `/start`로 다시 기획한다
 - 참고: 로컬 `application.properties`는 `springdoc.*.enabled=false`라 Swagger를 보려면 `./gradlew bootRun --args='--springdoc.api-docs.enabled=true --springdoc.swagger-ui.enabled=true'`로 띄운다
 - 신규 정책 처리(※신규 정책 표시 / 요구사항 ID 발급)는 회의 결정. 정해지면 `docs/api/health.md` 두 행의 기능 ID 칸과 마일스톤 절을 고친다
 - 참고: 공용 DB에 v0.14 (3)·(4)(HLTG25 그룹까지)·(5)를 실행함(2026-11-09). 공통코드 번호를 새로 정할 때는 기준 파일 본문뿐 아니라 `db/archive/` 변경 절과 공용 DB도 본다(HLTC0079 중복 사례)
