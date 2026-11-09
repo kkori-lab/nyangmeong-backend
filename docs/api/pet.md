@@ -22,6 +22,7 @@
 | GET | /items/{itemSn}/image | 아이템 이미지(로그인 회원, 판매 중 아이템) | MYP-010-14, MYP-011-02 | LJS | - | 이미지 파일 |
 | GET | /members/me/points | 보유 포인트, 이번 달 적립·사용 합계와 건수, 오늘 미션 요약(주양육 반려동물 전체) | MYP-001-03·04, MYP-011-05, MYP-020-01·09 | SJM | - | PointResponse |
 | GET | /pets | 내 반려동물 목록(주양육·공동양육, 역할·대표 여부·공동양육 인원 포함) | MYP-001-01, MYP-002-01~03, MYP-005-02, MYP-006-04, MYP-020-03 | SJM | - | List<PetSummary> |
+| GET | /pets/main-shortcuts | 메인 반려동물별 바로가기. 양육 중인 반려동물(연동 중, 삭제 안 함) 전부를 양육관계 순서로, 코드(MANG02)는 보일 순서대로. 저장한 적 없는 반려동물은 `[MANC0008]`(종합 건강기록), 전부 숨겼으면 `[]`. 사용 안 하는 코드는 빠짐 | MAN-008 | LJS | - | List<PetShortcutSummary> |
 | GET | /pets/{petSn} | 반려동물 프로필 상세(수정 모달 채우기, 양육자 목록). 체중 잠금은 화면이 건강기록 API로 판단(`issues.md` API의 마이페이지 2번) | MYP-002-04, MYP-003-01 | SJM | - | PetResponse |
 | GET | /pets/{petSn}/caregivers | 공동양육자 목록. 주양육자가 첫 줄. 주양육자에게는 전원, 공동양육자에게는 주양육자와 본인 | MYP-004-01·03·04, MYP-006-04 | SJM | - | List<CaregiverSummary> |
 | GET | /pets/{petSn}/character-image | 캐릭터 이미지 `?part=full`(전신, 기본)·`face`(얼굴). 미생성·오류 확인 중이면 종별 기본 캐릭터. 착용 모습 대표 이미지가 있으면 그것, 없으면 맨몸 결과. `face`는 (96, 32)부터 320×320을 256×256으로 줄인 PNG | MYP-001-01, MYP-002-02, MYP-010-12·23 | LJS | - | 이미지 파일 |
@@ -37,6 +38,7 @@
 | POST | /pets/{petSn}/representative | 대표 반려동물 지정(주양육 반려동물만) | MYP-010-05 | SJM | - | - |
 | POST | /pixel-characters/{pixelCharSn}/held-items | 아이템 일괄 구매(포인트 차감, 보관함 추가, 주양육자만). 201. 오류: `POINT_NOT_ENOUGH`(400), `PET_PRIMARY_ONLY`(403), `ITEM_NOT_FOUND`(404), `ITEM_ALREADY_HELD`(409) | MYP-011-05·06 | LJS | ItemPurchaseRequest | PixelCharacterResponse |
 | PUT | /pixel-characters/{pixelCharSn}/equipped-items | 착용 상태 확정 저장(부위당 1개, 요청에 없는 보유 아이템은 착용 해제). 착용 모습 대표 이미지를 지운다 | MYP-010-13·16 | LJS | EquippedItemSaveRequest | PixelCharacterResponse |
+| PUT | /pets/main-shortcuts | 메인 바로가기 저장. 본문은 배열 `[{ petSn, shrtcCds }]`, 반려동물마다 보일 코드를 순서대로(`[]`면 전부 숨김). 본문에 없는 반려동물은 그대로. 400 `INVALID_INPUT_VALUE`(`data[].field`가 `[i].petSn`·`[i].shrtcCds`·`[i].shrtcCds[j]`): 반려동물 번호 없음·중복, 코드 목록 없음, 같은 코드 두 번, MANG02에 없거나 사용 안 하는 코드. 남의 반려동물 403 `PET_ACCESS_DENIED`, 없는 번호 404 `PET_NOT_FOUND`(하나라도 틀리면 아무것도 저장 안 함). 응답은 조회와 같음 | MAN-008 | LJS | List<PetShortcutSaveRequest> | List<PetShortcutSummary> |
 | PATCH | /pets/{petSn} | 반려동물 수정(양육자 전원, 체중 잠금은 화면에서) | MYP-002-04, MYP-003-01·04~07 | SJM | PetUpdateRequest | PetResponse |
 | DELETE | /pets/{petSn} | 반려동물 삭제(주양육자만). 캐릭터·보유 아이템 삭제, 공동양육 연동 해제, 대표 승계 | MYP-002-07·08 | SJM | - | - |
 | DELETE | /pets/{petSn}/caregivers/{brupRelSn} | 공동양육 연동 해제. 주양육자의 강제 해제와 공동양육자의 자진 해제 | MYP-004-01, MYP-006-02 | SJM | - | - |
@@ -509,6 +511,20 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 | caregivers[].mbrNcnm | String | Y | | MBR.MBR_NCNM |
 | caregivers[].brupRoleCd | String | Y | | BRUP_REL.BRUP_ROLE_CD |
 | caregivers[].linkYmd | LocalDate | Y | 연동일(CaregiverSummary와 같음) | BRUP_LINK_STTS_HSTRY.REG_DT, BRUP_REL.REG_DT |
+
+### PetShortcutSaveRequest
+쓰는 API: PUT /pets/main-shortcuts (본문 배열의 한 줄)
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| petSn | Long | Y | 양육 중인 반려동물. 본문 안에서 한 번씩 | PET_MAIN_SHRTC.PET_SN, MAN-008 |
+| shrtcCds | List<String> | Y | 보일 순서대로 늘어놓은 MANG02 바로가기 코드(MANC0008 종합 건강기록·MANC0009 건강 일지·MANC0010 케어 캘린더). 한 번씩, 빈 목록이면 전부 숨김 | PET_MAIN_SHRTC.SHRTC_CD·INDCT_YN·SORT_SEQ, MAN-008 |
+
+### PetShortcutSummary
+쓰는 API: GET /pets/main-shortcuts; PUT /pets/main-shortcuts (응답 행)
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| petSn | Long | Y | 양육 중인 반려동물 | BRUP_REL.PET_SN |
+| shrtcCds | List<String> | Y | 보일 순서대로 MANG02 코드. 이름은 `GET /common-codes?prntComCd=MANG02`, 이동 경로는 프론트가 코드로 고름 | PET_MAIN_SHRTC.SHRTC_CD, MAN-008 |
 
 ### PetSummary
 쓰는 API: GET /pets

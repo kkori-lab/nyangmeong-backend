@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nyangmeong.pet.mapper.PetShortcutMapper">
+
+    <resultMap id="petMainShrtcResultMap" type="com.nyangmeong.pet.domain.PetMainShrtc">
+        <id     column="PET_MAIN_SHRTC_SN" property="petMainShrtcSn" />
+        <result column="MBR_SN"            property="mbrSn" />
+        <result column="PET_SN"            property="petSn" />
+        <result column="SHRTC_CD"          property="shrtcCd" />
+        <result column="INDCT_YN"          property="indctYn" />
+        <result column="SORT_SEQ"          property="sortSeq" />
+        <result column="REG_DT"            property="regDt" />
+        <result column="MDFCN_DT"          property="mdfcnDt" />
+    </resultMap>
+
+    <select id="selectCaregivingPetSns" resultType="long">
+        /* 메인 바로가기 대상 반려동물 조회 */
+        SELECT R.PET_SN
+          FROM BRUP_REL R
+          JOIN PET P
+            ON P.PET_SN = R.PET_SN
+         WHERE R.MBR_SN = #{mbrSn}
+           AND R.USE_YN = 'Y'
+           AND P.DEL_YN = 'N'
+         ORDER BY R.BRUP_REL_SN
+    </select>
+
+    <!-- 연동 해제·삭제된 반려동물 행 포함 : 양육 중 반려동물 선별은 서비스 -->
+    <select id="selectList" resultMap="petMainShrtcResultMap">
+        /* 메인 바로가기 행 조회 */
+        SELECT PET_MAIN_SHRTC_SN
+             , MBR_SN
+             , PET_SN
+             , SHRTC_CD
+             , INDCT_YN
+             , SORT_SEQ
+             , REG_DT
+             , MDFCN_DT
+          FROM PET_MAIN_SHRTC
+         WHERE MBR_SN = #{mbrSn}
+         ORDER BY PET_SN, SORT_SEQ, PET_MAIN_SHRTC_SN
+    </select>
+
+    <insert id="upsert">
+        /* 메인 바로가기 저장 */
+        INSERT INTO PET_MAIN_SHRTC (MBR_SN, PET_SN, SHRTC_CD, INDCT_YN, SORT_SEQ)
+        VALUES (#{mbrSn}, #{petSn}, #{shrtcCd}, #{indctYn}, #{sortSeq})
+        ON DUPLICATE KEY UPDATE INDCT_YN = VALUES(INDCT_YN), SORT_SEQ = VALUES(SORT_SEQ)
+    </insert>
+
+</mapper>
