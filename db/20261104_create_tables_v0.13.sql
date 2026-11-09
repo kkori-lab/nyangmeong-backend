@@ -13,6 +13,9 @@
 --   SET NAMES utf8mb4;
 --   ALTER TABLE `PIXEL_CHAR` ADD COLUMN `WEAR_IMG_FILE_SN` bigint NULL COMMENT '착용이미지첨부파일일련번호' AFTER `BODY_SHEET_FILE_SN`;
 --   ALTER TABLE `PIXEL_CHAR` ADD CONSTRAINT `FK_PIXEL_CHAR_WEAR_IMG_FILE` FOREIGN KEY (`WEAR_IMG_FILE_SN`) REFERENCES `ATCH_FILE` (`ATCH_FILE_SN`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+-- v0.13 (5) 회원대시보드위젯 코드 그룹을 건강기록 대시보드 항목(HLTG25)으로 변경 (2026-11-09, JAJ, 근거: 마일스톤 JAJ SCR-HLT-011 건강기록 대시보드 고른 항목 저장). 컬럼 주석만 바뀐다. 공통코드는 기준 데이터 v0.13 (6)
+--   SET NAMES utf8mb4;
+--   ALTER TABLE `MBR_DSHBD_WDGT` MODIFY COLUMN `DSHBD_WDGT_CD` char(8) NOT NULL COMMENT '대시보드위젯공통코드(HLTG25)';
 -- =====================================================================
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -389,7 +392,7 @@ CREATE TABLE `LGN_ATMPT_LMT` (
 CREATE TABLE `MBR_DSHBD_WDGT` (
   `MBR_DSHBD_WDGT_SN` bigint NOT NULL AUTO_INCREMENT COMMENT '회원대시보드위젯일련번호',
   `MBR_SN` bigint NOT NULL COMMENT '회원일련번호',
-  `DSHBD_WDGT_CD` char(8) NOT NULL COMMENT '대시보드위젯공통코드(MANG01)',
+  `DSHBD_WDGT_CD` char(8) NOT NULL COMMENT '대시보드위젯공통코드(HLTG25)',
   `INDCT_YN` char(1) NOT NULL DEFAULT 'Y' COMMENT '표시여부',
   `SORT_SEQ` decimal(10,0) NOT NULL DEFAULT '0' COMMENT '정렬순서',
   `REG_DT` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',

@@ -46,6 +46,8 @@ class MapperXmlRuleTest {
             /** 연결 일정이 삭제된 검진기록도 "연결된 일정 삭제됨"으로 남겨 보여 준다 (FN-HLT-002-05) */
             "com.nyangmeong.health.mapper.CheckupMapper.selectList",
             "com.nyangmeong.health.mapper.CheckupMapper.selectDetail",
+            /** 건강기록 대시보드 기록 있는 항목 : 검진기록 목록과 같은 조건으로 연결 일정이 삭제된 검진기록도 기록으로 센다 */
+            "com.nyangmeong.health.mapper.HealthDashboardMapper.selectRecordedItems",
             /** 삭제된 같은 날짜 완료 기록도 읽어 되살림·미션 중복 반영을 가린다 (FN-HLT-003-12) */
             "com.nyangmeong.health.mapper.CareItemMapper.selectCompletionByDateForUpdate",
             /** 관리자 회원 상세 : 삭제 여부 표시 (FN-ADM-011-02) */

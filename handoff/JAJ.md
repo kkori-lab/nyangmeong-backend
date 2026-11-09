@@ -2,10 +2,13 @@
 
 ## 지금 하는 것
 
-SCR-HLT-011 종합 건강기록 · 검진기록 목록 진료 내용 — 끝남: 검증 통과(1회차), 사람 확인 통과. FN-HLT-011-03 `GET /pets/{petSn}/checkups` 각 행에 `ckupCn`(없으면 null) 추가(`CheckupSummary`, `CheckupMapper.xml` `selectList`, `docs/api/health.md`, 테스트 2개). 프론트 연결 없음(타임라인이 이미 `ckupCn`을 그림), `db/` 변경 없음 (승인 2026-11-06 10:36, 시작 2026-11-06 10:35)
+SCR-HLT-011 종합 건강기록 · 건강기록 대시보드 고른 항목 저장 — 끝남: 검증 2회차 `확인 못 함 있음`(실서버 확인만 남았고 사람 확인 통과, 1회차 실패는 변경 절 (6) 위치). `GET·PUT /api/members/me/dashboard-widgets`(health, 고른 항목 13개·순서·표시여부 + 반려동물별 기록 있는 항목 1번에), HLTG25·HLTC0079~0091, 메인 위젯(MANG01) 코드·API·문서 삭제(YAY 승인·리뷰), `db/` 변경 절 v0.13 (5)·(6), 테스트 12개 (승인 2026-11-09 10:27, 시작 2026-11-09 09:55)
 
 ## 다음에 할 것
 
+- 공용 DB: PR 병합 직후 `db/20261104_create_tables_v0.13.sql` 변경 절 v0.13 (5) → `db/20261104_insert_base_data_v0.13.sql` v0.13 (6) 실행(맨 앞 `SET NAMES utf8mb4;`), PR에 완료 댓글. 되돌릴 가능성이 있으면 `MBR_DSHBD_WDGT`의 MANC 행을 먼저 백업
+- 연결 남음: 새 기능(ID 없음, ※신규 정책) 건강기록 대시보드 고른 항목 저장 (프론트 연결 `features/health/dashboard/widgetStore.js`·`queries.js` `useHealthWidgets`·`useSaveHealthWidgets`를 `GET·PUT /members/me/dashboard-widgets`로, 항목 키 → HLTG25 코드, `dashboardApi.js` `getRecordedItems` 삭제, `widgetItems.js:138` `vacc` `nm` → 「예방접종·정기검진」, 프론트 저장소에서 /start)
+- 신규 정책 처리(※신규 정책 표시 / 요구사항 ID 발급)는 회의 결정. 정해지면 `docs/api/health.md` 두 행의 기능 ID 칸과 마일스톤 절을 고친다
 - 연결 남음: FN-AIM-012-13·14 (AI 대화 일정 저장, 프론트 `src/features/ai/api.js`의 가짜 `registerToHealth` 교체, LJS가 프론트 저장소에서). 백엔드는 새 API 없이 기존 API를 쓴다. 일정 카드는 `POST /pets/{petSn}/care-schedules`(`schdlSrcCd`=`HLTC0067`, `schdlYmd`+`schdlTm`→`schdlDt`, `schdlTm` 없으면 `hrInptYn=false`, 201 `CareScheduleResponse`), 케어 항목 카드는 `POST /pets/{petSn}/care-items`(`cycleDays`→`cycleDrctInptDayCnt`, 일상관리면 주기·일수·`lastCmptnYmd`를 보내지 않음, `lastCmptnYmd`를 보내면 그날 완료 기록 1건이 생기고 미래 날짜는 400 `CARE_COMPLETION_FUTURE_DATE`). AI 출처 일정은 케어미션에 반영하지 않는다(직접 등록만). 서버 재검증 400은 카드 오류로 보여 준다
 - `application.properties`에 빠진 키: `app.front-base-url` (디스코드의 최신 파일로 받는다, 다른 작업을 기다리는 중)
 - 참고: 사람 확인용 일정 4929(회원 1, 반려동물 1, 색 HLTC0082)는 `DEL_YN='Y'`로 지웠다. 미션·포인트 변화는 없었다. 공용 DB에 실행한 변경 절 v0.12 (6)의 HLTG21 코드 5개는 실제 코드라 그대로 둔다

@@ -119,12 +119,13 @@
 - 기다리는 것: 프론트 "SCR-HLT-011·002 종합 건강기록·건강 일지 · 화면 다듬기" 추가-6(타임라인이 이미 `ckupCn` 첫 줄을 상세 줄로 그림)
 - 완료 조건: 목록 응답 각 행에 `ckupCn`이 오고(없으면 null), 기존 필드·페이징은 그대로
 
-## SCR-HLT-011 종합 건강기록 · 건강기록 대시보드 고른 항목 저장 — 대기
+## SCR-HLT-011 종합 건강기록 · 건강기록 대시보드 고른 항목 저장 — 끝
 - 기능: 새 기능(ID 없음, ※신규 정책). 프론트 「튜토리얼과 고른 기록 대시보드」(D1~D3·D7·D10·D11)와 「대시보드 카드 순서 바꾸기」의 저장. 회원이 고른 건강기록 대시보드 항목·순서를 `MBR_DSHBD_WDGT`에 건강기록 전용 13개 코드로 저장한다. 항목: 체중·식사량·음수량·산책·배변 / 검진기록·검사 수치·처방·투약·첨부 자료 / 지속 관찰·알레르기·기저질환·예방접종·구충·케어리스트(프론트 `features/health/dashboard/widgetItems.js` id: weight·meal·water·walk·poop·ckup·insp·presc·atch·obsv·allergy·vacc·care). 선택·순서는 회원 단위(반려동물마다 따로 두지 않음), AI 건강분석 리포트는 항상 맨 앞이라 저장 대상이 아니다
 - 기다리는 것: 13개 코드 `db/` 공통코드 등록(코드 값은 이 마일스톤에서 정한다). 기존 `member` `DashboardWidget`(`GET·PUT /members/me/dashboard-widgets`, YAY)과의 관계는 YAY와 확인한다(메인은 이제 이 API를 부르지 않는다, LJS 메인 개편 2026-11-08)
 - 완료 조건(초안, /start에서 확정): GET은 저장된 행이 없는 회원과 있는 회원을 구분해 준다(없으면 프론트가 튜토리얼을 연다). 각 항목은 `indctYn`·순서와 함께 오고, 회원의 반려동물 중 기록이 있는 항목도 같은 응답에 담는다(요청 1개). PUT은 항목별 `INDCT_YN`과 `SORT_SEQ`를 저장하고 보낸 배열 순서가 그대로 `SORT_SEQ`가 된다. 모르는 코드·중복 코드는 400
 - 결정: 기록 있는 항목을 GET 응답에 넣는 이유는 프론트가 지금 반려동물마다 11개 API를 불러 확인하기 때문이다(아이 수 × 11개. 2026-11-07 검증에서 토큰 만료와 겹쳐 콘솔 401이 85건 났다). 이 응답으로 프론트 `getRecordedItems`를 지운다
-- 연결 남음: 프론트 연결(프론트 저장소에서 /start) — 가짜 저장소 `features/health/dashboard/widgetStore.js`(회원별 localStorage)를 이 API로 바꾼다(`queries.js` `useHealthWidgets`·`useSaveHealthWidgets`, 항목 키 임시 문자열 → 코드), `features/health/dashboardApi.js` `getRecordedItems` 삭제
+- 결과(2026-11-09): `GET·PUT /api/members/me/dashboard-widgets`(health), 공통코드 HLTG25·HLTC0079~0091, 메인 위젯(MANG01) 코드·API 삭제(YAY 승인). 공용 DB는 PR 병합 직후 `db/` 변경 절 v0.13 (5)·(6) 실행. 신규 정책 처리(기능 ID)는 회의 결정 전
+- 연결 남음: 새 기능(ID 없음, ※신규 정책) 건강기록 대시보드 고른 항목 저장 (프론트 연결 `features/health/dashboard/widgetStore.js`·`queries.js` `useHealthWidgets`·`useSaveHealthWidgets`를 `GET·PUT /members/me/dashboard-widgets`로, 항목 키 → HLTG25 코드, `dashboardApi.js` `getRecordedItems` 삭제, `widgetItems.js:138` `vacc` `nm` → 「예방접종·정기검진」, 프론트 저장소에서 /start)
 
 ## SCR-HLT-003 케어 캘린더 · 케어 일정 알림 반려동물 연결 — 대기
 - 기능: 새 기능(ID 없음). 프론트 「건강기록 · 공통 반려동물 카드」 ③. 케어 일정 알림을 눌렀을 때 그 일정의 반려동물이 선택된 케어 캘린더로 가게 한다. `notification/service/CareScheduleAlarmService.java`의 `CALENDAR_PATH`(`/health/calendar`)에 `?petSn=<반려동물 번호>`를 붙인다(인앱 알림 링크와 메일 「캘린더링크」 둘 다)
