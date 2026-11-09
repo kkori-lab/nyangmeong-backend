@@ -377,7 +377,7 @@ Widget: `dshbdWdgtCd`(필수, 8자 이하, HLTG25 코드), `indctYn`(필수, boo
 쓰는 API: GET·PUT /members/me/dashboard-widgets (widgets 행)
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| dshbdWdgtCd | String | Y | HLTG25 공통코드(HLTC0079~HLTC0091) | MBR_DSHBD_WDGT.DSHBD_WDGT_CD |
+| dshbdWdgtCd | String | Y | HLTG25 공통코드(HLTC0084~HLTC0096) | MBR_DSHBD_WDGT.DSHBD_WDGT_CD |
 | dshbdWdgtCdNm | String | Y | 항목 이름(체중, 식사량, 음수량, 산책, 배변 상태, 검진기록, 검사 수치, 처방·투약, 첨부 자료, 지속 관찰, 알레르기·기저질환, 예방접종·정기검진, 케어리스트) | COM_CD.COM_CD_NM |
 | indctYn | boolean | Y | 표시여부 | MBR_DSHBD_WDGT.INDCT_YN |
 | sortSeq | Integer | Y | 정렬 순서(작은 값이 먼저) | MBR_DSHBD_WDGT.SORT_SEQ |

@@ -59,7 +59,7 @@ class HealthDashboardWidgetControllerTest {
 
     private HealthDashboardWidgetResponse response() {
         HealthDashboardWidgetSummary widget = new HealthDashboardWidgetSummary();
-        widget.setDshbdWdgtCd("HLTC0079");
+        widget.setDshbdWdgtCd("HLTC0084");
         widget.setDshbdWdgtCdNm("체중");
         widget.setIndctYn(true);
         widget.setSortSeq(10);
@@ -74,7 +74,7 @@ class HealthDashboardWidgetControllerTest {
         mockMvc.perform(get(URL).header(XHR, "XMLHttpRequest"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.savedYn").value(false))
-                .andExpect(jsonPath("$.data.widgets[0].dshbdWdgtCd").value("HLTC0079"))
+                .andExpect(jsonPath("$.data.widgets[0].dshbdWdgtCd").value("HLTC0084"))
                 .andExpect(jsonPath("$.data.widgets[0].indctYn").value(true))
                 .andExpect(jsonPath("$.data.widgets[0].savedYn").doesNotExist());
     }
@@ -85,7 +85,7 @@ class HealthDashboardWidgetControllerTest {
         when(healthDashboardWidgetService.save(eq(1L), any())).thenReturn(response());
 
         mockMvc.perform(put(URL).header(XHR, "XMLHttpRequest").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"widgets\":[{\"dshbdWdgtCd\":\"HLTC0079\",\"indctYn\":true}]}"))
+                .content("{\"widgets\":[{\"dshbdWdgtCd\":\"HLTC0084\",\"indctYn\":true}]}"))
                 .andExpect(status().isOk());
 
         verify(healthDashboardWidgetService).save(eq(1L), any());
@@ -108,7 +108,7 @@ class HealthDashboardWidgetControllerTest {
                 .content("{\"widgets\":[{\"dshbdWdgtCd\":\"\",\"indctYn\":true}]}"))
                 .andExpect(status().isBadRequest());
         mockMvc.perform(put(URL).header(XHR, "XMLHttpRequest").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"widgets\":[{\"dshbdWdgtCd\":\"HLTC0079\"}]}"))
+                .content("{\"widgets\":[{\"dshbdWdgtCd\":\"HLTC0084\"}]}"))
                 .andExpect(status().isBadRequest());
 
         verify(healthDashboardWidgetService, never()).save(any(), any());
