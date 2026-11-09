@@ -82,7 +82,7 @@ class CareScheduleAlarmDedupTest {
     }
 
     private CareScheduleAlarmEvent event(LocalDateTime schdlDt) {
-        return new CareScheduleAlarmEvent(1L, 100L, schdlDt, true, "초코", "예방접종", "냥멍동물병원", 1);
+        return new CareScheduleAlarmEvent(1L, 100L, 7L, schdlDt, true, "초코", "예방접종", "냥멍동물병원", 1);
     }
 
     @Test

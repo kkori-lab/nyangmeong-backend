@@ -127,10 +127,11 @@
 - 결과(2026-11-09): `GET·PUT /api/members/me/dashboard-widgets`(health), 공통코드 HLTG25·HLTC0084~0096(처음 HLTC0079~0091로 정했다가 HLTG21 색상과 겹쳐 v0.14 (5)로 바꿈), 메인 위젯(MANG01) 코드·API 삭제(YAY 승인). 공용 DB는 PR 병합 직후 `db/` 변경 절 v0.14 (3)·(4) 실행(develop merge로 v0.13에서 옮김). 신규 정책 처리(기능 ID)는 회의 결정 전
 - 연결 남음: 새 기능(ID 없음, ※신규 정책) 건강기록 대시보드 고른 항목 저장 (프론트 연결 `features/health/dashboard/widgetStore.js`·`queries.js` `useHealthWidgets`·`useSaveHealthWidgets`를 `GET·PUT /members/me/dashboard-widgets`로, 항목 키 → HLTG25 코드, `dashboardApi.js` `getRecordedItems`는 대체 없이 삭제(기본 선택은 추천 3개), `widgetItems.js:138` `vacc` `nm` → 「예방접종·정기검진」, 프론트 저장소에서 /start)
 
-## SCR-HLT-003 케어 캘린더 · 케어 일정 알림 반려동물 연결 — 대기
+## SCR-HLT-003 케어 캘린더 · 케어 일정 알림 반려동물 연결 — 끝
 - 기능: 새 기능(ID 없음). 프론트 「건강기록 · 공통 반려동물 카드」 ③. 케어 일정 알림을 눌렀을 때 그 일정의 반려동물이 선택된 케어 캘린더로 가게 한다. `notification/service/CareScheduleAlarmService.java`의 `CALENDAR_PATH`(`/health/calendar`)에 `?petSn=<반려동물 번호>`를 붙인다(인앱 알림 링크와 메일 「캘린더링크」 둘 다)
 - 기다리는 것: 없음(프론트는 `/health/calendar?petSn=`을 이미 받는다. 프론트 수정 없음)
-- 완료 조건(초안, /start에서 확정): 케어 일정 알림(인앱·메일)의 링크가 `/health/calendar?petSn=<그 일정의 petSn>`이다. 다른 건강기록 알림도 반려동물 화면으로 가는 링크라면 같은 방식인지 확인하고, 다르면 목록으로 남긴다
+- 완료 조건: 반려동물 N의 병원 일정 알림에서 인앱 알림의 `mvmnPath`와 메일 본문 캘린더 링크가 `/health/calendar?petSn=N`이다(같은 회원의 반려동물 두 마리 일정이면 알림마다 다른 petSn). `./gradlew build -q` 통과
+- 다른 건강기록 알림 확인(2026-11-09): `health`는 `NotificationEvent`를 발행하지 않는다. 건강기록 알림은 케어 일정 알림 하나다. 반려동물 관련 다른 알림의 링크는 공동양육 초대 `/mypage/invitations/<번호>`, 공동양육 연동 해제 `/mypage/pets`, 캐릭터 `/mypage/characters`이고, 모두 건강기록 화면이 아니라 바꾸지 않는다
 - 연결 남음: 없음(프론트 수정 없음)
 
 ## 제외

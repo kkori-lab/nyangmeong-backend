@@ -72,6 +72,7 @@ class CareScheduleAlarmJobTest {
         verify(eventPublisher, times(2)).publish(captor.capture());
         assertThat(captor.getAllValues()).extracting(CareScheduleAlarmEvent::mbrSn).containsExactly(1L, 2L);
         CareScheduleAlarmEvent event = captor.getAllValues().get(0);
+        assertThat(event.petSn()).isEqualTo(10L);
         assertThat(event.schdlSn()).isEqualTo(100L);
         assertThat(event.bfhdDayCnt()).isEqualTo(1);
         assertThat(event.schdlDt()).isEqualTo(LocalDateTime.of(2026, 10, 22, 14, 30));
