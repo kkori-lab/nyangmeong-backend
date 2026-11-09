@@ -6,9 +6,9 @@ SCR-HLT-011 종합 건강기록 · 건강기록 대시보드 항목 코드 번�
 
 ## 다음에 할 것
 
-- 공용 DB: 이 수정 PR 병합 직후 `tmp/sql/20261109_JAJ_v0.14_5_health_dashboard_renumber.sql`(변경 절 v0.14 (5)의 하위 13개 INSERT와 확인 쿼리) 실행, PR에 완료 댓글, (5)의 "공용 DB 미실행"을 "공용 DB 실행함"으로. v0.14 (3) ALTER와 (4)의 HLTG25 그룹 추가까지는 공용 DB 실행함(2026-11-09). 번호를 새로 정할 때는 기준 파일 본문뿐 아니라 `db/archive/` 변경 절과 공용 DB도 본다
 - 연결 남음: 새 기능(ID 없음, ※신규 정책) 건강기록 대시보드 고른 항목 저장 (프론트 연결 `features/health/dashboard/widgetStore.js`·`queries.js` `useHealthWidgets`·`useSaveHealthWidgets`를 `GET·PUT /members/me/dashboard-widgets`로, 항목 키 → HLTG25 코드, `dashboardApi.js` `getRecordedItems`는 대체 없이 삭제(기본 선택은 추천 3개), `widgetItems.js:138` `vacc` `nm` → 「예방접종·정기검진」, 프론트 저장소에서 /start)
 - 신규 정책 처리(※신규 정책 표시 / 요구사항 ID 발급)는 회의 결정. 정해지면 `docs/api/health.md` 두 행의 기능 ID 칸과 마일스톤 절을 고친다
+- 참고: 공용 DB에 v0.14 (3)·(4)(HLTG25 그룹까지)·(5)를 실행함(2026-11-09). 공통코드 번호를 새로 정할 때는 기준 파일 본문뿐 아니라 `db/archive/` 변경 절과 공용 DB도 본다(HLTC0079 중복 사례)
 - 연결 남음: FN-AIM-012-13·14 (AI 대화 일정 저장, 프론트 `src/features/ai/api.js`의 가짜 `registerToHealth` 교체, LJS가 프론트 저장소에서). 백엔드는 새 API 없이 기존 API를 쓴다. 일정 카드는 `POST /pets/{petSn}/care-schedules`(`schdlSrcCd`=`HLTC0067`, `schdlYmd`+`schdlTm`→`schdlDt`, `schdlTm` 없으면 `hrInptYn=false`, 201 `CareScheduleResponse`), 케어 항목 카드는 `POST /pets/{petSn}/care-items`(`cycleDays`→`cycleDrctInptDayCnt`, 일상관리면 주기·일수·`lastCmptnYmd`를 보내지 않음, `lastCmptnYmd`를 보내면 그날 완료 기록 1건이 생기고 미래 날짜는 400 `CARE_COMPLETION_FUTURE_DATE`). AI 출처 일정은 케어미션에 반영하지 않는다(직접 등록만). 서버 재검증 400은 카드 오류로 보여 준다
 - `application.properties`에 빠진 키: `app.front-base-url` (디스코드의 최신 파일로 받는다, 다른 작업을 기다리는 중)
 - 참고: 사람 확인용 일정 4929(회원 1, 반려동물 1, 색 HLTC0082)는 `DEL_YN='Y'`로 지웠다. 미션·포인트 변화는 없었다. 공용 DB에 실행한 변경 절 v0.12 (6)의 HLTG21 코드 5개는 실제 코드라 그대로 둔다

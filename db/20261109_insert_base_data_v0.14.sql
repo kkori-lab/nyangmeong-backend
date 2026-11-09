@@ -24,7 +24,7 @@
 --   UPDATE `COM_CD` SET `USE_YN`='N', `MDFCN_DT`=NOW() WHERE `COM_CD`='MYPC0006';
 --   UPDATE `ITEM` SET `NTSL_YN`='N', `MDFCN_DT`=NOW() WHERE `ITEM_REGN_CD`='MYPC0006';
 --   UPDATE `HLD_ITEM` H JOIN `ITEM` I ON I.`ITEM_SN`=H.`ITEM_SN` SET H.`EQUIP_YN`='N', H.`MDFCN_DT`=NOW() WHERE I.`ITEM_REGN_CD`='MYPC0006' AND H.`EQUIP_YN`='Y';
--- v0.14 (4) 건강기록 대시보드 항목 공통코드 추가, 메인 위젯 공통코드 삭제 (2026-11-09, JAJ, 근거: 마일스톤 JAJ SCR-HLT-011 건강기록 대시보드 고른 항목 저장, 메인 위젯 삭제는 YAY 승인·LJS 메인 개편 2f1def4). DDL v0.14 (3)을 먼저 실행한다. MBR_DSHBD_WDGT의 MANC 행은 FK_MBR_DSHBD_WDGT_CD 때문에 공통코드보다 먼저 지운다. 메인 바로가기(MANG02·MANC0008~0010)는 건드리지 않는다. 공용 DB 미실행
+-- v0.14 (4) 건강기록 대시보드 항목 공통코드 추가, 메인 위젯 공통코드 삭제 (2026-11-09, JAJ, 근거: 마일스톤 JAJ SCR-HLT-011 건강기록 대시보드 고른 항목 저장, 메인 위젯 삭제는 YAY 승인·LJS 메인 개편 2f1def4). DDL v0.14 (3)을 먼저 실행한다. MBR_DSHBD_WDGT의 MANC 행은 FK_MBR_DSHBD_WDGT_CD 때문에 공통코드보다 먼저 지운다. 메인 바로가기(MANG02·MANC0008~0010)는 건드리지 않는다. 공용 DB 일부 실행(2026-11-09): HLTG25 그룹 추가까지 실행, 하위 13개 INSERT는 Duplicate entry 'HLTC0079'로 실패해 (5)로 대체
 --   SET NAMES utf8mb4;
 --   DELETE FROM `MBR_DSHBD_WDGT` WHERE `DSHBD_WDGT_CD` IN ('MANC0001','MANC0002','MANC0003','MANC0004','MANC0005','MANC0006','MANC0007');
 --   DELETE FROM `COM_CD` WHERE `COM_CD` IN ('MANC0001','MANC0002','MANC0003','MANC0004','MANC0005','MANC0006','MANC0007');
@@ -44,7 +44,7 @@
 --     ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG25') p),'HLTC0089','알레르기·기저질환','프론트 id: allergy',110),
 --     ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG25') p),'HLTC0090','예방접종·정기검진','프론트 id: vacc',120),
 --     ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG25') p),'HLTC0091','케어리스트','프론트 id: care',130);
--- v0.14 (5) 건강기록 대시보드 항목 하위 코드 번호 변경 HLTC0079~0091 → HLTC0084~0096 (2026-11-09, JAJ, 근거: 공용 DB에서 (4)의 하위 13개 INSERT가 Duplicate entry 'HLTC0079'로 실패. HLTC0079~0083은 HLTG21 캘린더 뱃지 색상(v0.12 (6))이 쓰고 있었다). (4)는 하위 13개 INSERT 직전까지 실행된 상태(HLTG25 그룹은 있음)라 이 항목은 하위 13개만 넣는다. 공용 DB 미실행
+-- v0.14 (5) 건강기록 대시보드 항목 하위 코드 번호 변경 HLTC0079~0091 → HLTC0084~0096 (2026-11-09, JAJ, 근거: 공용 DB에서 (4)의 하위 13개 INSERT가 Duplicate entry 'HLTC0079'로 실패. HLTC0079~0083은 HLTG21 캘린더 뱃지 색상(v0.12 (6))이 쓰고 있었다). (4)는 하위 13개 INSERT 직전까지 실행된 상태(HLTG25 그룹은 있음)라 이 항목은 하위 13개만 넣는다. 공용 DB 실행함(2026-11-09)
 --   SET NAMES utf8mb4;
 --   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES
 --     ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG25') p),'HLTC0084','체중','프론트 id: weight',10),
