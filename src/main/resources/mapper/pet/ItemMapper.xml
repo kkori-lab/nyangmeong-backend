@@ -51,6 +51,9 @@
              , I.NEED_PNT
              , CASE WHEN H.HLD_ITEM_SN IS NULL THEN FALSE ELSE TRUE END AS HLD_YN
           FROM ITEM I
+          JOIN COM_CD RC
+            ON RC.COM_CD = I.ITEM_REGN_CD
+           AND RC.USE_YN = 'Y'
           LEFT JOIN HLD_ITEM H
             ON H.ITEM_SN = I.ITEM_SN
            AND H.PIXEL_CHAR_SN = #{pixelCharSn}
@@ -65,7 +68,7 @@
     </select>
 
     <select id="selectShopItems" resultMap="shopItemSummaryResultMap">
-        /* 상점 아이템 목록 조회(부위 필터) */
+        /* 상점 아이템 목록 조회(부위 필터, 사용 안 하는 부위 제외) */
         SELECT <include refid="shopItemColumns" />
          WHERE I.NTSL_YN = 'Y'
         <if test="itemRegnCd != null and itemRegnCd != ''">
@@ -127,7 +130,7 @@
     </insert>
 
     <select id="selectAdminList" resultMap="adminItemSummaryResultMap">
-        /* 관리자 아이템 목록 조회(판매 중지 포함, 부위 필터) */
+        /* 관리자 아이템 목록 조회(판매 중지 포함, 부위 필터, 사용 안 하는 부위 제외) */
         SELECT I.ITEM_SN
              , I.ITEM_NM
              , I.ITEM_REGN_CD
@@ -145,8 +148,9 @@
                   WHERE H.ITEM_SN = I.ITEM_SN
                     AND H.DEL_YN = 'N' ) AS HLD_MBR_CNT
           FROM ITEM I
-          LEFT JOIN COM_CD C
+          JOIN COM_CD C
             ON C.COM_CD = I.ITEM_REGN_CD
+           AND C.USE_YN = 'Y'
         <where>
             <if test="itemRegnCd != null and itemRegnCd != ''">
                I.ITEM_REGN_CD = #{itemRegnCd}
