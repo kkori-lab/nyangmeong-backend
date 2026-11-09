@@ -132,8 +132,8 @@ public class CareRecruitmentService {
     @Transactional
     public CareRecruitmentResponse getRecruitment(Long mbrSn, Long petPrtcRcrtSn) {
         CareRecruitmentDetail detail = getDetailOrThrow(petPrtcRcrtSn);
-        /** 같은 회원·같은 날 이력이 이미 있으면 0건 */
-        if (postMapper.insertViewIgnore(detail.getPstSn(), mbrSn) > 0) {
+        /** 작성자 본인 조회는 조회수에 넣지 않는다. 같은 회원·같은 날 이력이 이미 있으면 0건 */
+        if (!mbrSn.equals(detail.getMbrSn()) && postMapper.insertViewIgnore(detail.getPstSn(), mbrSn) > 0) {
             postMapper.updateInqCnt(detail.getPstSn());
             detail.setInqCnt(detail.getInqCnt() + 1);
         }

@@ -248,6 +248,17 @@ class CareRecruitmentServiceTest {
     }
 
     @Test
+    void 작성자가_보면_조회_이력도_조회수도_건드리지_않는다() {
+        when(careRecruitmentMapper.selectDetail(RCRT, NORMAL)).thenReturn(detail(RECRUITING));
+
+        CareRecruitmentResponse res = service.getRecruitment(MBR, RCRT);
+
+        verify(postMapper, never()).insertViewIgnore(anyLong(), anyLong());
+        verify(postMapper, never()).updateInqCnt(anyLong());
+        assertThat(res.inqCnt()).isEqualTo(10);
+    }
+
+    @Test
     void 같은_날_다시_보면_조회수는_그대로이고_작성자는_채팅_인원수를_본다() {
         when(careRecruitmentMapper.selectDetail(RCRT, NORMAL)).thenReturn(detail(RECRUITING));
 
