@@ -671,11 +671,13 @@
 - 완료 조건 결과: 검증 `통과`(2026-11-06, 1회차), 사람 확인 2026-11-06(Postman: 일정 등록 칸 빠짐 400 `data[0].field`). 정한 것: `message`는 `ErrorCode` 문구, 칸 없는 예외는 `data` 없이 그대로, 범위는 AI 도구가 붙은 일정·케어 항목 서비스만(다른 `INVALID_INPUT_VALUE`는 그대로), 테스트는 서비스 테스트에(컨트롤러 테스트는 서비스를 목으로 바꿔 칸을 확인 못 함)
 - 추가: 없음
 
-## SCR-AIM-012 AI 일정 생성 확인 · 가계부 검사 오류 칸 이름 — 대기
+## SCR-AIM-012 AI 일정 생성 확인 · 가계부 검사 오류 칸 이름 — 끝
 - 기능: 명세 기능 ID 추가 없음(ai `docs/design/tool-catalog.md` 3-3절, 2026-11-06 사람 결정), 걸치는 기능 FN-AIM-012-05·06·07·13, FN-AIM-004-02
 - 기다리는 것: 없음
 - 완료 조건: 가계부 도구 경로의 서비스 검사 400 `INVALID_INPUT_VALUE`가 `data: [{field, message}]`에 칸 이름을 담는다. `GET /api/expenses/statistics?yearMonth=2099-01`이 400 `data[0].field`=`yearMonth`다
+- 완료 조건 결과: 검증 `통과`(2026-11-09, 1회차), 사람 확인 2026-11-09. 정한 것: 칸은 `petSn`·`common`(함께 거름), `expndClsfCd`, `yearMonth`(빈 값·형식·미래 달), `get_receipt`의 `petSn`, 영수증 저장 `pets[i].schdlSn`(저장 상태 변경 전 검사, `CheckupService.isMovableSchedule` 공개). 업로드 `ReceiptService.create`·검진 직접 등록 `schdlSn`·`pets[i].ckupTypeCd`(DTO `@Pattern`)는 그대로
 - 추가: 없음
+- 연결 남음: 걸치는 기능 FN-AIM-012-05·06·07·13, FN-AIM-004-02 (ai-50에 칸 이름 범위 알림, LJS)
 
 ## SCR-AIM-011 AI 대화창 · 건강 읽기 도구 표시 — 끝
 - 기능: 명세 기능 ID 추가 없음(설계 `nyangmeong-ai` `docs/design/tool-catalog.md` 8절 4번 건강 도메인, 8절 0번 기능 ID 추가 전), 걸치는 기능 FN-AIM-004-02

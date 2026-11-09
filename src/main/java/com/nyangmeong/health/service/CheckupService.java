@@ -288,11 +288,8 @@ public class CheckupService {
      * [옮겨 연결하기] 대상 일정 검사 후 일정 날짜를 검진일로 옮긴다 (시각·병원명·검진유형 유지)
      */
     private Long moveAndLinkSchedule(Long petSn, Long schdlSn, LocalDate ymd, String actorId) {
-        Schedule schedule = careScheduleMapper.selectSchedule(schdlSn);
-        if (schedule == null || !petSn.equals(schedule.getPetSn())
-                || !ScheduleKind.HOSPITAL.is(schedule.getSchdlKndCd())
-                || checkupMapper.existsLinkedCheckup(schdlSn, CheckupStatus.COMPLETED.getCode())
-                || Math.abs(ChronoUnit.DAYS.between(schedule.getSchdlDt().toLocalDate(), ymd)) > NEARBY_DAYS) {
+        Schedule schedule = movableSchedule(petSn, schdlSn, ymd);
+        if (schedule == null) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
         LocalDateTime moved = "Y".equals(schedule.getHrInptYn()) ? ymd.atTime(schedule.getSchdlDt().toLocalTime())
@@ -300,6 +297,26 @@ public class CheckupService {
         schedule.setSchdlDt(moved);
         careScheduleMapper.updateSchedule(schedule, actorId);
         return schdlSn;
+    }
+
+    /**
+     * [옮겨 연결하기] 대상 일정인지 : 같은 반려동물의 병원 일정, 완료 검진에 연결 안 됨, 검진일과 7일 이내
+     * - 영수증 확인 후 저장이 저장 전에 칸 이름(pets[i].schdlSn)으로 400을 내려고 쓴다
+     */
+    @Transactional(readOnly = true)
+    public boolean isMovableSchedule(Long petSn, Long schdlSn, LocalDate ymd) {
+        return movableSchedule(petSn, schdlSn, ymd) != null;
+    }
+
+    private Schedule movableSchedule(Long petSn, Long schdlSn, LocalDate ymd) {
+        Schedule schedule = careScheduleMapper.selectSchedule(schdlSn);
+        if (schedule == null || !petSn.equals(schedule.getPetSn())
+                || !ScheduleKind.HOSPITAL.is(schedule.getSchdlKndCd())
+                || checkupMapper.existsLinkedCheckup(schdlSn, CheckupStatus.COMPLETED.getCode())
+                || Math.abs(ChronoUnit.DAYS.between(schedule.getSchdlDt().toLocalDate(), ymd)) > NEARBY_DAYS) {
+            return null;
+        }
+        return schedule;
     }
 
     private void checkType(String ckupTypeCd) {

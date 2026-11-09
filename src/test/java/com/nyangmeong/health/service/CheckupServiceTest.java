@@ -459,4 +459,21 @@ class CheckupServiceTest {
 
         verify(pointService, never()).earnCheckupPoint(anyLong(), any());
     }
+
+    @Test
+    void 옮겨_연결_대상_검사는_같은_반려동물의_7일_이내_미연결_병원_일정만_참이다() {
+        when(careScheduleMapper.selectSchedule(SCHDL)).thenReturn(hospitalSchedule(SCHDL, PET, YMD.minusDays(7), "N"));
+        when(checkupMapper.existsLinkedCheckup(SCHDL, COMPLETED)).thenReturn(false);
+        assertThat(service.isMovableSchedule(PET, SCHDL, YMD)).isTrue();
+
+        assertThat(service.isMovableSchedule(OTHER_PET, SCHDL, YMD)).isFalse();
+        assertThat(service.isMovableSchedule(PET, SCHDL, YMD.plusDays(1))).isFalse();
+
+        when(checkupMapper.existsLinkedCheckup(SCHDL, COMPLETED)).thenReturn(true);
+        assertThat(service.isMovableSchedule(PET, SCHDL, YMD)).isFalse();
+
+        when(careScheduleMapper.selectSchedule(SCHDL)).thenReturn(null);
+        assertThat(service.isMovableSchedule(PET, SCHDL, YMD)).isFalse();
+        verify(careScheduleMapper, never()).updateSchedule(any(), anyString());
+    }
 }
