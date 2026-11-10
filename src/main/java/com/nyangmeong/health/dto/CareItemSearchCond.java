@@ -9,8 +9,6 @@ import lombok.Data;
 @Data
 public class CareItemSearchCond {
 
-    /** 메인노출여부 */
-    private Boolean mainExpsrYn;
     /** 케어항목명 */
     private String careArtclNm;
 }

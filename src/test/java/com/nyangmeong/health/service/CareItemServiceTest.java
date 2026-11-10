@@ -38,7 +38,6 @@ import com.nyangmeong.health.dto.CareCompletionCreateRequest;
 import com.nyangmeong.health.dto.CareCompletionSearchCond;
 import com.nyangmeong.health.dto.CareCompletionSummary;
 import com.nyangmeong.health.dto.CareItemCreateRequest;
-import com.nyangmeong.health.dto.CareItemExposureSaveRequest;
 import com.nyangmeong.health.dto.CareItemSearchCond;
 import com.nyangmeong.health.dto.CareItemSummary;
 import com.nyangmeong.health.dto.CareItemUpdateRequest;
@@ -563,55 +562,6 @@ class CareItemServiceTest {
         assertThat(thrown(() -> service.cancel(MBR, PET, CMPTN)).getErrorCode())
                 .isEqualTo(ErrorCode.CARE_COMPLETION_NOT_FOUND);
         verify(mapper, never()).deleteCompletion(anyLong(), anyString());
-    }
-
-    @Test
-    void 메인_표시는_7개부터_400() {
-        List<Long> seven = List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L);
-
-        assertThat(thrown(() -> service.save(MBR, PET, new CareItemExposureSaveRequest(seven))).getErrorCode())
-                .isEqualTo(ErrorCode.CARE_ITEM_MAIN_LIMIT_EXCEEDED);
-        verify(mapper, never()).updateMainExposureClear(anyLong(), anyString());
-    }
-
-    @Test
-    void 메인_표시는_목록_순서대로_정렬_순서를_저장한다() {
-        List<Long> sns = List.of(7L, 3L, 5L);
-        when(mapper.countBasicItems(PET)).thenReturn(11L);
-        when(mapper.countItemsIn(PET, sns)).thenReturn(3L);
-
-        service.save(MBR, PET, new CareItemExposureSaveRequest(sns));
-
-        verify(mapper).updateMainExposureClear(PET, "1");
-        verify(mapper).updateMainExposure(7L, 1, "1");
-        verify(mapper).updateMainExposure(3L, 2, "1");
-        verify(mapper).updateMainExposure(5L, 3, "1");
-        ArgumentCaptor<CareItemSearchCond> captor = ArgumentCaptor.forClass(CareItemSearchCond.class);
-        verify(mapper).selectList(eq(PET), captor.capture(), any(), eq(CareZone.REGULAR.getCode()));
-        assertThat(captor.getValue().getMainExpsrYn()).isTrue();
-    }
-
-    @Test
-    void 메인_표시_빈_목록은_전부_해제한다() {
-        when(mapper.countBasicItems(PET)).thenReturn(11L);
-
-        service.save(MBR, PET, new CareItemExposureSaveRequest(List.of()));
-
-        verify(mapper).updateMainExposureClear(PET, "1");
-        verify(mapper, never()).updateMainExposure(anyLong(), anyInt(), anyString());
-    }
-
-    @Test
-    void 중복이거나_다른_반려동물_항목이_섞인_메인_표시는_400() {
-        when(mapper.countBasicItems(PET)).thenReturn(11L);
-        List<Long> mixed = List.of(1L, 2L);
-        when(mapper.countItemsIn(PET, mixed)).thenReturn(1L);
-
-        assertThat(thrown(() -> service.save(MBR, PET, new CareItemExposureSaveRequest(List.of(1L, 1L))))
-                .getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
-        assertThat(thrown(() -> service.save(MBR, PET, new CareItemExposureSaveRequest(mixed))).getErrorCode())
-                .isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
-        verify(mapper, never()).updateMainExposureClear(anyLong(), anyString());
     }
 
     private CareItem named(Long petSn, String careArtclNm) {

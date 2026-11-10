@@ -43,9 +43,10 @@ class CareItemMapperXmlTest {
     }
 
     @Test
-    void 메인_표시_조회는_메인_정렬_순서로_돌려준다() throws Exception {
-        assertThat(sql("select", "selectList")).contains("A.MAIN_EXPSR_YN = 'Y'")
-                .contains("ORDER BY A.MAIN_SORT_SEQ , A.CARE_ARTCL_SN");
+    void 목록은_메인_표시_컬럼을_읽지도_거르지도_않는다() throws Exception {
+        assertThat(sql("select", "selectList")).doesNotContain("MAIN_EXPSR_YN").doesNotContain("MAIN_SORT_SEQ");
+        assertThat(sql("sql", "careItemSummaryColumns")).doesNotContain("MAIN_EXPSR_YN")
+                .doesNotContain("MAIN_SORT_SEQ");
     }
 
     @Test
@@ -130,10 +131,5 @@ class CareItemMapperXmlTest {
         assertThat(sql("select", "selectNamesByPets")).contains("DEL_YN = 'N'")
                 .contains("PET_SN IN")
                 .contains("ORDER BY PET_SN , CARE_ARTCL_SN");
-    }
-
-    @Test
-    void 메인_표시_전체_해제는_반려동물의_삭제되지_않은_항목만_바꾼다() throws Exception {
-        assertThat(sql("update", "updateMainExposureClear")).contains("PET_SN = #{petSn}").contains("DEL_YN = 'N'");
     }
 }

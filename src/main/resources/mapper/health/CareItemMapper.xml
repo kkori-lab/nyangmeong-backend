@@ -12,8 +12,6 @@
         <result column="RPRS_ICON_ID"             property="rprsIconId" />
         <result column="NXTM_PRNMNT_YMD"          property="nxtmPrnmntYmd" />
         <result column="LAST_CMPTN_YMD"           property="lastCmptnYmd" />
-        <result column="MAIN_EXPSR_YN"            property="mainExpsrYn" />
-        <result column="MAIN_SORT_SEQ"            property="mainSortSeq" />
         <result column="BSC_ARTCL_YN"             property="bscArtclYn" />
         <result column="PRSC_SN"                  property="prscSn" />
         <result column="REPT_PRVNT_MNG_SN"        property="reptPrvntMngSn" />
@@ -76,8 +74,6 @@
         , A.RPRS_ICON_ID
         , A.NXTM_PRNMNT_YMD
         , A.LAST_CMPTN_YMD
-        , CASE WHEN A.MAIN_EXPSR_YN = 'Y' THEN TRUE ELSE FALSE END AS MAIN_EXPSR_YN
-        , A.MAIN_SORT_SEQ
         , CASE WHEN A.BSC_ARTCL_YN = 'Y' THEN TRUE ELSE FALSE END AS BSC_ARTCL_YN
         , A.PRSC_SN
         , A.REPT_PRVNT_MNG_SN
@@ -119,18 +115,6 @@
            FOR UPDATE
     </select>
 
-    <select id="countItemsIn" resultType="long">
-        /* 반려동물 케어 항목 중 요청 목록에 든 항목 수 */
-        SELECT COUNT(*)
-          FROM CARE_ARTCL
-         WHERE PET_SN = #{petSn}
-           AND DEL_YN = 'N'
-           AND CARE_ARTCL_SN IN
-        <foreach collection="careArtclSns" item="careArtclSn" open="(" separator="," close=")">
-               #{careArtclSn}
-        </foreach>
-    </select>
-
     <select id="selectList" resultMap="careItemSummaryResultMap">
         /* 케어 항목 목록 조회 */
         SELECT
@@ -146,23 +130,10 @@
            AND R.DEL_YN = 'N'
          WHERE A.PET_SN = #{petSn}
            AND A.DEL_YN = 'N'
-        <if test="cond.mainExpsrYn != null and cond.mainExpsrYn">
-           AND A.MAIN_EXPSR_YN = 'Y'
-        </if>
-        <if test="cond.mainExpsrYn != null and !cond.mainExpsrYn">
-           AND A.MAIN_EXPSR_YN = 'N'
-        </if>
         <if test="cond.careArtclNm != null and cond.careArtclNm != ''">
            AND A.CARE_ARTCL_NM = #{cond.careArtclNm}
         </if>
-        <choose>
-            <when test="cond.mainExpsrYn != null and cond.mainExpsrYn">
-         ORDER BY A.MAIN_SORT_SEQ , A.CARE_ARTCL_SN
-            </when>
-            <otherwise>
          ORDER BY CASE WHEN A.CARE_ZONE_CD = #{regularCd} THEN 0 ELSE 1 END , A.CARE_ARTCL_SN
-            </otherwise>
-        </choose>
     </select>
 
     <select id="selectNamesByPets" resultMap="careItemResultMap">
@@ -288,29 +259,6 @@
            SET DEL_YN        = 'Y'
              , MAIN_EXPSR_YN = 'N'
              , MAIN_SORT_SEQ = 0
-             , MDFR_ID       = #{actorId}
-             , MDFCN_DT      = NOW()
-         WHERE CARE_ARTCL_SN = #{careArtclSn}
-           AND DEL_YN = 'N'
-    </update>
-
-    <update id="updateMainExposureClear">
-        /* 반려동물 메인 표시 전체 해제 */
-        UPDATE CARE_ARTCL
-           SET MAIN_EXPSR_YN = 'N'
-             , MAIN_SORT_SEQ = 0
-             , MDFR_ID       = #{actorId}
-             , MDFCN_DT      = NOW()
-         WHERE PET_SN = #{petSn}
-           AND DEL_YN = 'N'
-           AND MAIN_EXPSR_YN = 'Y'
-    </update>
-
-    <update id="updateMainExposure">
-        /* 케어 항목 메인 표시 지정 */
-        UPDATE CARE_ARTCL
-           SET MAIN_EXPSR_YN = 'Y'
-             , MAIN_SORT_SEQ = #{mainSortSeq}
              , MDFR_ID       = #{actorId}
              , MDFCN_DT      = NOW()
          WHERE CARE_ARTCL_SN = #{careArtclSn}
