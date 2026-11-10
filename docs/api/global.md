@@ -55,7 +55,6 @@
 | memberPet.invtnVldDayCnt | Long | Y | 초대 유효 일수 | SYS_STNG.INVTN_VLD_DAY_CNT |
 | memberPet.lgnFailLmtNmtm | Long | Y | 로그인 실패 제한 횟수 | SYS_STNG.LGN_FAIL_LMT_NMTM |
 | memberPet.whdwlMbrKpngDayCnt | Long | Y | 탈퇴 회원 보관 일수 | SYS_STNG.WHDWL_MBR_KPNG_DAY_CNT |
-| memberPet.dshbdCareMaxExpsrCnt | Long | Y | 대시보드 케어 최대 노출 수 | SYS_STNG.DSHBD_CARE_MAX_EXPSR_CNT |
 | community.pstImgMaxCnt | Long | Y | 게시글 이미지 최대 수 | SYS_STNG.PST_IMG_MAX_CNT |
 | community.blindDclrAcmlCnt | Long | Y | 블라인드 신고 누적 수 | SYS_STNG.BLIND_DCLR_ACML_CNT |
 | community.lostTpofExpryCrtrDayCnt | Long | Y | 실종 제보 만료 기준 일수 | SYS_STNG.LOST_TPOF_EXPRY_CRTR_DAY_CNT |
@@ -79,7 +78,6 @@
 | jntBrupMaxNope | Long | N | 1~100 | SYS_STNG.JNT_BRUP_MAX_NOPE |
 | invtnVldDayCnt | Long | N | 1~3650 | SYS_STNG.INVTN_VLD_DAY_CNT |
 | lgnFailLmtNmtm | Long | N | 1~100 | SYS_STNG.LGN_FAIL_LMT_NMTM |
-| dshbdCareMaxExpsrCnt | Long | N | 1~20 | SYS_STNG.DSHBD_CARE_MAX_EXPSR_CNT |
 | pstImgMaxCnt | Long | N | 1~100 | SYS_STNG.PST_IMG_MAX_CNT |
 | blindDclrAcmlCnt | Long | N | 1~100 | SYS_STNG.BLIND_DCLR_ACML_CNT |
 | lostTpofExpryCrtrDayCnt | Long | N | 1~99 | SYS_STNG.LOST_TPOF_EXPRY_CRTR_DAY_CNT |

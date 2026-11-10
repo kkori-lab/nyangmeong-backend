@@ -8,7 +8,6 @@
         <result column="JNT_BRUP_MAX_NOPE" property="jntBrupMaxNope" />
         <result column="PST_IMG_MAX_CNT" property="pstImgMaxCnt" />
         <result column="FILE_MAX_SZ" property="fileMaxSz" />
-        <result column="DSHBD_CARE_MAX_EXPSR_CNT" property="dshbdCareMaxExpsrCnt" />
         <result column="LGN_FAIL_LMT_NMTM" property="lgnFailLmtNmtm" />
         <result column="BLIND_DCLR_ACML_CNT" property="blindDclrAcmlCnt" />
         <result column="LOST_TPOF_EXPRY_CRTR_DAY_CNT" property="lostTpofExpryCrtrDayCnt" />
@@ -35,7 +34,6 @@
              , JNT_BRUP_MAX_NOPE
              , PST_IMG_MAX_CNT
              , FILE_MAX_SZ
-             , DSHBD_CARE_MAX_EXPSR_CNT
              , LGN_FAIL_LMT_NMTM
              , BLIND_DCLR_ACML_CNT
              , LOST_TPOF_EXPRY_CRTR_DAY_CNT
@@ -65,7 +63,6 @@
                             , JNT_BRUP_MAX_NOPE
                             , PST_IMG_MAX_CNT
                             , FILE_MAX_SZ
-                            , DSHBD_CARE_MAX_EXPSR_CNT
                             , LGN_FAIL_LMT_NMTM
                             , BLIND_DCLR_ACML_CNT
                             , LOST_TPOF_EXPRY_CRTR_DAY_CNT
@@ -86,7 +83,6 @@
               , #{setting.jntBrupMaxNope}
               , #{setting.pstImgMaxCnt}
               , #{setting.fileMaxSz}
-              , #{setting.dshbdCareMaxExpsrCnt}
               , #{setting.lgnFailLmtNmtm}
               , #{setting.blindDclrAcmlCnt}
               , #{setting.lostTpofExpryCrtrDayCnt}
@@ -106,7 +102,6 @@
                               , JNT_BRUP_MAX_NOPE = NEW_ROW.JNT_BRUP_MAX_NOPE
                               , PST_IMG_MAX_CNT = NEW_ROW.PST_IMG_MAX_CNT
                               , FILE_MAX_SZ = NEW_ROW.FILE_MAX_SZ
-                              , DSHBD_CARE_MAX_EXPSR_CNT = NEW_ROW.DSHBD_CARE_MAX_EXPSR_CNT
                               , LGN_FAIL_LMT_NMTM = NEW_ROW.LGN_FAIL_LMT_NMTM
                               , BLIND_DCLR_ACML_CNT = NEW_ROW.BLIND_DCLR_ACML_CNT
                               , LOST_TPOF_EXPRY_CRTR_DAY_CNT = NEW_ROW.LOST_TPOF_EXPRY_CRTR_DAY_CNT

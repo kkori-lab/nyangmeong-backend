@@ -62,7 +62,8 @@
    - **결정(2026-10-29, 사람 확정):** 기본 항목을 그날 처음 완료 체크할 때 `CareMissionService.reflect`를 부른다. 취소해도 되돌리지 않고, 취소 뒤 같은 날 다시 체크해도 다시 반영하지 않는다. 사용자 추가·처방약·반복 예방 항목은 반영하지 않는다.
 19. **인식 실패율을 어떻게 모으는가.** `RECPT_STTS_HSTRY`로 집계하는지, 조회 화면(관리자)이 있는지 정의가 없다. 근거: AIM-010-08
 20. **메인 표시 저장 경로의 이름.** 화면 이름(`main`)을 경로에 쓰지 않으려고 `PUT /pets/{petSn}/care-item-exposures`라고 지었다. 근거는 `MAIN_EXPSR_YN`(노출)이다. ★ 토글(HLT-003-13)과 메인페이지 순서 변경(MAN-009)이 같은 전체 저장 API를 쓴다는 데 YAY·JAJ가 합의해야 한다. 최대 6개를 넘으면 어떤 오류 코드를 낼지도 정해야 한다. 근거: HLT-003-13
-   - **결정(2026-11-10, 사람 확정):** 메인 표시(★) 기능을 쓰지 않는다(프론트에서 지움). `PUT care-item-exposures`, 오류 코드 `CARE_ITEM_MAIN_LIMIT_EXCEEDED`, `GET care-items`의 `mainExpsrYn` 필터와 응답의 `mainExpsrYn`·`mainSortSeq`를 지웠다. `CARE_ARTCL.MAIN_EXPSR_YN`·`MAIN_SORT_SEQ`와 `SYS_STNG.DSHBD_CARE_MAX_EXPSR_CNT` 컬럼은 DB·ERD 결정 전이라 남긴다. 그때까지 기본 항목 생성·항목 추가·삭제·반려동물 이동이 넣는 값(Y/N, 0)과 관리자 설정 API의 `dshbdCareMaxExpsrCnt`는 그대로 둔다.
+   - **결정(2026-11-10, 사람 확정):** 메인 표시(★) 기능을 쓰지 않는다(프론트에서 지움). `PUT care-item-exposures`, 오류 코드 `CARE_ITEM_MAIN_LIMIT_EXCEEDED`, `GET care-items`의 `mainExpsrYn` 필터와 응답의 `mainExpsrYn`·`mainSortSeq`를 지웠다. `CARE_ARTCL.MAIN_EXPSR_YN`·`MAIN_SORT_SEQ` 컬럼은 DB·ERD 결정 전이라 남긴다. 그때까지 기본 항목 생성·항목 추가·삭제·반려동물 이동이 넣는 값(Y/N, 0)은 그대로 둔다.
+   - **결정(2026-11-10, LJS):** 시스템 설정의 대시보드 케어 최대 노출 수는 관리자 운영 설정 API와 컬럼을 함께 지웠다(SCR-ADM-110, 기준 SQL v0.14 (7)).
 21. **캘린더 뱃지 색상(HLTG21) 값 목록이 없음.** 명세는 색을 고르지 않으면 일정 종류의 기본 색을 쓴다고만 하고 고를 수 있는 색은 정하지 않았다. 목업은 무채색 칩 5개뿐이었다. 근거: HLT-003-36
    - **결정(2026-11-04, 팀 확정):** 사용자가 고르는 일정 색은 5개다. HLTC0079 보라(10), HLTC0080 초록(20), HLTC0081 빨강(30), HLTC0082 파랑(40), HLTC0083 회색(50). DB에는 색 이름만 저장하고 색값은 프론트 디자인 토큰이 맡는다. 명세 원문은 "질병진료 분홍"이라 명세를 고칠 때 "빨강"으로 맞춘다. `db/` 변경 절 v0.12 (6)
 

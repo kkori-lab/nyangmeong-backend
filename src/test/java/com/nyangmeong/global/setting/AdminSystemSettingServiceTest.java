@@ -30,7 +30,7 @@ class AdminSystemSettingServiceTest {
 
     private AdminSettingUpdateRequest request(Long petMaxCnt, Long fileMaxSz, String aiCmtryBscCn) {
         return new AdminSettingUpdateRequest(petMaxCnt, null, null, null, null, null, null, null, null, null, null,
-                null, aiCmtryBscCn, null, null, null, fileMaxSz);
+                aiCmtryBscCn, null, null, null, fileMaxSz);
     }
 
     @SuppressWarnings("unchecked")

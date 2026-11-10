@@ -1,7 +1,7 @@
 -- =====================================================================
 -- 냥멍케어 MySQL DDL v0.14  |  MySQL 8.0.16+ / InnoDB / utf8mb4_0900_ai_ci
 -- 대상: DBeaver (전체 선택 후 스크립트 실행 Alt+X, 또는 스키마 우클릭 → Tools → Execute script)
--- 원천: DDL v0.13(db/archive/v0.13/) 본문(v0.13 변경 절 (1)이 들어 있다) 위에 아래 "v0.13 → v0.14 변경"을 더한 것 (95 테이블 / 1007 컬럼 / 관계 FK 156 / 공통코드 FK 120)
+-- 원천: DDL v0.13(db/archive/v0.13/) 본문(v0.13 변경 절 (1)이 들어 있다) 위에 아래 "v0.13 → v0.14 변경"을 더한 것 (95 테이블 / 1006 컬럼 / 관계 FK 156 / 공통코드 FK 120)
 --       UK·INDEX·CHECK·생성열·공통코드 FK 는 v0.8 그대로 유지
 -- 구성: [1] DROP  [2] CREATE(PK·UK·INDEX·CHECK·생성열)  [3] 관계 FK  [4] 공통코드 FK
 -- 주의: 전체 DROP 후 재생성합니다. 기존 데이터가 있으면 먼저 백업하세요. 공용 DB에는 실행하지 않습니다.
@@ -32,6 +32,9 @@
 -- v0.14 (3) 회원대시보드위젯 코드 그룹을 건강기록 대시보드 항목(HLTG25)으로 변경 (2026-11-09, JAJ, 근거: 마일스톤 JAJ SCR-HLT-011 건강기록 대시보드 고른 항목 저장). 컬럼 주석만 바뀐다. 공통코드는 기준 데이터 v0.14 (4). 공용 DB 실행함(2026-11-09)
 --   SET NAMES utf8mb4;
 --   ALTER TABLE `MBR_DSHBD_WDGT` MODIFY COLUMN `DSHBD_WDGT_CD` char(8) NOT NULL COMMENT '대시보드위젯공통코드(HLTG25)';
+-- v0.14 (7) 대시보드 케어 최대 노출 수 설정 삭제 (2026-11-10, LJS, 근거: 메인 표시(★) 기능 제거 사람 결정 2026-11-10(프론트 PR #311, 백엔드 PR #205), 관리자 화면설계서 v0.5 운영 설정에서 제외, SCR-ADM-110). 이 컬럼을 쓰는 Java 코드(관리자 운영 설정)를 뺀 PR이 병합된 뒤에 실행한다. CARE_ARTCL 메인 표시 컬럼은 health(JAJ)가 따로 정한다. 공용 DB 실행함(2026-11-10)
+--   SET NAMES utf8mb4;
+--   ALTER TABLE `SYS_STNG` DROP COLUMN `DSHBD_CARE_MAX_EXPSR_CNT`;
 -- =====================================================================
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -176,7 +179,6 @@ CREATE TABLE `SYS_STNG` (
   `JNT_BRUP_MAX_NOPE` decimal(4,0) NOT NULL DEFAULT '5' COMMENT '공동양육최대인원수',
   `PST_IMG_MAX_CNT` decimal(4,0) NOT NULL DEFAULT '10' COMMENT '게시글이미지최대수',
   `FILE_MAX_SZ` decimal(10,0) NOT NULL DEFAULT '10485760' COMMENT '파일최대크기',
-  `DSHBD_CARE_MAX_EXPSR_CNT` decimal(4,0) NOT NULL DEFAULT '6' COMMENT '대시보드케어최대노출수',
   `LGN_FAIL_LMT_NMTM` decimal(4,0) NOT NULL DEFAULT '5' COMMENT '로그인실패제한횟수',
   `BLIND_DCLR_ACML_CNT` decimal(4,0) NOT NULL DEFAULT '5' COMMENT '블라인드신고누적수',
   `LOST_TPOF_EXPRY_CRTR_DAY_CNT` decimal(2,0) NOT NULL DEFAULT '30' COMMENT '실종제보만료기준일수',

@@ -10,7 +10,7 @@ public record AdminSettingResponse(MemberPet memberPet, Community community, Not
         File file, LocalDateTime mdfcnDt, String mdfrId) {
 
     public record MemberPet(Long petMaxCnt, Long jntBrupMaxNope, Long invtnVldDayCnt, Long lgnFailLmtNmtm,
-            Long whdwlMbrKpngDayCnt, Long dshbdCareMaxExpsrCnt) {
+            Long whdwlMbrKpngDayCnt) {
     }
 
     public record Community(Long pstImgMaxCnt, Long blindDclrAcmlCnt, Long lostTpofExpryCrtrDayCnt,
@@ -30,7 +30,7 @@ public record AdminSettingResponse(MemberPet memberPet, Community community, Not
     public static AdminSettingResponse from(SystemSetting s) {
         return new AdminSettingResponse(
                 new MemberPet(s.getPetMaxCnt(), s.getJntBrupMaxNope(), s.getInvtnVldDayCnt(),
-                        s.getLgnFailLmtNmtm(), s.getWhdwlMbrKpngDayCnt(), s.getDshbdCareMaxExpsrCnt()),
+                        s.getLgnFailLmtNmtm(), s.getWhdwlMbrKpngDayCnt()),
                 new Community(s.getPstImgMaxCnt(), s.getBlindDclrAcmlCnt(), s.getLostTpofExpryCrtrDayCnt(),
                         s.getMtchNoRspnsEndCrtrDayCnt(), s.getLowstHrwgAplcnYr(), s.getLowstHrwgAmt(),
                         s.getDscvAutoCmntCn(), s.getAiCmtryBscCn()),
