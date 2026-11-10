@@ -150,4 +150,18 @@ class ReceiptServiceTest {
 
         assertThat(service.getSource(1L, 3L)).isEqualTo(ReceiptSource.EXPENSE);
     }
+
+    @Test
+    void 조회에서_가계부_출처가_아닌데_반려동물이_없으면_400_칸_petSn() {
+        Receipt health = new Receipt();
+        health.setRecptSn(3L);
+        health.setMbrSn(1L);
+        health.setOcrDmndSrcCd(ReceiptSource.HEALTH.getCode());
+        when(mapper.selectOwned(3L, 1L)).thenReturn(health);
+
+        assertThatThrownBy(() -> service.get(1L, 3L, null)).isInstanceOfSatisfying(CustomException.class, e -> {
+            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+            assertThat(e.getFields()).containsExactly("petSn");
+        });
+    }
 }

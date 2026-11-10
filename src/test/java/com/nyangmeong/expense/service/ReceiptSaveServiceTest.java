@@ -408,4 +408,19 @@ class ReceiptSaveServiceTest {
             assertThat(e.getFields()).containsExactly(fields);
         });
     }
+
+    @Test
+    void 옮겨_연결할_수_없는_일정이면_저장_전에_400_칸_pets_i_schdlSn() {
+        owned(ReceiptStatus.RECOGNIZED);
+        when(checkupService.isMovableSchedule(10L, 700L, YMD)).thenReturn(true);
+        when(checkupService.isMovableSchedule(11L, 701L, YMD)).thenReturn(false);
+        ReceiptSavePetRequest movable = new ReceiptSavePetRequest(10L, "HLTC0002", "진찰료", null, null, false, 700L,
+                null);
+        ReceiptSavePetRequest notMovable = new ReceiptSavePetRequest(11L, "HLTC0002", "진찰료", null, null, false, 701L,
+                null);
+
+        assertFields(() -> service.save(1L, 3L, request(movable, notMovable)), "pets[1].schdlSn");
+        verify(receiptService, never()).markSaved(anyLong(), anyLong(), any(), any());
+        verify(checkupService, never()).createFromReceipt(anyLong(), anyLong(), any());
+    }
 }

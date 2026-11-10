@@ -10,7 +10,7 @@
 | GET | /admin/members/{mbrSn}/point-ledgers | 관리자 회원 상세 포인트 원장. 최신순 20건씩. 일반 회원 403 ADMIN_ONLY, 없는 회원 404 MEMBER_NOT_FOUND | ADM-011-04 | LJS | - | PageResponse\<AdminPointLedgerSummary\> |
 | GET | /admin/points | 관리자 포인트 원장 전체. 최신순 20건씩. 쿼리는 모두 선택: `mbrSn`, `mbrNcnm`(닉네임 부분 일치), `pntDlngTypeCd`(MYPG03), `fromDt`·`toDt`(YYYY-MM-DD, 양 끝 날짜 포함). 모르는 거래 유형 코드·`fromDt`가 `toDt`보다 늦음·날짜 형식 틀림 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-072-01 | LJS | - | PageResponse\<AdminPointLedgerRow\> |
 | POST | /admin/points/adjustments | 포인트 수동 조정(201, 감사 로그). 거래 유형 MYPC0009 관리자 조정, 사유는 원장 메모(회원 포인트 내역에도 보임), 보유 포인트(`MBR.HLD_PNT`)를 같이 바꾼다. 조정 화면의 현재 잔액은 `GET /admin/members/{mbrSn}`의 `hldPnt`. 형식이 틀리면 400 INVALID_INPUT_VALUE, 차감 후 잔액이 0보다 작으면 400 POINT_NOT_ENOUGH(잔액·원장 그대로), 없는 회원·탈퇴 회원 404 MEMBER_NOT_FOUND. 같은 요청을 두 번 보내면 두 건이 된다 | ADM-072-02·03 | LJS | AdminPointAdjustRequest | AdminPointLedgerRow |
-| GET | /admin/processing/character-jobs?crtJobSttsCd=&page=&size=20 | 관리자 처리 현황 캐릭터 생성 탭. 상태별 건수 `sttsCnts`(CHRG01 네 상태를 순서대로 늘 주고 없는 상태는 0, 상태 필터와 무관)와 상태를 건 목록(`REG_DT` 최신순, 같으면 `CHAR_CRT_JOB_SN` 내림차순). 결과 이미지·원본 사진은 주지 않는다(결정 26). 연결된 1:1 문의는 `GET /admin/inquiries/{otoInqrySn}`로 연다. 일반 회원 403 ADMIN_ONLY. 모르는 상태 코드 400 INVALID_INPUT_VALUE | ADM-082-02 | LJS | AdminCharacterJobSearchCond | AdminCharacterJobListResponse |
+| GET | /admin/processing/character-jobs?fromYmd=&toYmd=&crtJobSttsCd=&page=&size=20 | 관리자 처리 현황 캐릭터 생성 탭. 기간은 `REG_DT` 날짜 기준 양끝 포함(둘 다 선택). 상태별 건수 `sttsCnts`(CHRG01 네 상태를 순서대로 늘 주고 없는 상태는 0, 기간만 따르고 상태 필터와 무관)와 기간·상태를 건 목록(`REG_DT` 최신순, 같으면 `CHAR_CRT_JOB_SN` 내림차순). 결과 이미지·원본 사진은 주지 않는다(결정 26). 연결된 1:1 문의는 `GET /admin/inquiries/{otoInqrySn}`로 연다. 일반 회원 403 ADMIN_ONLY. 모르는 상태 코드·날짜 형식 오류·`fromYmd > toYmd` 400 INVALID_INPUT_VALUE | ADM-082-02 | LJS | AdminCharacterJobSearchCond | AdminCharacterJobListResponse |
 | GET | /admin/breeds | 관리자 품종 목록. 사용 안 함 포함, 종·정렬 순서·번호순, 페이지 없음. 쿼리 `petSeCd`(PETG01) 없거나 공백이면 전체. 모르는 종 코드 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-101-01 | LJS | - | List<AdminBreedSummary> |
 | POST | /admin/breeds | 품종 추가(201, 감사 로그). 품종 코드는 서버가 매긴다(강아지 `DOGV`·고양이 `CATV` + 그 접두 최대 번호 + 1, 네 자리). 이름 1~50자(앞뒤 공백 지운 뒤)가 아니거나 종 코드가 틀리면 400 INVALID_INPUT_VALUE, 같은 종에 같은 이름(공백 무시, 사용 안 함 포함) 409 DUPLICATE_VRTY_NM | ADM-101-01 | LJS | AdminBreedCreateRequest | AdminBreedSummary |
 | PATCH | /admin/breeds/{vrtySn} | 품종 수정(보낸 칸만, 종·코드는 안 바꿈, 감사 로그). 사용을 끄면 공용 `GET /breeds`와 새 반려동물·실종제보·펫돌봄 등록 선택에서 빠지고, 이미 등록된 반려동물의 품종 이름은 그대로 보인다. 아무 칸도 없거나 형식이 틀리면 400 INVALID_INPUT_VALUE, 없는 품종 404 BREED_NOT_FOUND, 자기 말고 같은 종 같은 이름 409 DUPLICATE_VRTY_NM | ADM-101-01 | LJS | AdminBreedUpdateRequest | AdminBreedSummary |
@@ -22,13 +22,14 @@
 | GET | /items/{itemSn}/image | 아이템 이미지(로그인 회원, 판매 중 아이템) | MYP-010-14, MYP-011-02 | LJS | - | 이미지 파일 |
 | GET | /members/me/points | 보유 포인트, 이번 달 적립·사용 합계와 건수, 오늘 미션 요약(주양육 반려동물 전체) | MYP-001-03·04, MYP-011-05, MYP-020-01·09 | SJM | - | PointResponse |
 | GET | /pets | 내 반려동물 목록(주양육·공동양육, 역할·대표 여부·공동양육 인원 포함) | MYP-001-01, MYP-002-01~03, MYP-005-02, MYP-006-04, MYP-020-03 | SJM | - | List<PetSummary> |
+| GET | /pets/main-shortcuts | 메인 반려동물별 바로가기. 양육 중인 반려동물(연동 중, 삭제 안 함) 전부를 양육관계 순서로, 코드(MANG02)는 보일 순서대로. 저장한 적 없는 반려동물은 `[MANC0008]`(종합 건강기록), 전부 숨겼으면 `[]`. 사용 안 하는 코드는 빠짐 | MAN-008 | LJS | - | List<PetShortcutSummary> |
 | GET | /pets/{petSn} | 반려동물 프로필 상세(수정 모달 채우기, 양육자 목록). 체중 잠금은 화면이 건강기록 API로 판단(`issues.md` API의 마이페이지 2번) | MYP-002-04, MYP-003-01 | SJM | - | PetResponse |
 | GET | /pets/{petSn}/caregivers | 공동양육자 목록. 주양육자가 첫 줄. 주양육자에게는 전원, 공동양육자에게는 주양육자와 본인 | MYP-004-01·03·04, MYP-006-04 | SJM | - | List<CaregiverSummary> |
 | GET | /pets/{petSn}/character-image | 캐릭터 이미지 `?part=full`(전신, 기본)·`face`(얼굴). 미생성·오류 확인 중이면 종별 기본 캐릭터. 착용 모습 대표 이미지가 있으면 그것, 없으면 맨몸 결과. `face`는 (96, 32)부터 320×320을 256×256으로 줄인 PNG | MYP-001-01, MYP-002-02, MYP-010-12·23 | LJS | - | 이미지 파일 |
 | GET | /pets/{petSn}/daily-missions | 그날의 케어미션 8개와 진행 상태. 쿼리 `msnCrtrYmd` | MYP-020-03·04 | SJM | - | List<DailyMissionSummary> |
 | GET | /pixel-characters | 내 캐릭터·공동양육 캐릭터 목록(캐릭터 없는 반려동물 포함, 생성 상태·오류 확인 중 표시) | MYP-010-02·03·07·12·23 | LJS | - | List<PixelCharacterSummary> |
 | GET | /pixel-characters/{pixelCharSn} | 꾸미기 상세. 결과 이미지·보유/착용 아이템·오류 문의 접수 여부 | MYP-010-10·13·14·23 | LJS | - | PixelCharacterResponse |
-| GET | /pixel-characters/{pixelCharSn}/shop-items | 상점 아이템 목록(판매 중, 이 캐릭터 기준 보유중 표시, 보유 포인트). `?itemRegnCd=` | MYP-011-02·03 | LJS | - | ShopItemListResponse |
+| GET | /pixel-characters/{pixelCharSn}/shop-items | 상점 아이템 목록(판매 중, 사용 안 하는 부위(신발 MYPC0006) 제외, 이 캐릭터 기준 보유중 표시, 보유 포인트). `?itemRegnCd=` | MYP-011-02·03 | LJS | - | ShopItemListResponse |
 | GET | /point-ledgers | 선택한 월의 포인트 적립·사용 내역(최신순). 쿼리 `yearMonth` | MYP-020-02 | SJM | - | List<PointLedgerSummary> |
 | POST | /caregiver-invitations | 이메일로 공동양육 초대 발송. 대상 반려동물 여러 마리를 한 초대로 묶음. 가입 회원은 인앱 알림, 미가입은 메일. 고른 반려동물을 모두 검사해 충돌을 모아 409 오류 data에 CaregiverInvitationConflictResponse. 이미 가족이 하나라도 있으면 `CAREGIVER_ALREADY_LINKED`, 대기 초대만 있으면 `CAREGIVER_INVITATION_DUPLICATED`. 충돌이 있으면 초대를 만들지 않음 | MYP-005-01·02 | SJM | CaregiverInvitationCreateRequest | CaregiverInvitationResponse |
 | POST | /caregiver-invitations/{jntBrupInvtnSn}/accept | 초대 수락. 고른 반려동물만 연동하고 나머지는 반려동물별 거절 | MYP-005-05 | SJM | CaregiverInvitationAcceptRequest | - |
@@ -37,12 +38,13 @@
 | POST | /pets/{petSn}/representative | 대표 반려동물 지정(주양육 반려동물만) | MYP-010-05 | SJM | - | - |
 | POST | /pixel-characters/{pixelCharSn}/held-items | 아이템 일괄 구매(포인트 차감, 보관함 추가, 주양육자만). 201. 오류: `POINT_NOT_ENOUGH`(400), `PET_PRIMARY_ONLY`(403), `ITEM_NOT_FOUND`(404), `ITEM_ALREADY_HELD`(409) | MYP-011-05·06 | LJS | ItemPurchaseRequest | PixelCharacterResponse |
 | PUT | /pixel-characters/{pixelCharSn}/equipped-items | 착용 상태 확정 저장(부위당 1개, 요청에 없는 보유 아이템은 착용 해제). 착용 모습 대표 이미지를 지운다 | MYP-010-13·16 | LJS | EquippedItemSaveRequest | PixelCharacterResponse |
+| PUT | /pets/main-shortcuts | 메인 바로가기 저장. 본문은 배열 `[{ petSn, shrtcCds }]`, 반려동물마다 보일 코드를 순서대로(`[]`면 전부 숨김). 본문에 없는 반려동물은 그대로. 400 `INVALID_INPUT_VALUE`(`data[].field`가 `[i].petSn`·`[i].shrtcCds`·`[i].shrtcCds[j]`): 반려동물 번호 없음·중복, 코드 목록 없음, 같은 코드 두 번, MANG02에 없거나 사용 안 하는 코드. 남의 반려동물 403 `PET_ACCESS_DENIED`, 없는 번호 404 `PET_NOT_FOUND`(하나라도 틀리면 아무것도 저장 안 함). 응답은 조회와 같음 | MAN-008 | LJS | List<PetShortcutSaveRequest> | List<PetShortcutSummary> |
 | PATCH | /pets/{petSn} | 반려동물 수정(양육자 전원, 체중 잠금은 화면에서) | MYP-002-04, MYP-003-01·04~07 | SJM | PetUpdateRequest | PetResponse |
 | DELETE | /pets/{petSn} | 반려동물 삭제(주양육자만). 캐릭터·보유 아이템 삭제, 공동양육 연동 해제, 대표 승계 | MYP-002-07·08 | SJM | - | - |
 | DELETE | /pets/{petSn}/caregivers/{brupRelSn} | 공동양육 연동 해제. 주양육자의 강제 해제와 공동양육자의 자진 해제 | MYP-004-01, MYP-006-02 | SJM | - | - |
-| GET | /admin/items?itemRegnCd= | 관리자 아이템 목록(판매 중지 포함, 부위·정렬 순서·번호순, 페이지 없음). 부위 코드가 MYPG01이 아니면 400 `INVALID_INPUT_VALUE`. 부위 이름 "신발"은 서버에서 거르지 않는다 | ADM-070-01 | LJS | - | List<AdminItemSummary> |
+| GET | /admin/items?itemRegnCd= | 관리자 아이템 목록(판매 중지 포함, 부위·정렬 순서·번호순, 페이지 없음). 부위 코드가 MYPG01이 아니거나 신발(MYPC0006, 사용 안 함)이면 400 `INVALID_INPUT_VALUE`. 전체 목록에서도 사용 안 하는 부위(`COM_CD.USE_YN='N'`) 아이템은 뺀다 | ADM-070-01 | LJS | - | List<AdminItemSummary> |
 | GET | /admin/items/{itemSn}/image | 관리자 아이템 이미지(판매 중지도, ApiResponse 아님). 없으면 404 `ITEM_NOT_FOUND` | ADM-070-01 | LJS | - | 이미지 파일 |
-| POST | /admin/items | 아이템 등록(`multipart/form-data`). 정렬은 그 부위 마지막 다음. 201. 오류: `INVALID_INPUT_VALUE`(400, 신발에 굽기 지시 포함), `FILE_TYPE_NOT_ALLOWED`·`FILE_TOO_LARGE`(400), `ITEM_NAME_DUPLICATED`(409) | ADM-070-02 | LJS | AdminItemCreateRequest | AdminItemCreateResponse |
+| POST | /admin/items | 아이템 등록(`multipart/form-data`). 정렬은 그 부위 마지막 다음. 201. 오류: `INVALID_INPUT_VALUE`(400, 신발 MYPC0006은 사용 안 하는 부위), `FILE_TYPE_NOT_ALLOWED`·`FILE_TOO_LARGE`(400), `ITEM_NAME_DUPLICATED`(409) | ADM-070-02 | LJS | AdminItemCreateRequest | AdminItemCreateResponse |
 | PATCH | /admin/items/{itemSn} | 아이템 수정·판매 중지(`multipart/form-data`, 보낸 칸만). 판매 중지해도 이미 산 회원의 보유는 그대로. 부위를 바꾸면 새 부위 마지막 다음 순서. 굽기 지시가 바뀌면 그 아이템의 착용 시트를 지워 다시 굽기 대상이 된다. 오류: `ITEM_NOT_FOUND`(404), `ITEM_REGION_LOCKED`(409, 보유 회원이 있는데 부위 변경), `ITEM_NAME_DUPLICATED`(409) | ADM-070-03 | LJS | AdminItemUpdateRequest | - |
 | PUT | /admin/items/order | 부위 안 상점 순서 저장(1부터 다시 매김). 그 부위 아이템 전부(판매 중지 포함)를 빠짐·중복 없이 보내야 하고 아니면 400 `INVALID_INPUT_VALUE` | ADM-070-04 | LJS | AdminItemOrderRequest | - |
 
@@ -55,7 +57,7 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 | POST | /internal/ai/characters/jobs | 생성 작업을 만든다. 주양육자만, 201. 이미 있음 `PIXEL_CHARACTER_ALREADY_EXISTS`, 생성 중 `PIXEL_CHARACTER_CREATING`(409). 실패로 끝나 결과가 없으면 다시 요청할 수 있다 | MYP-010-08·09 | LJS | CharacterJobCreateRequest | CharacterJobResponse |
 | POST | /internal/ai/characters/jobs/{charCrtJobSn}/success | 생성 성공 보고. 작업을 만든 회원만. 이미 완료면 같은 번호, 실패로 끝났으면 409 `ALREADY_PROCESSED`, 규격 밖 400 `FILE_TYPE_NOT_ALLOWED` | MYP-010-09·17 | LJS | CharacterSuccessRequest | CharacterSuccessResponse |
 | POST | /internal/ai/characters/jobs/{charCrtJobSn}/failure | 생성 실패 보고. 작업을 만든 회원만. 끝난 작업이면 바꾸지 않고 200. 시작 뒤 10분이 넘은 작업은 `CharacterJobTimeoutJob`이 `CHARACTER_TIMEOUT`으로 실패 처리한다 | MYP-010-12 | LJS | CharacterFailureRequest | - |
-| GET | /internal/ai/characters/bake-items | 굽기 대상(판매 중이고 굽기 지시 `BAKE_HINT` 있음, 신발은 지시가 없다) | MYP-011-01, ADM-070-02 | LJS | - | List<BakeItemSummary> |
+| GET | /internal/ai/characters/bake-items | 굽기 대상(판매 중이고 굽기 지시 `BAKE_HINT` 있음, 신발은 사용 안 하는 부위) | MYP-011-01, ADM-070-02 | LJS | - | List<BakeItemSummary> |
 | GET | /internal/ai/items/{itemSn}/bake-targets?page= | 그 아이템을 아직 안 구운 캐릭터(맨몸 시트가 있고 그 아이템의 착용 시트·굽기 실패 표시가 없음). 관리자 쿠키만, 아니면 403 `ADMIN_ONLY`. `page`는 0부터(기본 0), 한 페이지 100개, 캐릭터 번호순. 굽기 대상 아이템이 아니면 404 `ITEM_NOT_FOUND`, `page` 음수 400 | ADM-070-02 | LJS | - | BakeTargetPageResponse |
 | PUT | /internal/ai/characters/{pixelCharSn}/item-sheets/{itemSn} | 착용 시트 저장(주양육자만, 관리자 쿠키면 남의 캐릭터도(전체 굽기 FN-ADM-070-02), 다시 받으면 교체). 굽기 대상이 아니면 404 `ITEM_NOT_FOUND`, 1024 PNG가 아니면 400 | MYP-011-01 | LJS | ItemSheetSaveRequest | - |
 | POST | /internal/ai/characters/{pixelCharSn}/item-sheets/{itemSn}/failure | 굽기 실패 표시(주양육자만, 관리자 쿠키면 남의 캐릭터도(전체 굽기 FN-ADM-070-02)). 구운 시트가 있으면 유지 | MYP-011-01 | LJS | - | - |
@@ -189,7 +191,7 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 쓰는 API: GET /admin/processing/character-jobs. `{ sttsCnts, content, page, size, totalElements, totalPages, hasNext }`
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| sttsCnts | List<AdminCharacterJobStatusCount> | Y | 네 줄, CHRG01 순서(CHRC0001 요청·CHRC0002 생성 중·CHRC0003 생성 완료·CHRC0004 생성 실패). 상태 필터와 무관. 실패율은 화면이 계산한다 | ADM-082-02 |
+| sttsCnts | List<AdminCharacterJobStatusCount> | Y | 네 줄, CHRG01 순서(CHRC0001 요청·CHRC0002 생성 중·CHRC0003 생성 완료·CHRC0004 생성 실패). 상태 필터와 무관, 기간은 따른다. 실패율은 화면이 계산한다 | ADM-082-02 |
 | content | List<AdminCharacterJobRow> | Y | 아래 | |
 | page·size·totalElements·totalPages·hasNext | | Y | 공통 목록 응답과 같다 | |
 
@@ -197,7 +199,7 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | crtJobSttsCd | String | Y | CHRG01 | CHAR_CRT_JOB.CRT_JOB_STTS_CD |
-| cnt | long | Y | 그 상태 건수(삭제 제외), 없으면 0 | CHAR_CRT_JOB |
+| cnt | long | Y | 그 상태 건수(삭제 제외, 기간 안), 없으면 0 | CHAR_CRT_JOB |
 
 #### AdminCharacterJobRow (AdminCharacterJobListResponse.content)
 결과 이미지·원본 사진 없음(결정 26)
@@ -215,6 +217,8 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 쓰는 API: GET /admin/processing/character-jobs (쿼리 파라미터, 모두 선택)
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
+| fromYmd | LocalDate | N | 시작일 `YYYY-MM-DD`, `REG_DT` 날짜 기준 포함. 목록·sttsCnts 모두 건다. 형식 오류 400 | CHAR_CRT_JOB.REG_DT |
+| toYmd | LocalDate | N | 종료일 `YYYY-MM-DD`, 그날 포함. `fromYmd`보다 이르면 400 | CHAR_CRT_JOB.REG_DT |
 | crtJobSttsCd | String | N | CHRG01(CHRC0001~0004), 목록에만 건다(sttsCnts 무관). 그 밖은 400. 빈 값은 전체 | CHAR_CRT_JOB.CRT_JOB_STTS_CD |
 | page·size | Integer | N | 1부터, 기본 20·최대 50 | |
 
@@ -236,11 +240,11 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 `multipart/form-data`
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| itemRegnCd | String | Y | MYPG01 코드 | ITEM.ITEM_REGN_CD |
+| itemRegnCd | String | Y | MYPG01 코드. 신발(MYPC0006)은 사용 안 함, 400 | ITEM.ITEM_REGN_CD |
 | itemNm | String | Y | 1~50자, 앞뒤 공백 제거. 같은 이름 409 | ITEM.ITEM_NM |
 | needPnt | Long | Y | 0~1,000,000 | ITEM.NEED_PNT |
 | ntslYn | Boolean | Y | | ITEM.NTSL_YN |
-| bakeHint | String | N | 300자 이하, 비우면 굽지 않음. 신발(MYPC0006)은 넣을 수 없다. 초안은 AI `/ai/items/bake-hints` | ITEM.BAKE_HINT |
+| bakeHint | String | N | 300자 이하, 비우면 굽지 않음. 신발(MYPC0006)은 사용 안 하는 부위라 등록 400(부위 검사). 초안은 AI `/ai/items/bake-hints` | ITEM.BAKE_HINT |
 | image | MultipartFile | Y | 이미지 파일(형식·용량은 공통 파일 규칙) | ITEM.ATCH_FILE_SN |
 
 ### AdminItemCreateResponse
@@ -252,7 +256,7 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 `multipart/form-data`, 보낸 칸만 바뀐다
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| itemRegnCd | String | N | MYPG01 코드. 보유 회원이 있으면 바꿀 수 없다 | ITEM.ITEM_REGN_CD |
+| itemRegnCd | String | N | MYPG01 코드. 보유 회원이 있으면 바꿀 수 없다. 신발(MYPC0006)로는 바꿀 수 없다(400) | ITEM.ITEM_REGN_CD |
 | itemNm | String | N | 1~50자 | ITEM.ITEM_NM |
 | needPnt | Long | N | 0~1,000,000 | ITEM.NEED_PNT |
 | ntslYn | Boolean | N | false면 판매 중지 | ITEM.NTSL_YN |
@@ -262,7 +266,7 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 ### AdminItemOrderRequest
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| itemRegnCd | String | Y | MYPG01 코드 | ITEM.ITEM_REGN_CD |
+| itemRegnCd | String | Y | MYPG01 코드. 신발(MYPC0006)은 사용 안 함, 400 | ITEM.ITEM_REGN_CD |
 | itemSns | List<Long> | Y | 그 부위 아이템 전부를 상점 순서대로 | ITEM.SORT_SEQ |
 
 ### AdminPetSummary
@@ -510,6 +514,20 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 | caregivers[].brupRoleCd | String | Y | | BRUP_REL.BRUP_ROLE_CD |
 | caregivers[].linkYmd | LocalDate | Y | 연동일(CaregiverSummary와 같음) | BRUP_LINK_STTS_HSTRY.REG_DT, BRUP_REL.REG_DT |
 
+### PetShortcutSaveRequest
+쓰는 API: PUT /pets/main-shortcuts (본문 배열의 한 줄)
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| petSn | Long | Y | 양육 중인 반려동물. 본문 안에서 한 번씩 | PET_MAIN_SHRTC.PET_SN, MAN-008 |
+| shrtcCds | List<String> | Y | 보일 순서대로 늘어놓은 MANG02 바로가기 코드(MANC0008 종합 건강기록·MANC0009 건강 일지·MANC0010 케어 캘린더). 한 번씩, 빈 목록이면 전부 숨김 | PET_MAIN_SHRTC.SHRTC_CD·INDCT_YN·SORT_SEQ, MAN-008 |
+
+### PetShortcutSummary
+쓰는 API: GET /pets/main-shortcuts; PUT /pets/main-shortcuts (응답 행)
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| petSn | Long | Y | 양육 중인 반려동물 | BRUP_REL.PET_SN |
+| shrtcCds | List<String> | Y | 보일 순서대로 MANG02 코드. 이름은 `GET /common-codes?prntComCd=MANG02`, 이동 경로는 프론트가 코드로 고름 | PET_MAIN_SHRTC.SHRTC_CD, MAN-008 |
+
 ### PetSummary
 쓰는 API: GET /pets
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
@@ -572,7 +590,7 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 | crtJobSttsCd | String | Y | 생성 작업 상태(CHRG01) | CHAR_CRT_JOB.CRT_JOB_STTS_CD |
 | bscCharSbstYn | boolean | Y | 오류 확인 중(기본 캐릭터로 대체) | PIXEL_CHAR.BSC_CHAR_SBST_YN |
 | inqryRcptYn | boolean | Y | 현재 결과에 오류 문의 접수됨(이름은 issues 3번) | MYP-010-24, CHAR_CRT_JOB.OTO_INQRY_SN 유무 |
-| heldItems | List<HeldItemSummary> | Y | 보관함. 생성 직후는 빈 목록 | MYP-010-14, HLD_ITEM |
+| heldItems | List<HeldItemSummary> | Y | 보관함. 생성 직후는 빈 목록. 사용 안 하는 부위(신발 MYPC0006) 보유 아이템은 빼고, 착용 저장에 보내면 `ITEM_NOT_HELD` | MYP-010-14, HLD_ITEM |
 | heldItems[].hldItemSn | Long | Y | | HLD_ITEM.HLD_ITEM_SN |
 | heldItems[].itemSn | Long | Y | | HLD_ITEM.ITEM_SN |
 | heldItems[].itemNm | String | Y | | ITEM.ITEM_NM |

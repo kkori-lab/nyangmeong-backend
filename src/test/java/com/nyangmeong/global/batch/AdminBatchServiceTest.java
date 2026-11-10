@@ -74,7 +74,7 @@ class AdminBatchServiceTest {
 
         assertThat(rows).extracting(BatchSummary::btchSeCd)
                 .containsExactly("SYSC0006", "SYSC0007", "SYSC0008", "SYSC0009", "SYSC0026", "SYSC0027", "SYSC0028", "SYSC0029",
-                        "SYSC0030", "SYSC0031");
+                        "SYSC0030", "SYSC0031", "SYSC0032");
         assertThat(rows.get(0).lastRsltCd()).isEqualTo(BatchExecutionResult.SUCCESS.getCode());
         assertThat(rows.get(0).runningYn()).isTrue();
         assertThat(rows.get(0).runnableYn()).isTrue();

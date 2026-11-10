@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.mail.MailDomainChecker;
 import com.nyangmeong.global.notification.CertificationMailEvent;
 import com.nyangmeong.global.notification.EventPublisher;
 import com.nyangmeong.global.security.crypto.FieldCryptoService;
@@ -56,6 +57,7 @@ public class EmailCertificationService {
     private final EmailCertProperties properties;
     private final PasswordEncoder passwordEncoder;
     private final LoginSessionManager loginSessionManager;
+    private final MailDomainChecker mailDomainChecker;
 
     /**
      * 인증번호 발송·재전송 : 이전 번호는 무효, 간격·횟수 제한에 걸리면 재시도 가능 시각을 돌려준다
@@ -68,6 +70,10 @@ public class EmailCertificationService {
         /** 비밀번호 찾기는 가입 여부가 드러나지 않게 회원을 조회하지 않는다 */
         if (purpose == EmailCertPurpose.SIGNUP) {
             memberService.checkEmailAvailable(emailHmac);
+            /** 없는 도메인으로는 인증번호를 만들지도 보내지도 않는다 */
+            if (!mailDomainChecker.isReceivable(email.substring(email.lastIndexOf('@') + 1))) {
+                throw new CustomException(ErrorCode.EMAIL_DOMAIN_NOT_RECEIVABLE);
+            }
         } else if (purpose == EmailCertPurpose.RECOVERY) {
             memberService.getRecoverableMember(emailHmac);
         }
@@ -169,9 +175,19 @@ public class EmailCertificationService {
         if (!account.resettable()) {
             throw new CustomException(ErrorCode.PASSWORD_RESET_NOT_AVAILABLE);
         }
+        String tokenHash = fieldCryptoService.hmac("pswdinit:" + req.pswdInitTkn());
+        LocalDateTime now = LocalDateTime.now();
+        /** 비밀번호를 비교하기 전에 권한부터 확인한다 : 토큰 없이 순번 일련번호로 현재 비밀번호를 맞춰 볼 수 없게 */
+        if (!isPasswordResetUsable(cert, tokenHash, now)) {
+            throw new CustomException(ErrorCode.PASSWORD_RESET_NOT_AVAILABLE);
+        }
+        /** 권한을 사용 처리하기 전에 검사해, 거절돼도 같은 권한으로 다른 비밀번호를 다시 보낼 수 있다 */
+        String currentHash = memberService.getPasswordHash(account.mbrSn());
+        if (currentHash != null && passwordEncoder.matches(req.pswd(), currentHash)) {
+            throw new CustomException(ErrorCode.PASSWORD_SAME_AS_CURRENT);
+        }
         int claimed = emailCertificationMapper.updatePasswordResetUsed(emlCertSn,
-                EmailCertPurpose.PASSWORD_RESET.getCode(), fieldCryptoService.hmac("pswdinit:" + req.pswdInitTkn()),
-                LocalDateTime.now());
+                EmailCertPurpose.PASSWORD_RESET.getCode(), tokenHash, now);
         if (claimed != 1) {
             throw new CustomException(ErrorCode.PASSWORD_RESET_NOT_AVAILABLE);
         }
@@ -325,6 +341,21 @@ public class EmailCertificationService {
     /** 가입 인증은 가입 요청이 쓰므로 무효화 대상이 아니다 */
     private boolean isInvalidatablePurpose(String code) {
         return EmailCertPurpose.PASSWORD_RESET.is(code) || EmailCertPurpose.RECOVERY.is(code);
+    }
+
+    /**
+     * 재설정 권한을 지금 쓸 수 있는지 : 사용 처리 UPDATE 조건(updatePasswordResetUsed)과 같다
+     * - 동시에 같은 토큰을 쓰는 경우는 그 UPDATE 가 한 요청만 통과시킨다
+     */
+    private boolean isPasswordResetUsable(EmailCertification cert, String tokenHash, LocalDateTime now) {
+        return cert.getPswdInitTknHash() != null
+                && MessageDigest.isEqual(cert.getPswdInitTknHash().getBytes(StandardCharsets.UTF_8),
+                        tokenHash.getBytes(StandardCharsets.UTF_8))
+                && cert.getCertCmptnDt() != null
+                && cert.getCertUseCmptnDt() == null
+                && cert.getCertInvldDt() == null
+                && cert.getInitAuthrtExpryDt() != null
+                && cert.getInitAuthrtExpryDt().isAfter(now);
     }
 
     /** 틀리면 횟수를 올리고, 제한에 닿으면 그 인증을 무효화 */

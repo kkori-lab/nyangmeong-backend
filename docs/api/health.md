@@ -6,8 +6,9 @@
 
 | 메서드 | 경로 | 설명 | 기능 ID | 담당 | 요청 DTO | 응답 DTO |
 | --- | --- | --- | --- | --- | --- | --- |
+| GET | /members/me/dashboard-widgets | 건강기록 대시보드 고른 항목·순서. 저장한 적 없으면 `savedYn=false`와 13개 전부(기본 순서, `indctYn=true`)를 주고 프론트가 튜토리얼을 연다 | 새 기능(ID 없음, ※신규 정책) | JAJ | - | HealthDashboardWidgetResponse |
 | GET | /pets/{petSn}/care-completions | 케어 완료 기록 목록(기록 내용). `?careArtclSn=&fromYmd=&toYmd=` | HLT-003-12 | JAJ | - | List<CareCompletionSummary> |
-| GET | /pets/{petSn}/care-items | 케어 항목 목록(토탈 케어리스트, 오늘 투약 횟수 포함). `?mainExpsrYn=&careArtclNm=` | HLT-003-12·13, AIM-012-08 | JAJ | - | List<CareItemSummary> |
+| GET | /pets/{petSn}/care-items | 케어 항목 목록(토탈 케어리스트, 오늘 투약 횟수 포함). `?careArtclNm=` | HLT-003-12, AIM-012-08 | JAJ | - | List<CareItemSummary> |
 | GET | /pets/{petSn}/care-schedules | 케어 캘린더 일정 목록. `?fromYmd=&toYmd=&schdlKndCd=&ckupTypeCd=&size=` — 월간·날짜 상세·다가오는 일정·다음 예정일·가까운 예정 일정 후보 | HLT-003-29~31·39·40, HLT-011-04, HLT-002-46 | JAJ | - | List<CareScheduleSummary> |
 | GET | /pets/{petSn}/checkup-attachments | 검진기록 첨부 목록(최신순). `?ckupRcdSn=&atchTypeCd=&page=&size=` — `ckupRcdSn` 생략 시 반려동물 전체(완료 검진기록, 연결 일정이 삭제된 것 포함) | HLT-005-01·02, HLT-011-09 | JAJ | - | Page<CheckupAttachmentSummary> |
 | GET | /pets/{petSn}/checkup-attachments/{ckupRcdAtchSn} | 첨부 파일 다운로드·이미지 미리보기(보호 파일, 파일 자체 반환) | HLT-005-01, HLT-011-09 | JAJ | - | 파일 |
@@ -35,7 +36,7 @@
 | POST | /pets/{petSn}/observation-items/{obsrvArtclSn}/end | 관찰 종료(상태 전이, 기록 유지) | HLT-002-16 | JAJ | - | - |
 | POST | /pets/{petSn}/prescriptions | 처방약 추가(주기 체크 ON이면 투약 케어 항목 생성) | HLT-005-03 | JAJ | PrescriptionCreateRequest | PrescriptionResponse |
 | POST | /pets/{petSn}/repeat-preventions | 반복 예방 등록(정기관리 케어 항목 자동 추가) | HLT-005-05 | JAJ | RepeatPreventionCreateRequest | RepeatPreventionResponse |
-| PUT | /pets/{petSn}/care-item-exposures | 메인 표시(★) 항목과 순서 전체 저장(MAIN_EXPSR_YN·MAIN_SORT_SEQ, 최대 6). 메인페이지 MAN-009도 같은 API | HLT-003-13 | JAJ | CareItemExposureSaveRequest | List<CareItemSummary> |
+| PUT | /members/me/dashboard-widgets | 건강기록 대시보드 고른 항목 전체 저장. 13개 코드를 보일 순서대로 한 번씩(배열 순서가 `SORT_SEQ`). 모르는 코드·중복 코드·빠진 코드는 400 `INVALID_INPUT_VALUE`. 저장 뒤 조회와 같은 응답 | 새 기능(ID 없음, ※신규 정책) | JAJ | HealthDashboardWidgetSaveRequest | HealthDashboardWidgetResponse |
 | PATCH | /pets/{petSn}/care-items/{careArtclSn} | 케어 항목 수정(사용자 항목 전체, 기본 정기관리 항목은 주기만) | HLT-003-12 | JAJ | CareItemUpdateRequest | CareItemResponse |
 | PATCH | /pets/{petSn}/care-schedules/{schdlSn} | 일정 수정(반려동물 변경 시 연결 검진기록·자동 생성 케어 항목 이동, ★ 해제) | HLT-003-32~37 | JAJ | CareScheduleUpdateRequest | CareScheduleResponse |
 | PATCH | /pets/{petSn}/checkup-attachments/{ckupRcdAtchSn} | 첨부 1건 파일 교체·유형 수정(multipart) | HLT-005-01 | JAJ | CheckupAttachmentUpdateRequest | CheckupAttachmentResponse |
@@ -96,15 +97,9 @@
 | careArtclNm | String | Y | 최대 40자. 같은 이름 허용(HLT-003-21, AIM-012-08) | CARE_ARTCL.CARE_ARTCL_NM (HLT-003-21) |
 | rprsIconId | String | N | 최대 20자. 미입력 시 기본 아이콘 | CARE_ARTCL.RPRS_ICON_ID (미입력 시 기본 아이콘, HLT-003-22·AIM-012-13) |
 | careZoneCd | String | Y | HLTG13 공통코드. 매일 = 일상관리, 주기 = 정기관리 | CARE_ARTCL.CARE_ZONE_CD (반복 유형 매일/주기, HLT-003-23) |
-| careCycleCd | String | N | HLTG15 공통코드(1주·2주·한달·1년·직접입력). 정기관리면 필수 | CARE_ARTCL.CARE_CYCLE_CD (주기 선택 시 필수, HLT-003-24) |
-| cycleDrctInptDayCnt | Integer | N | 직접입력이면 필수. 최대 4자리 | CARE_ARTCL.CYCLE_DRCT_INPT_DAY_CNT (직접입력 시 필수) |
-| lastCmptnYmd | LocalDate | N | 정기관리만. 오늘 이후 날짜 불가(HLT-003-38). 미입력 시 등록일 기준으로 예정일 계산 | CARE_CMPTN_HSTRY.CMPTN_YMD (HLT-003-38, 미입력 시 등록일 기준) |
-
-### CareItemExposureSaveRequest
-쓰는 API: PUT /pets/{petSn}/care-item-exposures
-| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
-| --- | --- | --- | --- | --- |
-| careArtclSns | List<Long> | Y | 최대 6개(HLT-003-13). 목록 순서 = 메인 정렬 순서, 목록에 없는 항목은 메인 표시 해제. 빈 목록 허용 여부는 명세에 없음 | CARE_ARTCL.CARE_ARTCL_SN — 목록 순서 = MAIN_SORT_SEQ, 목록에 없는 항목은 MAIN_EXPSR_YN='N', 최대 6개(HLT-003-13) |
+| careCycleCd | String | N | HLTG15 공통코드(1주·2주·한달·1년·직접입력). 정기관리면 필수. 일상관리면 보내지 않는다 | CARE_ARTCL.CARE_CYCLE_CD (주기 선택 시 필수, HLT-003-24) |
+| cycleDrctInptDayCnt | Integer | N | 직접입력이면 필수. 1~9999. 일상관리면 보내지 않는다(0을 보내면 400) | CARE_ARTCL.CYCLE_DRCT_INPT_DAY_CNT (직접입력 시 필수) |
+| lastCmptnYmd | LocalDate | N | 정기관리만(일상관리면 보내지 않는다). 보내면 그날 완료 기록 1건을 만든다. 오늘 이후 날짜는 400 `CARE_COMPLETION_FUTURE_DATE`(HLT-003-38). 미입력 시 등록일 기준으로 예정일 계산 | CARE_CMPTN_HSTRY.CMPTN_YMD (HLT-003-38, 미입력 시 등록일 기준) |
 
 ### CareItemResponse
 쓰는 API: PATCH /pets/{petSn}/care-items/{careArtclSn}; POST /pets/{petSn}/care-items (GET care-items 응답 행과 같은 필드 → CareItemSummary와 같은 모양)
@@ -119,18 +114,16 @@
 | rprsIconId | String | Y | | CARE_ARTCL.RPRS_ICON_ID |
 | nxtmPrnmntYmd | LocalDate | N | | CARE_ARTCL.NXTM_PRNMNT_YMD |
 | lastCmptnYmd | LocalDate | N | | CARE_ARTCL.LAST_CMPTN_YMD |
-| mainExpsrYn | boolean | Y | | CARE_ARTCL.MAIN_EXPSR_YN |
-| mainSortSeq | Integer | N | | CARE_ARTCL.MAIN_SORT_SEQ |
 | bscArtclYn | boolean | Y | | CARE_ARTCL.BSC_ARTCL_YN |
 | prscSn | Long | N | | CARE_ARTCL.PRSC_SN (처방약 연동 뱃지·출처 보기) |
 | reptPrvntMngSn | Long | N | | CARE_ARTCL.REPT_PRVNT_MNG_SN (출처 보기) |
 | ckupRcdSn | Long | N | 자동 생성 항목의 출처 검진기록([출처 보기] → 검진상세) | PRSC.CKUP_RCD_SN 또는 REPT_PRVNT_MNG.CKUP_RCD_SN, HLT-003-12 (추가) |
 | mdcnEndYmd | LocalDate | N | | PRSC.MDCN_END_YMD (HLT-003-12 복용 종료일 표시) |
 | dayMdcnNmtm | Integer | N | | PRSC.DAY_MDCN_NMTM (투약 n/N회의 N) |
-| todayCmptnCnt | Integer | N | | HLT-003-12·13 (오늘 CARE_CMPTN_HSTRY 건수) |
+| todayCmptnCnt | Integer | N | | HLT-003-12 (오늘 CARE_CMPTN_HSTRY 건수) |
 
 ### CareItemSummary
-쓰는 API: GET /pets/{petSn}/care-items; PUT /pets/{petSn}/care-item-exposures (응답 행)
+쓰는 API: GET /pets/{petSn}/care-items
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | careArtclSn | Long | Y | | CARE_ARTCL.CARE_ARTCL_SN |
@@ -142,15 +135,13 @@
 | rprsIconId | String | Y | | CARE_ARTCL.RPRS_ICON_ID |
 | nxtmPrnmntYmd | LocalDate | N | 상태 배지(오늘/D-n/+n일)는 화면이 계산 | CARE_ARTCL.NXTM_PRNMNT_YMD |
 | lastCmptnYmd | LocalDate | N | | CARE_ARTCL.LAST_CMPTN_YMD |
-| mainExpsrYn | boolean | Y | | CARE_ARTCL.MAIN_EXPSR_YN |
-| mainSortSeq | Integer | N | | CARE_ARTCL.MAIN_SORT_SEQ |
 | bscArtclYn | boolean | Y | | CARE_ARTCL.BSC_ARTCL_YN |
 | prscSn | Long | N | | CARE_ARTCL.PRSC_SN (처방약 연동 뱃지·출처 보기) |
 | reptPrvntMngSn | Long | N | | CARE_ARTCL.REPT_PRVNT_MNG_SN (출처 보기) |
 | ckupRcdSn | Long | N | 자동 생성 항목의 출처 검진기록([출처 보기] → 검진상세) | PRSC.CKUP_RCD_SN 또는 REPT_PRVNT_MNG.CKUP_RCD_SN, HLT-003-12 (추가) |
 | mdcnEndYmd | LocalDate | N | | PRSC.MDCN_END_YMD (HLT-003-12 복용 종료일 표시) |
 | dayMdcnNmtm | Integer | N | | PRSC.DAY_MDCN_NMTM (투약 n/N회의 N) |
-| todayCmptnCnt | Integer | N | | HLT-003-12·13 (오늘 CARE_CMPTN_HSTRY 건수) |
+| todayCmptnCnt | Integer | N | | HLT-003-12 (오늘 CARE_CMPTN_HSTRY 건수) |
 
 ### CareItemUpdateRequest
 쓰는 API: PATCH /pets/{petSn}/care-items/{careArtclSn}
@@ -174,7 +165,7 @@
 | schdlNm | String | N | 최대 40자. 병원 외 종류면 필수(서버 재검증) | SCHDL.SCHDL_NM (병원 외 종류면 필수, AIM-012-12) |
 | memoCn | String | N | 최대 500자. 일정 메모(검진 메모와 별개) | SCHDL.MEMO_CN (HLT-003-36) |
 | cldrBadgeColrCd | String | N | HLTG21 공통코드 | SCHDL.CLDR_BADGE_COLR_CD (미지정 시 종류 기본 색상, HLT-003-36) |
-| schdlSrcCd | String | N | HLTG22 공통코드 | SCHDL.SCHDL_SRC_CD (AI 대화 등록은 'AI 생성', AIM-012-13) |
+| schdlSrcCd | String | N | HLTG22 공통코드. AI 대화 등록은 `HLTC0067`(AI 생성). 케어미션(일정 등록)은 직접 등록만 반영하고 AI 생성은 반영하지 않는다 | SCHDL.SCHDL_SRC_CD (AI 대화 등록은 'AI 생성', AIM-012-13) |
 
 ### CareScheduleResponse
 쓰는 API: PATCH /pets/{petSn}/care-schedules/{schdlSn}; POST /pets/{petSn}/care-schedules
@@ -355,6 +346,30 @@
 | crsdSttsCd | String | N | HLTG10 | DAILY_HLTH_RCD.CRSD_STTS_CD (배변상태) |
 | crsdSttsCdNm | String | N | 표·타일의 배변상태 이름 | COM_CD.COM_CD_NM, HLT-002-12·13 (추가) |
 | rcdDt | LocalDateTime | Y | | DAILY_HLTH_RCD.RCD_DT |
+
+### HealthDashboardWidgetResponse
+쓰는 API: GET·PUT /members/me/dashboard-widgets
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| savedYn | boolean | Y | 저장한 행이 있으면 true. false면 프론트가 튜토리얼을 연다 | MBR_DSHBD_WDGT |
+| widgets | List<HealthDashboardWidgetSummary> | Y | 항목 13개를 보일 순서대로. 저장한 적 없으면 기본 순서·`indctYn=true` | MBR_DSHBD_WDGT, COM_CD(HLTG25) |
+
+### HealthDashboardWidgetSaveRequest
+쓰는 API: PUT /members/me/dashboard-widgets
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| widgets | List<Widget> | Y | 비어 있으면 400. HLTG25 코드 13개를 보일 순서대로 한 번씩 | MBR_DSHBD_WDGT |
+
+Widget: `dshbdWdgtCd`(필수, 8자 이하, HLTG25 코드), `indctYn`(필수, boolean, 표시여부)
+
+### HealthDashboardWidgetSummary
+쓰는 API: GET·PUT /members/me/dashboard-widgets (widgets 행)
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| dshbdWdgtCd | String | Y | HLTG25 공통코드(HLTC0084~HLTC0096) | MBR_DSHBD_WDGT.DSHBD_WDGT_CD |
+| dshbdWdgtCdNm | String | Y | 항목 이름(체중, 식사량, 음수량, 산책, 배변 상태, 검진기록, 검사 수치, 처방·투약, 첨부 자료, 지속 관찰, 알레르기·기저질환, 예방접종·정기검진, 케어리스트) | COM_CD.COM_CD_NM |
+| indctYn | boolean | Y | 표시여부 | MBR_DSHBD_WDGT.INDCT_YN |
+| sortSeq | Integer | Y | 정렬 순서(작은 값이 먼저) | MBR_DSHBD_WDGT.SORT_SEQ |
 
 ### HealthIndicatorResponse
 쓰는 API: GET /pets/{petSn}/health-indicators (메인 건강 지표 위젯, 2026-11-04 추가)

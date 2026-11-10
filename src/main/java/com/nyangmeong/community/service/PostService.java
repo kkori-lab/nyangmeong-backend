@@ -36,6 +36,7 @@ import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.response.PageResponse;
 import com.nyangmeong.global.setting.SystemSettingService;
+import com.nyangmeong.pet.domain.CareMission;
 
 import lombok.RequiredArgsConstructor;
 
@@ -60,12 +61,13 @@ public class PostService {
     private final FileStore fileStore;
     private final OwnerAuthorizer ownerAuthorizer;
     private final SystemSettingService systemSettingService;
+    private final PetStoryMissionReflector missionReflector;
 
     /**
-     * 게시글 목록 조회
+     * 게시글 목록 조회 (mineYn 이면 내 글만, 항목마다 owner 표시)
      */
     @Transactional(readOnly = true)
-    public PageResponse<PostSummary> search(PostSearchCond cond, PageQuery pq) {
+    public PageResponse<PostSummary> search(Long mbrSn, PostSearchCond cond, PageQuery pq) {
         String bbsCd = cond.getBbsCd() == null || cond.getBbsCd().isBlank() ? null : cond.getBbsCd();
         if (bbsCd != null && !BoardType.exists(bbsCd)) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
@@ -75,7 +77,8 @@ public class PostService {
                 : escapeLike(cond.getKeyword().trim());
 
         PageHelper.startPage(pq.pageOrDefault(), pq.sizeOr(PAGE_SIZE));
-        List<PostSummary> rows = postMapper.selectList(bbsCd, keyword, popularSort, PostStatus.NORMAL.getCode());
+        List<PostSummary> rows = postMapper.selectList(bbsCd, keyword, popularSort, PostStatus.NORMAL.getCode(), mbrSn,
+                cond.isMineYn());
         /** 인기순 정렬에서는 인기글 배지 미표시 */
         if (popularSort) {
             rows.forEach(row -> row.setPopular(false));
@@ -163,8 +166,8 @@ public class PostService {
     @Transactional
     public PostResponse getPost(Long mbrSn, Long pstSn) {
         Post post = getPetStoryOrThrow(pstSn);
-        /** 같은 회원·같은 날 이력이 이미 있으면 0건 */
-        if (postMapper.insertViewIgnore(pstSn, mbrSn) > 0) {
+        /** 작성자 본인 조회는 조회수에 넣지 않는다. 같은 회원·같은 날 이력이 이미 있으면 0건 */
+        if (!mbrSn.equals(post.getMbrSn()) && postMapper.insertViewIgnore(pstSn, mbrSn) > 0) {
             postMapper.updateInqCnt(pstSn);
             post.setInqCnt(post.getInqCnt() + 1);
         }
@@ -196,6 +199,7 @@ public class PostService {
         for (MultipartFile image : images) {
             insertImage(post.getPstSn(), fileStore.storePublic(image, actorId(mbrSn)), sortSeq++, mbrSn);
         }
+        missionReflector.reflectAfterCommit(mbrSn, CareMission.PET_STORY_POST);
         return toResponse(mbrSn, getNormalOrThrow(post.getPstSn()));
     }
 

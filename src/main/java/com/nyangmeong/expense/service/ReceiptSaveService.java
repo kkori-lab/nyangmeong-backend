@@ -178,7 +178,11 @@ public class ReceiptSaveService {
     private void validate(Long mbrSn, ReceiptSaveRequest req) {
         checkPets(mbrSn, req.pets().stream().map(ReceiptSavePetRequest::petSn).toList());
         for (int i = 0; i < req.pets().size(); i++) {
-            List<ReceiptSaveDrugRequest> drugs = req.pets().get(i).drugsOrEmpty();
+            ReceiptSavePetRequest pet = req.pets().get(i);
+            if (pet.schdlSn() != null && !checkupService.isMovableSchedule(pet.petSn(), pet.schdlSn(), req.ckupYmd())) {
+                throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "pets[" + i + "].schdlSn");
+            }
+            List<ReceiptSaveDrugRequest> drugs = pet.drugsOrEmpty();
             for (int j = 0; j < drugs.size(); j++) {
                 ReceiptSaveDrugRequest drug = drugs.get(j);
                 if (drug.mdcnEndYmd().isBefore(drug.mdcnBgngYmd())) {

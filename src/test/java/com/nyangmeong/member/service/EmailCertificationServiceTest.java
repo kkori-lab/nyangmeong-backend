@@ -24,6 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.nyangmeong.global.error.BaseException;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.mail.MailDomainChecker;
 import com.nyangmeong.global.notification.CertificationMailEvent;
 import com.nyangmeong.global.notification.EventPublisher;
 import com.nyangmeong.global.security.crypto.CryptoProperties;
@@ -57,8 +58,15 @@ class EmailCertificationServiceTest {
     private final EmailCertProperties properties = new EmailCertProperties();
     private final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
     private final LoginSessionManager loginSessionManager = mock(LoginSessionManager.class);
+    private final MailDomainChecker mailDomainChecker = mock(MailDomainChecker.class);
     private final EmailCertificationService service = new EmailCertificationService(mapper, memberService, crypto,
-            eventPublisher, properties, passwordEncoder, loginSessionManager);
+            eventPublisher, properties, passwordEncoder, loginSessionManager, mailDomainChecker);
+
+    {
+        /** 아래 기존 검사는 5번 틀리면 무효화하는 설정을 전제로 한다. 기본값(1) 검사는 따로 둔다 */
+        properties.setFailLimit(5);
+        when(mailDomainChecker.isReceivable(anyString())).thenReturn(true);
+    }
 
     private final String emailHmac = crypto.hmac(EMAIL);
 
@@ -125,6 +133,54 @@ class EmailCertificationServiceTest {
                 .doesNotContain(code.group());
         assertThat(event.getValue().to()).isEqualTo(EMAIL);
         assertThat(saved.getValue().getCertExpryDt()).isAfter(LocalDateTime.now().plusSeconds(170));
+    }
+
+    @Test
+    void 인증번호는_기본_설정에서_한_번만_틀릴_수_있다() {
+        assertThat(new EmailCertProperties().getFailLimit()).isEqualTo(1);
+    }
+
+    @Test
+    void 제한이_1이면_처음_틀리는_즉시_무효화하고_재발급_오류를_준다() {
+        properties.setFailLimit(1);
+        when(mapper.selectBySn(3L)).thenReturn(freshCert(0));
+
+        assertThatThrownBy(() -> service.verify(3L, new EmailCertificationVerifyRequest("000000")))
+                .satisfies(e -> assertCode(e, ErrorCode.EMAIL_CERT_FAIL_LIMIT_EXCEEDED));
+        verify(mapper).updateFailCount(3L);
+        verify(mapper).updateInvalidate(eq(3L), any());
+        verify(mapper, never()).updateCompleted(anyLong(), any());
+    }
+
+    @Test
+    void 가입은_메일을_받을_수_없는_도메인이면_저장도_메일도_없다() {
+        when(mailDomainChecker.isReceivable("naevr.com")).thenReturn(false);
+
+        assertThatThrownBy(() -> service.send(new EmailCertificationCreateRequest(EmailCertPurpose.SIGNUP.getCode(),
+                " Hong@Naevr.com ")))
+                .satisfies(e -> assertCode(e, ErrorCode.EMAIL_DOMAIN_NOT_RECEIVABLE));
+
+        verify(mapper, never()).insert(any());
+        verify(mapper, never()).updateInvalidatePrevious(any(), any(), any());
+        verify(eventPublisher, never()).publish(any(CertificationMailEvent.class));
+    }
+
+    @Test
+    void 가입은_이메일의_도메인만_확인한다() {
+        service.send(sendRequest());
+
+        verify(mailDomainChecker).isReceivable("example.com");
+    }
+
+    @Test
+    void 비밀번호_찾기는_도메인을_확인하지_않는다() {
+        when(mailDomainChecker.isReceivable(anyString())).thenReturn(false);
+
+        EmailCertificationResult result = service.send(
+                new EmailCertificationCreateRequest(EmailCertPurpose.PASSWORD_RESET.getCode(), EMAIL));
+
+        assertThat(result.succeeded()).isTrue();
+        verify(mailDomainChecker, never()).isReceivable(anyString());
     }
 
     @Test
@@ -506,9 +562,17 @@ class EmailCertificationServiceTest {
         return new EmailCertificationPasswordResetRequest(RESET_TOKEN, pswd, pswdCnfrm);
     }
 
+    /** 확인을 마쳐 재설정 토큰이 발급된(쓰지 않은, 만료 전) 인증 3번 */
+    private EmailCertification issuedResetCert() {
+        EmailCertification cert = resetCert(0, LocalDateTime.now().minusMinutes(1));
+        cert.setPswdInitTknHash(crypto.hmac("pswdinit:" + RESET_TOKEN));
+        cert.setInitAuthrtExpryDt(LocalDateTime.now().plusMinutes(29));
+        return cert;
+    }
+
     /** 재설정 대상 회원 12번과 토큰이 발급된 인증 3번을 준비한다 */
     private void readyReset() {
-        when(mapper.selectBySn(3L)).thenReturn(resetCert(0, LocalDateTime.now().minusMinutes(1)));
+        when(mapper.selectBySn(3L)).thenReturn(issuedResetCert());
         when(memberService.resolvePasswordResetAccount(emailHmac))
                 .thenReturn(new PasswordResetAccount(EmailCertificationResponse.PASSWORD_RESET_READY, null, 12L));
         when(mapper.updatePasswordResetUsed(eq(3L), eq(EmailCertPurpose.PASSWORD_RESET.getCode()),
@@ -524,6 +588,58 @@ class EmailCertificationServiceTest {
 
         verify(memberService).changePassword(12L, "HASHED");
         verify(loginSessionManager).revokeAll(12L);
+    }
+
+    @Test
+    void 새_비밀번호가_현재와_같으면_권한을_쓰지_않고_거절한다() {
+        readyReset();
+        when(memberService.getPasswordHash(12L)).thenReturn("CURRENT_HASH");
+        when(passwordEncoder.matches("newpass12", "CURRENT_HASH")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.resetPassword(3L, resetRequest("newpass12", "newpass12")))
+                .satisfies(e -> assertCode(e, ErrorCode.PASSWORD_SAME_AS_CURRENT));
+
+        verify(mapper, never()).updatePasswordResetUsed(anyLong(), any(), any(), any());
+        verify(memberService, never()).changePassword(anyLong(), any());
+        verify(loginSessionManager, never()).revokeAll(anyLong());
+    }
+
+    @Test
+    void 토큰이_틀리거나_이미_쓴_권한이면_현재와_같은_비밀번호여도_비교하지_않고_권한_오류다() {
+        readyReset();
+        when(memberService.getPasswordHash(12L)).thenReturn("CURRENT_HASH");
+        when(passwordEncoder.matches("newpass12", "CURRENT_HASH")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.resetPassword(3L,
+                new EmailCertificationPasswordResetRequest("wrong-token", "newpass12", "newpass12")))
+                .satisfies(e -> assertCode(e, ErrorCode.PASSWORD_RESET_NOT_AVAILABLE));
+
+        EmailCertification used = issuedResetCert();
+        used.setCertUseCmptnDt(LocalDateTime.now().minusMinutes(1));
+        when(mapper.selectBySn(3L)).thenReturn(used);
+        assertThatThrownBy(() -> service.resetPassword(3L, resetRequest("newpass12", "newpass12")))
+                .satisfies(e -> assertCode(e, ErrorCode.PASSWORD_RESET_NOT_AVAILABLE));
+
+        EmailCertification expired = issuedResetCert();
+        expired.setInitAuthrtExpryDt(LocalDateTime.now().minusSeconds(1));
+        when(mapper.selectBySn(3L)).thenReturn(expired);
+        assertThatThrownBy(() -> service.resetPassword(3L, resetRequest("newpass12", "newpass12")))
+                .satisfies(e -> assertCode(e, ErrorCode.PASSWORD_RESET_NOT_AVAILABLE));
+
+        verify(passwordEncoder, never()).matches(any(), any());
+        verify(mapper, never()).updatePasswordResetUsed(anyLong(), any(), any(), any());
+        verify(memberService, never()).changePassword(anyLong(), any());
+    }
+
+    @Test
+    void 현재와_다른_비밀번호면_저장한다() {
+        readyReset();
+        when(memberService.getPasswordHash(12L)).thenReturn("CURRENT_HASH");
+        when(passwordEncoder.matches("newpass12", "CURRENT_HASH")).thenReturn(false);
+
+        service.resetPassword(3L, resetRequest("newpass12", "newpass12"));
+
+        verify(memberService).changePassword(12L, "HASHED");
     }
 
     @Test

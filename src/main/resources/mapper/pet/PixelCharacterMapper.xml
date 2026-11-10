@@ -444,7 +444,7 @@
     </update>
 
     <select id="selectHeldItems" parameterType="long" resultMap="heldItemSummaryResultMap">
-        /* 캐릭터 보유 아이템 목록 조회 */
+        /* 캐릭터 보유 아이템 목록 조회(사용 안 하는 부위 제외) */
         SELECT H.HLD_ITEM_SN
              , H.ITEM_SN
              , I.ITEM_NM
@@ -454,6 +454,9 @@
           FROM HLD_ITEM H
           JOIN ITEM I
             ON I.ITEM_SN = H.ITEM_SN
+          JOIN COM_CD RC
+            ON RC.COM_CD = I.ITEM_REGN_CD
+           AND RC.USE_YN = 'Y'
          WHERE H.PIXEL_CHAR_SN = #{pixelCharSn}
            AND H.DEL_YN = 'N'
          ORDER BY I.ITEM_REGN_CD
@@ -614,6 +617,21 @@
          GROUP BY J.CRT_JOB_STTS_CD
     </select>
 
+    <select id="selectAdminJobStatusCountsInPeriod" resultType="com.nyangmeong.pet.dto.AdminCharacterJobStatusCount">
+        /* 관리자 캐릭터 생성 작업 기간 내 상태별 건수(있는 상태만, 상태 필터 무관) */
+        SELECT J.CRT_JOB_STTS_CD AS crtJobSttsCd
+             , COUNT(*)          AS cnt
+          FROM CHAR_CRT_JOB J
+         WHERE J.DEL_YN = 'N'
+        <if test="cond.fromYmd != null">
+           AND J.REG_DT &gt;= #{cond.fromYmd}
+        </if>
+        <if test="cond.toYmd != null">
+           AND J.REG_DT &lt; DATE_ADD(#{cond.toYmd}, INTERVAL 1 DAY)
+        </if>
+         GROUP BY J.CRT_JOB_STTS_CD
+    </select>
+
     <resultMap id="adminJobRowMap" type="com.nyangmeong.pet.dto.AdminCharacterJobRow">
         <id     column="CHAR_CRT_JOB_SN" property="charCrtJobSn" />
         <result column="MBR_SN"          property="mbrSn" />
@@ -625,7 +643,7 @@
     </resultMap>
 
     <select id="selectAdminJobList" resultMap="adminJobRowMap">
-        /* 관리자 캐릭터 생성 작업 목록(상태 필터, 최신순, 이미지 미조회) */
+        /* 관리자 캐릭터 생성 작업 목록(기간·상태 필터, 최신순, 이미지 미조회) */
         SELECT J.CHAR_CRT_JOB_SN
              , J.MBR_SN
              , M.MBR_NCNM
@@ -637,6 +655,12 @@
           JOIN MBR M
             ON M.MBR_SN = J.MBR_SN
          WHERE J.DEL_YN = 'N'
+        <if test="cond.fromYmd != null">
+           AND J.REG_DT &gt;= #{cond.fromYmd}
+        </if>
+        <if test="cond.toYmd != null">
+           AND J.REG_DT &lt; DATE_ADD(#{cond.toYmd}, INTERVAL 1 DAY)
+        </if>
         <if test="cond.crtJobSttsCd != null">
            AND J.CRT_JOB_STTS_CD = #{cond.crtJobSttsCd}
         </if>

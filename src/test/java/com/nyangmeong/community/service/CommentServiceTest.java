@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -26,6 +27,7 @@ import com.nyangmeong.community.mapper.PostMapper;
 import com.nyangmeong.global.auth.OwnerAuthorizer;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.pet.domain.CareMission;
 
 /**
  * [검사 - 댓글·대댓글 목록·등록·삭제]
@@ -41,8 +43,9 @@ class CommentServiceTest {
     private final CommentMapper commentMapper = mock(CommentMapper.class);
     private final PostMapper postMapper = mock(PostMapper.class);
     private final LostReportMapper lostReportMapper = mock(LostReportMapper.class);
+    private final PetStoryMissionReflector missionReflector = mock(PetStoryMissionReflector.class);
     private final CommentService service = new CommentService(commentMapper, postMapper, lostReportMapper,
-            new OwnerAuthorizer());
+            new OwnerAuthorizer(), missionReflector);
 
     private Comment comment(Long cmntSn, Long prntCmntSn, Long pstSn, Long mbrSn) {
         Comment comment = new Comment();
@@ -92,6 +95,34 @@ class CommentServiceTest {
         assertThat(res.cmntSn()).isEqualTo(NEW_CMNT);
         assertThat(res.mbrNcnm()).isEqualTo("닉네임");
         assertThat(res.mbrAtchFileSn()).isEqualTo(25L);
+    }
+
+    @Test
+    void 펫이야기_글의_댓글과_대댓글은_케어미션에_반영한다() {
+        stubInsert();
+        Post story = new Post();
+        story.setBbsCd("CMUC0001");
+        when(postMapper.selectPost(PST, NORMAL)).thenReturn(story);
+        when(commentMapper.selectComment(10L)).thenReturn(comment(10L, null, PST, OTHER));
+
+        service.create(MBR, PST, new CommentCreateRequest("댓글", null));
+        service.create(MBR, PST, new CommentCreateRequest("답글", 10L));
+
+        verify(missionReflector, times(2)).reflectAfterCommit(MBR, CareMission.PET_STORY_COMMENT);
+    }
+
+    @Test
+    void 펫이야기가_아닌_글의_댓글은_케어미션에_반영하지_않는다() {
+        stubInsert();
+        for (String bbsCd : new String[] { "CMUC0024", "CMUC0028" }) {
+            Post other = new Post();
+            other.setBbsCd(bbsCd);
+            when(postMapper.selectPost(PST, NORMAL)).thenReturn(other);
+
+            service.create(MBR, PST, new CommentCreateRequest("댓글", null));
+        }
+
+        verify(missionReflector, never()).reflectAfterCommit(any(), any());
     }
 
     @Test

@@ -36,11 +36,6 @@ public interface CareItemMapper {
     long countBasicItemsForUpdate(Long petSn);
 
     /**
-     * 반려동물 케어 항목 중 요청 목록에 든 항목 수 조회
-     */
-    long countItemsIn(@Param("petSn") Long petSn, @Param("careArtclSns") List<Long> careArtclSns);
-
-    /**
      * 케어 항목 목록 조회
      */
     List<CareItemSummary> selectList(@Param("petSn") Long petSn, @Param("cond") CareItemSearchCond cond,
@@ -75,17 +70,6 @@ public interface CareItemMapper {
      * 케어 항목 삭제
      */
     int deleteItem(@Param("careArtclSn") Long careArtclSn, @Param("actorId") String actorId);
-
-    /**
-     * 반려동물 메인 표시 전체 해제
-     */
-    int updateMainExposureClear(@Param("petSn") Long petSn, @Param("actorId") String actorId);
-
-    /**
-     * 케어 항목 메인 표시 지정
-     */
-    int updateMainExposure(@Param("careArtclSn") Long careArtclSn, @Param("mainSortSeq") int mainSortSeq,
-            @Param("actorId") String actorId);
 
     /**
      * 케어 완료 기록 목록 조회

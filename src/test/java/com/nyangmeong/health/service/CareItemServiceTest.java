@@ -38,7 +38,6 @@ import com.nyangmeong.health.dto.CareCompletionCreateRequest;
 import com.nyangmeong.health.dto.CareCompletionSearchCond;
 import com.nyangmeong.health.dto.CareCompletionSummary;
 import com.nyangmeong.health.dto.CareItemCreateRequest;
-import com.nyangmeong.health.dto.CareItemExposureSaveRequest;
 import com.nyangmeong.health.dto.CareItemSearchCond;
 import com.nyangmeong.health.dto.CareItemSummary;
 import com.nyangmeong.health.dto.CareItemUpdateRequest;
@@ -103,7 +102,7 @@ class CareItemServiceTest {
     }
 
     @Test
-    void 기본_항목이_없으면_11개를_만들고_양치_빗질_발톱_관리를_메인에_올린다() {
+    void 기본_항목이_없으면_11개를_선언_순서대로_만든다() {
         when(mapper.countBasicItems(PET)).thenReturn(0L);
         when(mapper.selectPetForUpdate(PET)).thenReturn(PET);
         when(mapper.countBasicItemsForUpdate(PET)).thenReturn(0L);
@@ -114,9 +113,9 @@ class CareItemServiceTest {
         verify(mapper, times(11)).insertItem(captor.capture());
         List<CareItem> items = captor.getAllValues();
         assertThat(items).allMatch(i -> "Y".equals(i.getBscArtclYn()));
-        assertThat(items).filteredOn(i -> "Y".equals(i.getMainExpsrYn()))
-                .extracting(CareItem::getCareArtclNm, CareItem::getMainSortSeq)
-                .containsExactlyInAnyOrder(tuple("양치", 1), tuple("빗질", 2), tuple("발톱 관리", 3));
+        assertThat(items).extracting(CareItem::getCareArtclNm)
+                .containsExactly(Arrays.stream(BasicCareItem.values()).map(BasicCareItem::getCareArtclNm)
+                        .toArray(String[]::new));
         assertThat(items).filteredOn(i -> CareZone.REGULAR.is(i.getCareZoneCd())).hasSize(6)
                 .allMatch(i -> i.getNxtmPrnmntYmd() != null);
         assertThat(items).filteredOn(i -> CareZone.DAILY.is(i.getCareZoneCd())).hasSize(5)
@@ -563,55 +562,6 @@ class CareItemServiceTest {
         assertThat(thrown(() -> service.cancel(MBR, PET, CMPTN)).getErrorCode())
                 .isEqualTo(ErrorCode.CARE_COMPLETION_NOT_FOUND);
         verify(mapper, never()).deleteCompletion(anyLong(), anyString());
-    }
-
-    @Test
-    void 메인_표시는_7개부터_400() {
-        List<Long> seven = List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L);
-
-        assertThat(thrown(() -> service.save(MBR, PET, new CareItemExposureSaveRequest(seven))).getErrorCode())
-                .isEqualTo(ErrorCode.CARE_ITEM_MAIN_LIMIT_EXCEEDED);
-        verify(mapper, never()).updateMainExposureClear(anyLong(), anyString());
-    }
-
-    @Test
-    void 메인_표시는_목록_순서대로_정렬_순서를_저장한다() {
-        List<Long> sns = List.of(7L, 3L, 5L);
-        when(mapper.countBasicItems(PET)).thenReturn(11L);
-        when(mapper.countItemsIn(PET, sns)).thenReturn(3L);
-
-        service.save(MBR, PET, new CareItemExposureSaveRequest(sns));
-
-        verify(mapper).updateMainExposureClear(PET, "1");
-        verify(mapper).updateMainExposure(7L, 1, "1");
-        verify(mapper).updateMainExposure(3L, 2, "1");
-        verify(mapper).updateMainExposure(5L, 3, "1");
-        ArgumentCaptor<CareItemSearchCond> captor = ArgumentCaptor.forClass(CareItemSearchCond.class);
-        verify(mapper).selectList(eq(PET), captor.capture(), any(), eq(CareZone.REGULAR.getCode()));
-        assertThat(captor.getValue().getMainExpsrYn()).isTrue();
-    }
-
-    @Test
-    void 메인_표시_빈_목록은_전부_해제한다() {
-        when(mapper.countBasicItems(PET)).thenReturn(11L);
-
-        service.save(MBR, PET, new CareItemExposureSaveRequest(List.of()));
-
-        verify(mapper).updateMainExposureClear(PET, "1");
-        verify(mapper, never()).updateMainExposure(anyLong(), anyInt(), anyString());
-    }
-
-    @Test
-    void 중복이거나_다른_반려동물_항목이_섞인_메인_표시는_400() {
-        when(mapper.countBasicItems(PET)).thenReturn(11L);
-        List<Long> mixed = List.of(1L, 2L);
-        when(mapper.countItemsIn(PET, mixed)).thenReturn(1L);
-
-        assertThat(thrown(() -> service.save(MBR, PET, new CareItemExposureSaveRequest(List.of(1L, 1L))))
-                .getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
-        assertThat(thrown(() -> service.save(MBR, PET, new CareItemExposureSaveRequest(mixed))).getErrorCode())
-                .isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
-        verify(mapper, never()).updateMainExposureClear(anyLong(), anyString());
     }
 
     private CareItem named(Long petSn, String careArtclNm) {

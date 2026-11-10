@@ -9,6 +9,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.github.pagehelper.PageHelper;
@@ -23,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 /**
  * [외부 API 호출 로그 기록·사용량 조회]
  * - SCR-ADM-112 (FN-ADM-112-01·02·03)
- * - 기록은 Python 통지만 받음. Java 호출부는 실제 구현을 붙일 때 기록
+ * - 기록은 Python 통지와 Java 호출부(카카오 로컬, SMTP 메일)
  */
 @Service
 @RequiredArgsConstructor
@@ -44,6 +45,15 @@ public class ExternalApiUsageService {
         ExternalApiCallLog log = ExternalApiCallLog.of(mbrSn, req);
         externalApiCallLogMapper.insert(log);
         return new ExternalApiCallResponse(log.getExtlApiCallLogSn());
+    }
+
+    /**
+     * Java 호출부 기록 : 새 트랜잭션
+     * - 부른 쪽 트랜잭션이 롤백돼도 호출 로그는 남는다 (인증 메일 발송 실패 등)
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public ExternalApiCallResponse recordInNewTransaction(ExternalApiCallRequest req) {
+        return record(null, req);
     }
 
     /**

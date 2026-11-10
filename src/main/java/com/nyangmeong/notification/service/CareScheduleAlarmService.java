@@ -126,7 +126,8 @@ public class CareScheduleAlarmService {
         String title = render(titleOf(template, DEFAULT_INAPP_TTL), values, leadTime);
         String content = render(contentOf(template, DEFAULT_INAPP_CN), values, leadTime);
         notificationService.create(
-                new NotificationEvent(event.mbrSn(), NotificationType.CARE_SCHEDULE, title, content, CALENDAR_PATH));
+                new NotificationEvent(event.mbrSn(), NotificationType.CARE_SCHEDULE, title, content,
+                calendarPath(event.petSn())));
         sendingLogMapper.updateResult(sendingLog.getNotiSndngLogSn(), SendingResult.SUCCESS.getCode(), 0, null,
                 ACTOR_ID);
     }
@@ -221,7 +222,7 @@ public class CareScheduleAlarmService {
         values.put("병원명", Objects.toString(event.hsptlNm(), ""));
         values.put("일정일", event.schdlDt().format(DATE_FORMAT));
         values.put("시간", event.hrInptYn() ? event.schdlDt().format(TIME_FORMAT) : "");
-        values.put("캘린더링크", frontBaseUrl + CALENDAR_PATH);
+        values.put("캘린더링크", frontBaseUrl + calendarPath(event.petSn()));
         return values;
     }
 
@@ -241,6 +242,13 @@ public class CareScheduleAlarmService {
             result = result.replace("{{" + entry.getKey() + "}}", entry.getValue());
         }
         return result;
+    }
+
+    /**
+     * 케어 캘린더 링크 : 그 일정의 반려동물이 선택된 상태로 열린다
+     */
+    static String calendarPath(Long petSn) {
+        return CALENDAR_PATH + "?petSn=" + petSn;
     }
 
     private String failReason(RuntimeException e) {

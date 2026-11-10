@@ -56,7 +56,7 @@ class CareScheduleAlarmClaimErrorTest {
         when(notificationMapper.selectRecipient(1L)).thenReturn(recipient);
         doThrow(new DataIntegrityViolationException("FK_NOTI_SNDNG_LOG_SCHDL")).when(sendingLogMapper).insert(any());
 
-        CareScheduleAlarmEvent event = new CareScheduleAlarmEvent(1L, 999L, LocalDateTime.of(2026, 10, 22, 14, 30),
+        CareScheduleAlarmEvent event = new CareScheduleAlarmEvent(1L, 999L, 7L, LocalDateTime.of(2026, 10, 22, 14, 30),
                 true, "초코", "예방접종", "냥멍동물병원", 1);
 
         assertThatThrownBy(() -> service.send(event)).isInstanceOf(DataIntegrityViolationException.class);

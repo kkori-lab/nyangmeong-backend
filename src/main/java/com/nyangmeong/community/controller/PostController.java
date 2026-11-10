@@ -47,9 +47,9 @@ public class PostController {
     @Operation(summary = "펫이야기 게시글 목록")
     @AiTool(name = "list_posts", domain = "community", kind = AiToolKind.READ)
     @GetMapping
-    public ResponseEntity<ApiResponse<PageResponse<PostSummary>>> search(
+    public ResponseEntity<ApiResponse<PageResponse<PostSummary>>> search(@AuthenticationPrincipal LoginMember me,
             @ModelAttribute PostSearchCond cond, PageQuery pq) {
-        return ResponseEntity.ok(ApiResponse.success(postService.search(cond, pq)));
+        return ResponseEntity.ok(ApiResponse.success(postService.search(me.id(), cond, pq)));
     }
 
     @Operation(summary = "오늘의 건강팁")

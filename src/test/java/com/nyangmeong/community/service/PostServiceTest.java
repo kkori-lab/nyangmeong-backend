@@ -44,6 +44,7 @@ import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.setting.SystemSetting;
 import com.nyangmeong.global.setting.SystemSettingService;
+import com.nyangmeong.pet.domain.CareMission;
 
 /**
  * [검사 - 펫이야기 게시글 목록·상세·작성·수정·삭제·좋아요]
@@ -58,8 +59,9 @@ class PostServiceTest {
     private final PostMapper postMapper = mock(PostMapper.class);
     private final FileStore fileStore = mock(FileStore.class);
     private final SystemSettingService systemSettingService = mock(SystemSettingService.class);
+    private final PetStoryMissionReflector missionReflector = mock(PetStoryMissionReflector.class);
     private final PostService service = new PostService(postMapper, fileStore, new OwnerAuthorizer(),
-            systemSettingService);
+            systemSettingService, missionReflector);
 
     @BeforeEach
     void stubAuthor() {
@@ -115,9 +117,32 @@ class PostServiceTest {
 
     @Test
     void 목록은_정상_글만_기본_10건으로_조회한다() {
-        service.search(new PostSearchCond(), new PageQuery(null, null, null));
+        service.search(MBR, new PostSearchCond(), new PageQuery(null, null, null));
 
-        verify(postMapper).selectList(null, null, false, NORMAL);
+        verify(postMapper).selectList(null, null, false, NORMAL, MBR, false);
+    }
+
+    @Test
+    void 내_글만_보기면_로그인_회원_번호와_함께_조회한다() {
+        PostSearchCond cond = new PostSearchCond();
+        cond.setMineYn(true);
+
+        service.search(MBR, cond, new PageQuery(null, null, null));
+
+        verify(postMapper).selectList(null, null, false, NORMAL, MBR, true);
+    }
+
+    @Test
+    void 목록_항목의_owner는_조회_결과를_그대로_돌려준다() {
+        PostSummary mine = summary(false);
+        mine.setOwner(true);
+        PostSummary others = summary(false);
+        others.setOwner(false);
+        when(postMapper.selectList(null, null, false, NORMAL, MBR, false)).thenReturn(List.of(mine, others));
+
+        var res = service.search(MBR, new PostSearchCond(), new PageQuery(null, null, null));
+
+        assertThat(res.content()).extracting(PostSummary::getOwner).containsExactly(true, false);
     }
 
     @Test
@@ -126,35 +151,35 @@ class PostServiceTest {
         cond.setBbsCd("CMUC0002");
         cond.setKeyword(" 50%_할인 ");
 
-        service.search(cond, new PageQuery(null, null, "latest"));
+        service.search(MBR, cond, new PageQuery(null, null, "latest"));
 
-        verify(postMapper).selectList("CMUC0002", "50\\%\\_할인", false, NORMAL);
+        verify(postMapper).selectList("CMUC0002", "50\\%\\_할인", false, NORMAL, MBR, false);
     }
 
     @Test
     void 알_수_없는_게시판이나_정렬은_400() {
         PostSearchCond cond = new PostSearchCond();
         cond.setBbsCd("CMUC9999");
-        assertError(() -> service.search(cond, new PageQuery(null, null, null)), ErrorCode.INVALID_INPUT_VALUE);
+        assertError(() -> service.search(MBR, cond, new PageQuery(null, null, null)), ErrorCode.INVALID_INPUT_VALUE);
 
-        assertError(() -> service.search(new PostSearchCond(), new PageQuery(null, null, "oldest")),
+        assertError(() -> service.search(MBR, new PostSearchCond(), new PageQuery(null, null, "oldest")),
                 ErrorCode.INVALID_INPUT_VALUE);
     }
 
     @Test
     void 인기순이면_좋아요_순으로_조회하고_인기글_배지는_모두_뺀다() {
-        when(postMapper.selectList(null, null, true, NORMAL)).thenReturn(List.of(summary(true), summary(true)));
+        when(postMapper.selectList(null, null, true, NORMAL, MBR, false)).thenReturn(List.of(summary(true), summary(true)));
 
-        var res = service.search(new PostSearchCond(), new PageQuery(null, null, "popular"));
+        var res = service.search(MBR, new PostSearchCond(), new PageQuery(null, null, "popular"));
 
         assertThat(res.content()).extracting(PostSummary::getPopular).containsOnly(false);
     }
 
     @Test
     void 최신순이면_인기글_배지를_그대로_둔다() {
-        when(postMapper.selectList(null, null, false, NORMAL)).thenReturn(List.of(summary(true)));
+        when(postMapper.selectList(null, null, false, NORMAL, MBR, false)).thenReturn(List.of(summary(true)));
 
-        var res = service.search(new PostSearchCond(), new PageQuery(null, null, null));
+        var res = service.search(MBR, new PostSearchCond(), new PageQuery(null, null, null));
 
         assertThat(res.content().get(0).getPopular()).isTrue();
     }
@@ -221,6 +246,30 @@ class PostServiceTest {
     }
 
     @Test
+    void 작성자가_보면_조회_이력도_조회수도_건드리지_않는다() {
+        when(postMapper.selectPost(PST, NORMAL)).thenReturn(post(MBR));
+
+        PostResponse res = service.getPost(MBR, PST);
+
+        verify(postMapper, never()).insertViewIgnore(anyLong(), anyLong());
+        verify(postMapper, never()).updateInqCnt(anyLong());
+        assertThat(res.inqCnt()).isEqualTo(10);
+    }
+
+    @Test
+    void 다른_회원이_같은_날_다시_열면_조회수는_그대로() {
+        when(postMapper.selectPost(PST, NORMAL)).thenReturn(post(OTHER));
+        when(postMapper.insertViewIgnore(PST, MBR)).thenReturn(0);
+
+        PostResponse res = service.getPost(MBR, PST);
+
+        verify(postMapper).insertViewIgnore(PST, MBR);
+        verify(postMapper, never()).updateInqCnt(anyLong());
+        assertThat(res.inqCnt()).isEqualTo(10);
+        assertThat(res.owner()).isFalse();
+    }
+
+    @Test
     void 없거나_정상이_아닌_글의_상세는_404() {
         assertError(() -> service.getPost(MBR, PST), ErrorCode.POST_NOT_FOUND);
         verify(postMapper, never()).insertViewIgnore(anyLong(), anyLong());
@@ -251,6 +300,7 @@ class PostServiceTest {
         verify(postMapper, times(2)).insertImage(images.capture());
         assertThat(images.getAllValues()).extracting(PostImage::getSortSeq).containsExactly(0, 1);
         assertThat(images.getAllValues()).extracting(PostImage::getAtchFileSn).containsExactly(101L, 102L);
+        verify(missionReflector).reflectAfterCommit(MBR, CareMission.PET_STORY_POST);
     }
 
     @Test
@@ -264,12 +314,14 @@ class PostServiceTest {
         assertError(() -> service.create(MBR, new PostCreateRequest("CMUC0001", "제목", "내용", files)),
                 ErrorCode.POST_IMAGE_LIMIT_EXCEEDED);
         verify(postMapper, never()).insertPost(any(Post.class));
+        verify(missionReflector, never()).reflectAfterCommit(any(), any());
     }
 
     @Test
     void 알_수_없는_게시판으로는_작성할_수_없다() {
         assertError(() -> service.create(MBR, new PostCreateRequest("CMUC9999", "제목", "내용", List.of())),
                 ErrorCode.INVALID_INPUT_VALUE);
+        verify(missionReflector, never()).reflectAfterCommit(any(), any());
     }
 
     @Test

@@ -12,7 +12,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -68,7 +70,7 @@ class CareItemControllerTest {
 
     private CareItemResponse itemResponse() {
         return new CareItemResponse(100L, "목욕 가기", "HLTC0037", "HLTC0039", "2주", null, "task_alt",
-                LocalDate.of(2026, 11, 12), null, false, 0, false, null, null, null, null, null, 0);
+                LocalDate.of(2026, 11, 12), null, false, null, null, null, null, null, 0);
     }
 
     private CareCompletionResponse completionResponse() {
@@ -78,23 +80,21 @@ class CareItemControllerTest {
 
     @Test
     @WithMockLoginMember
-    void 목록은_메인_표시와_이름_조건을_받아_항목_행을_돌려준다() throws Exception {
+    void 목록은_이름_조건을_받아_메인_표시_필드_없이_항목_행을_돌려준다() throws Exception {
         CareItemSummary row = new CareItemSummary();
         row.setCareArtclSn(100L);
         row.setCareArtclNm("양치");
-        row.setMainExpsrYn(true);
         row.setBscArtclYn(true);
         row.setTodayCmptnCnt(1);
         when(careItemService.search(eq(1L), eq(10L), any())).thenReturn(List.of(row));
 
-        mockMvc.perform(get("/api/pets/10/care-items").param("mainExpsrYn", "true").param("careArtclNm", "양치"))
+        mockMvc.perform(get("/api/pets/10/care-items").param("careArtclNm", "양치"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].careArtclNm").value("양치"))
-                .andExpect(jsonPath("$.data[0].mainExpsrYn").value(true))
+                .andExpect(content().string(not(containsString("\"main"))))
                 .andExpect(jsonPath("$.data[0].bscArtclYn").value(true))
                 .andExpect(jsonPath("$.data[0].todayCmptnCnt").value(1));
-        verify(careItemService).search(eq(1L), eq(10L),
-                argThat(cond -> Boolean.TRUE.equals(cond.getMainExpsrYn()) && "양치".equals(cond.getCareArtclNm())));
+        verify(careItemService).search(eq(1L), eq(10L), argThat(cond -> "양치".equals(cond.getCareArtclNm())));
     }
 
     @Test
@@ -171,42 +171,6 @@ class CareItemControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"));
         verify(careItemService).delete(1L, 10L, 100L);
-    }
-
-    @Test
-    @WithMockLoginMember
-    void 메인_표시_저장은_항목_목록을_받아_저장한_항목을_돌려준다() throws Exception {
-        CareItemSummary row = new CareItemSummary();
-        row.setCareArtclSn(7L);
-        row.setMainExpsrYn(true);
-        row.setMainSortSeq(1);
-        when(careItemService.save(eq(1L), eq(10L), any())).thenReturn(List.of(row));
-
-        mockMvc.perform(put("/api/pets/10/care-item-exposures").header(XHR, "XMLHttpRequest")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"careArtclSns\":[7]}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].careArtclSn").value(7))
-                .andExpect(jsonPath("$.data[0].mainSortSeq").value(1));
-        verify(careItemService).save(eq(1L), eq(10L), argThat(req -> List.of(7L).equals(req.careArtclSns())));
-    }
-
-    @Test
-    @WithMockLoginMember
-    void 메인_표시_저장에_목록이_없으면_400이고_7개는_서비스가_400으로_막는다() throws Exception {
-        mockMvc.perform(put("/api/pets/10/care-item-exposures").header(XHR, "XMLHttpRequest")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_INPUT_VALUE"));
-
-        when(careItemService.save(eq(1L), eq(10L), any()))
-                .thenThrow(new CustomException(ErrorCode.CARE_ITEM_MAIN_LIMIT_EXCEEDED));
-        mockMvc.perform(put("/api/pets/10/care-item-exposures").header(XHR, "XMLHttpRequest")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"careArtclSns\":[1,2,3,4,5,6,7]}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("CARE_ITEM_MAIN_LIMIT_EXCEEDED"));
     }
 
     @Test

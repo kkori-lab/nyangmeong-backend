@@ -4,7 +4,6 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +28,6 @@ import com.nyangmeong.health.dto.CareCompletionResponse;
 import com.nyangmeong.health.dto.CareCompletionSearchCond;
 import com.nyangmeong.health.dto.CareCompletionSummary;
 import com.nyangmeong.health.dto.CareItemCreateRequest;
-import com.nyangmeong.health.dto.CareItemExposureSaveRequest;
 import com.nyangmeong.health.dto.CareItemResponse;
 import com.nyangmeong.health.dto.CareItemSearchCond;
 import com.nyangmeong.health.dto.CareItemSummary;
@@ -42,15 +40,14 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * [토탈 케어리스트]
- * - 케어 항목 조회·추가·수정·삭제, 완료 체크·취소, 메인 표시 저장 (SCR-HLT-003, FN-HLT-003-12·13·21~24·38)
- * - 기본 항목은 반려동물의 첫 조회·저장 때 만듦 : 기본 항목이 0건일 때만
+ * - 케어 항목 조회·추가·수정·삭제, 완료 체크·취소 (SCR-HLT-003, FN-HLT-003-12·21~24·38)
+ * - 기본 항목은 반려동물의 첫 조회 때 만듦 : 기본 항목이 0건일 때만
  */
 @Service
 @RequiredArgsConstructor
 public class CareItemService {
 
     private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
-    private static final int MAIN_LIMIT = 6;
     private static final String DEFAULT_ICON = "task_alt";
     private static final String MEDICATION_ICON = "medication";
     private static final String PREVENTION_ICON = "vaccines";
@@ -143,8 +140,6 @@ public class CareItemService {
         item.setCareZoneCd(zone.getCode());
         item.setCareArtclNm(nameOf(req.careArtclNm()));
         item.setRprsIconId(iconOf(req.rprsIconId()));
-        item.setMainExpsrYn("N");
-        item.setMainSortSeq(0);
         item.setBscArtclYn("N");
         item.setRgtrId(String.valueOf(mbrSn));
         item.setMdfrId(String.valueOf(mbrSn));
@@ -223,39 +218,6 @@ public class CareItemService {
             throw new CustomException(ErrorCode.CARE_ITEM_DEFAULT_NOT_DELETABLE);
         }
         careItemMapper.deleteItem(careArtclSn, String.valueOf(mbrSn));
-    }
-
-    /**
-     * 메인 표시 항목 전체 저장
-     */
-    @Transactional
-    public List<CareItemSummary> save(Long mbrSn, Long petSn, CareItemExposureSaveRequest req) {
-        petAuthorizer.checkCaregiver(mbrSn, petSn);
-        List<Long> careArtclSns = req.careArtclSns();
-        if (careArtclSns.size() > MAIN_LIMIT) {
-            throw new CustomException(ErrorCode.CARE_ITEM_MAIN_LIMIT_EXCEEDED);
-        }
-        if (careArtclSns.stream().anyMatch(Objects::isNull)
-                || new HashSet<>(careArtclSns).size() != careArtclSns.size()) {
-            throw invalid();
-        }
-
-        if (!createBasicItems(petSn, String.valueOf(mbrSn))) {
-            throw new CustomException(ErrorCode.PET_NOT_FOUND);
-        }
-        if (!careArtclSns.isEmpty() && careItemMapper.countItemsIn(petSn, careArtclSns) != careArtclSns.size()) {
-            throw invalid();
-        }
-
-        String actorId = String.valueOf(mbrSn);
-        careItemMapper.updateMainExposureClear(petSn, actorId);
-        for (int i = 0; i < careArtclSns.size(); i++) {
-            careItemMapper.updateMainExposure(careArtclSns.get(i), i + 1, actorId);
-        }
-
-        CareItemSearchCond cond = new CareItemSearchCond();
-        cond.setMainExpsrYn(true);
-        return careItemMapper.selectList(petSn, cond, today(), CareZone.REGULAR.getCode());
     }
 
     /**
@@ -397,8 +359,6 @@ public class CareItemService {
         item.setCareZoneCd(zone.getCode());
         item.setCareArtclNm(careArtclNm);
         item.setRprsIconId(rprsIconId);
-        item.setMainExpsrYn("N");
-        item.setMainSortSeq(0);
         item.setBscArtclYn("N");
         item.setRgtrId(String.valueOf(mbrSn));
         item.setMdfrId(String.valueOf(mbrSn));
@@ -428,8 +388,6 @@ public class CareItemService {
             item.setCareZoneCd(basic.getZone().getCode());
             item.setCareArtclNm(basic.getCareArtclNm());
             item.setRprsIconId(basic.getRprsIconId());
-            item.setMainExpsrYn(basic.getMainSortSeq() > 0 ? "Y" : "N");
-            item.setMainSortSeq(basic.getMainSortSeq());
             item.setBscArtclYn("Y");
             item.setRgtrId(actorId);
             item.setMdfrId(actorId);

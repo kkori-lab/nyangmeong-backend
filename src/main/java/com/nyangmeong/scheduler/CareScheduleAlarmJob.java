@@ -59,7 +59,7 @@ public class CareScheduleAlarmJob implements BatchJob {
         for (int bfhdDayCnt : BFHD_DAY_CNTS) {
             for (HospitalScheduleSummary schedule : careScheduleService.searchHospitalSchedules(baseYmd.plusDays(bfhdDayCnt))) {
                 for (Long mbrSn : caregiverFake.search(schedule.getPetSn())) {
-                    eventPublisher.publish(new CareScheduleAlarmEvent(mbrSn, schedule.getSchdlSn(),
+                    eventPublisher.publish(new CareScheduleAlarmEvent(mbrSn, schedule.getSchdlSn(), schedule.getPetSn(),
                             schedule.getSchdlDt(), schedule.isHrInptYn(), schedule.getPetNm(),
                             schedule.getCkupTypeNm(), schedule.getHsptlNm(), bfhdDayCnt));
                     published++;

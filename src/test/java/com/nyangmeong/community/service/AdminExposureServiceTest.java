@@ -55,7 +55,7 @@ class AdminExposureServiceTest {
     private final CommunityAiCommentaryMapper commentaryMapper = mock(CommunityAiCommentaryMapper.class);
     private final AdminTaskLogService adminTaskLogService = mock(AdminTaskLogService.class);
     private final PostService postService = new PostService(postMapper, mock(FileStore.class), new OwnerAuthorizer(),
-            mock(SystemSettingService.class));
+            mock(SystemSettingService.class), mock(PetStoryMissionReflector.class));
     private final AdminExposureService service = new AdminExposureService(postService, postMapper,
             todayPhraseMapper, commentaryMapper, adminTaskLogService);
 

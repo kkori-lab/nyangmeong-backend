@@ -296,62 +296,62 @@
 - 완료 조건 결과: 검증 `통과`(2026-11-03, 2회차. 1회차는 `NOTI_SNDNG_LOG` 0건이라 실제 행 확인 못 함 → 사람이 확인용 행 4건을 넣고 재검증), 사람 확인 2026-11-03
 - 연결 남음: FN-ADM-091-01 (프론트 연결 `features/adminNotificationLog/api.js` 목록, 프론트 저장소에서 /start)
 
-## SCR-ADM-021 실종제보 — 대기
+## SCR-ADM-021 실종제보 — 끝
 - 기능: FN-ADM-021-01 실종제보 목록 조회, FN-ADM-021-02 실종제보 상세 조회, FN-ADM-021-03 기간 변경 없음
 - 기다리는 것: `community` 협의 (KSJ)
 - 완료 조건: '찾았어요' 이후 건은 제목·상태·처리 시각만 나온다
 
-## SCR-ADM-022 펫돌봄 거래 — 대기
+## SCR-ADM-022 펫돌봄 거래 — 끝
 - 기능: FN-ADM-022-01 모집글 목록 조회, FN-ADM-022-02 매칭 상세 조회, FN-ADM-022-03 채팅 내용 비노출
 - 기다리는 것: `community` 협의 (KSJ)
 - 완료 조건: 매칭 상세에 상태 이력·조건 버전·완료 사진이 나오고 채팅 내용은 없다
 
-## SCR-ADM-023 노출 콘텐츠 — 대기
+## SCR-ADM-023 노출 콘텐츠 — 끝
 - 기능: FN-ADM-023-01 오늘의 건강팁 현황, FN-ADM-023-02 건강팁 지정·해제, FN-ADM-023-03 지정 글 자동 대체, FN-ADM-023-04 오늘의 이야기 문구 관리, FN-ADM-023-05 오늘의 이야기 선택, FN-ADM-023-06 AI 코멘트 관리
 - 기다리는 것: 오늘의 이야기 저장 위치(구현 계획 6절, 사람), `community` 협의 (KSJ)
 - 완료 조건: 지정한 건강팁이 메인 노출 3건에 들어가고 지정 글이 삭제되면 자동 선정 글로 바뀐다
 
-## SCR-ADM-050 펫뉴스 — 대기
+## SCR-ADM-050 펫뉴스 — 끝
 - 기능: FN-ADM-050-01 뉴스 목록 조회, FN-ADM-050-02 관리자 뉴스 등록·수정, FN-ADM-050-03 수집 기사 관리, FN-ADM-050-05 분류 키워드 관리, FN-ADM-050-06 수집 기사 자동 분류, FN-ADM-050-07 뉴스 수집 실행
 - 기다리는 것: `KWRD_DICT` migration, `community` 뉴스 협의 (KSJ)
 - 완료 조건: 숨긴 수집 기사는 사용자 뉴스에서 빠진다
 
-## SCR-ADM-101 품종·지역 — 대기
+## SCR-ADM-101 품종·지역 — 끝
 - 기능: FN-ADM-101-01 품종 관리, FN-ADM-101-02 지역 조회
 - 기다리는 것: 품종 마스터 협의 (KSJ)
 - 완료 조건: 추가한 품종이 반려동물 등록의 품종 목록에 나온다
 
-## SCR-ADM-051 약관 — 대기
+## SCR-ADM-051 약관 — 끝
 - 기능: FN-ADM-051-01 약관 목록 조회, FN-ADM-051-02 약관 새 버전 등록, FN-ADM-051-03 약관 버전 이력 조회, FN-ADM-051-04 관리 대상 약관, FN-ADM-051-05 기존 회원 재동의
 - 기다리는 것: 약관 2종 코드 migration, `member` 약관 협의 (YAY)
 - 완료 조건: 새 버전을 등록하면 이전 버전은 이력으로 남고 가입 화면은 새 버전을 보여 준다
 
-## SCR-ADM-071 케어미션 — 대기
+## SCR-ADM-071 케어미션 — 끝
 - 기능: FN-ADM-071-01 케어미션 목록 조회, FN-ADM-071-02 케어미션 수정, FN-ADM-071-03 변경 반영 시점
 - 기다리는 것: `pet` 케어미션 협의 (SJM)
 - 완료 조건: 수정한 배점이 다음 출제부터 반영되고 이미 낸 미션은 그대로다
 
-## SCR-ADM-072 포인트 — 대기
+## SCR-ADM-072 포인트 — 끝
 - 기능: FN-ADM-072-01 포인트 원장 조회, FN-ADM-072-02 포인트 수동 조정, FN-ADM-072-03 회원 화면 표시
 - 기다리는 것: `pet` 포인트 협의 (SJM)
 - 완료 조건: 수동 조정이 잔액과 원장에 함께 반영되고 사유 없이는 막힌다. 잔액이 음수가 되지 않는다
 
-## SCR-ADM-080 라우팅 매핑표 — 대기
+## SCR-ADM-080 라우팅 매핑표 — 끝
 - 기능: FN-ADM-080-01 매핑표 조회, FN-ADM-080-02 매핑 등록·수정·삭제, FN-ADM-080-03 우선순위 변경, FN-ADM-080-04 매핑표 제공, FN-ADM-080-05 초기 데이터
 - 기다리는 것: `AI_ROUT_MPNG` migration·초기 데이터, Python AI 서버가 매핑표 조회 API를 붙이는 것 (ai 세션)
 - 완료 조건: 수정한 매핑표가 내부 조회 API에 바로 나온다
 
-## SCR-ADM-081 키워드 사전 — 대기
+## SCR-ADM-081 키워드 사전 — 끝
 - 기능: FN-ADM-081-01 키워드 조회, FN-ADM-081-02 키워드 등록·수정·삭제, FN-ADM-081-03 초기 데이터
 - 기다리는 것: `KWRD_DICT` migration·초기 데이터
 - 완료 조건: 용도별(일정·가계부) 키워드가 내부 조회 API에 바로 나온다
 
-## SCR-ADM-082 처리 현황 — 대기
+## SCR-ADM-082 처리 현황 — 끝
 - 기능: FN-ADM-082-01 영수증 OCR 현황, FN-ADM-082-02 캐릭터 생성 현황, FN-ADM-082-03 검사결과지 분석 현황
 - 기다리는 것: 없음(JAJ 집계 service 불필요. 팀장 결정 2026-11-04: FN-ADM-082-03은 LJS가 `EXTL_API_CALL_LOG`(SYSC0025, Python 통지)로 직접 센다. 실제 작업은 아래 `· 검사결과지 분석 현황 API` 절)
 - 완료 조건: 상태별 건수와 실패율이 나온다
 
-## SCR-ADM-001 대시보드 — 대기
+## SCR-ADM-001 대시보드 — 끝
 - 기능: FN-ADM-001-01 관리자 접근 제어, FN-ADM-001-02 운영 현황 조회, FN-ADM-001-03 처리 대기 건수, FN-ADM-001-04 이용 통계 조회, FN-ADM-001-05 통계 기간 선택
 - 기다리는 것: 각 도메인 집계 service (다른 관리자 마일스톤 뒤)
 - 완료 조건: 일반 회원은 403이다. 처리 대기(신고·문의·캐릭터 오류·OCR·알림 실패) 건수가 각 목록 건수와 같다
@@ -362,11 +362,12 @@
 - 완료 조건: `GET /api/admin/audit-logs`, `/admins`, `/{mngrTaskLogSn}`가 develop에 있다
 - 이미 바뀐 것: 커밋 38f930a (origin/LJS)
 
-## SCR-ADM-112 외부 API 사용량 · 사용량 조회 API·SYSG05 코드 수정·호출 로그 — 대기
+## SCR-ADM-112 외부 API 사용량 · 사용량 조회 API·SYSG05 코드 수정·호출 로그 — 끝
 - 기능: 명세 기능 ID 추가 없음. FN-ADM-112-01·02·03
 - 기다리는 것: 프론트 SCR-ADM-112 외부 API 사용량 화면(끝, 2026-11-01)
 - 완료 조건: 프론트 `features/apiUsage/api.js` 가짜를 바꿀 수 있게 `/api/admin/external-api-usage` 사용량·일별·토큰·실패 목록이 나온다. SYSG05가 명세 7종(AI 대화·AI 분류·OCR·캐릭터 생성·PDF 분석·카카오 로컬·메일)과 맞는다. Java 호출과 Python 통지가 `EXTL_API_CALL_LOG`에 남는다
 - 남은 것(2026-11-02): 조회 API 4종·SYSG05·Python 통지 API는 SCR-ADM-112에서 끝. Java 호출 기록만 남았다. 지금 구현이 전부 가짜라 하지 않기로 했고(2026-11-01 사람), 실제 구현을 붙일 때 한다. 먼저 고를 작업이 아니다
+- 결과(2026-11-09): Java 호출 기록은 카카오 로컬(이미 기록)과 SMTP 메일(`SmtpMailSender`, 새 트랜잭션 저장)까지 끝. 검증 `통과`(1회차), 사람 확인 2026-11-09. 캐릭터 생성은 Java 실제 구현이 없어 붙일 때 기록한다(핸드오프 "다음 백엔드 작업")
 
 ## SCR-ADM-010 회원 목록 · 회원 목록 조회 API — 끝
 - 기능: 명세 기능 ID 추가 없음. FN-ADM-010-01·02·03·04
@@ -413,10 +414,12 @@
 - 완료 조건: `GET /api/admin/items?itemRegnCd=`(판매 중지 포함, 부위·SORT_SEQ·번호순 `[{ itemSn, itemNm, itemRegnCd, itemRegnCdNm, needPnt, ntslYn, sortSeq, atchFileSn, 보유 회원 수 }]`), `GET /api/admin/items/{itemSn}/image`(판매 중지도 blob), `POST /api/admin/items`(multipart itemRegnCd·itemNm·needPnt·ntslYn·image, 201 `{ itemSn }`), `PATCH /api/admin/items/{itemSn}`(multipart, 보낸 칸만), `PUT /api/admin/items/order`(`{ itemRegnCd, itemSns }` 부위 안 순서)가 프론트 가짜와 같은 모양으로 동작한다. 보유 회원 수 필드 이름을 정해 프론트에 알린다(가짜는 `hldMbrCnt`)
 - 완료 조건 결과: `SCR-ADM-070 아이템`과 같이 구현·검증(2026-11-03). 필드 이름은 가짜 그대로 `hldMbrCnt`, `ntslYn`은 boolean. 응답에 `bakeHint`가 더 있고 등록·수정 multipart에 `bakeHint`(선택, 빈 값이면 지움)를 받는다. `PATCH` 응답은 data 없음
 
-## SCR-ADM-070 아이템 · 신발 부위 제외 — 대기
+## SCR-ADM-070 아이템 · 신발 부위 제외 — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-070-01·02
 - 기다리는 것: 프론트 SCR-ADM-070 추가-1(관리자 화면은 부위 이름 "신발"을 걸러 숨김)
 - 완료 조건: 공통코드 MYPG01에서 신발이 빠져 상점·보관함·관리자 부위 목록에 나오지 않는다. 이미 등록된 신발 아이템과 회원 보유·착용 처리를 사람과 정한다
+- 완료 조건 결과: 2026-11-09 검증 `통과`(2회차, 1회차는 `checkBakeHint` 남음·공용 DB 변경 절 미실행), 사람 확인 2026-11-09. 근거 관리자_기능명세서 v0.6 "신발은 서비스에서 빼 부위가 5개". 기준 데이터 v0.14 (2): MYPC0006 `USE_YN='N'`, 신발 아이템 판매 중지, 보유는 남기고 착용 해제(환불 없음, 공용 DB 2026-11-09 실행). `checkRegion`이 신발 400, 상점·보관함·관리자 목록 SQL이 `COM_CD.USE_YN='Y'` 부위만, `checkBakeHint`는 지움(사람 결정)
+- 연결 남음: 없음
 
 ## SCR-ADM-090 알림 템플릿 · 프론트 연결 API 계약 — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-090-01·02·03
@@ -515,6 +518,14 @@
 - 연결 남음: FN-ADM-080-01·02·03 (프론트 연결 `features/adminAiRoute/api.js` 목록·등록/수정 모달·삭제, `routeLabels.js` 'Y'/'N' 비교, 프론트 저장소에서 /start)
 - 연결 남음: FN-ADM-080-04 (ai 연결 `app/chat/rules.py` `routing_table()`이 `data/routing.yaml` 대신 `GET /internal/ai/routes`를 읽게, ai 저장소에서 /start)
 
+## SCR-MAN-001 메인 · 반려동물 바로가기 조회·저장 API — 끝
+- 기능: 명세 기능 ID 추가 없음(팀 회의 2026-11-08 메인 개편, 메인페이지_기능명세서 v0.10 미반영), 걸치는 기능 FN-MAN-008
+- 기다리는 것: 없음(테이블·공통코드·기본값·도메인은 2026-11-09 사람 결정)
+- 완료 조건: `PUT /api/pets/main-shortcuts`로 반려동물별 바로가기 순서를 저장하면 `GET`이 같은 순서로 주고, 저장한 적 없는 반려동물은 기본값을 준다
+- 완료 조건 결과: 검증 `통과`(2026-11-09, 2회차. 1회차는 공용 DB에 v0.14 (1) 미실행으로 화면 확인 못 함), 사람 확인 2026-11-09(Postman: 저장 전 `[MANC0008]`, 순서 저장·조회, `[]` 저장 뒤 `[]`, 400 세 가지·403·404). 정한 것: 새 테이블 `PET_MAIN_SHRTC`(종류 전부를 행으로, 보이는 것만 `INDCT_YN='Y'`), 공통코드 MANG02·MANC0008~0010, 기본값은 서버가 `[MANC0008]`, `pet` 도메인 `GET·PUT /api/pets/main-shortcuts`, DB 기준 파일 v0.14로 올림(사람 결정). 본문이 배열이라 `@Valid` 대신 서비스가 검사하고 칸 이름은 `[i].petSn` 형식. 계약은 `docs/api/pet.md`
+- 추가: 추가-1 기초 데이터 v0.14 머리말 원천 문구(`./gradlew build -q` 0, 재검증은 사람이 생략)
+- 연결 남음: FN-MAN-008 (프론트 연결 `features/dashboard/api.js`·`shortcutTypes.js`, 프론트 저장소에서 /start)
+
 ## SCR-MAN-001 메인 · AI 건강분석 리포트 내부 API — 끝
 - 기능: 명세 기능 ID 추가 없음(명세 밖 추가 요청, ai-f2 2026-11-04), 걸치는 기능 FN-MAN-006(AI 건강분석 리포트 위젯 MANC0007)
 - 기다리는 것: 없음. 정본 초안은 ai 저장소 `docs/api/internal.md` 맨 아래 두 행과 `docs/api/healthreport.md`
@@ -600,6 +611,20 @@
 - 완료 조건 결과: 건강 쓰기 도구 절과 함께 끝(2026-11-06). 중복 확인은 도구로 싣지 않고 React가 `draft_expense` 전에 부른다(결정 G)
 - 연결 남음: FN-AIM-012-05·06·07, FN-AIM-013 (프론트·ai 연결은 건강 쓰기 도구 절과 같음)
 
+## SCR-ADM-110 운영 설정 · 대시보드 케어 최대 노출 수 삭제 — 끝
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-110-01·02
+- 기다리는 것: 없음(메인 표시 제거 백엔드 PR #205 병합됨)
+- 완료 조건: `GET`·`PATCH /api/admin/settings`에 `dshbdCareMaxExpsrCnt`가 없다(보내면 무시). `src`·`docs/api`에 `SYS_STNG.DSHBD_CARE_MAX_EXPSR_CNT` 참조가 없고, 기준 SQL 변경 절 `v0.14 (7)`·본문·시드가 같다. CARE_ARTCL 메인 표시 컬럼은 범위 밖(JAJ)
+- 완료 조건 결과: 검증 `통과`(2026-11-10, 2회차. 1회차는 로컬 DB에 v0.14 (7) 미실행), 사람 확인 2026-11-10. 추가-1: `docs/api/issues.md` 20번 결정 정리. 공용 DB에 v0.14 (7) 실행함(2026-11-10)
+- 연결 남음: FN-ADM-110-01·02 (프론트 연결 관리자 운영 설정 화면, 프론트 기존 절 `SCR-ADM-110 운영 설정 · 운영 설정 API 연결`, 프론트 저장소에서 /start. 프론트에는 이 칸이 원래 없다)
+
+## SCR-ADM-082 처리 현황 · 캐릭터 생성 현황 기간 조회 — 끝
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-082-02
+- 기다리는 것: 프론트 SCR-ADM-082 캐릭터 생성 현황 API 연결 추가-1(끝 2026-11-10, 필터 줄에서 `fromYmd`·`toYmd`를 이미 보냄)
+- 완료 조건: `GET /api/admin/processing/character-jobs`가 `fromYmd`·`toYmd`(둘 다 선택, `YYYY-MM-DD`)를 받아 `REG_DT` 날짜 기준 양끝 포함으로 목록을 거른다. `fromYmd > toYmd`면 400 `INVALID_INPUT_VALUE`. `sttsCnts`는 기간만 따르고 `crtJobSttsCd`와는 무관(영수증 OCR summary와 같은 규칙). 응답 모양은 그대로. `docs/api/pet.md` character-jobs 행·`AdminCharacterJobSearchCond`에 기간 칸을 적는다
+- 완료 조건 결과: 검증 `통과`(2026-11-10, 1회차), 사람 확인 2026-11-10. 정한 것: 건수는 새 쿼리 `selectAdminJobStatusCountsInPeriod`(기간만), 기존 `selectAdminJobStatusCounts`는 대시보드 `charFailCnt`(기간 없이 전체)용으로 남김. `docs/api/admin.md` `charFailCnt`에 기간 없는 값이라고 적음
+- 연결 남음: 없음(프론트 SCR-ADM-082 캐릭터 생성 현황 API 연결 추가-1이 이미 `fromYmd`·`toYmd`를 보냄. 프론트 세션에 알리기만)
+
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
 - FN-COM-002-11: 채팅 안 읽은 수 API는 KSJ(채팅, 마일스톤 담당 표 COM-009)
@@ -662,6 +687,14 @@
 - 완료 조건: 서비스 검사로 나는 400 `INVALID_INPUT_VALUE`도 `data: [{field, message}]`에 칸 이름을 담는다. 정기관리 케어 항목 등록에 `careCycleCd` 없이 보내면 `data[0].field`가 `careCycleCd`다
 - 완료 조건 결과: 검증 `통과`(2026-11-06, 1회차), 사람 확인 2026-11-06(Postman: 일정 등록 칸 빠짐 400 `data[0].field`). 정한 것: `message`는 `ErrorCode` 문구, 칸 없는 예외는 `data` 없이 그대로, 범위는 AI 도구가 붙은 일정·케어 항목 서비스만(다른 `INVALID_INPUT_VALUE`는 그대로), 테스트는 서비스 테스트에(컨트롤러 테스트는 서비스를 목으로 바꿔 칸을 확인 못 함)
 - 추가: 없음
+
+## SCR-AIM-012 AI 일정 생성 확인 · 가계부 검사 오류 칸 이름 — 끝
+- 기능: 명세 기능 ID 추가 없음(ai `docs/design/tool-catalog.md` 3-3절, 2026-11-06 사람 결정), 걸치는 기능 FN-AIM-012-05·06·07·13, FN-AIM-004-02
+- 기다리는 것: 없음
+- 완료 조건: 가계부 도구 경로의 서비스 검사 400 `INVALID_INPUT_VALUE`가 `data: [{field, message}]`에 칸 이름을 담는다. `GET /api/expenses/statistics?yearMonth=2099-01`이 400 `data[0].field`=`yearMonth`다
+- 완료 조건 결과: 검증 `통과`(2026-11-09, 1회차), 사람 확인 2026-11-09. 정한 것: 칸은 `petSn`·`common`(함께 거름), `expndClsfCd`, `yearMonth`(빈 값·형식·미래 달), `get_receipt`의 `petSn`, 영수증 저장 `pets[i].schdlSn`(저장 상태 변경 전 검사, `CheckupService.isMovableSchedule` 공개). 업로드 `ReceiptService.create`·검진 직접 등록 `schdlSn`·`pets[i].ckupTypeCd`(DTO `@Pattern`)는 그대로
+- 추가: 없음
+- 연결 남음: 걸치는 기능 FN-AIM-012-05·06·07·13, FN-AIM-004-02 (ai-50에 칸 이름 범위 알림, LJS)
 
 ## SCR-AIM-011 AI 대화창 · 건강 읽기 도구 표시 — 끝
 - 기능: 명세 기능 ID 추가 없음(설계 `nyangmeong-ai` `docs/design/tool-catalog.md` 8절 4번 건강 도메인, 8절 0번 기능 ID 추가 전), 걸치는 기능 FN-AIM-004-02

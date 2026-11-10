@@ -95,7 +95,7 @@ class CareScheduleAlarmServiceTest {
     }
 
     private CareScheduleAlarmEvent event(int bfhdDayCnt, boolean hrInptYn) {
-        return new CareScheduleAlarmEvent(1L, 100L, LocalDateTime.of(2026, 10, 22, 14, 30), hrInptYn, "초코",
+        return new CareScheduleAlarmEvent(1L, 100L, 7L, LocalDateTime.of(2026, 10, 22, 14, 30), hrInptYn, "초코",
                 "예방접종", "냥멍동물병원", bfhdDayCnt);
     }
 
@@ -179,7 +179,7 @@ class CareScheduleAlarmServiceTest {
         assertThat(captor.getValue().type()).isEqualTo(NotificationType.CARE_SCHEDULE);
         assertThat(captor.getValue().notiTtl()).isEqualTo("[케어 일정] 초코 예방접종 일정이 D-1 남았어요");
         assertThat(captor.getValue().notiCn()).isEqualTo("2026-10-22 14:30 · 냥멍동물병원");
-        assertThat(captor.getValue().mvmnPath()).isEqualTo("/health/calendar");
+        assertThat(captor.getValue().mvmnPath()).isEqualTo("/health/calendar?petSn=7");
         verify(mailSender, never()).send(anyString(), anyString(), anyString());
 
         assertThat(claimed).hasSize(1);
@@ -203,7 +203,7 @@ class CareScheduleAlarmServiceTest {
         String content = sentContent();
         assertThat(content).startsWith("진성님, 안녕하세요.\n2026-10-22에 예정된 초코의 예방접종 일정을 안내드립니다.");
         assertThat(content).contains("· 병원 : 냥멍동물병원 · 일시 : 2026-10-22 14:30");
-        assertThat(content).contains("케어 캘린더에서 확인하기 : http://localhost:5173/health/calendar");
+        assertThat(content).contains("케어 캘린더에서 확인하기 : http://localhost:5173/health/calendar?petSn=7");
         assertThat(content).endsWith("설정에서 해제할 수 있습니다 : http://localhost:5173/settings/notifications");
         assertThat(claimed).extracting(NotificationSendingLog::getNotiChnlCd)
                 .containsExactly(NotificationChannel.EMAIL.getCode());
@@ -281,7 +281,7 @@ class CareScheduleAlarmServiceTest {
         verify(notificationService).create(captor.capture());
         assertThat(captor.getValue().notiTtl()).isEqualTo("[케어 일정] 초코 예방접종 일정이 D-1 남았어요");
         assertThat(captor.getValue().notiCn())
-                .isEqualTo("진성 초코 예방접종 냥멍동물병원 2026-10-22 14:30 D-1 " + FRONT + "/health/calendar");
+                .isEqualTo("진성 초코 예방접종 냥멍동물병원 2026-10-22 14:30 D-1 " + FRONT + "/health/calendar?petSn=7");
     }
 
     @Test

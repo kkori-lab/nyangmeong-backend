@@ -71,7 +71,7 @@ public class ReceiptService {
         if (petSn != null) {
             petAuthorizer.checkCaregiver(mbrSn, petSn);
         } else if (ReceiptSource.from(receipt.getOcrDmndSrcCd()) != ReceiptSource.EXPENSE) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "petSn");
         }
         return receipt;
     }

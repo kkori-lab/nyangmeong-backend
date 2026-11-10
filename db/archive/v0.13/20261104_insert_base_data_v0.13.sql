@@ -26,6 +26,9 @@
 -- v0.13 (3) 펫돌봄 매칭 무응답 종료 배치 코드 (2026-11-06, KSJ, 근거: 커뮤니티_기능명세서 v0.8 FN-CMU-005-06·09). 테이블 변경 없음
 --   SET NAMES utf8mb4;
 --   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0031','펫돌봄 매칭 무응답 종료','community/CareMatchNoResponseJob',90);
+-- v0.13 (4) 실종 만료 사전 알림 배치 코드 (2026-11-06, KSJ, 근거: 커뮤니티_기능명세서 v0.8 FN-CMU-002-09, 커뮤니티_화면설계서 v0.8 SCR-CMU-002). 테이블 변경 없음
+--   SET NAMES utf8mb4;
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0032','실종 만료 사전 알림','community/LostReportExpiryAlarmJob',100);
 SET NAMES utf8mb4;
 START TRANSACTION;
 
@@ -538,6 +541,7 @@ INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT
 -- v0.12 추가: 배치 구분 오늘의 한마디 선택 (v0.12 (4))
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0030','오늘의 한마디 선택','community/TodayPhraseSelectJob',80);
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0031','펫돌봄 매칭 무응답 종료','community/CareMatchNoResponseJob',90);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0032','실종 만료 사전 알림','community/LostReportExpiryAlarmJob',100);
 
 -- =====================================================================
 -- [2] 케어미션 마스터 (CARE_MSN) — 20261027_02_update_care_msn_and_ckup_pnt 의 최종 상태
