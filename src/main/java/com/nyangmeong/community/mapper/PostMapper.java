@@ -25,10 +25,11 @@ import com.nyangmeong.community.dto.PostSummary;
 public interface PostMapper {
 
     /**
-     * 게시글 목록 조회 (게시판·키워드 없으면 전체)
+     * 게시글 목록 조회 (게시판·키워드 없으면 전체, mineYn 이면 mbrSn 의 글만)
      */
     List<PostSummary> selectList(@Param("bbsCd") String bbsCd, @Param("keyword") String keyword,
-            @Param("popularSort") boolean popularSort, @Param("pstSttsCd") String pstSttsCd);
+            @Param("popularSort") boolean popularSort, @Param("pstSttsCd") String pstSttsCd,
+            @Param("mbrSn") Long mbrSn, @Param("mineYn") boolean mineYn);
 
     /**
      * 오늘의 건강팁 조회
