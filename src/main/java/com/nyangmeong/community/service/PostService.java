@@ -36,6 +36,7 @@ import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.response.PageResponse;
 import com.nyangmeong.global.setting.SystemSettingService;
+import com.nyangmeong.pet.domain.CareMission;
 
 import lombok.RequiredArgsConstructor;
 
@@ -60,6 +61,7 @@ public class PostService {
     private final FileStore fileStore;
     private final OwnerAuthorizer ownerAuthorizer;
     private final SystemSettingService systemSettingService;
+    private final PetStoryMissionReflector missionReflector;
 
     /**
      * 게시글 목록 조회
@@ -196,6 +198,7 @@ public class PostService {
         for (MultipartFile image : images) {
             insertImage(post.getPstSn(), fileStore.storePublic(image, actorId(mbrSn)), sortSeq++, mbrSn);
         }
+        missionReflector.reflectAfterCommit(mbrSn, CareMission.PET_STORY_POST);
         return toResponse(mbrSn, getNormalOrThrow(post.getPstSn()));
     }
 
