@@ -223,7 +223,13 @@ public interface PixelCharacterMapper {
     List<AdminCharacterJobStatusCount> selectAdminJobStatusCounts();
 
     /**
-     * 관리자 캐릭터 생성 작업 목록 (상태 필터, 최신순, SCR-ADM-082)
+     * 관리자 캐릭터 생성 작업 기간 내 상태별 건수 (있는 상태만, 상태 필터 무관, SCR-ADM-082)
+     */
+    List<AdminCharacterJobStatusCount> selectAdminJobStatusCountsInPeriod(
+            @Param("cond") AdminCharacterJobSearchCond cond);
+
+    /**
+     * 관리자 캐릭터 생성 작업 목록 (기간·상태 필터, 최신순, SCR-ADM-082)
      */
     List<AdminCharacterJobRow> selectAdminJobList(@Param("cond") AdminCharacterJobSearchCond cond);
 }

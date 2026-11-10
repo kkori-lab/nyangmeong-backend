@@ -618,10 +618,12 @@
 - 완료 조건 결과: 검증 `통과`(2026-11-10, 2회차. 1회차는 로컬 DB에 v0.14 (7) 미실행), 사람 확인 2026-11-10. 추가-1: `docs/api/issues.md` 20번 결정 정리. 공용 DB에 v0.14 (7) 실행함(2026-11-10)
 - 연결 남음: FN-ADM-110-01·02 (프론트 연결 관리자 운영 설정 화면, 프론트 기존 절 `SCR-ADM-110 운영 설정 · 운영 설정 API 연결`, 프론트 저장소에서 /start. 프론트에는 이 칸이 원래 없다)
 
-## SCR-ADM-082 처리 현황 · 캐릭터 생성 현황 기간 조회 — 대기
+## SCR-ADM-082 처리 현황 · 캐릭터 생성 현황 기간 조회 — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-082-02
 - 기다리는 것: 프론트 SCR-ADM-082 캐릭터 생성 현황 API 연결 추가-1(끝 2026-11-10, 필터 줄에서 `fromYmd`·`toYmd`를 이미 보냄)
 - 완료 조건: `GET /api/admin/processing/character-jobs`가 `fromYmd`·`toYmd`(둘 다 선택, `YYYY-MM-DD`)를 받아 `REG_DT` 날짜 기준 양끝 포함으로 목록을 거른다. `fromYmd > toYmd`면 400 `INVALID_INPUT_VALUE`. `sttsCnts`는 기간만 따르고 `crtJobSttsCd`와는 무관(영수증 OCR summary와 같은 규칙). 응답 모양은 그대로. `docs/api/pet.md` character-jobs 행·`AdminCharacterJobSearchCond`에 기간 칸을 적는다
+- 완료 조건 결과: 검증 `통과`(2026-11-10, 1회차), 사람 확인 2026-11-10. 정한 것: 건수는 새 쿼리 `selectAdminJobStatusCountsInPeriod`(기간만), 기존 `selectAdminJobStatusCounts`는 대시보드 `charFailCnt`(기간 없이 전체)용으로 남김. `docs/api/admin.md` `charFailCnt`에 기간 없는 값이라고 적음
+- 연결 남음: 없음(프론트 SCR-ADM-082 캐릭터 생성 현황 API 연결 추가-1이 이미 `fromYmd`·`toYmd`를 보냄. 프론트 세션에 알리기만)
 
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
