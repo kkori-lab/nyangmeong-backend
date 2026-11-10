@@ -29,6 +29,7 @@
         <result column="RCMDTN_CNT"         property="rcmdtnCnt" />
         <result column="CMNT_CNT"           property="cmntCnt" />
         <result column="POPULAR"            property="popular" />
+        <result column="OWNER_YN"           property="owner" />
     </resultMap>
 
     <resultMap id="postImageResultMap" type="com.nyangmeong.community.domain.PostImage">
@@ -92,6 +93,7 @@
 
     <select id="selectList" resultMap="postSummaryResultMap">
         SELECT <include refid="summaryColumns" />
+             , (P.MBR_SN = #{mbrSn}) AS OWNER_YN
           FROM PST P
           JOIN MBR M
             ON M.MBR_SN = P.MBR_SN
@@ -104,6 +106,9 @@
            AND P.BBS_CD IN ('CMUC0001', 'CMUC0002')
             </otherwise>
         </choose>
+        <if test="mineYn">
+           AND P.MBR_SN = #{mbrSn}
+        </if>
         <if test="keyword != null">
            AND (P.PST_TTL LIKE CONCAT('%', #{keyword}, '%')
                 OR P.PST_CN LIKE CONCAT('%', #{keyword}, '%'))

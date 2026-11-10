@@ -117,9 +117,32 @@ class PostServiceTest {
 
     @Test
     void 목록은_정상_글만_기본_10건으로_조회한다() {
-        service.search(new PostSearchCond(), new PageQuery(null, null, null));
+        service.search(MBR, new PostSearchCond(), new PageQuery(null, null, null));
 
-        verify(postMapper).selectList(null, null, false, NORMAL);
+        verify(postMapper).selectList(null, null, false, NORMAL, MBR, false);
+    }
+
+    @Test
+    void 내_글만_보기면_로그인_회원_번호와_함께_조회한다() {
+        PostSearchCond cond = new PostSearchCond();
+        cond.setMineYn(true);
+
+        service.search(MBR, cond, new PageQuery(null, null, null));
+
+        verify(postMapper).selectList(null, null, false, NORMAL, MBR, true);
+    }
+
+    @Test
+    void 목록_항목의_owner는_조회_결과를_그대로_돌려준다() {
+        PostSummary mine = summary(false);
+        mine.setOwner(true);
+        PostSummary others = summary(false);
+        others.setOwner(false);
+        when(postMapper.selectList(null, null, false, NORMAL, MBR, false)).thenReturn(List.of(mine, others));
+
+        var res = service.search(MBR, new PostSearchCond(), new PageQuery(null, null, null));
+
+        assertThat(res.content()).extracting(PostSummary::getOwner).containsExactly(true, false);
     }
 
     @Test
@@ -128,35 +151,35 @@ class PostServiceTest {
         cond.setBbsCd("CMUC0002");
         cond.setKeyword(" 50%_할인 ");
 
-        service.search(cond, new PageQuery(null, null, "latest"));
+        service.search(MBR, cond, new PageQuery(null, null, "latest"));
 
-        verify(postMapper).selectList("CMUC0002", "50\\%\\_할인", false, NORMAL);
+        verify(postMapper).selectList("CMUC0002", "50\\%\\_할인", false, NORMAL, MBR, false);
     }
 
     @Test
     void 알_수_없는_게시판이나_정렬은_400() {
         PostSearchCond cond = new PostSearchCond();
         cond.setBbsCd("CMUC9999");
-        assertError(() -> service.search(cond, new PageQuery(null, null, null)), ErrorCode.INVALID_INPUT_VALUE);
+        assertError(() -> service.search(MBR, cond, new PageQuery(null, null, null)), ErrorCode.INVALID_INPUT_VALUE);
 
-        assertError(() -> service.search(new PostSearchCond(), new PageQuery(null, null, "oldest")),
+        assertError(() -> service.search(MBR, new PostSearchCond(), new PageQuery(null, null, "oldest")),
                 ErrorCode.INVALID_INPUT_VALUE);
     }
 
     @Test
     void 인기순이면_좋아요_순으로_조회하고_인기글_배지는_모두_뺀다() {
-        when(postMapper.selectList(null, null, true, NORMAL)).thenReturn(List.of(summary(true), summary(true)));
+        when(postMapper.selectList(null, null, true, NORMAL, MBR, false)).thenReturn(List.of(summary(true), summary(true)));
 
-        var res = service.search(new PostSearchCond(), new PageQuery(null, null, "popular"));
+        var res = service.search(MBR, new PostSearchCond(), new PageQuery(null, null, "popular"));
 
         assertThat(res.content()).extracting(PostSummary::getPopular).containsOnly(false);
     }
 
     @Test
     void 최신순이면_인기글_배지를_그대로_둔다() {
-        when(postMapper.selectList(null, null, false, NORMAL)).thenReturn(List.of(summary(true)));
+        when(postMapper.selectList(null, null, false, NORMAL, MBR, false)).thenReturn(List.of(summary(true)));
 
-        var res = service.search(new PostSearchCond(), new PageQuery(null, null, null));
+        var res = service.search(MBR, new PostSearchCond(), new PageQuery(null, null, null));
 
         assertThat(res.content().get(0).getPopular()).isTrue();
     }

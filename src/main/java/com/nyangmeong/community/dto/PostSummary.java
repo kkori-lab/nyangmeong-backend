@@ -21,4 +21,6 @@ public class PostSummary {
     private Integer rcmdtnCnt;
     private Integer cmntCnt;
     private Boolean popular;
+    /** 내 글 여부 : 목록 조회에서만 채움(건강팁·인기 포토 등은 null) */
+    private Boolean owner;
 }
