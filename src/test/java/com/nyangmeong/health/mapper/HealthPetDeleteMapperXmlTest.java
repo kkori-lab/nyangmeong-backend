@@ -91,8 +91,7 @@ class HealthPetDeleteMapperXmlTest {
     }
 
     @Test
-    void 케어_항목_삭제는_메인_표시도_해제한다() throws Exception {
-        assertThat(sql("CareItemMapper", "deleteByPetSn")).contains("MAIN_EXPSR_YN = 'N'")
-                .contains("MAIN_SORT_SEQ = 0");
+    void 케어_항목_삭제는_폐지된_메인_컬럼을_쓰지_않는다() throws Exception {
+        assertThat(sql("CareItemMapper", "deleteByPetSn")).contains("SET DEL_YN = 'Y'").doesNotContain("MAIN_");
     }
 }

@@ -34,10 +34,6 @@ public class CareItem {
     private LocalDate nxtmPrnmntYmd;
     /** 최종완료일자 */
     private LocalDate lastCmptnYmd;
-    /** 메인노출여부 */
-    private String mainExpsrYn;
-    /** 메인정렬순서 */
-    private Integer mainSortSeq;
     /** 기본항목여부 */
     private String bscArtclYn;
     /** 삭제여부 */

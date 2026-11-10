@@ -140,8 +140,6 @@ public class CareItemService {
         item.setCareZoneCd(zone.getCode());
         item.setCareArtclNm(nameOf(req.careArtclNm()));
         item.setRprsIconId(iconOf(req.rprsIconId()));
-        item.setMainExpsrYn("N");
-        item.setMainSortSeq(0);
         item.setBscArtclYn("N");
         item.setRgtrId(String.valueOf(mbrSn));
         item.setMdfrId(String.valueOf(mbrSn));
@@ -361,8 +359,6 @@ public class CareItemService {
         item.setCareZoneCd(zone.getCode());
         item.setCareArtclNm(careArtclNm);
         item.setRprsIconId(rprsIconId);
-        item.setMainExpsrYn("N");
-        item.setMainSortSeq(0);
         item.setBscArtclYn("N");
         item.setRgtrId(String.valueOf(mbrSn));
         item.setMdfrId(String.valueOf(mbrSn));
@@ -392,8 +388,6 @@ public class CareItemService {
             item.setCareZoneCd(basic.getZone().getCode());
             item.setCareArtclNm(basic.getCareArtclNm());
             item.setRprsIconId(basic.getRprsIconId());
-            item.setMainExpsrYn(basic.getMainSortSeq() > 0 ? "Y" : "N");
-            item.setMainSortSeq(basic.getMainSortSeq());
             item.setBscArtclYn("Y");
             item.setRgtrId(actorId);
             item.setMdfrId(actorId);
