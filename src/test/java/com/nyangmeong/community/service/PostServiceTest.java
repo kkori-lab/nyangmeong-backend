@@ -44,6 +44,7 @@ import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.setting.SystemSetting;
 import com.nyangmeong.global.setting.SystemSettingService;
+import com.nyangmeong.pet.domain.CareMission;
 
 /**
  * [검사 - 펫이야기 게시글 목록·상세·작성·수정·삭제·좋아요]
@@ -58,8 +59,9 @@ class PostServiceTest {
     private final PostMapper postMapper = mock(PostMapper.class);
     private final FileStore fileStore = mock(FileStore.class);
     private final SystemSettingService systemSettingService = mock(SystemSettingService.class);
+    private final PetStoryMissionReflector missionReflector = mock(PetStoryMissionReflector.class);
     private final PostService service = new PostService(postMapper, fileStore, new OwnerAuthorizer(),
-            systemSettingService);
+            systemSettingService, missionReflector);
 
     @BeforeEach
     void stubAuthor() {
@@ -275,6 +277,7 @@ class PostServiceTest {
         verify(postMapper, times(2)).insertImage(images.capture());
         assertThat(images.getAllValues()).extracting(PostImage::getSortSeq).containsExactly(0, 1);
         assertThat(images.getAllValues()).extracting(PostImage::getAtchFileSn).containsExactly(101L, 102L);
+        verify(missionReflector).reflectAfterCommit(MBR, CareMission.PET_STORY_POST);
     }
 
     @Test
@@ -288,12 +291,14 @@ class PostServiceTest {
         assertError(() -> service.create(MBR, new PostCreateRequest("CMUC0001", "제목", "내용", files)),
                 ErrorCode.POST_IMAGE_LIMIT_EXCEEDED);
         verify(postMapper, never()).insertPost(any(Post.class));
+        verify(missionReflector, never()).reflectAfterCommit(any(), any());
     }
 
     @Test
     void 알_수_없는_게시판으로는_작성할_수_없다() {
         assertError(() -> service.create(MBR, new PostCreateRequest("CMUC9999", "제목", "내용", List.of())),
                 ErrorCode.INVALID_INPUT_VALUE);
+        verify(missionReflector, never()).reflectAfterCommit(any(), any());
     }
 
     @Test

@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.nyangmeong.community.domain.BoardType;
 import com.nyangmeong.community.domain.Comment;
 import com.nyangmeong.community.domain.LostReport;
 import com.nyangmeong.community.domain.LostReportStatus;
@@ -19,6 +20,7 @@ import com.nyangmeong.community.mapper.PostMapper;
 import com.nyangmeong.global.auth.OwnerAuthorizer;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.pet.domain.CareMission;
 
 import lombok.RequiredArgsConstructor;
 
@@ -35,6 +37,7 @@ public class CommentService {
     private final PostMapper postMapper;
     private final LostReportMapper lostReportMapper;
     private final OwnerAuthorizer ownerAuthorizer;
+    private final PetStoryMissionReflector missionReflector;
 
     /**
      * 댓글·대댓글 목록 조회
@@ -55,7 +58,7 @@ public class CommentService {
      */
     @Transactional
     public CommentResponse create(Long mbrSn, Long pstSn, CommentCreateRequest req) {
-        checkPost(pstSn);
+        Post post = checkPost(pstSn);
         if (isFound(lostReportMapper.selectByPstSn(pstSn))) {
             throw new CustomException(ErrorCode.LOST_REPORT_CLOSED);
         }
@@ -75,6 +78,9 @@ public class CommentService {
         comment.setMbrSn(mbrSn);
         comment.setCmntCn(req.cmntCn());
         commentMapper.insertComment(comment);
+        if (BoardType.exists(post.getBbsCd())) {
+            missionReflector.reflectAfterCommit(mbrSn, CareMission.PET_STORY_COMMENT);
+        }
         return CommentResponse.from(commentMapper.selectComment(comment.getCmntSn()),
                 postMapper.selectAuthor(mbrSn));
     }
