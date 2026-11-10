@@ -25,7 +25,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * [관리자 캐릭터 생성 현황 서비스]
- * - SCR-ADM-082 (FN-ADM-082-02) 상태별 건수·목록
+ * - SCR-ADM-082 (FN-ADM-082-02) 상태별 건수·목록. 기간은 요청일 양 끝 포함
  * - 결과 이미지·원본 사진은 주지 않는다 (결정 26)
  */
 @Service
@@ -35,7 +35,7 @@ public class AdminCharacterJobService {
     private final PixelCharacterMapper pixelCharacterMapper;
 
     /**
-     * 상태별 건수(CHRG01 네 개, 없는 상태는 0)와 목록(최신순)
+     * 기간 내 상태별 건수(CHRG01 네 개, 없는 상태는 0, 상태 필터 무관)와 기간·상태를 건 목록(최신순)
      */
     @Transactional(readOnly = true)
     public AdminCharacterJobListResponse search(AdminCharacterJobSearchCond cond, PageQuery pq) {
@@ -46,7 +46,10 @@ public class AdminCharacterJobService {
                 && Arrays.stream(CharacterJobStatus.values()).noneMatch(s -> s.is(c.getCrtJobSttsCd()))) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
-        Map<String, Long> counted = pixelCharacterMapper.selectAdminJobStatusCounts().stream()
+        if (c.getFromYmd() != null && c.getToYmd() != null && c.getFromYmd().isAfter(c.getToYmd())) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        Map<String, Long> counted = pixelCharacterMapper.selectAdminJobStatusCountsInPeriod(c).stream()
                 .collect(Collectors.toMap(AdminCharacterJobStatusCount::getCrtJobSttsCd,
                         AdminCharacterJobStatusCount::getCnt, Long::sum));
         List<AdminCharacterJobStatusCount> sttsCnts = Arrays.stream(CharacterJobStatus.values())
@@ -58,7 +61,7 @@ public class AdminCharacterJobService {
     }
 
     /**
-     * 생성 실패 작업 수 조회
+     * 생성 실패 작업 수 조회 (기간 없이 전체, 관리자 대시보드)
      */
     @Transactional(readOnly = true)
     public long countFailed() {
