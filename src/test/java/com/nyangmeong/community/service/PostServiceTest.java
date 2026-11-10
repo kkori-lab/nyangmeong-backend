@@ -221,6 +221,30 @@ class PostServiceTest {
     }
 
     @Test
+    void 작성자가_보면_조회_이력도_조회수도_건드리지_않는다() {
+        when(postMapper.selectPost(PST, NORMAL)).thenReturn(post(MBR));
+
+        PostResponse res = service.getPost(MBR, PST);
+
+        verify(postMapper, never()).insertViewIgnore(anyLong(), anyLong());
+        verify(postMapper, never()).updateInqCnt(anyLong());
+        assertThat(res.inqCnt()).isEqualTo(10);
+    }
+
+    @Test
+    void 다른_회원이_같은_날_다시_열면_조회수는_그대로() {
+        when(postMapper.selectPost(PST, NORMAL)).thenReturn(post(OTHER));
+        when(postMapper.insertViewIgnore(PST, MBR)).thenReturn(0);
+
+        PostResponse res = service.getPost(MBR, PST);
+
+        verify(postMapper).insertViewIgnore(PST, MBR);
+        verify(postMapper, never()).updateInqCnt(anyLong());
+        assertThat(res.inqCnt()).isEqualTo(10);
+        assertThat(res.owner()).isFalse();
+    }
+
+    @Test
     void 없거나_정상이_아닌_글의_상세는_404() {
         assertError(() -> service.getPost(MBR, PST), ErrorCode.POST_NOT_FOUND);
         verify(postMapper, never()).insertViewIgnore(anyLong(), anyLong());

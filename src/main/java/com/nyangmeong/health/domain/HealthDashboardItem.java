@@ -8,19 +8,19 @@ import java.util.Optional;
  * - HLTG25 (MBR_DSHBD_WDGT.DSHBD_WDGT_CD) : 선언 순서가 기본 순서
  */
 public enum HealthDashboardItem {
-    WEIGHT("HLTC0079"),
-    MEAL("HLTC0080"),
-    WATER("HLTC0081"),
-    WALK("HLTC0082"),
-    POOP("HLTC0083"),
-    CKUP("HLTC0084"),
-    INSP("HLTC0085"),
-    PRESC("HLTC0086"),
-    ATCH("HLTC0087"),
-    OBSV("HLTC0088"),
-    ALLERGY("HLTC0089"),
-    VACC("HLTC0090"),
-    CARE("HLTC0091");
+    WEIGHT("HLTC0084"),
+    MEAL("HLTC0085"),
+    WATER("HLTC0086"),
+    WALK("HLTC0087"),
+    POOP("HLTC0088"),
+    CKUP("HLTC0089"),
+    INSP("HLTC0090"),
+    PRESC("HLTC0091"),
+    ATCH("HLTC0092"),
+    OBSV("HLTC0093"),
+    ALLERGY("HLTC0094"),
+    VACC("HLTC0095"),
+    CARE("HLTC0096");
 
     private final String code;
 
