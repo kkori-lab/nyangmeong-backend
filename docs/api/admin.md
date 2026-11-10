@@ -26,7 +26,7 @@
 | dclrRcptCnt | long | Y | 접수(CMUC0015) 신고. `GET /admin/reports?status=CMUC0015`의 `totalElements` | DCLR.DCLR_PRCS_STTS_CD, ADM-001-03 |
 | unansInqryCnt | long | Y | 미답변(접수 CSCC0012) 1:1 문의, 회원이 삭제한 문의 제외. `GET /admin/inquiries?inqryPrcsSttsCd=CSCC0012` 건수 | OTO_INQRY.INQRY_PRCS_STTS_CD |
 | pixelInqryCnt | long | Y | 그중 픽셀 캐릭터 유형(CSCC0006). `…&inqryTypeCd=CSCC0006` 건수 | OTO_INQRY.INQRY_TYPE_CD |
-| charFailCnt | long | Y | 생성 실패(CHRC0004) 캐릭터 생성 작업. `GET /admin/processing/character-jobs`의 `sttsCnts` CHRC0004 값 | CHAR_CRT_JOB.CRT_JOB_STTS_CD |
+| charFailCnt | long | Y | 생성 실패(CHRC0004) 캐릭터 생성 작업. `GET /admin/processing/character-jobs`를 기간 없이 부른 `sttsCnts` CHRC0004 값(전체 기간) | CHAR_CRT_JOB.CRT_JOB_STTS_CD |
 | ocrFailCnt | long | Y | 인식 실패(AIMC0004) 영수증, 출처·기간 무관. `GET /admin/processing/receipts`(조건 없음)의 `summary.failCnt` | RECPT.OCR_PRCS_STTS_CD |
 | notiFailCnt | long | Y | 최근 24시간(지금 - 24시간 이후) 발송 실패(AIMC0019). 발송 이력 화면은 날짜 단위 필터라 같은 숫자를 보려면 `GET /admin/notification-logs?sndngRsltCd=AIMC0019&bgngYmd=<어제>`에서 24시간 안 행을 센다 | NOTI_SNDNG_LOG.SNDNG_RSLT_CD·SNDNG_DT |
 | btchFailCnt | long | Y | 마지막 실행 결과가 실패(SYSC0014)인 배치 수(실행 이력 건수가 아니다). `GET /admin/batches`에서 마지막 실행 결과가 실패인 행 수 | BTCH_EXCN_HSTRY.EXCN_RSLT_CD |

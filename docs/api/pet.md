@@ -10,7 +10,7 @@
 | GET | /admin/members/{mbrSn}/point-ledgers | 관리자 회원 상세 포인트 원장. 최신순 20건씩. 일반 회원 403 ADMIN_ONLY, 없는 회원 404 MEMBER_NOT_FOUND | ADM-011-04 | LJS | - | PageResponse\<AdminPointLedgerSummary\> |
 | GET | /admin/points | 관리자 포인트 원장 전체. 최신순 20건씩. 쿼리는 모두 선택: `mbrSn`, `mbrNcnm`(닉네임 부분 일치), `pntDlngTypeCd`(MYPG03), `fromDt`·`toDt`(YYYY-MM-DD, 양 끝 날짜 포함). 모르는 거래 유형 코드·`fromDt`가 `toDt`보다 늦음·날짜 형식 틀림 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-072-01 | LJS | - | PageResponse\<AdminPointLedgerRow\> |
 | POST | /admin/points/adjustments | 포인트 수동 조정(201, 감사 로그). 거래 유형 MYPC0009 관리자 조정, 사유는 원장 메모(회원 포인트 내역에도 보임), 보유 포인트(`MBR.HLD_PNT`)를 같이 바꾼다. 조정 화면의 현재 잔액은 `GET /admin/members/{mbrSn}`의 `hldPnt`. 형식이 틀리면 400 INVALID_INPUT_VALUE, 차감 후 잔액이 0보다 작으면 400 POINT_NOT_ENOUGH(잔액·원장 그대로), 없는 회원·탈퇴 회원 404 MEMBER_NOT_FOUND. 같은 요청을 두 번 보내면 두 건이 된다 | ADM-072-02·03 | LJS | AdminPointAdjustRequest | AdminPointLedgerRow |
-| GET | /admin/processing/character-jobs?crtJobSttsCd=&page=&size=20 | 관리자 처리 현황 캐릭터 생성 탭. 상태별 건수 `sttsCnts`(CHRG01 네 상태를 순서대로 늘 주고 없는 상태는 0, 상태 필터와 무관)와 상태를 건 목록(`REG_DT` 최신순, 같으면 `CHAR_CRT_JOB_SN` 내림차순). 결과 이미지·원본 사진은 주지 않는다(결정 26). 연결된 1:1 문의는 `GET /admin/inquiries/{otoInqrySn}`로 연다. 일반 회원 403 ADMIN_ONLY. 모르는 상태 코드 400 INVALID_INPUT_VALUE | ADM-082-02 | LJS | AdminCharacterJobSearchCond | AdminCharacterJobListResponse |
+| GET | /admin/processing/character-jobs?fromYmd=&toYmd=&crtJobSttsCd=&page=&size=20 | 관리자 처리 현황 캐릭터 생성 탭. 기간은 `REG_DT` 날짜 기준 양끝 포함(둘 다 선택). 상태별 건수 `sttsCnts`(CHRG01 네 상태를 순서대로 늘 주고 없는 상태는 0, 기간만 따르고 상태 필터와 무관)와 기간·상태를 건 목록(`REG_DT` 최신순, 같으면 `CHAR_CRT_JOB_SN` 내림차순). 결과 이미지·원본 사진은 주지 않는다(결정 26). 연결된 1:1 문의는 `GET /admin/inquiries/{otoInqrySn}`로 연다. 일반 회원 403 ADMIN_ONLY. 모르는 상태 코드·날짜 형식 오류·`fromYmd > toYmd` 400 INVALID_INPUT_VALUE | ADM-082-02 | LJS | AdminCharacterJobSearchCond | AdminCharacterJobListResponse |
 | GET | /admin/breeds | 관리자 품종 목록. 사용 안 함 포함, 종·정렬 순서·번호순, 페이지 없음. 쿼리 `petSeCd`(PETG01) 없거나 공백이면 전체. 모르는 종 코드 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-101-01 | LJS | - | List<AdminBreedSummary> |
 | POST | /admin/breeds | 품종 추가(201, 감사 로그). 품종 코드는 서버가 매긴다(강아지 `DOGV`·고양이 `CATV` + 그 접두 최대 번호 + 1, 네 자리). 이름 1~50자(앞뒤 공백 지운 뒤)가 아니거나 종 코드가 틀리면 400 INVALID_INPUT_VALUE, 같은 종에 같은 이름(공백 무시, 사용 안 함 포함) 409 DUPLICATE_VRTY_NM | ADM-101-01 | LJS | AdminBreedCreateRequest | AdminBreedSummary |
 | PATCH | /admin/breeds/{vrtySn} | 품종 수정(보낸 칸만, 종·코드는 안 바꿈, 감사 로그). 사용을 끄면 공용 `GET /breeds`와 새 반려동물·실종제보·펫돌봄 등록 선택에서 빠지고, 이미 등록된 반려동물의 품종 이름은 그대로 보인다. 아무 칸도 없거나 형식이 틀리면 400 INVALID_INPUT_VALUE, 없는 품종 404 BREED_NOT_FOUND, 자기 말고 같은 종 같은 이름 409 DUPLICATE_VRTY_NM | ADM-101-01 | LJS | AdminBreedUpdateRequest | AdminBreedSummary |
@@ -191,7 +191,7 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 쓰는 API: GET /admin/processing/character-jobs. `{ sttsCnts, content, page, size, totalElements, totalPages, hasNext }`
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| sttsCnts | List<AdminCharacterJobStatusCount> | Y | 네 줄, CHRG01 순서(CHRC0001 요청·CHRC0002 생성 중·CHRC0003 생성 완료·CHRC0004 생성 실패). 상태 필터와 무관. 실패율은 화면이 계산한다 | ADM-082-02 |
+| sttsCnts | List<AdminCharacterJobStatusCount> | Y | 네 줄, CHRG01 순서(CHRC0001 요청·CHRC0002 생성 중·CHRC0003 생성 완료·CHRC0004 생성 실패). 상태 필터와 무관, 기간은 따른다. 실패율은 화면이 계산한다 | ADM-082-02 |
 | content | List<AdminCharacterJobRow> | Y | 아래 | |
 | page·size·totalElements·totalPages·hasNext | | Y | 공통 목록 응답과 같다 | |
 
@@ -199,7 +199,7 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | crtJobSttsCd | String | Y | CHRG01 | CHAR_CRT_JOB.CRT_JOB_STTS_CD |
-| cnt | long | Y | 그 상태 건수(삭제 제외), 없으면 0 | CHAR_CRT_JOB |
+| cnt | long | Y | 그 상태 건수(삭제 제외, 기간 안), 없으면 0 | CHAR_CRT_JOB |
 
 #### AdminCharacterJobRow (AdminCharacterJobListResponse.content)
 결과 이미지·원본 사진 없음(결정 26)
@@ -217,6 +217,8 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 쓰는 API: GET /admin/processing/character-jobs (쿼리 파라미터, 모두 선택)
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
+| fromYmd | LocalDate | N | 시작일 `YYYY-MM-DD`, `REG_DT` 날짜 기준 포함. 목록·sttsCnts 모두 건다. 형식 오류 400 | CHAR_CRT_JOB.REG_DT |
+| toYmd | LocalDate | N | 종료일 `YYYY-MM-DD`, 그날 포함. `fromYmd`보다 이르면 400 | CHAR_CRT_JOB.REG_DT |
 | crtJobSttsCd | String | N | CHRG01(CHRC0001~0004), 목록에만 건다(sttsCnts 무관). 그 밖은 400. 빈 값은 전체 | CHAR_CRT_JOB.CRT_JOB_STTS_CD |
 | page·size | Integer | N | 1부터, 기본 20·최대 50 | |
 
