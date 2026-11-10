@@ -2,9 +2,16 @@
 
 ## 지금 하는 것
 
-SCR-ADM-112 외부 API 사용량 · Java 메일 호출 기록 — 끝 (2026-11-09). `SmtpMailSender`가 발송마다 `EXTL_API_CALL_LOG`(SYSC0020, 성공·실패·시간초과, 사유는 예외 클래스 이름만)를 `ExternalApiUsageService.recordInNewTransaction`(REQUIRES_NEW)으로 남긴다. 검증 `통과`(1회차), 사람 확인 2026-11-09
+SCR-ADM-110 운영 설정 · 대시보드 케어 최대 노출 수 삭제 — 끝 (2026-11-10). 관리자 운영 설정 API·DTO·Mapper와 `SYS_STNG.DSHBD_CARE_MAX_EXPSR_CNT`(기준 SQL v0.14 (7)·본문·시드)를 지웠다. 추가-1 `docs/api/issues.md` 20번 결정 정리. 검증 `통과`(2회차, 1회차는 로컬 DB에 v0.14 (7) 미실행), 사람 확인 2026-11-10
 
 ## 다음에 할 것
+
+- 다음 백엔드 작업: SCR-ADM-082 캐릭터 생성 현황(FN-ADM-082-02) `GET /api/admin/processing/character-jobs`에 기간 `fromYmd`·`toYmd` 추가(프론트 세션 요청 2026-11-10, 사람 결정 "다음 작업에서", `/start SCR-ADM-082`). 영수증 OCR(`/admin/processing/receipts`)과 같게: 둘 다 선택, `REG_DT` 날짜로 양끝 포함, `fromYmd > toYmd`면 400 `INVALID_INPUT_VALUE`, `sttsCnts`는 기간만 따르고 `crtJobSttsCd`와 무관(프론트 추천), 응답 모양 그대로. `AdminCharacterJobSearchCond`·Mapper·`docs/api/pet.md` 행. 끝나면 프론트 세션에 알린다(프론트는 이미 이 파라미터를 보냄)
+- 공용 DB: SCR-ADM-110 v0.14 (7)은 공용 DB에 이미 실행함(2026-11-10, PR 병합 전). PR 본문에 "DB 변경 있음, v0.14 (7), 공용 DB 실행함"을 적고 병합을 서두른다. 병합 전까지 develop 코드로 공용 DB에 붙은 서버는 운영 설정 조회(`SystemSettingMapper`)가 없는 컬럼 오류를 낸다. 병합 뒤 팀에 각자 로컬 DB 실행을 알린다
+- SCR-ADM-110 연결 남음: FN-ADM-110-01·02 (프론트 연결 관리자 운영 설정 화면, 프론트 저장소에서 /start). 프론트 `src`에는 `dshbdCareMaxExpsrCnt` 칸이 원래 없어 지울 것이 없다(2026-11-10 확인). 프론트 기존 절 `SCR-ADM-110 운영 설정 · 운영 설정 API 연결 — 대기`에 서버에서 이 필드를 지웠다는 참고 줄을 넣었다(커밋은 프론트 저장소 다음 /end)
+- JAJ에게 알린다(SCR-ADM-110): `SYS_STNG.DSHBD_CARE_MAX_EXPSR_CNT`와 관리자 설정 `dshbdCareMaxExpsrCnt`는 지웠다(v0.14 (7)). `CARE_ARTCL.MAIN_EXPSR_YN`·`MAIN_SORT_SEQ`(인덱스 `IDX_CARE_ARTCL_1`, 체크 `CK_CARE_ARTCL_MAIN_EXPSR_YN`) 삭제는 health 쓰기 코드와 함께 JAJ가 정한다(사람 2026-11-10). `docs/api/issues.md` 20번 결정 문장에서 SYS_STNG 부분을 지우고 새 결정 줄을 더했다
+- 사람: ERDCloud에서 `SYS_STNG.DSHBD_CARE_MAX_EXPSR_CNT` 삭제. 관리자 기능명세서 FN-ADM-110-01 비고 "대시보드 케어 최대 노출 수 포함(2026-10-30 재결정)" 정리
+- 참고(검증 에이전트, 2026-11-10): `application-local.properties`의 `jdbc:log4jdbc:` 주소로 bootRun하면 "Failed to determine a suitable driver class"로 뜨지 않았다. 검증은 `--spring.datasource.url=jdbc:mysql://...`로 덮어써 띄웠다. 원인은 확인하지 않음
 
 - YAY에게 알린다(PR 전, SCR-ADM-112 메일 호출 기록): `global/mail/SmtpMailSender`에 호출 기록만 더했다(발송·실패 예외 동작 그대로). 생성자가 둘이다: 스프링용은 `Optional<ExternalApiUsageService>`를 받고, 기존 2인자 생성자는 기록 없이 동작한다(기존 단위 검사용). 로그 저장이 실패해도 발송 결과는 바뀌지 않는다
 - 팀에 알린다(PR 본문 "DB 변경 있음, v0.14 (2)", 공용 DB에는 2026-11-09 실행함): 기준 데이터 v0.14 (2) 신발 부위 사용 안 함. 각자 로컬 DB에도 그 절의 UPDATE 3줄을 실행한다. 실행 전 DB에서는 신발이 상점·보관함·관리자 목록에 그대로 나온다
@@ -13,7 +20,6 @@ SCR-ADM-112 외부 API 사용량 · Java 메일 호출 기록 — 끝 (2026-11-0
 - SJM·JAJ에게 알린다(PR 전, SCR-AIM-012 가계부 검사 오류 칸 이름): 가계부 `ExpenseQueryService`·`ReceiptService.get`·`ReceiptSaveService.validate`의 400에 칸 이름만 넣었다(동작 그대로). JAJ: `CheckupService`에 공개 `isMovableSchedule(petSn, schdlSn, ymd)`를 열고 `moveAndLinkSchedule`이 같은 검사를 쓰게 했다(동작 그대로). 끝나면 ai-50에 알린다(읽기 도구 `list_expenses`·`get_expense_total`·`get_expense_statistics`·`get_receipt`, 쓰기 `draft_receipt_save`의 `pets[i].schdlSn`)
 - SCR-MAN-001 연결 남음: FN-MAN-008 (프론트 연결 `features/dashboard/api.js` 가짜 두 함수·`shortcutTypes.js` 임시 코드 `HEALTH`·`DIARY`·`CALENDAR`를 `MANC0008`·`MANC0009`·`MANC0010`으로, 프론트 저장소에서 /start). 계약은 `docs/api/pet.md` 두 행: 저장 400의 `data[].field`는 `[i].petSn`·`[i].shrtcCds`·`[i].shrtcCds[j]`, 코드 이름은 `GET /api/common-codes?prntComCd=MANG02`
 - 팀에 알린다(PR 본문 "DB 변경 있음, v0.14 (1)", 공용 DB에는 2026-11-09 실행함): DB 기준 파일이 v0.14로 바뀌었다(`db/20261109_*_v0.14.sql`, v0.13은 `db/archive/v0.13/`). v0.13 파일을 고치던 브랜치는 v0.14 파일로 옮긴다. KSJ: `handoff/KSJ.md` 13행의 v0.13 기초 데이터 경로가 `db/archive/v0.13/`으로 옮겨졌다
-- 다음 백엔드 작업(2026-11-09): 대기 절 중 남은 백엔드 일은 없다. 남은 Java 호출 기록은 캐릭터 생성(`CharacterGenerator`, 지금 가짜만) 실제 구현을 붙일 때뿐이다. 나머지 대기 절은 아래 "마일스톤 정리(사람)" 대로 이미 끝났다. `/start`가 대기 맨 위(SCR-ADM-021)를 고르면 이 줄을 보고 다시 고른다
 - SCR-ADM-001 이용 통계 연결 남음: FN-ADM-001-04·05 (프론트 연결 `features/adminDashboard/api.js` 이용 통계 그래프·표·기간 선택, 프론트 저장소에서 /start. 프론트 `milestones/LJS.md`에 `SCR-ADM-001 대시보드 · 이용 통계 API 연결 — 대기` 절 넣음). 프론트에 알릴 것: 기간 `fromYmd`·`toYmd` 양끝 포함 최대 90일·종료일 오늘까지, 종·품종 분포와 즐겨찾기 상위 장소는 기간 무관 지금 값
 - SCR-AIM-012 도구 목록 사본 갱신 남음 (ai 연결, ai 저장소에서 /start): `data/tools.snapshot.json`(지금 15개, Java 52개)은 실행 중 Java의 `GET /internal/ai/tools` 응답에서 코드 값을 빼고 저장해 갱신한다. Java 내보내기·`repository_dispatch`는 하지 않음(사람 결정 2026-11-06). ai 설계 `docs/design/tool-catalog.md` 6절·8절 6번도 이에 맞게 고칠 것
 - SCR-AIM-012 쓰기 도구 연결 남음: FN-AIM-012-05·06·07·13, FN-AIM-013 (프론트 연결 쓰기 도구 범용 확인 카드, 프론트 저장소에서 /start. 프론트 `milestones/LJS.md`에 `쓰기 도구 범용 확인 카드 — 대기` 절 넣음): `call.contentType` multipart면 form-data·`type: file`은 사진 선택, `type: array`는 `items` 줄 목록, `generated: "uuid"`는 실행 때 채움, `draft_expense` 전에 `/api/expenses/duplicate-check`
@@ -80,7 +86,6 @@ SCR-ADM-112 외부 API 사용량 · Java 메일 호출 기록 — 끝 (2026-11-0
 - SCR-ADM-022 연결 남음: FN-ADM-022-02 완료 사진 보기. `/api/files/public/{atchFileSn}`은 `public/` 경로 파일만 열어 지금 완료 사진(시드 3543·3544)은 404다. 완료 사진 업로드가 아직 없어(KSJ) 저장 경로를 정할 때 관리자가 볼 방법(공개 경로 또는 관리자 이미지 API)을 같이 정한다
 - 팀에 알린다(시드): `db/seed/20261028_seed_data.sql`에 RGN 전북 시군구 13건·행정동 243건을 넣었다(전주 완산·덕진 동은 전주시 아래). 공용 DB에는 반영돼 있다. 각자 로컬 DB에는 시드 파일의 `-- 2026-11-03 추가: 전북특별자치도…` 아래 INSERT 두 개만 실행한다(전북 행이 시도·전주시 2건일 때만). 출처 표시(SGIS 공공누리 1유형, admdongkor CC BY 4.0)는 그 주석에 있다
 - SCR-ADM-021 연결 남음: FN-ADM-021-01·02 (프론트 연결 `features/adminCommunity/api.js` 실종제보 목록·상세 모달, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트에 알릴 것: 필드 이름은 가짜와 같은 `mbrNcnm`·`expryCrtrDt`, 블라인드·삭제 글은 목록에 안 나옴, 상세에 연락처·반려동물 정보 없음
-- 마일스톤 정리(사람): `milestones/LJS.md`의 `## SCR-ADM-021 실종제보 — 대기`·`## SCR-ADM-022 펫돌봄 거래 — 대기`·`## SCR-ADM-023 노출 콘텐츠 — 대기`·`## SCR-ADM-050 펫뉴스 — 대기` 절(KSJ 협의 표기)은 같은 기능 ID를 각 `· 프론트 연결 API 계약` 절로 끝냈다(ADM-050은 FN-ADM-050-06 자동 분류도 기존 수집 코드에 있다)(그래서 `/start`가 고르는 "대기 맨 위"가 실제 남은 일이 아니다). 그 절과 `docs/admin/implementation-plan.md` 담당 표기를 사람이 맞춘다
 - 공용 DB 정리(사람): SCR-ADM-091 확인용 발송 이력 4건. `DELETE FROM NOTI_SNDNG_LOG WHERE RGTR_ID='ADM091TEST';`
 - SCR-ADM-091 연결 남음: FN-ADM-091-01 (프론트 연결 `features/adminNotificationLog/api.js` 목록, 프론트 저장소에서 /start). 프론트 마일스톤에 절 있음. 프론트 가짜와 다른 점: 기간 파라미터가 `fromYmd`·`toYmd`가 아니라 `bgngYmd`·`endYmd`(종료일 그날 끝까지 포함)
 - SCR-MYP-031 연결 남음: FN-AIM-013-06 가계부 출처 영수증 다시 열기 (프론트 연결 가계부 화면의 영수증 다시 열기, 화면 SJM, 프론트 저장소에서 /start). SJM에게 알린다: `GET /api/receipts/{recptSn}`을 `petSn` 없이 부르면 된다(응답 `petSn` null, `docs/api/receipt.md`). 프론트 저장소 마일스톤 절은 옆 폴더가 없어 넣지 못했다(아래 정리 항목)

@@ -147,6 +147,40 @@ class AdminSystemSettingControllerTest {
     }
 
     @Test
+    @WithMockLoginMember(id = 9L, mbrAuthrtCd = ADMIN)
+    void 조회_응답에_대시보드_케어_최대_노출_수가_없다() throws Exception {
+        when(adminSystemSettingService.get()).thenReturn(new SystemSetting());
+
+        mockMvc.perform(get("/api/admin/settings"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.memberPet.petMaxCnt").value(10))
+                .andExpect(jsonPath("$.data.memberPet.dshbdCareMaxExpsrCnt").doesNotExist());
+    }
+
+    @Test
+    @WithMockLoginMember(id = 9L, mbrAuthrtCd = ADMIN)
+    void 대시보드_케어_최대_노출_수를_보내도_400이_아니고_바뀌는_것이_없다() throws Exception {
+        when(adminSystemSettingService.update(any(), any())).thenReturn(new SystemSetting());
+
+        mockMvc.perform(patch("/api/admin/settings").header("X-Requested-With", "XMLHttpRequest")
+                .contentType(MediaType.APPLICATION_JSON).content("{\"dshbdCareMaxExpsrCnt\":3}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.memberPet.dshbdCareMaxExpsrCnt").doesNotExist());
+
+        ArgumentCaptor<AdminSettingUpdateRequest> received = ArgumentCaptor.forClass(AdminSettingUpdateRequest.class);
+        verify(adminSystemSettingService).update(any(), received.capture());
+
+        SystemSettingMapper systemSettingMapper = mock(SystemSettingMapper.class);
+        AdminTaskLogService adminTaskLogService = mock(AdminTaskLogService.class);
+        when(systemSettingMapper.selectCurrent()).thenReturn(new SystemSetting());
+        new AdminSystemSettingService(new SystemSettingService(systemSettingMapper), systemSettingMapper,
+                adminTaskLogService).update(new LoginMember(9L, ADMIN), received.getValue());
+
+        verify(systemSettingMapper, never()).upsert(any(), any());
+        verify(adminTaskLogService, never()).record(any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
     @WithMockLoginMember
     void 일반_회원은_수정할_수_없다() throws Exception {
         mockMvc.perform(patch("/api/admin/settings").header("X-Requested-With", "XMLHttpRequest")

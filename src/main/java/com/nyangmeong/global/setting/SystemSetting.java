@@ -20,8 +20,6 @@ public class SystemSetting {
     private Long pstImgMaxCnt = 10L;
     /** 파일최대크기 */
     private Long fileMaxSz = 10485760L;
-    /** 대시보드케어최대노출수 */
-    private Long dshbdCareMaxExpsrCnt = 6L;
     /** 로그인실패제한횟수 */
     private Long lgnFailLmtNmtm = 5L;
     /** 블라인드신고누적수 */
