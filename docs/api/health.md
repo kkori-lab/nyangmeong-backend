@@ -97,9 +97,9 @@
 | careArtclNm | String | Y | 최대 40자. 같은 이름 허용(HLT-003-21, AIM-012-08) | CARE_ARTCL.CARE_ARTCL_NM (HLT-003-21) |
 | rprsIconId | String | N | 최대 20자. 미입력 시 기본 아이콘 | CARE_ARTCL.RPRS_ICON_ID (미입력 시 기본 아이콘, HLT-003-22·AIM-012-13) |
 | careZoneCd | String | Y | HLTG13 공통코드. 매일 = 일상관리, 주기 = 정기관리 | CARE_ARTCL.CARE_ZONE_CD (반복 유형 매일/주기, HLT-003-23) |
-| careCycleCd | String | N | HLTG15 공통코드(1주·2주·한달·1년·직접입력). 정기관리면 필수 | CARE_ARTCL.CARE_CYCLE_CD (주기 선택 시 필수, HLT-003-24) |
-| cycleDrctInptDayCnt | Integer | N | 직접입력이면 필수. 최대 4자리 | CARE_ARTCL.CYCLE_DRCT_INPT_DAY_CNT (직접입력 시 필수) |
-| lastCmptnYmd | LocalDate | N | 정기관리만. 오늘 이후 날짜 불가(HLT-003-38). 미입력 시 등록일 기준으로 예정일 계산 | CARE_CMPTN_HSTRY.CMPTN_YMD (HLT-003-38, 미입력 시 등록일 기준) |
+| careCycleCd | String | N | HLTG15 공통코드(1주·2주·한달·1년·직접입력). 정기관리면 필수. 일상관리면 보내지 않는다 | CARE_ARTCL.CARE_CYCLE_CD (주기 선택 시 필수, HLT-003-24) |
+| cycleDrctInptDayCnt | Integer | N | 직접입력이면 필수. 1~9999. 일상관리면 보내지 않는다(0을 보내면 400) | CARE_ARTCL.CYCLE_DRCT_INPT_DAY_CNT (직접입력 시 필수) |
+| lastCmptnYmd | LocalDate | N | 정기관리만(일상관리면 보내지 않는다). 보내면 그날 완료 기록 1건을 만든다. 오늘 이후 날짜는 400 `CARE_COMPLETION_FUTURE_DATE`(HLT-003-38). 미입력 시 등록일 기준으로 예정일 계산 | CARE_CMPTN_HSTRY.CMPTN_YMD (HLT-003-38, 미입력 시 등록일 기준) |
 
 ### CareItemResponse
 쓰는 API: PATCH /pets/{petSn}/care-items/{careArtclSn}; POST /pets/{petSn}/care-items (GET care-items 응답 행과 같은 필드 → CareItemSummary와 같은 모양)
@@ -165,7 +165,7 @@
 | schdlNm | String | N | 최대 40자. 병원 외 종류면 필수(서버 재검증) | SCHDL.SCHDL_NM (병원 외 종류면 필수, AIM-012-12) |
 | memoCn | String | N | 최대 500자. 일정 메모(검진 메모와 별개) | SCHDL.MEMO_CN (HLT-003-36) |
 | cldrBadgeColrCd | String | N | HLTG21 공통코드 | SCHDL.CLDR_BADGE_COLR_CD (미지정 시 종류 기본 색상, HLT-003-36) |
-| schdlSrcCd | String | N | HLTG22 공통코드 | SCHDL.SCHDL_SRC_CD (AI 대화 등록은 'AI 생성', AIM-012-13) |
+| schdlSrcCd | String | N | HLTG22 공통코드. AI 대화 등록은 `HLTC0067`(AI 생성). 케어미션(일정 등록)은 직접 등록만 반영하고 AI 생성은 반영하지 않는다 | SCHDL.SCHDL_SRC_CD (AI 대화 등록은 'AI 생성', AIM-012-13) |
 
 ### CareScheduleResponse
 쓰는 API: PATCH /pets/{petSn}/care-schedules/{schdlSn}; POST /pets/{petSn}/care-schedules
