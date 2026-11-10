@@ -16,8 +16,6 @@ public record CareItemResponse(
         String rprsIconId,
         LocalDate nxtmPrnmntYmd,
         LocalDate lastCmptnYmd,
-        boolean mainExpsrYn,
-        Integer mainSortSeq,
         boolean bscArtclYn,
         Long prscSn,
         Long reptPrvntMngSn,
@@ -29,8 +27,7 @@ public record CareItemResponse(
     public static CareItemResponse from(CareItemSummary item) {
         return new CareItemResponse(item.getCareArtclSn(), item.getCareArtclNm(), item.getCareZoneCd(),
                 item.getCareCycleCd(), item.getCareCycleCdNm(), item.getCycleDrctInptDayCnt(),
-                item.getRprsIconId(), item.getNxtmPrnmntYmd(), item.getLastCmptnYmd(), item.isMainExpsrYn(),
-                item.getMainSortSeq(), item.isBscArtclYn(), item.getPrscSn(), item.getReptPrvntMngSn(),
+                item.getRprsIconId(), item.getNxtmPrnmntYmd(), item.getLastCmptnYmd(), item.isBscArtclYn(), item.getPrscSn(), item.getReptPrvntMngSn(),
                 item.getCkupRcdSn(), item.getMdcnEndYmd(), item.getDayMdcnNmtm(), item.getTodayCmptnCnt());
     }
 }

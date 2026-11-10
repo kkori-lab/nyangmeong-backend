@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,7 +24,6 @@ import com.nyangmeong.health.dto.CareCompletionResponse;
 import com.nyangmeong.health.dto.CareCompletionSearchCond;
 import com.nyangmeong.health.dto.CareCompletionSummary;
 import com.nyangmeong.health.dto.CareItemCreateRequest;
-import com.nyangmeong.health.dto.CareItemExposureSaveRequest;
 import com.nyangmeong.health.dto.CareItemResponse;
 import com.nyangmeong.health.dto.CareItemSearchCond;
 import com.nyangmeong.health.dto.CareItemSummary;
@@ -38,7 +36,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * [토탈 케어리스트 컨트롤러]
- * - SCR-HLT-003 케어 항목·완료 기록·메인 표시, 메인페이지 MAN-009도 메인 표시 저장 API 사용 (docs/api/health.md)
+ * - SCR-HLT-003 케어 항목·완료 기록 (docs/api/health.md)
  */
 @RestController
 @RequiredArgsConstructor
@@ -78,13 +76,6 @@ public class CareItemController {
             @PathVariable Long petSn, @PathVariable Long careArtclSn) {
         careItemService.delete(me.id(), petSn, careArtclSn);
         return ResponseEntity.ok(ApiResponse.success());
-    }
-
-    @Operation(summary = "메인 표시 항목 전체 저장")
-    @PutMapping("/care-item-exposures")
-    public ResponseEntity<ApiResponse<List<CareItemSummary>>> save(@AuthenticationPrincipal LoginMember me,
-            @PathVariable Long petSn, @Valid @RequestBody CareItemExposureSaveRequest req) {
-        return ResponseEntity.ok(ApiResponse.success(careItemService.save(me.id(), petSn, req)));
     }
 
     @Operation(summary = "케어 완료 기록 목록")

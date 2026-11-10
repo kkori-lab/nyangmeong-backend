@@ -6,7 +6,7 @@ import lombok.Data;
 
 /**
  * [케어 항목 목록 행]
- * - 토탈 케어리스트·메인 표시 항목 (FN-HLT-003-12·13)
+ * - 토탈 케어리스트 (FN-HLT-003-12)
  */
 @Data
 public class CareItemSummary {
@@ -29,10 +29,6 @@ public class CareItemSummary {
     private LocalDate nxtmPrnmntYmd;
     /** 최종완료일자 */
     private LocalDate lastCmptnYmd;
-    /** 메인노출여부 */
-    private boolean mainExpsrYn;
-    /** 메인정렬순서 */
-    private Integer mainSortSeq;
     /** 기본항목여부 */
     private boolean bscArtclYn;
     /** 처방일련번호 */
