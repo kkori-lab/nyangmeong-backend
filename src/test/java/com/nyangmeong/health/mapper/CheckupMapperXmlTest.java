@@ -114,9 +114,9 @@ class CheckupMapperXmlTest {
     }
 
     @Test
-    void 반려동물_이동은_케어_항목의_메인_표시를_해제한다() throws Exception {
+    void 반려동물_이동은_케어_항목의_반려동물만_바꾸고_폐지된_메인_컬럼을_쓰지_않는다() throws Exception {
         assertThat(sql("update", "updateLinkedCareItemsPet")).contains("PET_SN = #{petSn}")
-                .contains("MAIN_EXPSR_YN = 'N'");
+                .doesNotContain("MAIN_");
     }
 
     @Test

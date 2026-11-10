@@ -102,7 +102,7 @@ class CareItemServiceTest {
     }
 
     @Test
-    void 기본_항목이_없으면_11개를_만들고_양치_빗질_발톱_관리를_메인에_올린다() {
+    void 기본_항목이_없으면_11개를_선언_순서대로_만든다() {
         when(mapper.countBasicItems(PET)).thenReturn(0L);
         when(mapper.selectPetForUpdate(PET)).thenReturn(PET);
         when(mapper.countBasicItemsForUpdate(PET)).thenReturn(0L);
@@ -113,9 +113,9 @@ class CareItemServiceTest {
         verify(mapper, times(11)).insertItem(captor.capture());
         List<CareItem> items = captor.getAllValues();
         assertThat(items).allMatch(i -> "Y".equals(i.getBscArtclYn()));
-        assertThat(items).filteredOn(i -> "Y".equals(i.getMainExpsrYn()))
-                .extracting(CareItem::getCareArtclNm, CareItem::getMainSortSeq)
-                .containsExactlyInAnyOrder(tuple("양치", 1), tuple("빗질", 2), tuple("발톱 관리", 3));
+        assertThat(items).extracting(CareItem::getCareArtclNm)
+                .containsExactly(Arrays.stream(BasicCareItem.values()).map(BasicCareItem::getCareArtclNm)
+                        .toArray(String[]::new));
         assertThat(items).filteredOn(i -> CareZone.REGULAR.is(i.getCareZoneCd())).hasSize(6)
                 .allMatch(i -> i.getNxtmPrnmntYmd() != null);
         assertThat(items).filteredOn(i -> CareZone.DAILY.is(i.getCareZoneCd())).hasSize(5)

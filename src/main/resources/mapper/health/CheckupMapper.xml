@@ -250,8 +250,6 @@
         /* 검진기록의 케어 항목 반려동물 변경 */
         UPDATE CARE_ARTCL
            SET PET_SN        = #{petSn}
-             , MAIN_EXPSR_YN = 'N'
-             , MAIN_SORT_SEQ = 0
              , MDFR_ID       = #{actorId}
              , MDFCN_DT      = NOW()
          WHERE PRSC_SN IN ( SELECT P.PRSC_SN
