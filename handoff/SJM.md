@@ -1,26 +1,21 @@
 # SJM 핸드오프
 
 ## 지금 하는 것
-SCR-MYP-003 반려동물 등록/수정 · 등록 직후 케어미션 즉시 출제 — 끝남 (승인 2026-11-09 11:14, 시작 2026-11-09 15:00). 검증 통과 1회차, 사람 확인 완료(Postman 등록 직후 미션 조회, 개수 유지 확인, 확인용 반려동물 삭제)
+마이페이지 시드 정리 · PET·DAILY_HLTH_RCD 시드 원본 정리 — 끝남 (승인 2026-11-10 16:04). 검증 통과 1회차, 사람 확인 완료(빈 DB에 create_tables → base_data → seed 순서로 넣고 SQL 10단계 확인 쿼리 기대값 0/0/4/0/N/0/0/0/0/0 일치)
 
-기능 ID 추가 없음, FN-MYP-003-01(등록)과 FN-MYP-020-03에 걸침. 피드백: 새 반려동물은 매시 정각 배치 때까지 최대 1시간 미션이 비어 있다.
+기능 ID 없음(시드 SQL 정리). 근거: 마이페이지 시드 정리 SQL(사람이 준 파일) 1~9단계를 덤프에 그대로 적용. 대상은 `DEL_YN='N'`·`RGTR_ID='SEED'` 행만.
 
-- `pet/mapper/CareMissionMapper.java`·`mapper/pet/CareMissionMapper.xml`: `selectIssueTarget(petSn, primaryRoleCd)`(기존 `selectIssueTargets`와 같은 SELECT에 `R.PET_SN = #{petSn}`), `countDayMissions(petSn, msnCrtrYmd)`(`DEL_YN='N'`) 추가
-- `pet/service/CareMissionService.java`: `issueFor(Long petSn, LocalDate msnCrtrYmd, boolean observing)` 추가. 오늘 미션이 이미 있으면 건너뛰고, 없으면 `pick`으로 고른 미션을 `insertDayMission`한다. `issue`의 DAY_MSN 만들기·INSERT를 `insertMissions(target, msnCrtrYmd, observing, masters)` 한 메서드로 빼서 둘이 같이 쓴다(대상 선정·pick 재사용)
-- `pet/service/PetService.java` `createPet`: `insertBrupRel` 뒤에 `PetCreatedEvent(petSn, 오늘)`를 `EventPublisher`가 아니라 `ApplicationEventPublisher`로 발행한다(알림·메일이 아니라 `PetDeletedEvent`와 같은 도메인 내부 이벤트). 등록 트랜잭션이 커밋된 뒤에 출제하므로 출제 실패가 등록을 롤백시키지 않는다
-- `pet/domain/PetCreatedEvent(petSn, msnCrtrYmd)` 새 record, `pet/service/PetCreatedEventListener`: `@TransactionalEventListener(phase = AFTER_COMMIT)` + `@Transactional(propagation = REQUIRES_NEW)`로 `careMissionService.issueFor(petSn, msnCrtrYmd, false)`를 부르고, 예외는 잡아 `log.warn`만 남긴다(다음 정각 배치가 채운다). `PetDeletedEvent` 발행·수신 방식을 먼저 보고 같게 맞춘다
-- 관찰 중 여부는 `false`로 넘긴다. 방금 등록한 반려동물에는 관찰 항목이 없어 배치 기준(`ONGOING` 관찰 항목 보유)과 결과가 같다. 또 `pet`(1층)이 `health`(2층) `ObservationService`를 부르면 층 규칙(`ArchitectureTest`)에 어긋나므로 부르지 않는다
-- 부를 API: `GET /pets/{petSn}/daily-missions`(MYP-020-03·04, SJM, 기존). 새 API 없음, `docs/api/` 초안 수정 없음
-- 중복 방지: 출제 전 `countDayMissions`로 확인하고, DB 유니크 `UK_DAY_MSN_1`(PET_SN, MSN_CRTR_YMD, CARE_MSN_SN)이 배치와 동시에 들어오는 경우를 막는다. 배치 `issue`는 이미 `selectIssuedPetSns`로 건너뛰므로 코드 변경 없음
-- 테스트: `CareMissionServiceTest`에 `issueFor` 출제(8개)·이미 출제됐으면 건너뜀·`issue`와 `issueFor`를 연달아 불러도 미션 수가 늘지 않음. `PetServiceTest`에 `createPet`이 `PetCreatedEvent`를 발행하는지. 리스너 테스트에 "`issueFor`에서 예외가 나도 리스너는 던지지 않고 로그만 남김"과 "예외가 나도 반려동물 등록은 성공"(통합: 등록 응답이 오고 DB에 PET이 남음)
+- `db/seed/20261028_seed_data.sql`: PET 줄(593)과 DAILY_HLTH_RCD 줄(241~247)만 파싱 스크립트로 바꾼다. 품종명은 덤프 VRTY 줄 기준. 1단계 품종(코숏 믹스→VRTY_SN 24, 진도 믹스→진돗개 믹스, `믹스`는 시드에 없어 할 일 없음, 믹스묘·푸들 믹스·믹스견은 직접 입력 유지), 2·3단계 털색(품종명+MOD(PET_SN) 규칙 그대로), 4단계 털색 직접 입력 4마리(2·3단계 뒤), 5~8단계 체중 소수 첫째 자리·프로필 체중=최근 기록. 머리말에 날짜별 이력 한 줄(공용 DB는 2026-11-10 반영 완료)
+- `db/20261109_insert_base_data_v0.14.sql`: PETC0011(얼룩) INSERT에 `USE_YN='N'`, 맨 위 변경 절에 새 항목(UPDATE COM_CD … PETC0011) 주석으로 추가. 기존 항목은 고치지 않는다
+- 변환 스크립트는 scratchpad에만 두고 커밋하지 않는다. SQL 파일은 저장소로 복사하지 않는다
 - 완료 조건:
   - 명령: `./gradlew build -q` 통과
-  - 화면: 반려동물을 등록하면 곧바로 `GET /pets/{petSn}/daily-missions`가 미션 8개를 돌려준다. 다음 정각 배치 뒤에도 그 아이의 미션 수가 그대로다. 확인용 반려동물은 화면의 삭제 기능으로 지운다
-- 프론트 연결: 없음(응답이 그대로라 마이페이지 홈이 이미 부르는 API를 그대로 쓴다)
-
+  - 확인: SQL 10단계 확인 항목 기대값 0/0/4/0/N/0/0/0/0/0, 줄 수 1146 유지, 바꾼 컬럼 외 바이트 동일, SQL 규칙 재계산과 PET_SN별 일치, 재실행해도 결과 같음
+- 프론트 연결: 없음
 새 의존성: 없음
 
 ## 다음에 할 것
+- 팀에 알린다(시드): `db/seed/20261028_seed_data.sql`의 PET·체중 기록(HLTC0014)을 정리했고(품종 직접 입력명, 품종별 털색, 얼룩 미사용, 체중 소수 첫째 자리) `db/20261109_insert_base_data_v0.14.sql` 변경 절 v0.14 (8)로 얼룩(PETC0011)을 사용 중지했다. 공용 DB는 2026-11-10 반영 완료. 이미 시드를 넣은 로컬 DB는 시드를 다시 넣지 말고 팀에서 받은 정리 SQL로 맞춘다
 - 확인: 등록 직후 출제(`PetCreatedEventListener`)가 UK_DAY_MSN_1 등으로 실패하면 `issueFor`가 리스너의 REQUIRES_NEW 트랜잭션에 합류해 롤백 전용이 되어, 커밋 때 `UnexpectedRollbackException` 로그가 함께 찍힐 수 있다(등록 응답에는 영향 없음, 다음 정각 배치가 채움). 거슬리면 `issueFor`를 `REQUIRES_NEW`로 바꾸는 것을 고려
 - Postman 컬렉션: 3번 회원이 정지(`MEMBER_INACTIVE`)라 그 회원을 쓰는 변수(`mbrSnB`·`emailB`·`delCoMbrSn`·`delCoEmail`·`invReceiverMbrSn`·`infoOtherMbrSn`)가 있는 폴더는 403. 돌릴 때 정상 회원으로 바꾼다(이메일은 `GET /members/me`의 `acntEml`)
 - YAY와 정하기(SCR-MYP-040): 본인 확인(6-1)을 통과했는지 `PATCH /members/me`에서 서버가 검사하지 않는다. `POST /members/me/password-verification`을 만들 때 통과 표시를 어떻게 남길지 함께 정한다
