@@ -66,7 +66,7 @@ public class LostReportService {
     /** 만료 사전 알림을 보내는 남은 일수 (화면설계서 SCR-CMU-002 : 종료 7일 전·1일 전) */
     static final Set<Integer> EXPIRY_ALARM_DAYS = Set.of(7, 1);
     static final String EXPIRY_ALARM_TTL = "실종 제보 게시 종료 안내";
-    static final String EXPIRY_ALARM_PATH = "/community/lost/%d";
+    static final String EXPIRY_ALARM_PATH = "/community/missing/%d";
     private static final DateTimeFormatter EXPIRY_DATE = DateTimeFormatter.ofPattern("yyyy.MM.dd");
 
     private final LostReportMapper lostReportMapper;

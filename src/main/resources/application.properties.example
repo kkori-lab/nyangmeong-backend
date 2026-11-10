@@ -93,8 +93,9 @@ app.front-base-url=http://localhost:5173
 # app.care-mission.batch-enabled=true
 
 # 펫뉴스 수집(SCR-CMU-003). 검색 RSS 주소·검색어(OR로 연결)·기사 사이 대기(ms)·요청 제한 시간(ms). 생략하면 아래와 같은 기본값
+# 검색어는 주석으로 둔다. .properties는 ISO-8859-1로 읽혀 한글이 깨지고, 깨진 검색어는 오류 없이 0건을 수집한다. 바꾸려면 코드 기본값 NewsFeedProperties.query를 고친다
 app.news.rss-url=https://news.google.com/rss/search
-app.news.query=반려동물 OR 반려견 OR 반려묘 OR "반려 동물"
+# app.news.query=반려동물 OR 반려견 OR 반려묘 OR "반려 동물"
 app.news.request-interval-ms=1000
 app.news.timeout-ms=5000
 # 뉴스 수집 배치(매일 06시·18시). 생략하면 false(꺼짐). 배포는 application-prod.properties가 켠다
