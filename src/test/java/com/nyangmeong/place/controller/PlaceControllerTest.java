@@ -130,9 +130,21 @@ class PlaceControllerTest {
     @Test
     @WithMockLoginMember
     void 필수_쿼리가_빠지면_400이다() throws Exception {
-        mockMvc.perform(get(PATH).param("plcClsfCd", "PLCC0001")).andExpect(status().isBadRequest());
         mockMvc.perform(search("plcClsfCd", "")).andExpect(status().isBadRequest());
         verify(placeService, never()).search(any(), any(), any());
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 좌표_없이_분류만_오면_서비스로_넘긴다() throws Exception {
+        when(placeService.search(any(), any(), any())).thenReturn(new PageResponse<>(List.of(), 1, 15, 0, 0, false));
+
+        mockMvc.perform(get(PATH).param("plcClsfCd", "PLCC0001").param("keyword", "전주"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<PlaceSearchCond> cond = ArgumentCaptor.forClass(PlaceSearchCond.class);
+        verify(placeService).search(any(), cond.capture(), any());
+        assertThat(cond.getValue().hasNoCoordinates()).isTrue();
     }
 
     @Test

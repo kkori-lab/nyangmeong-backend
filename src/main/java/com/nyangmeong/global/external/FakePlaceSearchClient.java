@@ -43,7 +43,7 @@ public class FakePlaceSearchClient implements PlaceSearchClient {
                 matched.add(place);
             }
         }
-        if (query.distanceFirst()) {
+        if (query.distanceFirst() && query.hasArea()) {
             matched.sort(Comparator.comparingDouble(place -> squaredGap(place, query)));
         }
         int from = (query.page() - 1) * PAGE_SIZE;
@@ -53,9 +53,12 @@ public class FakePlaceSearchClient implements PlaceSearchClient {
     }
 
     /**
-     * 지도 범위 안 여부
+     * 지도 범위 안 여부 : 좌표 없는 검색은 전체
      */
     private boolean isInRect(PlaceSearchItem place, PlaceSearchQuery query) {
+        if (!query.hasArea()) {
+            return true;
+        }
         return place.plcLat().compareTo(query.swLat()) >= 0 && place.plcLat().compareTo(query.neLat()) <= 0
                 && place.plcLot().compareTo(query.swLot()) >= 0 && place.plcLot().compareTo(query.neLot()) <= 0;
     }

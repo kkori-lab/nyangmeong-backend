@@ -15,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.nyangmeong.global.error.CustomException;
+import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.external.PlaceSearchClient;
 import com.nyangmeong.global.external.PlaceSearchClient.PlaceSearchPage;
 import com.nyangmeong.global.external.PlaceSearchClient.PlaceSearchQuery;
@@ -57,6 +59,7 @@ public class PlaceService {
     public PageResponse<PlaceSummary> search(Long mbrSn, PlaceSearchCond cond, PageQuery pq) {
         PlaceCategory category = PlaceCategory.from(cond.getPlcClsfCd());
         PlaceSort sort = PlaceSort.from(pq.sort());
+        validateCoordinates(cond, sort);
         int page = pq.pageOrDefault();
         String query = category.toQuery(cond.getKeyword());
 
@@ -120,12 +123,46 @@ public class PlaceService {
         for (String kakaoPlcId : kakaoItems.keySet()) {
             PlaceSummary summary = saved.get(kakaoPlcId);
             if (summary != null) {
-                summary.setDistance(distanceMeter(cond.getCntrLat(), cond.getCntrLot(), summary.getPlcLat(),
-                        summary.getPlcLot()));
+                if (cond.hasCoordinates()) {
+                    summary.setDistance(distanceMeter(cond.getCntrLat(), cond.getCntrLot(), summary.getPlcLat(),
+                            summary.getPlcLot()));
+                }
                 content.add(summary);
             }
         }
         return content;
+    }
+
+    /**
+     * 좌표 6칸은 모두 있거나 모두 없어야 함, 좌표 없이 거리순 불가
+     */
+    private void validateCoordinates(PlaceSearchCond cond, PlaceSort sort) {
+        if (cond.hasCoordinates()) {
+            return;
+        }
+        if (!cond.hasNoCoordinates()) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, missingCoordinateFields(cond));
+        }
+        if (PlaceSort.DISTANCE.is(sort.getCode())) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "sort");
+        }
+    }
+
+    /**
+     * 일부만 온 좌표에서 빠진 칸 이름
+     */
+    private String[] missingCoordinateFields(PlaceSearchCond cond) {
+        Map<String, BigDecimal> coordinates = new LinkedHashMap<>();
+        coordinates.put("swLat", cond.getSwLat());
+        coordinates.put("swLot", cond.getSwLot());
+        coordinates.put("neLat", cond.getNeLat());
+        coordinates.put("neLot", cond.getNeLot());
+        coordinates.put("cntrLat", cond.getCntrLat());
+        coordinates.put("cntrLot", cond.getCntrLot());
+        return coordinates.entrySet().stream()
+                .filter(entry -> entry.getValue() == null)
+                .map(Map.Entry::getKey)
+                .toArray(String[]::new);
     }
 
     private PlaceSearchQuery toQuery(String query, PlaceSort sort, PlaceSearchCond cond, int page) {

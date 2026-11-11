@@ -83,26 +83,26 @@ class PlaceAiToolCatalogTest {
     }
 
     @Test
-    void 장소_목록_도구는_분류와_지도_범위가_필수다() throws Exception {
+    void 장소_목록_도구는_분류가_필수고_지도_범위는_선택이다() throws Exception {
         givenCodes();
         String t = tool("list_places");
         mockMvc.perform(get(PATH))
                 .andExpect(jsonPath(t + ".params.plcClsfCd.group").value("PLCG01"))
                 .andExpect(jsonPath(t + ".params.plcClsfCd.required").value(true))
                 .andExpect(jsonPath(t + ".params.swLat.type").value("decimal"))
-                .andExpect(jsonPath(t + ".params.swLat.required").value(true))
-                .andExpect(jsonPath(t + ".params.neLot.required").value(true))
-                .andExpect(jsonPath(t + ".params.cntrLat.required").value(true))
+                .andExpect(jsonPath(t + ".params.swLat.required").doesNotExist())
+                .andExpect(jsonPath(t + ".params.neLot.required").doesNotExist())
+                .andExpect(jsonPath(t + ".params.cntrLat.required").doesNotExist())
                 .andExpect(jsonPath(t + ".params.keyword.maxLength").value(100));
     }
 
     @Test
-    void 즐겨찾기_도구는_분류가_필수_코드다() throws Exception {
+    void 즐겨찾기_도구는_분류가_선택_코드다() throws Exception {
         givenCodes();
         String t = tool("list_place_bookmarks");
         mockMvc.perform(get(PATH))
                 .andExpect(jsonPath(t + ".params.plcClsfCd.in").value("query"))
                 .andExpect(jsonPath(t + ".params.plcClsfCd.group").value("PLCG01"))
-                .andExpect(jsonPath(t + ".params.plcClsfCd.required").value(true));
+                .andExpect(jsonPath(t + ".params.plcClsfCd.required").doesNotExist());
     }
 }

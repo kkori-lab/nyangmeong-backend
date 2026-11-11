@@ -37,7 +37,7 @@ import com.nyangmeong.health.service.CareScheduleService;
 
 /**
  * [검사 - 회원 단위 일정 AI 도구]
- * - 새 도구 list_my_care_schedules와 기존 list_care_schedules가 함께 실리는지
+ * - 일정 목록 도구는 회원 단위 list_my_care_schedules 하나만 실리는지 (반려동물 1마리 목록 list_care_schedules 는 뺌)
  */
 @WebMvcTest(controllers = {AiToolCatalogController.class, CareScheduleController.class,
         MyCareScheduleController.class})
@@ -68,13 +68,12 @@ class MyCareScheduleAiToolCatalogTest {
     }
 
     @Test
-    void 새_도구와_기존_일정_목록_도구가_함께_실린다() throws Exception {
+    void 일정_목록_도구는_회원_단위_하나만_실린다() throws Exception {
         givenCodes();
         mockMvc.perform(get(PATH))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.tools[*].name", hasItems("list_my_care_schedules", "list_care_schedules")))
-                .andExpect(jsonPath("$.data.tools[?(@.name == 'list_care_schedules')].call.path")
-                        .value("/api/pets/{petSn}/care-schedules"));
+                .andExpect(jsonPath("$.data.tools[*].name", hasItems("list_my_care_schedules")))
+                .andExpect(jsonPath("$.data.tools[?(@.name == 'list_care_schedules')]", hasSize(0)));
     }
 
     @Test

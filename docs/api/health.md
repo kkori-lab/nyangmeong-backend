@@ -6,7 +6,7 @@
 
 | 메서드 | 경로 | 설명 | 기능 ID | 담당 | 요청 DTO | 응답 DTO |
 | --- | --- | --- | --- | --- | --- | --- |
-| GET | /care-schedules | 케어 캘린더 일정 목록(여러 반려동물, 화면당 호출 수를 반려동물 수와 관계없이 고정). `?petSns=&fromYmd=&toYmd=&schdlKndCd=&ckupTypeCd=&size=` — `petSns`는 쉼표로 구분한 반려동물 번호(`1,2,3`, 최대 50개, 형식 `^$\|^\d+(,\d+)*$`). 생략하거나 빈 문자열이면 로그인 회원이 양육(주양육자·공동양육자, 연동 중, 삭제 안 됨)하는 반려동물 전체. 볼 수 없는 번호는 오류 없이 빠지고 남은 반려동물이 없으면 빈 목록. 형식 오류·51개 이상은 400 `INVALID_INPUT_VALUE`. **`size`는 반려동물마다 N건**(전체 N건 아님). 나머지 조건과 정렬은 `/pets/{petSn}/care-schedules`와 같고, 그 1마리 주소도 그대로 둔다. AI 도구 `list_my_care_schedules`(1마리 주소는 `list_care_schedules`) | HLT-003-29·31·40 | JAJ | - | List<CareScheduleSummary> |
+| GET | /care-schedules | 케어 캘린더 일정 목록(여러 반려동물, 화면당 호출 수를 반려동물 수와 관계없이 고정). `?petSns=&fromYmd=&toYmd=&schdlKndCd=&ckupTypeCd=&size=` — `petSns`는 쉼표로 구분한 반려동물 번호(`1,2,3`, 최대 50개, 형식 `^$\|^\d+(,\d+)*$`). 생략하거나 빈 문자열이면 로그인 회원이 양육(주양육자·공동양육자, 연동 중, 삭제 안 됨)하는 반려동물 전체. 볼 수 없는 번호는 오류 없이 빠지고 남은 반려동물이 없으면 빈 목록. 형식 오류·51개 이상은 400 `INVALID_INPUT_VALUE`. **`size`는 반려동물마다 N건**(전체 N건 아님). 나머지 조건과 정렬은 `/pets/{petSn}/care-schedules`와 같고, 그 1마리 주소도 그대로 둔다. AI 도구 `list_my_care_schedules`(1마리 주소는 AI 도구가 아니다. 대화창은 이 도구로 한 마리도 읽는다, 2026-11-11) | HLT-003-29·31·40 | JAJ | - | List<CareScheduleSummary> |
 | GET | /members/me/dashboard-widgets | 건강기록 대시보드 고른 항목·순서. 저장한 적 없으면 `savedYn=false`와 13개 전부(기본 순서, `indctYn=true`)를 주고 프론트가 튜토리얼을 연다 | 새 기능(ID 없음, ※신규 정책) | JAJ | - | HealthDashboardWidgetResponse |
 | GET | /pets/{petSn}/care-completions | 케어 완료 기록 목록(기록 내용). `?careArtclSn=&fromYmd=&toYmd=` | HLT-003-12 | JAJ | - | List<CareCompletionSummary> |
 | GET | /pets/{petSn}/care-items | 케어 항목 목록(토탈 케어리스트, 오늘 투약 횟수 포함). `?careArtclNm=` | HLT-003-12, AIM-012-08 | JAJ | - | List<CareItemSummary> |

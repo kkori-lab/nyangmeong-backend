@@ -55,7 +55,7 @@
     </update>
 
     <select id="selectList" resultMap="placeBookmarkSummaryResultMap">
-        /* 내 즐겨찾기 목록 조회 */
+        /* 내 즐겨찾기 목록 조회 : 카테고리가 없으면 전체 분류 */
         SELECT B.PLC_BKMK_SN
              , B.PLC_SN
              , P.PLC_CLSF_CD
@@ -76,7 +76,9 @@
            AND C.COM_CD_PRNT_SN IS NOT NULL
          WHERE B.MBR_SN = #{mbrSn}
            AND B.USE_YN = 'Y'
+        <if test="plcClsfCd != null">
            AND P.PLC_CLSF_CD = #{plcClsfCd}
+        </if>
          ORDER BY B.MDFCN_DT DESC, B.PLC_BKMK_SN DESC
     </select>
 

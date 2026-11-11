@@ -2,6 +2,7 @@ package com.nyangmeong.place.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -145,8 +146,10 @@ class PlaceBookmarkControllerTest {
 
     @Test
     @WithMockLoginMember
-    void 목록에_카테고리가_빠지면_400이다() throws Exception {
-        mockMvc.perform(get(PATH)).andExpect(status().isBadRequest());
-        verify(placeBookmarkService, never()).search(any(), any());
+    void 목록에_카테고리가_빠지면_전체_분류로_조회한다() throws Exception {
+        when(placeBookmarkService.search(any(), isNull())).thenReturn(List.of());
+
+        mockMvc.perform(get(PATH)).andExpect(status().isOk());
+        verify(placeBookmarkService).search(any(), isNull());
     }
 }
