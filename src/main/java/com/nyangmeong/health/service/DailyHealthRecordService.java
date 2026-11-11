@@ -1,6 +1,8 @@
 package com.nyangmeong.health.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +49,11 @@ public class DailyHealthRecordService {
     /** 식사량 1회 상한 배율(체중 1kg당 g, ※신규 정책) */
     private static final BigDecimal MAX_MEAL_G_PER_KG = new BigDecimal("50");
 
+    /** 기록 시각 허용 여유(분). 사용자 PC 시계와 서버 시계 차이 (※신규 정책: 지난 일만 기록) */
+    private static final long RCD_DT_CLOCK_SKEW_MIN = 5;
+
+    private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
+
     private static final Map<DailyRecordIndicator, CareMission> MISSIONS = new EnumMap<>(DailyRecordIndicator.class);
 
     static {
@@ -87,6 +94,7 @@ public class DailyHealthRecordService {
         DailyRecordIndicator indicator = DailyRecordIndicator.of(req.dailyRcdIdctCd())
                 .orElseThrow(() -> invalid("dailyRcdIdctCd"));
         checkValue(mbrSn, petSn, indicator, req.rcdNvl(), req.crsdSttsCd());
+        checkRecordTime(req.rcdDt());
         String actorId = String.valueOf(mbrSn);
 
         DailyHealthRecord record = new DailyHealthRecord();
@@ -134,6 +142,7 @@ public class DailyHealthRecordService {
             }
         }
         if (req.rcdDt() != null) {
+            checkRecordTime(req.rcdDt());
             record.setRcdDt(req.rcdDt());
         }
         dailyHealthRecordMapper.updateRecord(record, String.valueOf(mbrSn));
@@ -229,6 +238,15 @@ public class DailyHealthRecordService {
         BigDecimal latest = dailyHealthRecordMapper.selectLatestWeight(petSn, DailyRecordIndicator.WEIGHT.getCode());
         if (latest != null) {
             petService.syncWeight(petSn, latest, mbrSn);
+        }
+    }
+
+    /**
+     * 기록 시각은 지금(+여유)까지만 허용 (※신규 정책: 예정은 캘린더에서 등록)
+     */
+    private void checkRecordTime(LocalDateTime rcdDt) {
+        if (rcdDt != null && rcdDt.isAfter(LocalDateTime.now(ZONE).plusMinutes(RCD_DT_CLOCK_SKEW_MIN))) {
+            throw invalid("rcdDt");
         }
     }
 
