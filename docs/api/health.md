@@ -29,7 +29,7 @@
 | POST | /pets/{petSn}/care-schedules | 일정 등록(종류별 필수값 서버 재검증, 출처 SCHDL_SRC_CD). AI 대화 등록도 같은 API | HLT-003-32~37, AIM-012-09·12~14 | JAJ | CareScheduleCreateRequest | CareScheduleResponse |
 | POST | /pets/{petSn}/checkup-attachments | 첨부 등록(multipart, 유형·영상 종류·촬영 부위) | HLT-005-01 | JAJ | CheckupAttachmentCreateRequest | CheckupAttachmentResponse |
 | POST | /pets/{petSn}/checkups | 검진기록 직접 등록(같은 날짜 병원 일정 자동 연결·없으면 생성, 가까운 일정 옮겨 연결 선택) | HLT-002-26~29·31·46 | JAJ | CheckupCreateRequest | CheckupResponse |
-| POST | /pets/{petSn}/daily-health-records | 오늘 기록 추가(식사량·음수량·산책·체중·배변상태). 체중은 0 초과 200 이하(※신규 정책) | HLT-002-11 | JAJ | DailyHealthRecordCreateRequest | DailyHealthRecordResponse |
+| POST | /pets/{petSn}/daily-health-records | 오늘 기록 추가(식사량·음수량·산책·체중·배변상태). 체중은 0 초과 200 이하(※신규 정책). 산책은 0 초과 120 이하(※신규 정책). 음수량은 1회 프로필 체중(kg)×100 이하, 식사량은 1회 프로필 체중(kg)×50 이하(※신규 정책) | HLT-002-11 | JAJ | DailyHealthRecordCreateRequest | DailyHealthRecordResponse |
 | POST | /pets/{petSn}/etc-inspections | 기타검사 입력(검사명·결과 500자·메모 200자) | HLT-005-11~14 | JAJ | EtcInspectionCreateRequest | EtcInspectionResponse |
 | POST | /pets/{petSn}/inspection-values | 검사 수치 여러 행 저장(혈액검사 고정, 이미 등록된 항목 제외, 삭제된 같은 항목은 복구) | HLT-007-02~05 | JAJ | InspectionValueCreateRequest | List<InspectionValueResponse> |
 | POST | /pets/{petSn}/observation-cycles | 관찰 회차 추가(multipart 사진, 종료 항목 불가) | HLT-002-20~25·32 | JAJ | ObservationCycleCreateRequest | ObservationCycleResponse |
@@ -42,7 +42,7 @@
 | PATCH | /pets/{petSn}/care-schedules/{schdlSn} | 일정 수정(반려동물 변경 시 연결 검진기록·자동 생성 케어 항목 이동, ★ 해제) | HLT-003-32~37 | JAJ | CareScheduleUpdateRequest | CareScheduleResponse |
 | PATCH | /pets/{petSn}/checkup-attachments/{ckupRcdAtchSn} | 첨부 1건 파일 교체·유형 수정(multipart) | HLT-005-01 | JAJ | CheckupAttachmentUpdateRequest | CheckupAttachmentResponse |
 | PATCH | /pets/{petSn}/checkups/{ckupRcdSn} | 검진기록 수정(내용·메모 인라인, 검진일·반려동물 변경 시 일정 재연결·케어 항목 이동) | HLT-002-26~29, HLT-005-01 | JAJ | CheckupUpdateRequest | CheckupResponse |
-| PATCH | /pets/{petSn}/daily-health-records/{dailyHlthRcdSn} | 일상 기록 인라인 수정(시각·값). 체중은 0 초과 200 이하(※신규 정책) | HLT-002-13 | JAJ | DailyHealthRecordUpdateRequest | DailyHealthRecordResponse |
+| PATCH | /pets/{petSn}/daily-health-records/{dailyHlthRcdSn} | 일상 기록 인라인 수정(시각·값). 체중은 0 초과 200 이하(※신규 정책). 산책은 0 초과 120 이하(※신규 정책). 음수량은 1회 프로필 체중(kg)×100 이하, 식사량은 1회 프로필 체중(kg)×50 이하(※신규 정책) | HLT-002-13 | JAJ | DailyHealthRecordUpdateRequest | DailyHealthRecordResponse |
 | PATCH | /pets/{petSn}/etc-inspections/{etcInspSn} | 기타검사 수정 | HLT-005-02·11~14 | JAJ | EtcInspectionUpdateRequest | EtcInspectionResponse |
 | PATCH | /pets/{petSn}/inspection-values/{inspNvlSn} | 검사 수치 1행 수정(항목 변경 불가). refRange를 보내면 덮어씀, {null,null}이면 참고범위 비움, 안 보내면 유지 | HLT-007-02·03 | JAJ | InspectionValueUpdateRequest | InspectionValueResponse |
 | PATCH | /pets/{petSn}/observation-cycles/{obsrvCyclSn} | 관찰 회차 수정(multipart) | HLT-002-19 | JAJ | ObservationCycleUpdateRequest | ObservationCycleResponse |
@@ -323,7 +323,7 @@
 | --- | --- | --- | --- | --- |
 | dailyRcdIdctCd | String | Y | HLTG09 공통코드(체중·식사량·음수량·배변상태·산책) | DAILY_HLTH_RCD.DAILY_RCD_IDCT_CD, HLT-002-11 |
 | rcdDt | LocalDateTime | Y | 화면은 시간만 입력, 날짜는 오늘("오늘 기록하기") | DAILY_HLTH_RCD.RCD_DT, HLT-002-11 |
-| rcdNvl | BigDecimal | N | 식사량 g·음수량 ml·산책 분·체중 kg. 배변상태가 아니면 필수. 0 초과, 정수 5자리·소수 둘째 자리까지(셋째 자리부터 400). 체중은 200 이하(※신규 정책, 넘으면 400 `rcdNvl`) | DAILY_HLTH_RCD.RCD_NVL, HLT-002-11 |
+| rcdNvl | BigDecimal | N | 식사량 g·음수량 ml·산책 분·체중 kg. 배변상태가 아니면 필수. 0 초과, 정수 5자리·소수 둘째 자리까지(셋째 자리부터 400). 체중은 200 이하, 산책은 120 이하, 음수량은 프로필 체중(`PET.PET_BDWG`)×100 이하, 식사량은 프로필 체중×50 이하(※신규 정책, 넘으면 400 `rcdNvl`) | DAILY_HLTH_RCD.RCD_NVL, HLT-002-11 |
 | crsdSttsCd | String | N | HLTG10 공통코드(정상·딱딱함·무름·설사·변비). 배변상태면 필수 | DAILY_HLTH_RCD.CRSD_STTS_CD, HLT-002-11 |
 
 ### DailyHealthRecordResponse
@@ -395,7 +395,7 @@ CreatinineIndicator: `latestNvl`, `unitNm`, `refLlmtNvl`, `refUplmtNvl`(최신 �
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | rcdDt | LocalDateTime | N | 인라인 편집의 시각 | DAILY_HLTH_RCD.RCD_DT, HLT-002-13 |
-| rcdNvl | BigDecimal | N | 0 초과, 정수 5자리·소수 둘째 자리까지(셋째 자리부터 400). 체중은 200 이하(※신규 정책, 넘으면 400 `rcdNvl`) | DAILY_HLTH_RCD.RCD_NVL, HLT-002-13 |
+| rcdNvl | BigDecimal | N | 0 초과, 정수 5자리·소수 둘째 자리까지(셋째 자리부터 400). 체중은 200 이하, 산책은 120 이하, 음수량은 프로필 체중(`PET.PET_BDWG`)×100 이하, 식사량은 프로필 체중×50 이하(※신규 정책, 넘으면 400 `rcdNvl`) | DAILY_HLTH_RCD.RCD_NVL, HLT-002-13 |
 | crsdSttsCd | String | N | HLTG10. 배변상태 기록만 | DAILY_HLTH_RCD.CRSD_STTS_CD, HLT-002-13 |
 
 ### EtcInspectionCreateRequest
