@@ -224,4 +224,69 @@ class HealthNumericScaleControllerTest {
                 .andExpect(status().isBadRequest());
         verify(inspectionValueService, never()).update(anyLong(), anyLong(), anyLong(), any());
     }
+
+    // 검사 수치 범위 (※신규 정책: 검사 수치 0 이상 · 정수 7자리)
+
+    @Test
+    @WithMockLoginMember
+    void 검사수치_저장_0과_정수_7자리는_201() throws Exception {
+        mockMvc.perform(json(post(INSP_URL), inspCreate("0", "0", "9999999.99"))).andExpect(status().isCreated());
+        mockMvc.perform(json(post(INSP_URL), inspCreate("9999999.99", "null", "null")))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 검사수치_저장_결과값_범위_밖은_400() throws Exception {
+        for (String rslt : new String[] {"-0.01", "10000000", "1.234"}) {
+            mockMvc.perform(json(post(INSP_URL), inspCreate(rslt, "null", "null")))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_INPUT_VALUE"))
+                    .andExpect(jsonPath("$.data[0].field").value("values[0].rsltNvl"));
+        }
+        verify(inspectionValueService, never()).create(anyLong(), anyLong(), any());
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 검사수치_저장_참고범위_범위_밖은_400() throws Exception {
+        for (String bad : new String[] {"-0.01", "10000000", "1.234"}) {
+            mockMvc.perform(json(post(INSP_URL), inspCreate("1", bad, "1.5")))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_INPUT_VALUE"))
+                    .andExpect(jsonPath("$.data[?(@.field == 'values[0].refLlmtNvl')]").exists());
+            mockMvc.perform(json(post(INSP_URL), inspCreate("1", "0", bad)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_INPUT_VALUE"))
+                    .andExpect(jsonPath("$.data[?(@.field == 'values[0].refUplmtNvl')]").exists());
+        }
+        verify(inspectionValueService, never()).create(anyLong(), anyLong(), any());
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 검사수치_수정_0과_정수_7자리는_200() throws Exception {
+        mockMvc.perform(json(patch(INSP_URL + "/1"), "{\"rsltNvl\":0}")).andExpect(status().isOk());
+        mockMvc.perform(json(patch(INSP_URL + "/1"), "{\"rsltNvl\":9999999.99}")).andExpect(status().isOk());
+        mockMvc.perform(json(patch(INSP_URL + "/1"), inspUpdateRange("0", "9999999.99")))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 검사수치_수정_범위_밖은_400() throws Exception {
+        for (String bad : new String[] {"-0.01", "10000000", "1.234"}) {
+            mockMvc.perform(json(patch(INSP_URL + "/1"), "{\"rsltNvl\":" + bad + "}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_INPUT_VALUE"))
+                    .andExpect(jsonPath("$.data[0].field").value("rsltNvl"));
+            mockMvc.perform(json(patch(INSP_URL + "/1"), inspUpdateRange(bad, "20000000")))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.data[?(@.field == 'refRange.refLlmtNvl')]").exists());
+            mockMvc.perform(json(patch(INSP_URL + "/1"), inspUpdateRange("0", bad)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.data[?(@.field == 'refRange.refUplmtNvl')]").exists());
+        }
+        verify(inspectionValueService, never()).update(anyLong(), anyLong(), anyLong(), any());
+    }
 }

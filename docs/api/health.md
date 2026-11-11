@@ -448,10 +448,10 @@ CreatinineIndicator: `latestNvl`, `unitNm`, `refLlmtNvl`, `refUplmtNvl`(최신 �
 | --- | --- | --- | --- | --- |
 | inspArtclCd | String | N | HLTG12 공통코드(12종). 이 값과 직접입력명 중 하나는 필수 | INSP_NVL.INSP_ARTCL_CD, HLT-007-02 |
 | inspArtclDrctInptNm | String | N | 최대 40자. 12종에 없을 때 직접입력 | INSP_NVL.INSP_ARTCL_DRCT_INPT_NM, HLT-007-02 |
-| rsltNvl | BigDecimal | Y | 정수 11자리·소수 둘째 자리까지(셋째 자리부터 400) | INSP_NVL.RSLT_NVL, HLT-007-02 |
+| rsltNvl | BigDecimal | Y | 0 이상, 정수 7자리·소수 둘째 자리까지(음수·8자리 이상·셋째 자리부터 400, ※신규 정책: 검사 수치 0 이상 · 정수 7자리) | INSP_NVL.RSLT_NVL, HLT-007-02 |
 | unitNm | String | Y | 최대 20자 | INSP_NVL.UNIT_NM, HLT-007-02 |
-| refLlmtNvl | BigDecimal | N | 정수 11자리·소수 둘째 자리까지. 상한과 함께 입력하거나 둘 다 비움. 하한 ≤ 상한 | INSP_NVL.REF_LLMT_NVL, HLT-007-02 |
-| refUplmtNvl | BigDecimal | N | 정수 11자리·소수 둘째 자리까지. 하한과 함께 입력하거나 둘 다 비움. 하한 ≤ 상한 | INSP_NVL.REF_UPLMT_NVL, HLT-007-02 |
+| refLlmtNvl | BigDecimal | N | 0 이상, 정수 7자리·소수 둘째 자리까지(※신규 정책: 검사 수치 0 이상 · 정수 7자리). 상한과 함께 입력하거나 둘 다 비움. 하한 ≤ 상한 | INSP_NVL.REF_LLMT_NVL, HLT-007-02 |
+| refUplmtNvl | BigDecimal | N | 0 이상, 정수 7자리·소수 둘째 자리까지(※신규 정책: 검사 수치 0 이상 · 정수 7자리). 하한과 함께 입력하거나 둘 다 비움. 하한 ≤ 상한 | INSP_NVL.REF_UPLMT_NVL, HLT-007-02 |
 | memoCn | String | N | 최대 200자 | INSP_NVL.MEMO_CN, HLT-007-02 |
 
 ### InspectionValueResponse
@@ -490,9 +490,9 @@ CreatinineIndicator: `latestNvl`, `unitNm`, `refLlmtNvl`, `refUplmtNvl`(최신 �
 쓰는 API: PATCH /pets/{petSn}/inspection-values/{inspNvlSn} (검사 항목 변경 불가)
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| rsltNvl | BigDecimal | N | 정수 11자리·소수 둘째 자리까지(셋째 자리부터 400) | INSP_NVL.RSLT_NVL, HLT-007-02 |
+| rsltNvl | BigDecimal | N | 0 이상, 정수 7자리·소수 둘째 자리까지(음수·8자리 이상·셋째 자리부터 400, ※신규 정책: 검사 수치 0 이상 · 정수 7자리) | INSP_NVL.RSLT_NVL, HLT-007-02 |
 | unitNm | String | N | 최대 20자. 비울 수 없음(필수 항목) | INSP_NVL.UNIT_NM, HLT-007-02 |
-| refRange | RefRange | N | 참고범위 묶음(객체: refLlmtNvl, refUplmtNvl, 각 정수 11자리·소수 둘째 자리까지). 둘 다 값 또는 둘 다 null, 하한 ≤ 상한. 보내면 두 값으로 덮어씀({null,null}이면 비움), 안 보내면 유지 | INSP_NVL.REF_LLMT_NVL·REF_UPLMT_NVL, HLT-007-02 |
+| refRange | RefRange | N | 참고범위 묶음(객체: refLlmtNvl, refUplmtNvl, 각 0 이상, 정수 7자리·소수 둘째 자리까지, ※신규 정책: 검사 수치 0 이상 · 정수 7자리). 둘 다 값 또는 둘 다 null, 하한 ≤ 상한. 보내면 두 값으로 덮어씀({null,null}이면 비움), 안 보내면 유지 | INSP_NVL.REF_LLMT_NVL·REF_UPLMT_NVL, HLT-007-02 |
 | memoCn | String | N | 최대 200자 | INSP_NVL.MEMO_CN, HLT-007-02 |
 
 ### ObservationCycleCreateRequest
