@@ -2,6 +2,7 @@ package com.nyangmeong.health.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -44,9 +45,13 @@ class CareItemMapperXmlTest {
 
     @Test
     void 목록은_메인_표시_컬럼을_읽지도_거르지도_않는다() throws Exception {
-        assertThat(sql("select", "selectList")).doesNotContain("MAIN_EXPSR_YN").doesNotContain("MAIN_SORT_SEQ");
-        assertThat(sql("sql", "careItemSummaryColumns")).doesNotContain("MAIN_EXPSR_YN")
-                .doesNotContain("MAIN_SORT_SEQ");
+        assertThat(sql("select", "selectList")).doesNotContain("MAIN_");
+        assertThat(sql("sql", "careItemSummaryColumns")).doesNotContain("MAIN_");
+    }
+
+    @Test
+    void 매퍼_전체에_폐지된_메인_컬럼이_없다() throws Exception {
+        assertThat(Files.readString(XML)).doesNotContain("MAIN_").doesNotContain("#{main");
     }
 
     @Test
@@ -78,10 +83,10 @@ class CareItemMapperXmlTest {
     }
 
     @Test
-    void 항목_삭제는_DELETE가_아니라_DEL_YN_UPDATE이고_메인_표시도_푼다() throws Exception {
+    void 항목_삭제는_DELETE가_아니라_DEL_YN_UPDATE다() throws Exception {
         String sql = sql("update", "deleteItem");
 
-        assertThat(sql).contains("SET DEL_YN = 'Y'").contains("MAIN_EXPSR_YN = 'N'");
+        assertThat(sql).contains("SET DEL_YN = 'Y'").doesNotContain("DELETE FROM").doesNotContain("MAIN_");
     }
 
     @Test

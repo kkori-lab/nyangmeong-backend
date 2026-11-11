@@ -35,6 +35,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class DailyHealthRecordService {
 
+    /** 체중 기록 상한(kg, ※신규 정책) */
+    private static final BigDecimal MAX_WEIGHT_KG = new BigDecimal("200");
+
     private static final Map<DailyRecordIndicator, CareMission> MISSIONS = new EnumMap<>(DailyRecordIndicator.class);
 
     static {
@@ -117,7 +120,7 @@ public class DailyHealthRecordService {
                 throw invalid();
             }
             if (req.rcdNvl() != null) {
-                checkPositive(req.rcdNvl());
+                checkNumber(indicator, req.rcdNvl());
                 record.setRcdNvl(req.rcdNvl());
             }
         }
@@ -172,7 +175,7 @@ public class DailyHealthRecordService {
         if (rcdNvl == null) {
             throw invalid("rcdNvl");
         }
-        checkPositive(rcdNvl);
+        checkNumber(indicator, rcdNvl);
     }
 
     private void checkStoolStatus(String crsdSttsCd) {
@@ -181,8 +184,15 @@ public class DailyHealthRecordService {
         }
     }
 
-    private void checkPositive(BigDecimal rcdNvl) {
+    /**
+     * 수치 검사
+     * - 0 초과, 체중은 200kg 이하
+     */
+    private void checkNumber(DailyRecordIndicator indicator, BigDecimal rcdNvl) {
         if (rcdNvl.signum() <= 0) {
+            throw invalid("rcdNvl");
+        }
+        if (indicator == DailyRecordIndicator.WEIGHT && rcdNvl.compareTo(MAX_WEIGHT_KG) > 0) {
             throw invalid("rcdNvl");
         }
     }

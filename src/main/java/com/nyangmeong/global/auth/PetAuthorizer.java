@@ -1,5 +1,7 @@
 package com.nyangmeong.global.auth;
 
+import java.util.List;
+
 import org.springframework.stereotype.Component;
 
 import com.nyangmeong.global.error.CustomException;
@@ -15,6 +17,9 @@ import lombok.RequiredArgsConstructor;
 @Component
 @RequiredArgsConstructor
 public class PetAuthorizer {
+
+    private static final List<String> CAREGIVER_ROLE_CDS = List.of(BrupRole.PRIMARY.getCode(),
+            BrupRole.CO_PARENT.getCode());
 
     private final PetAuthMapper petAuthMapper;
 
@@ -32,6 +37,13 @@ public class PetAuthorizer {
         if (!BrupRole.PRIMARY.is(roleOf(mbrSn, petSn))) {
             throw new CustomException(ErrorCode.PET_PRIMARY_ONLY);
         }
+    }
+
+    /**
+     * 양육 중인 반려동물 번호 목록 조회
+     */
+    public List<Long> searchCaregiverPetSns(Long mbrSn, List<Long> petSns) {
+        return petAuthMapper.selectCaregiverPetSns(mbrSn, petSns, CAREGIVER_ROLE_CDS);
     }
 
     /**

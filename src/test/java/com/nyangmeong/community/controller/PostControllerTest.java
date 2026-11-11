@@ -94,7 +94,7 @@ class PostControllerTest {
         PostSummary row = new PostSummary();
         row.setPstSn(7L);
         row.setPopular(true);
-        when(postService.search(any(PostSearchCond.class), any()))
+        when(postService.search(any(), any(PostSearchCond.class), any()))
                 .thenReturn(new PageResponse<>(List.of(row), 1, 10, 1, 1, false));
 
         mockMvc.perform(get("/api/posts").param("bbsCd", "CMUC0002").param("keyword", "산책").param("sort", "popular"))

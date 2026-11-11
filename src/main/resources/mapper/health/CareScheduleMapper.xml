@@ -96,6 +96,79 @@
         </if>
     </select>
 
+    <select id="selectListByPets" resultMap="careScheduleSummaryResultMap">
+        /* 여러 반려동물 케어 일정 목록 조회 (건수 제한은 반려동물마다) */
+        SELECT L.SCHDL_SN
+             , L.PET_SN
+             , L.SCHDL_KND_CD
+             , L.SCHDL_KND_CD_NM
+             , L.SCHDL_DT
+             , L.HR_INPT_YN
+             , L.CKUP_TYPE_CD
+             , L.CKUP_TYPE_CD_NM
+             , L.HSPTL_NM
+             , L.SCHDL_NM
+             , L.MEMO_CN
+             , L.CLDR_BADGE_COLR_CD
+             , L.CKUP_RCD_CNT
+          FROM (
+                SELECT S.SCHDL_SN
+                     , S.PET_SN
+                     , S.SCHDL_KND_CD
+                     , K.COM_CD_NM AS SCHDL_KND_CD_NM
+                     , S.SCHDL_DT
+                     , CASE WHEN S.HR_INPT_YN = 'Y' THEN TRUE ELSE FALSE END AS HR_INPT_YN
+                     , S.HR_INPT_YN AS SORT_HR_INPT_YN
+                     , S.CKUP_TYPE_CD
+                     , T.COM_CD_NM AS CKUP_TYPE_CD_NM
+                     , S.HSPTL_NM
+                     , S.SCHDL_NM
+                     , S.MEMO_CN
+                     , S.CLDR_BADGE_COLR_CD
+                     , ( SELECT COUNT(*)
+                           FROM CKUP_RCD C
+                          WHERE C.SCHDL_SN = S.SCHDL_SN
+                            AND C.CKUP_RCD_STTS_CD = #{completedCd}
+                            AND C.DEL_YN = 'N' ) AS CKUP_RCD_CNT
+                     , ROW_NUMBER() OVER (PARTITION BY S.PET_SN
+                                              ORDER BY DATE(S.SCHDL_DT)
+                                                     , S.HR_INPT_YN DESC
+                                                     , S.SCHDL_DT
+                                                     , S.SCHDL_SN) AS PET_SCHDL_SEQ
+                  FROM SCHDL S
+                  LEFT JOIN COM_CD K
+                    ON K.COM_CD = S.SCHDL_KND_CD
+                   AND K.COM_CD_PRNT_SN IS NOT NULL
+                  LEFT JOIN COM_CD T
+                    ON T.COM_CD = S.CKUP_TYPE_CD
+                   AND T.COM_CD_PRNT_SN IS NOT NULL
+                 WHERE S.PET_SN IN
+                <foreach collection="petSns" item="petSn" open="(" separator="," close=")">
+                       #{petSn}
+                </foreach>
+                   AND S.DEL_YN = 'N'
+                <if test="cond.fromYmd != null">
+                   AND S.SCHDL_DT &gt;= #{cond.fromYmd}
+                </if>
+                <if test="cond.toYmd != null">
+                   AND S.SCHDL_DT &lt; DATE_ADD(#{cond.toYmd}, INTERVAL 1 DAY)
+                </if>
+                <if test="cond.schdlKndCd != null and cond.schdlKndCd != ''">
+                   AND S.SCHDL_KND_CD = #{cond.schdlKndCd}
+                </if>
+                <if test="cond.ckupTypeCd != null and cond.ckupTypeCd != ''">
+                   AND S.CKUP_TYPE_CD = #{cond.ckupTypeCd}
+                </if>
+               ) L
+        <if test="cond.size != null">
+         WHERE L.PET_SCHDL_SEQ &lt;= #{cond.size}
+        </if>
+         ORDER BY DATE(L.SCHDL_DT)
+                , L.SORT_HR_INPT_YN DESC
+                , L.SCHDL_DT
+                , L.SCHDL_SN
+    </select>
+
     <select id="selectHospitalSchedules" resultMap="hospitalScheduleSummaryResultMap">
         /* 일정일의 병원 일정 목록 조회 (삭제된 반려동물 제외) */
         SELECT S.SCHDL_SN
@@ -226,8 +299,6 @@
         /* 일정에 연결된 투약 항목의 반려동물 변경 */
         UPDATE CARE_ARTCL
            SET PET_SN        = #{petSn}
-             , MAIN_EXPSR_YN = 'N'
-             , MAIN_SORT_SEQ = 0
              , MDFR_ID       = #{actorId}
              , MDFCN_DT      = NOW()
          WHERE PRSC_SN IN ( SELECT P.PRSC_SN

@@ -25,6 +25,12 @@ public interface CareScheduleMapper {
             @Param("completedCd") String completedCd);
 
     /**
+     * 여러 반려동물 일정 목록 조회
+     */
+    List<CareScheduleSummary> selectListByPets(@Param("petSns") List<Long> petSns,
+            @Param("cond") CareScheduleSearchCond cond, @Param("completedCd") String completedCd);
+
+    /**
      * 일정일의 병원 일정 목록 조회 (반려동물 전체, 알림 배치)
      */
     List<HospitalScheduleSummary> selectHospitalSchedules(@Param("schdlYmd") LocalDate schdlYmd,

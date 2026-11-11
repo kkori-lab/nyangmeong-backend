@@ -19,7 +19,7 @@
 | GET | /lost-reports/{lostTpofSn} | 실종 제보 상세(목격 장소 좌표, 찾았어요 후 비공개 처리) | CMU-002-05·06 | KSJ | - | LostReportResponse |
 | GET | /news | 펫뉴스 목록(쿼리 `newsClsfCd`·`keyword`·`page`·`size`, 최신순 10건, 상세 하단 최신 5건은 `size=5`) | CMU-003-01~04 | KSJ | - | Page<NewsSummary> |
 | GET | /news/{newsSn} | 펫뉴스 상세 | CMU-003-04 | KSJ | - | NewsResponse |
-| GET | /posts | 펫이야기 목록(게시판·정렬·키워드, 인기글 배지, 10건). 상세 하단 최신 5건도 사용 | CMU-001-01~04·08·10 | KSJ | - | Page<PostSummary> |
+| GET | /posts | 펫이야기 목록(게시판·정렬·키워드, 인기글 배지, 10건, `mineYn=true`면 내 글만, 항목마다 `owner`). 상세 하단 최신 5건도 사용 | CMU-001-01~04·08·10 | KSJ | - | Page<PostSummary> |
 | GET | /posts/health-tips | 오늘의 건강팁 최대 3건. 관리자 지정 글은 지정 자리에, 빈 자리는 자동 선정 글(규칙은 `GET /admin/community/exposure/health-tips`) | CMU-001-07 | KSJ | - | List<PostSummary> |
 | GET | /posts/popular-photo | 인기 포토(7일 → 30일 → 전체 순 대체) | CMU-001-06 | KSJ | - | PostResponse |
 | GET | /posts/{pstSn} | 게시글 상세(조회수 동일 사용자 1일 1회 증가) | CMU-001-10 | KSJ | - | PostResponse |
@@ -1045,6 +1045,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | rcmdtnCnt | Integer | Y | | PST.RCMDTN_CNT, CMU-001-03 |
 | cmntCnt | Integer | Y | 삭제 댓글 제외 | CMNT.DEL_YN, CMU-001-11 |
 | popular | Boolean | Y | 인기글 배지(최근 7일, 좋아요 1개 이상 상위 5개). 인기순 정렬이면 false | CMU-001-03·04 |
+| owner | Boolean | N | 내 글이면 true. 목록(`GET /posts`)에서만 채우고 건강팁·인기 포토는 null | PST.MBR_SN, 사람 요청 2026-11-10 |
 
 ### PostUpdateRequest
 쓰는 API: PATCH /posts/{pstSn}

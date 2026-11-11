@@ -64,10 +64,10 @@ public class PostService {
     private final PetStoryMissionReflector missionReflector;
 
     /**
-     * 게시글 목록 조회
+     * 게시글 목록 조회 (mineYn 이면 내 글만, 항목마다 owner 표시)
      */
     @Transactional(readOnly = true)
-    public PageResponse<PostSummary> search(PostSearchCond cond, PageQuery pq) {
+    public PageResponse<PostSummary> search(Long mbrSn, PostSearchCond cond, PageQuery pq) {
         String bbsCd = cond.getBbsCd() == null || cond.getBbsCd().isBlank() ? null : cond.getBbsCd();
         if (bbsCd != null && !BoardType.exists(bbsCd)) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
@@ -77,7 +77,8 @@ public class PostService {
                 : escapeLike(cond.getKeyword().trim());
 
         PageHelper.startPage(pq.pageOrDefault(), pq.sizeOr(PAGE_SIZE));
-        List<PostSummary> rows = postMapper.selectList(bbsCd, keyword, popularSort, PostStatus.NORMAL.getCode());
+        List<PostSummary> rows = postMapper.selectList(bbsCd, keyword, popularSort, PostStatus.NORMAL.getCode(), mbrSn,
+                cond.isMineYn());
         /** 인기순 정렬에서는 인기글 배지 미표시 */
         if (popularSort) {
             rows.forEach(row -> row.setPopular(false));
