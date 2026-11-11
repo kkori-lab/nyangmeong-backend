@@ -128,6 +128,35 @@ class DailyHealthRecordServiceTest {
     }
 
     @Test
+    void 체중은_200kg까지_등록하고_넘으면_400이다() {
+        service.create(MBR, PET, new DailyHealthRecordCreateRequest(WEIGHT, AT, new BigDecimal("200"), null));
+        verify(mapper).insertRecord(any());
+
+        assertInvalid(() -> service.create(MBR, PET,
+                new DailyHealthRecordCreateRequest(WEIGHT, AT, new BigDecimal("200.001"), null)));
+        assertInvalid(() -> service.create(MBR, PET,
+                new DailyHealthRecordCreateRequest(WEIGHT, AT, new BigDecimal("999"), null)));
+        verify(mapper).insertRecord(any());
+    }
+
+    @Test
+    void 체중_상한은_식사량에_적용하지_않는다() {
+        service.create(MBR, PET, new DailyHealthRecordCreateRequest(MEAL, AT, new BigDecimal("999"), null));
+
+        verify(mapper).insertRecord(any());
+    }
+
+    @Test
+    void 체중을_200kg_넘게_수정하면_400이고_프로필을_맞추지_않는다() {
+        when(mapper.selectRecord(PET, RCD)).thenReturn(record(WEIGHT, new BigDecimal("4.000"), null));
+
+        assertInvalid(() -> service.update(MBR, PET, RCD,
+                new DailyHealthRecordUpdateRequest(null, new BigDecimal("999"), null)));
+        verify(mapper, never()).updateRecord(any(), anyString());
+        verify(petService, never()).syncWeight(anyLong(), any(), anyLong());
+    }
+
+    @Test
     void 권한이_없으면_등록하지_않는다() {
         doThrow(new CustomException(ErrorCode.FORBIDDEN)).when(petAuthorizer).checkCaregiver(MBR, OTHER_PET);
 
