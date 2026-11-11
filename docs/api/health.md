@@ -99,7 +99,7 @@
 | rprsIconId | String | N | 최대 20자. 미입력 시 기본 아이콘 | CARE_ARTCL.RPRS_ICON_ID (미입력 시 기본 아이콘, HLT-003-22·AIM-012-13) |
 | careZoneCd | String | Y | HLTG13 공통코드. 매일 = 일상관리, 주기 = 정기관리 | CARE_ARTCL.CARE_ZONE_CD (반복 유형 매일/주기, HLT-003-23) |
 | careCycleCd | String | N | HLTG15 공통코드(1주·2주·한달·1년·직접입력). 정기관리면 필수. 일상관리면 보내지 않는다 | CARE_ARTCL.CARE_CYCLE_CD (주기 선택 시 필수, HLT-003-24) |
-| cycleDrctInptDayCnt | Integer | N | 직접입력이면 필수. 1~9999. 일상관리면 보내지 않는다(0을 보내면 400) | CARE_ARTCL.CYCLE_DRCT_INPT_DAY_CNT (직접입력 시 필수) |
+| cycleDrctInptDayCnt | Integer | N | 직접입력이면 필수. 1~365. 일상관리면 보내지 않는다(0을 보내면 400) | CARE_ARTCL.CYCLE_DRCT_INPT_DAY_CNT (직접입력 시 필수) |
 | lastCmptnYmd | LocalDate | N | 정기관리만(일상관리면 보내지 않는다). 보내면 그날 완료 기록 1건을 만든다. 오늘 이후 날짜는 400 `CARE_COMPLETION_FUTURE_DATE`(HLT-003-38). 미입력 시 등록일 기준으로 예정일 계산 | CARE_CMPTN_HSTRY.CMPTN_YMD (HLT-003-38, 미입력 시 등록일 기준) |
 
 ### CareItemResponse
@@ -152,7 +152,7 @@
 | rprsIconId | String | N | 최대 20자. 기본 항목은 변경 불가 | CARE_ARTCL.RPRS_ICON_ID, HLT-003-12 |
 | careZoneCd | String | N | HLTG13. 기본 항목은 변경 불가 | CARE_ARTCL.CARE_ZONE_CD, HLT-003-12 |
 | careCycleCd | String | N | HLTG15. 기본 정기관리 항목은 이 값과 직접입력 일수만 변경 가능 | CARE_ARTCL.CARE_CYCLE_CD, HLT-003-12 |
-| cycleDrctInptDayCnt | Integer | N | 직접입력이면 필수. 최대 4자리 | CARE_ARTCL.CYCLE_DRCT_INPT_DAY_CNT, HLT-003-24 |
+| cycleDrctInptDayCnt | Integer | N | 직접입력이면 필수. 1~365 | CARE_ARTCL.CYCLE_DRCT_INPT_DAY_CNT, HLT-003-24 |
 
 ### CareScheduleCreateRequest
 쓰는 API: POST /pets/{petSn}/care-schedules (AI 대화 등록도 같은 API)
@@ -639,7 +639,7 @@ CreatinineIndicator: `latestNvl`, `unitNm`, `refLlmtNvl`, `refUplmtNvl`(최신 �
 | ckupRcdSn | Long | Y | 이 반려동물의 검진기록 | REPT_PRVNT_MNG.CKUP_RCD_SN, HLT-005-05 |
 | reptPrvntArtclCd | String | Y | HLTG07 공통코드(심장사상충 예방·구충제) | REPT_PRVNT_MNG.REPT_PRVNT_ARTCL_CD, HLT-005-05 |
 | reptCycleCd | String | Y | HLTG15 공통코드(1주·2주·한달·1년·직접입력) | REPT_PRVNT_MNG.REPT_CYCLE_CD, HLT-005-05 |
-| cycleDrctInptDayCnt | Integer | N | 직접입력이면 필수. 최대 4자리 | REPT_PRVNT_MNG.CYCLE_DRCT_INPT_DAY_CNT, HLT-005-05 |
+| cycleDrctInptDayCnt | Integer | N | 직접입력이면 필수. 1~365 | REPT_PRVNT_MNG.CYCLE_DRCT_INPT_DAY_CNT, HLT-005-05 |
 | bgngYmd | LocalDate | Y | 기본값 오늘. 케어 항목의 첫 예정일 | REPT_PRVNT_MNG.BGNG_YMD, HLT-005-05 |
 
 ### RepeatPreventionResponse

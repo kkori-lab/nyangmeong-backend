@@ -113,7 +113,7 @@ class HealthCardAiToolCatalogTest {
                 .andExpect(jsonPath(t + ".call.path").value("/api/pets/{petSn}/care-items/{careArtclSn}"))
                 .andExpect(jsonPath(t + ".params.careZoneCd.group").value("HLTG13"))
                 .andExpect(jsonPath(t + ".params.careCycleCd.group").value("HLTG15"))
-                .andExpect(jsonPath(t + ".params.cycleDrctInptDayCnt.max").value(9999))
+                .andExpect(jsonPath(t + ".params.cycleDrctInptDayCnt.max").value(365))
                 .andExpect(jsonPath(t + ".rules[0].requiredIf.field").value("cycleDrctInptDayCnt"))
                 .andExpect(jsonPath(t + ".rules[0].requiredIf.when").value("careCycleCd"))
                 .andExpect(jsonPath(t + ".rules[0].requiredIf.equals").value("HLTC0042"));

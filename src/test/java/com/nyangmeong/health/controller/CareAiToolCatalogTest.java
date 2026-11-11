@@ -120,7 +120,7 @@ class CareAiToolCatalogTest {
                 .andExpect(jsonPath(CARE_ITEM + ".params.careCycleCd.group").value("HLTG15"))
                 .andExpect(jsonPath(CARE_ITEM + ".params.cycleDrctInptDayCnt.type").value("int"))
                 .andExpect(jsonPath(CARE_ITEM + ".params.cycleDrctInptDayCnt.min").value(1))
-                .andExpect(jsonPath(CARE_ITEM + ".params.cycleDrctInptDayCnt.max").value(9999))
+                .andExpect(jsonPath(CARE_ITEM + ".params.cycleDrctInptDayCnt.max").value(365))
                 .andExpect(jsonPath(CARE_ITEM + ".params.lastCmptnYmd.type").value("date"))
                 .andExpect(jsonPath(CARE_ITEM + ".rules[0].requiredIf.field").value("careCycleCd"))
                 .andExpect(jsonPath(CARE_ITEM + ".rules[0].requiredIf.equals").value("HLTC0037"))
