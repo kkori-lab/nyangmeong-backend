@@ -41,8 +41,11 @@ public class CareScheduleController {
 
     private final CareScheduleService careScheduleService;
 
+    /**
+     * 케어 캘린더 일정 목록
+     * - AI 도구 아님 : 대화창은 회원 단위 list_my_care_schedules 로 한 아이 일정도 읽음 (MyCareScheduleController)
+     */
     @Operation(summary = "케어 캘린더 일정 목록")
-    @AiTool(name = "list_care_schedules", domain = "health", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<List<CareScheduleSummary>>> search(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @Valid @ModelAttribute CareScheduleSearchCond cond) {

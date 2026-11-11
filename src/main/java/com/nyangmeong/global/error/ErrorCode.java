@@ -61,6 +61,12 @@ public enum ErrorCode {
     /** 가입 확인 토큰이 만료·변조됐거나 가입 경로와 맞지 않음 : 로그인 방법 선택에서 SNS로 다시 시작 */
     SNS_SIGNUP_TOKEN_INVALID(HttpStatus.BAD_REQUEST, "SNS 가입 확인 시간이 지났습니다. SNS 로그인을 다시 진행해 주세요."),
     SNS_ACCOUNT_ALREADY_LINKED(HttpStatus.CONFLICT, "이미 가입된 SNS 계정입니다. SNS 로그인을 이용해 주세요."),
+    /** 연동하려는 SNS 계정이 다른 회원에게 연결돼 있음 */
+    SNS_ACCOUNT_LINKED_TO_OTHER(HttpStatus.CONFLICT, "다른 회원에게 연동된 SNS 계정입니다."),
+    /** 같은 제공자의 다른 계정이 이미 연동돼 있음 : 제공자 하나에 계정 하나만 연결한다 */
+    SNS_PROVIDER_ALREADY_LINKED(HttpStatus.CONFLICT, "이미 연동된 SNS 제공자입니다."),
+    /** 연동 중 인가 코드가 틀리거나 제공자 호출이 실패함 : 로그인용 SNS_AUTH_FAILED 와 문구만 다르다 */
+    SNS_LINK_FAILED(HttpStatus.BAD_REQUEST, "SNS 계정 연동에 실패했습니다. 다시 시도해 주세요."),
     PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다."),
     /** 로그인한 회원이 입력한 현재 비밀번호가 틀림 : 새 비밀번호·확인값 불일치(PASSWORD_MISMATCH)와 화면의 오류 위치가 달라 따로 둠 */
     CURRENT_PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "현재 비밀번호가 일치하지 않습니다."),

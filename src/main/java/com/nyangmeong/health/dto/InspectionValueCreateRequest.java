@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -25,10 +26,10 @@ public record InspectionValueCreateRequest(
     public record InspectionValueItemRequest(
             @Size(max = 8) String inspArtclCd,
             @Size(max = 40) String inspArtclDrctInptNm,
-            @NotNull @Digits(integer = 11, fraction = 4) BigDecimal rsltNvl,
+            @NotNull @DecimalMin("0") @Digits(integer = 7, fraction = 2) BigDecimal rsltNvl,
             @NotBlank @Size(max = 20) String unitNm,
-            @Digits(integer = 11, fraction = 4) BigDecimal refLlmtNvl,
-            @Digits(integer = 11, fraction = 4) BigDecimal refUplmtNvl,
+            @DecimalMin("0") @Digits(integer = 7, fraction = 2) BigDecimal refLlmtNvl,
+            @DecimalMin("0") @Digits(integer = 7, fraction = 2) BigDecimal refUplmtNvl,
             @Size(max = 200) String memoCn) {
     }
 }

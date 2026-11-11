@@ -6,6 +6,7 @@
 
 | 메서드 | 경로 | 설명 | 기능 ID | 담당 | 요청 DTO | 응답 DTO |
 | --- | --- | --- | --- | --- | --- | --- |
+| GET | /care-schedules | 케어 캘린더 일정 목록(여러 반려동물, 화면당 호출 수를 반려동물 수와 관계없이 고정). `?petSns=&fromYmd=&toYmd=&schdlKndCd=&ckupTypeCd=&size=` — `petSns`는 쉼표로 구분한 반려동물 번호(`1,2,3`, 최대 50개, 형식 `^$\|^\d+(,\d+)*$`). 생략하거나 빈 문자열이면 로그인 회원이 양육(주양육자·공동양육자, 연동 중, 삭제 안 됨)하는 반려동물 전체. 볼 수 없는 번호는 오류 없이 빠지고 남은 반려동물이 없으면 빈 목록. 형식 오류·51개 이상은 400 `INVALID_INPUT_VALUE`. **`size`는 반려동물마다 N건**(전체 N건 아님). 나머지 조건과 정렬은 `/pets/{petSn}/care-schedules`와 같고, 그 1마리 주소도 그대로 둔다. AI 도구 `list_my_care_schedules`(1마리 주소는 AI 도구가 아니다. 대화창은 이 도구로 한 마리도 읽는다, 2026-11-11) | HLT-003-29·31·40 | JAJ | - | List<CareScheduleSummary> |
 | GET | /members/me/dashboard-widgets | 건강기록 대시보드 고른 항목·순서. 저장한 적 없으면 `savedYn=false`와 13개 전부(기본 순서, `indctYn=true`)를 주고 프론트가 튜토리얼을 연다 | 새 기능(ID 없음, ※신규 정책) | JAJ | - | HealthDashboardWidgetResponse |
 | GET | /pets/{petSn}/care-completions | 케어 완료 기록 목록(기록 내용). `?careArtclSn=&fromYmd=&toYmd=` | HLT-003-12 | JAJ | - | List<CareCompletionSummary> |
 | GET | /pets/{petSn}/care-items | 케어 항목 목록(토탈 케어리스트, 오늘 투약 횟수 포함). `?careArtclNm=` | HLT-003-12, AIM-012-08 | JAJ | - | List<CareItemSummary> |
@@ -28,7 +29,7 @@
 | POST | /pets/{petSn}/care-schedules | 일정 등록(종류별 필수값 서버 재검증, 출처 SCHDL_SRC_CD). AI 대화 등록도 같은 API | HLT-003-32~37, AIM-012-09·12~14 | JAJ | CareScheduleCreateRequest | CareScheduleResponse |
 | POST | /pets/{petSn}/checkup-attachments | 첨부 등록(multipart, 유형·영상 종류·촬영 부위) | HLT-005-01 | JAJ | CheckupAttachmentCreateRequest | CheckupAttachmentResponse |
 | POST | /pets/{petSn}/checkups | 검진기록 직접 등록(같은 날짜 병원 일정 자동 연결·없으면 생성, 가까운 일정 옮겨 연결 선택) | HLT-002-26~29·31·46 | JAJ | CheckupCreateRequest | CheckupResponse |
-| POST | /pets/{petSn}/daily-health-records | 오늘 기록 추가(식사량·음수량·산책·체중·배변상태) | HLT-002-11 | JAJ | DailyHealthRecordCreateRequest | DailyHealthRecordResponse |
+| POST | /pets/{petSn}/daily-health-records | 오늘 기록 추가(식사량·음수량·산책·체중·배변상태). 체중은 0 초과 200 이하(※신규 정책). 산책은 0 초과 120 이하(※신규 정책). 음수량은 1회 프로필 체중(kg)×100 이하, 식사량은 1회 프로필 체중(kg)×50 이하(※신규 정책). 기록 시각은 지금(Asia/Seoul)+5분까지, 넘으면 400 `rcdDt`(※신규 정책: 지난 일만 기록, 예정은 캘린더) | HLT-002-11 | JAJ | DailyHealthRecordCreateRequest | DailyHealthRecordResponse |
 | POST | /pets/{petSn}/etc-inspections | 기타검사 입력(검사명·결과 500자·메모 200자) | HLT-005-11~14 | JAJ | EtcInspectionCreateRequest | EtcInspectionResponse |
 | POST | /pets/{petSn}/inspection-values | 검사 수치 여러 행 저장(혈액검사 고정, 이미 등록된 항목 제외, 삭제된 같은 항목은 복구) | HLT-007-02~05 | JAJ | InspectionValueCreateRequest | List<InspectionValueResponse> |
 | POST | /pets/{petSn}/observation-cycles | 관찰 회차 추가(multipart 사진, 종료 항목 불가) | HLT-002-20~25·32 | JAJ | ObservationCycleCreateRequest | ObservationCycleResponse |
@@ -41,7 +42,7 @@
 | PATCH | /pets/{petSn}/care-schedules/{schdlSn} | 일정 수정(반려동물 변경 시 연결 검진기록·자동 생성 케어 항목 이동, ★ 해제) | HLT-003-32~37 | JAJ | CareScheduleUpdateRequest | CareScheduleResponse |
 | PATCH | /pets/{petSn}/checkup-attachments/{ckupRcdAtchSn} | 첨부 1건 파일 교체·유형 수정(multipart) | HLT-005-01 | JAJ | CheckupAttachmentUpdateRequest | CheckupAttachmentResponse |
 | PATCH | /pets/{petSn}/checkups/{ckupRcdSn} | 검진기록 수정(내용·메모 인라인, 검진일·반려동물 변경 시 일정 재연결·케어 항목 이동) | HLT-002-26~29, HLT-005-01 | JAJ | CheckupUpdateRequest | CheckupResponse |
-| PATCH | /pets/{petSn}/daily-health-records/{dailyHlthRcdSn} | 일상 기록 인라인 수정(시각·값) | HLT-002-13 | JAJ | DailyHealthRecordUpdateRequest | DailyHealthRecordResponse |
+| PATCH | /pets/{petSn}/daily-health-records/{dailyHlthRcdSn} | 일상 기록 인라인 수정(시각·값). 체중은 0 초과 200 이하(※신규 정책). 산책은 0 초과 120 이하(※신규 정책). 음수량은 1회 프로필 체중(kg)×100 이하, 식사량은 1회 프로필 체중(kg)×50 이하(※신규 정책). 기록 시각은 지금(Asia/Seoul)+5분까지, 넘으면 400 `rcdDt`(※신규 정책: 지난 일만 기록, 예정은 캘린더) | HLT-002-13 | JAJ | DailyHealthRecordUpdateRequest | DailyHealthRecordResponse |
 | PATCH | /pets/{petSn}/etc-inspections/{etcInspSn} | 기타검사 수정 | HLT-005-02·11~14 | JAJ | EtcInspectionUpdateRequest | EtcInspectionResponse |
 | PATCH | /pets/{petSn}/inspection-values/{inspNvlSn} | 검사 수치 1행 수정(항목 변경 불가). refRange를 보내면 덮어씀, {null,null}이면 참고범위 비움, 안 보내면 유지 | HLT-007-02·03 | JAJ | InspectionValueUpdateRequest | InspectionValueResponse |
 | PATCH | /pets/{petSn}/observation-cycles/{obsrvCyclSn} | 관찰 회차 수정(multipart) | HLT-002-19 | JAJ | ObservationCycleUpdateRequest | ObservationCycleResponse |
@@ -98,7 +99,7 @@
 | rprsIconId | String | N | 최대 20자. 미입력 시 기본 아이콘 | CARE_ARTCL.RPRS_ICON_ID (미입력 시 기본 아이콘, HLT-003-22·AIM-012-13) |
 | careZoneCd | String | Y | HLTG13 공통코드. 매일 = 일상관리, 주기 = 정기관리 | CARE_ARTCL.CARE_ZONE_CD (반복 유형 매일/주기, HLT-003-23) |
 | careCycleCd | String | N | HLTG15 공통코드(1주·2주·한달·1년·직접입력). 정기관리면 필수. 일상관리면 보내지 않는다 | CARE_ARTCL.CARE_CYCLE_CD (주기 선택 시 필수, HLT-003-24) |
-| cycleDrctInptDayCnt | Integer | N | 직접입력이면 필수. 1~9999. 일상관리면 보내지 않는다(0을 보내면 400) | CARE_ARTCL.CYCLE_DRCT_INPT_DAY_CNT (직접입력 시 필수) |
+| cycleDrctInptDayCnt | Integer | N | 직접입력이면 필수. 1~365. 일상관리면 보내지 않는다(0을 보내면 400) | CARE_ARTCL.CYCLE_DRCT_INPT_DAY_CNT (직접입력 시 필수) |
 | lastCmptnYmd | LocalDate | N | 정기관리만(일상관리면 보내지 않는다). 보내면 그날 완료 기록 1건을 만든다. 오늘 이후 날짜는 400 `CARE_COMPLETION_FUTURE_DATE`(HLT-003-38). 미입력 시 등록일 기준으로 예정일 계산 | CARE_CMPTN_HSTRY.CMPTN_YMD (HLT-003-38, 미입력 시 등록일 기준) |
 
 ### CareItemResponse
@@ -151,7 +152,7 @@
 | rprsIconId | String | N | 최대 20자. 기본 항목은 변경 불가 | CARE_ARTCL.RPRS_ICON_ID, HLT-003-12 |
 | careZoneCd | String | N | HLTG13. 기본 항목은 변경 불가 | CARE_ARTCL.CARE_ZONE_CD, HLT-003-12 |
 | careCycleCd | String | N | HLTG15. 기본 정기관리 항목은 이 값과 직접입력 일수만 변경 가능 | CARE_ARTCL.CARE_CYCLE_CD, HLT-003-12 |
-| cycleDrctInptDayCnt | Integer | N | 직접입력이면 필수. 최대 4자리 | CARE_ARTCL.CYCLE_DRCT_INPT_DAY_CNT, HLT-003-24 |
+| cycleDrctInptDayCnt | Integer | N | 직접입력이면 필수. 1~365 | CARE_ARTCL.CYCLE_DRCT_INPT_DAY_CNT, HLT-003-24 |
 
 ### CareScheduleCreateRequest
 쓰는 API: POST /pets/{petSn}/care-schedules (AI 대화 등록도 같은 API)
@@ -184,7 +185,7 @@
 | schdlSrcCd | String | N | | SCHDL.SCHDL_SRC_CD (AIM-012-13) |
 
 ### CareScheduleSummary
-쓰는 API: GET /pets/{petSn}/care-schedules (월간·날짜 상세·다가오는 일정·다음 예정일·가까운 예정 일정 후보)
+쓰는 API: GET /pets/{petSn}/care-schedules (월간·날짜 상세·다가오는 일정·다음 예정일·가까운 예정 일정 후보); GET /care-schedules (여러 반려동물, 케어 캘린더 월간·날짜 상세·다가오는 일정)
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | schdlSn | Long | Y | | SCHDL.SCHDL_SN |
@@ -321,8 +322,8 @@
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | dailyRcdIdctCd | String | Y | HLTG09 공통코드(체중·식사량·음수량·배변상태·산책) | DAILY_HLTH_RCD.DAILY_RCD_IDCT_CD, HLT-002-11 |
-| rcdDt | LocalDateTime | Y | 화면은 시간만 입력, 날짜는 오늘("오늘 기록하기") | DAILY_HLTH_RCD.RCD_DT, HLT-002-11 |
-| rcdNvl | BigDecimal | N | 식사량 g·음수량 ml·산책 분·체중 kg. 배변상태가 아니면 필수. 정수 5자리·소수 3자리 | DAILY_HLTH_RCD.RCD_NVL, HLT-002-11 |
+| rcdDt | LocalDateTime | Y | 화면은 시간만 입력, 날짜는 오늘("오늘 기록하기"). 지금(Asia/Seoul)+5분보다 늦으면 400 `rcdDt`(※신규 정책, 5분은 PC·서버 시계 차이 여유) | DAILY_HLTH_RCD.RCD_DT, HLT-002-11 |
+| rcdNvl | BigDecimal | N | 식사량 g·음수량 ml·산책 분·체중 kg. 배변상태가 아니면 필수. 0 초과, 정수 5자리·소수 둘째 자리까지(셋째 자리부터 400). 체중은 200 이하, 산책은 120 이하, 음수량은 프로필 체중(`PET.PET_BDWG`)×100 이하, 식사량은 프로필 체중×50 이하(※신규 정책, 넘으면 400 `rcdNvl`) | DAILY_HLTH_RCD.RCD_NVL, HLT-002-11 |
 | crsdSttsCd | String | N | HLTG10 공통코드(정상·딱딱함·무름·설사·변비). 배변상태면 필수 | DAILY_HLTH_RCD.CRSD_STTS_CD, HLT-002-11 |
 
 ### DailyHealthRecordResponse
@@ -393,8 +394,8 @@ CreatinineIndicator: `latestNvl`, `unitNm`, `refLlmtNvl`, `refUplmtNvl`(최신 �
 쓰는 API: PATCH /pets/{petSn}/daily-health-records/{dailyHlthRcdSn}
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| rcdDt | LocalDateTime | N | 인라인 편집의 시각 | DAILY_HLTH_RCD.RCD_DT, HLT-002-13 |
-| rcdNvl | BigDecimal | N | 정수 5자리·소수 3자리 | DAILY_HLTH_RCD.RCD_NVL, HLT-002-13 |
+| rcdDt | LocalDateTime | N | 인라인 편집의 시각. 지금(Asia/Seoul)+5분보다 늦으면 400 `rcdDt`(※신규 정책) | DAILY_HLTH_RCD.RCD_DT, HLT-002-13 |
+| rcdNvl | BigDecimal | N | 0 초과, 정수 5자리·소수 둘째 자리까지(셋째 자리부터 400). 체중은 200 이하, 산책은 120 이하, 음수량은 프로필 체중(`PET.PET_BDWG`)×100 이하, 식사량은 프로필 체중×50 이하(※신규 정책, 넘으면 400 `rcdNvl`) | DAILY_HLTH_RCD.RCD_NVL, HLT-002-13 |
 | crsdSttsCd | String | N | HLTG10. 배변상태 기록만 | DAILY_HLTH_RCD.CRSD_STTS_CD, HLT-002-13 |
 
 ### EtcInspectionCreateRequest
@@ -447,10 +448,10 @@ CreatinineIndicator: `latestNvl`, `unitNm`, `refLlmtNvl`, `refUplmtNvl`(최신 �
 | --- | --- | --- | --- | --- |
 | inspArtclCd | String | N | HLTG12 공통코드(12종). 이 값과 직접입력명 중 하나는 필수 | INSP_NVL.INSP_ARTCL_CD, HLT-007-02 |
 | inspArtclDrctInptNm | String | N | 최대 40자. 12종에 없을 때 직접입력 | INSP_NVL.INSP_ARTCL_DRCT_INPT_NM, HLT-007-02 |
-| rsltNvl | BigDecimal | Y | 정수 11자리·소수 4자리 | INSP_NVL.RSLT_NVL, HLT-007-02 |
+| rsltNvl | BigDecimal | Y | 0 이상, 정수 7자리·소수 둘째 자리까지(음수·8자리 이상·셋째 자리부터 400, ※신규 정책: 검사 수치 0 이상 · 정수 7자리) | INSP_NVL.RSLT_NVL, HLT-007-02 |
 | unitNm | String | Y | 최대 20자 | INSP_NVL.UNIT_NM, HLT-007-02 |
-| refLlmtNvl | BigDecimal | N | 상한과 함께 입력하거나 둘 다 비움. 하한 ≤ 상한 | INSP_NVL.REF_LLMT_NVL, HLT-007-02 |
-| refUplmtNvl | BigDecimal | N | 하한과 함께 입력하거나 둘 다 비움. 하한 ≤ 상한 | INSP_NVL.REF_UPLMT_NVL, HLT-007-02 |
+| refLlmtNvl | BigDecimal | N | 0 이상, 정수 7자리·소수 둘째 자리까지(※신규 정책: 검사 수치 0 이상 · 정수 7자리). 상한과 함께 입력하거나 둘 다 비움. 하한 ≤ 상한 | INSP_NVL.REF_LLMT_NVL, HLT-007-02 |
+| refUplmtNvl | BigDecimal | N | 0 이상, 정수 7자리·소수 둘째 자리까지(※신규 정책: 검사 수치 0 이상 · 정수 7자리). 하한과 함께 입력하거나 둘 다 비움. 하한 ≤ 상한 | INSP_NVL.REF_UPLMT_NVL, HLT-007-02 |
 | memoCn | String | N | 최대 200자 | INSP_NVL.MEMO_CN, HLT-007-02 |
 
 ### InspectionValueResponse
@@ -489,9 +490,9 @@ CreatinineIndicator: `latestNvl`, `unitNm`, `refLlmtNvl`, `refUplmtNvl`(최신 �
 쓰는 API: PATCH /pets/{petSn}/inspection-values/{inspNvlSn} (검사 항목 변경 불가)
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| rsltNvl | BigDecimal | N | 정수 11자리·소수 4자리 | INSP_NVL.RSLT_NVL, HLT-007-02 |
+| rsltNvl | BigDecimal | N | 0 이상, 정수 7자리·소수 둘째 자리까지(음수·8자리 이상·셋째 자리부터 400, ※신규 정책: 검사 수치 0 이상 · 정수 7자리) | INSP_NVL.RSLT_NVL, HLT-007-02 |
 | unitNm | String | N | 최대 20자. 비울 수 없음(필수 항목) | INSP_NVL.UNIT_NM, HLT-007-02 |
-| refRange | RefRange | N | 참고범위 묶음(객체: refLlmtNvl, refUplmtNvl, 각 정수 11자리·소수 4자리). 둘 다 값 또는 둘 다 null, 하한 ≤ 상한. 보내면 두 값으로 덮어씀({null,null}이면 비움), 안 보내면 유지 | INSP_NVL.REF_LLMT_NVL·REF_UPLMT_NVL, HLT-007-02 |
+| refRange | RefRange | N | 참고범위 묶음(객체: refLlmtNvl, refUplmtNvl, 각 0 이상, 정수 7자리·소수 둘째 자리까지, ※신규 정책: 검사 수치 0 이상 · 정수 7자리). 둘 다 값 또는 둘 다 null, 하한 ≤ 상한. 보내면 두 값으로 덮어씀({null,null}이면 비움), 안 보내면 유지 | INSP_NVL.REF_LLMT_NVL·REF_UPLMT_NVL, HLT-007-02 |
 | memoCn | String | N | 최대 200자 | INSP_NVL.MEMO_CN, HLT-007-02 |
 
 ### ObservationCycleCreateRequest
@@ -500,8 +501,8 @@ CreatinineIndicator: `latestNvl`, `unitNm`, `refLlmtNvl`, `refUplmtNvl`(최신 �
 | --- | --- | --- | --- | --- |
 | obsrvArtclSn | Long | Y | 이 반려동물의 관찰 항목. 종료된 항목은 불가 | OBSRV_CYCL.OBSRV_ARTCL_SN, HLT-002-19 |
 | file | MultipartFile | Y | 사진 1장. jpg·jpeg·png·webp, 10MB 이하, 확장자·실제 형식 이중 검증 | OBSRV_CYCL.ATCH_FILE_SN, HLT-002-22 |
-| obsrvDt | LocalDateTime | Y | 관찰일. 오늘 이후 불가. 화면은 날짜만 입력(issues 8) | OBSRV_CYCL.OBSRV_DT, HLT-002-32 |
-| obsrvSz | BigDecimal | N | mm. 정수 5자리·소수 3자리 | OBSRV_CYCL.OBSRV_SZ, HLT-002-23 |
+| obsrvDt | LocalDateTime | Y | 관찰일. 오늘(Asia/Seoul, 날짜 기준)까지, 내일부터 400 `obsrvDt`. 화면은 날짜만 입력(issues 8) | OBSRV_CYCL.OBSRV_DT, HLT-002-32 |
+| obsrvSz | BigDecimal | N | mm. 정수 5자리·소수 둘째 자리까지(셋째 자리부터 400) | OBSRV_CYCL.OBSRV_SZ, HLT-002-23 |
 | obsrvChgCd | String | N | HLTG17 공통코드(작아짐·그대로·커짐) | OBSRV_CYCL.OBSRV_CHG_CD, HLT-002-23 |
 | memoCn | String | N | 최대 200자 | OBSRV_CYCL.MEMO_CN, HLT-002-24 |
 
@@ -536,8 +537,8 @@ CreatinineIndicator: `latestNvl`, `unitNm`, `refLlmtNvl`, `refUplmtNvl`(최신 �
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | file | MultipartFile | N | 사진 교체. jpg·jpeg·png·webp, 10MB 이하, 확장자·실제 형식 이중 검증 | OBSRV_CYCL.ATCH_FILE_SN, HLT-002-22 |
-| obsrvDt | LocalDateTime | N | 오늘 이후 불가 | OBSRV_CYCL.OBSRV_DT, HLT-002-32 |
-| obsrvSz | BigDecimal | N | mm | OBSRV_CYCL.OBSRV_SZ, HLT-002-23 |
+| obsrvDt | LocalDateTime | N | 오늘(Asia/Seoul, 날짜 기준)까지, 내일부터 400 `obsrvDt` | OBSRV_CYCL.OBSRV_DT, HLT-002-32 |
+| obsrvSz | BigDecimal | N | mm. 정수 5자리·소수 둘째 자리까지(셋째 자리부터 400) | OBSRV_CYCL.OBSRV_SZ, HLT-002-23 |
 | obsrvChgCd | String | N | HLTG17 | OBSRV_CYCL.OBSRV_CHG_CD, HLT-002-23 |
 | memoCn | String | N | 최대 200자. 빈 문자열이면 비움 | OBSRV_CYCL.MEMO_CN, HLT-002-24 |
 | clearFields | List<String> | N | 비울 필드 이름(`obsrvSz`·`obsrvChgCd`·`memoCn`). 반복 키 또는 쉼표로 보냄. 빈 칸은 "안 보냄"과 구분되지 않아 따로 받는다. 그 밖의 이름은 400(`clearFields[i]`), 같은 필드에 값과 함께 보내면 400(`clearFieldsDistinct`). 사진은 비울 수 없다(교체만) | HLT-002-19·23·24 |
@@ -550,8 +551,8 @@ CreatinineIndicator: `latestNvl`, `unitNm`, `refLlmtNvl`, `refUplmtNvl`(최신 �
 | obsrvRegnCd | String | Y | HLTG16 공통코드(머리·얼굴·목·등·배·앞다리·뒷다리·꼬리·기타) | OBSRV_ARTCL.OBSRV_REGN_CD, HLT-002-21 |
 | obsrvRegnDtlNm | String | N | 최대 40자 | OBSRV_ARTCL.OBSRV_REGN_DTL_NM, HLT-002-21 |
 | file | MultipartFile | Y | 1회차 사진 1장. jpg·jpeg·png·webp, 10MB 이하, 확장자·실제 형식 이중 검증 | OBSRV_CYCL.ATCH_FILE_SN, HLT-002-22 |
-| obsrvDt | LocalDateTime | Y | 1회차 관찰일. 오늘 이후 불가(issues 8) | OBSRV_CYCL.OBSRV_DT, HLT-002-32 |
-| obsrvSz | BigDecimal | N | mm. 1회차는 변화(obsrvChgCd) 입력 없음 | OBSRV_CYCL.OBSRV_SZ, HLT-002-23 |
+| obsrvDt | LocalDateTime | Y | 1회차 관찰일. 오늘(Asia/Seoul, 날짜 기준)까지, 내일부터 400 `obsrvDt`(issues 8) | OBSRV_CYCL.OBSRV_DT, HLT-002-32 |
+| obsrvSz | BigDecimal | N | mm. 정수 5자리·소수 둘째 자리까지(셋째 자리부터 400). 1회차는 변화(obsrvChgCd) 입력 없음 | OBSRV_CYCL.OBSRV_SZ, HLT-002-23 |
 | memoCn | String | N | 최대 200자 | OBSRV_CYCL.MEMO_CN, HLT-002-24 |
 
 ### ObservationItemResponse
@@ -638,7 +639,7 @@ CreatinineIndicator: `latestNvl`, `unitNm`, `refLlmtNvl`, `refUplmtNvl`(최신 �
 | ckupRcdSn | Long | Y | 이 반려동물의 검진기록 | REPT_PRVNT_MNG.CKUP_RCD_SN, HLT-005-05 |
 | reptPrvntArtclCd | String | Y | HLTG07 공통코드(심장사상충 예방·구충제) | REPT_PRVNT_MNG.REPT_PRVNT_ARTCL_CD, HLT-005-05 |
 | reptCycleCd | String | Y | HLTG15 공통코드(1주·2주·한달·1년·직접입력) | REPT_PRVNT_MNG.REPT_CYCLE_CD, HLT-005-05 |
-| cycleDrctInptDayCnt | Integer | N | 직접입력이면 필수. 최대 4자리 | REPT_PRVNT_MNG.CYCLE_DRCT_INPT_DAY_CNT, HLT-005-05 |
+| cycleDrctInptDayCnt | Integer | N | 직접입력이면 필수. 1~365 | REPT_PRVNT_MNG.CYCLE_DRCT_INPT_DAY_CNT, HLT-005-05 |
 | bgngYmd | LocalDate | Y | 기본값 오늘. 케어 항목의 첫 예정일 | REPT_PRVNT_MNG.BGNG_YMD, HLT-005-05 |
 
 ### RepeatPreventionResponse

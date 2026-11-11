@@ -2,6 +2,7 @@ package com.nyangmeong.health.service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ import com.nyangmeong.health.dto.CareScheduleSearchCond;
 import com.nyangmeong.health.dto.CareScheduleSummary;
 import com.nyangmeong.health.dto.CareScheduleUpdateRequest;
 import com.nyangmeong.health.dto.HospitalScheduleSummary;
+import com.nyangmeong.health.dto.MyCareScheduleSearchCond;
 import com.nyangmeong.health.mapper.CareScheduleMapper;
 import com.nyangmeong.pet.domain.CareMission;
 import com.nyangmeong.pet.service.CareMissionService;
@@ -37,6 +39,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CareScheduleService {
 
+    /** 한 번에 조회하는 반려동물 최대 수 */
+    private static final int MAX_PET_SNS = 50;
+
     private final CareScheduleMapper careScheduleMapper;
     private final PetAuthorizer petAuthorizer;
     private final CareMissionService careMissionService;
@@ -48,6 +53,36 @@ public class CareScheduleService {
     public List<CareScheduleSummary> search(Long mbrSn, Long petSn, CareScheduleSearchCond cond) {
         petAuthorizer.checkCaregiver(mbrSn, petSn);
         return careScheduleMapper.selectList(petSn, cond, CheckupStatus.COMPLETED.getCode());
+    }
+
+    /**
+     * 회원 단위 일정 목록 조회
+     */
+    @Transactional(readOnly = true)
+    public List<CareScheduleSummary> searchMine(Long mbrSn, MyCareScheduleSearchCond cond) {
+        List<Long> petSns = petAuthorizer.searchCaregiverPetSns(mbrSn, parsePetSns(cond.getPetSns()));
+        if (petSns.isEmpty()) {
+            return List.of();
+        }
+        return careScheduleMapper.selectListByPets(petSns, cond, CheckupStatus.COMPLETED.getCode());
+    }
+
+    /**
+     * 쉼표 구분 반려동물 번호 변환
+     */
+    private List<Long> parsePetSns(String petSns) {
+        if (petSns == null || petSns.isBlank()) {
+            return List.of();
+        }
+        String[] tokens = petSns.split(",");
+        if (tokens.length > MAX_PET_SNS) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        try {
+            return Arrays.stream(tokens).map(Long::valueOf).distinct().toList();
+        } catch (NumberFormatException e) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
     }
 
     /**

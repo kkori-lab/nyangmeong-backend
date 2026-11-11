@@ -23,6 +23,6 @@ import jakarta.validation.constraints.Size;
 public record DailyHealthRecordCreateRequest(
         @NotBlank @Size(max = 8) @AiCode("HLTG09") String dailyRcdIdctCd,
         @NotNull LocalDateTime rcdDt,
-        @Digits(integer = 5, fraction = 3) BigDecimal rcdNvl,
+        @Digits(integer = 5, fraction = 2) BigDecimal rcdNvl,
         @Size(max = 8) @AiCode("HLTG10") String crsdSttsCd) {
 }

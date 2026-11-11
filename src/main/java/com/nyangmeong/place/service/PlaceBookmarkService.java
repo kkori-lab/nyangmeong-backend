@@ -75,9 +75,13 @@ public class PlaceBookmarkService {
 
     /**
      * 내 즐겨찾기 목록, 카테고리별 저장 최신순
+     * - 카테고리를 생략(빈 값 포함)하면 전체 분류 (AI 대화창, 2026-11-11)
      */
     @Transactional(readOnly = true)
     public List<PlaceBookmarkSummary> search(Long mbrSn, String plcClsfCd) {
+        if (plcClsfCd == null || plcClsfCd.isBlank()) {
+            return placeBookmarkMapper.selectList(mbrSn, null);
+        }
         PlaceCategory category = PlaceCategory.from(plcClsfCd);
         return placeBookmarkMapper.selectList(mbrSn, category.getCode());
     }

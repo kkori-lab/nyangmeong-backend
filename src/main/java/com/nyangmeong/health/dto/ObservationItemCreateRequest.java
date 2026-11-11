@@ -20,6 +20,6 @@ public record ObservationItemCreateRequest(
         @Size(max = 40) String obsrvRegnDtlNm,
         @NotNull MultipartFile file,
         @NotNull LocalDateTime obsrvDt,
-        @Digits(integer = 5, fraction = 3) BigDecimal obsrvSz,
+        @Digits(integer = 5, fraction = 2) BigDecimal obsrvSz,
         @Size(max = 200) String memoCn) {
 }

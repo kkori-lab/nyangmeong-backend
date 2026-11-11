@@ -9,12 +9,15 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +33,7 @@ import com.nyangmeong.health.dto.DailyHealthRecordSummary;
 import com.nyangmeong.health.dto.DailyHealthRecordUpdateRequest;
 import com.nyangmeong.health.mapper.DailyHealthRecordMapper;
 import com.nyangmeong.pet.domain.CareMission;
+import com.nyangmeong.pet.dto.PetResponse;
 import com.nyangmeong.pet.service.CareMissionService;
 import com.nyangmeong.pet.service.PetService;
 
@@ -45,8 +49,11 @@ class DailyHealthRecordServiceTest {
     private static final Long RCD = 700L;
     private static final String WEIGHT = "HLTC0014";
     private static final String MEAL = "HLTC0015";
+    private static final String WATER = "HLTC0016";
     private static final String STOOL = "HLTC0017";
+    private static final String WALK = "HLTC0018";
     private static final String NORMAL = "HLTC0019";
+    private static final BigDecimal PET_KG = new BigDecimal("5.000");
     private static final LocalDateTime AT = LocalDateTime.of(2026, 10, 29, 8, 15);
 
     private final DailyHealthRecordMapper mapper = mock(DailyHealthRecordMapper.class);
@@ -65,6 +72,12 @@ class DailyHealthRecordServiceTest {
             return 1;
         });
         when(mapper.selectSummary(RCD)).thenReturn(new DailyHealthRecordSummary());
+        when(petService.getPet(MBR, PET)).thenReturn(pet(PET_KG));
+    }
+
+    private static PetResponse pet(BigDecimal petBdwg) {
+        return new PetResponse(PET, null, null, null, null, null, null, null, petBdwg, null, null, null, null,
+                null, null, null, false, false, null, null, null, List.of());
     }
 
     private static DailyHealthRecord record(String indicator, BigDecimal value, String stool) {
@@ -125,6 +138,102 @@ class DailyHealthRecordServiceTest {
         assertInvalid(() -> service.create(MBR, PET,
                 new DailyHealthRecordCreateRequest("HLTC0099", AT, BigDecimal.ONE, null)));
         verify(mapper, never()).insertRecord(any());
+    }
+
+    @Test
+    void 체중은_200kg까지_등록하고_넘으면_400이다() {
+        service.create(MBR, PET, new DailyHealthRecordCreateRequest(WEIGHT, AT, new BigDecimal("200"), null));
+        verify(mapper).insertRecord(any());
+
+        assertInvalid(() -> service.create(MBR, PET,
+                new DailyHealthRecordCreateRequest(WEIGHT, AT, new BigDecimal("200.001"), null)));
+        assertInvalid(() -> service.create(MBR, PET,
+                new DailyHealthRecordCreateRequest(WEIGHT, AT, new BigDecimal("999"), null)));
+        verify(mapper).insertRecord(any());
+    }
+
+    @Test
+    void 체중_상한은_식사량에_적용하지_않는다() {
+        service.create(MBR, PET, new DailyHealthRecordCreateRequest(MEAL, AT, new BigDecimal("250"), null));
+
+        verify(mapper).insertRecord(any());
+    }
+
+    @Test
+    void 체중을_200kg_넘게_수정하면_400이고_프로필을_맞추지_않는다() {
+        when(mapper.selectRecord(PET, RCD)).thenReturn(record(WEIGHT, new BigDecimal("4.000"), null));
+
+        assertInvalid(() -> service.update(MBR, PET, RCD,
+                new DailyHealthRecordUpdateRequest(null, new BigDecimal("999"), null)));
+        verify(mapper, never()).updateRecord(any(), anyString());
+        verify(petService, never()).syncWeight(anyLong(), any(), anyLong());
+    }
+
+    @Test
+    void 산책은_120분까지_등록하고_넘으면_400이다() {
+        service.create(MBR, PET, new DailyHealthRecordCreateRequest(WALK, AT, new BigDecimal("120"), null));
+        verify(mapper).insertRecord(any());
+
+        assertInvalid(() -> service.create(MBR, PET,
+                new DailyHealthRecordCreateRequest(WALK, AT, new BigDecimal("120.01"), null)));
+        verify(mapper).insertRecord(any());
+    }
+
+    @Test
+    void 산책을_120분_넘게_수정하면_400이다() {
+        when(mapper.selectRecord(PET, RCD)).thenReturn(record(WALK, new BigDecimal("30"), null));
+
+        assertInvalid(() -> service.update(MBR, PET, RCD,
+                new DailyHealthRecordUpdateRequest(null, new BigDecimal("121"), null)));
+        verify(mapper, never()).updateRecord(any(), anyString());
+    }
+
+    @Test
+    void 산책_상한은_식사량에_적용하지_않는다() {
+        service.create(MBR, PET, new DailyHealthRecordCreateRequest(MEAL, AT, new BigDecimal("250"), null));
+
+        verify(mapper).insertRecord(any());
+    }
+
+    @Test
+    void 음수량은_체중x100ml까지_등록하고_넘으면_400이다() {
+        service.create(MBR, PET, new DailyHealthRecordCreateRequest(WATER, AT, new BigDecimal("500"), null));
+        verify(mapper).insertRecord(any());
+
+        assertInvalid(() -> service.create(MBR, PET,
+                new DailyHealthRecordCreateRequest(WATER, AT, new BigDecimal("500.01"), null)));
+        verify(mapper).insertRecord(any());
+    }
+
+    @Test
+    void 식사량은_체중x50g까지_등록하고_넘으면_400이다() {
+        service.create(MBR, PET, new DailyHealthRecordCreateRequest(MEAL, AT, new BigDecimal("250"), null));
+        verify(mapper).insertRecord(any());
+
+        assertInvalid(() -> service.create(MBR, PET,
+                new DailyHealthRecordCreateRequest(MEAL, AT, new BigDecimal("250.01"), null)));
+        verify(mapper).insertRecord(any());
+    }
+
+    @Test
+    void 음수량과_식사량을_상한_넘게_수정하면_400이다() {
+        when(mapper.selectRecord(PET, RCD)).thenReturn(record(WATER, new BigDecimal("100"), null));
+        assertInvalid(() -> service.update(MBR, PET, RCD,
+                new DailyHealthRecordUpdateRequest(null, new BigDecimal("500.01"), null)));
+
+        when(mapper.selectRecord(PET, RCD)).thenReturn(record(MEAL, new BigDecimal("80"), null));
+        assertInvalid(() -> service.update(MBR, PET, RCD,
+                new DailyHealthRecordUpdateRequest(null, new BigDecimal("250.01"), null)));
+        verify(mapper, never()).updateRecord(any(), anyString());
+    }
+
+    @Test
+    void 체중_비례_상한은_체중과_산책에_적용하지_않는다() {
+        service.create(MBR, PET, new DailyHealthRecordCreateRequest(WEIGHT, AT, new BigDecimal("200"), null));
+        service.create(MBR, PET, new DailyHealthRecordCreateRequest(WALK, AT, new BigDecimal("120"), null));
+
+        verify(mapper, times(2)).insertRecord(any());
+        verify(petService, never()).getPet(anyLong(), anyLong());
     }
 
     @Test
@@ -228,6 +337,36 @@ class DailyHealthRecordServiceTest {
                 NORMAL)), "crsdSttsCd");
         assertFields(() -> service.create(MBR, PET, new DailyHealthRecordCreateRequest(WEIGHT, AT,
                 new BigDecimal("0"), null)), "rcdNvl");
+    }
+
+    @Test
+    void 기록_시각은_지금_더하기_5분까지_등록하고_넘으면_400이다() {
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+        service.create(MBR, PET, new DailyHealthRecordCreateRequest(WALK, now, new BigDecimal("30"), null));
+        service.create(MBR, PET,
+                new DailyHealthRecordCreateRequest(WALK, now.plusMinutes(5), new BigDecimal("30"), null));
+        service.create(MBR, PET,
+                new DailyHealthRecordCreateRequest(WALK, now.minusDays(3), new BigDecimal("30"), null));
+        verify(mapper, times(3)).insertRecord(any());
+
+        assertFields(() -> service.create(MBR, PET,
+                new DailyHealthRecordCreateRequest(WALK, now.plusMinutes(6), new BigDecimal("30"), null)), "rcdDt");
+        assertFields(() -> service.create(MBR, PET,
+                new DailyHealthRecordCreateRequest(WALK, now.plusDays(1), new BigDecimal("30"), null)), "rcdDt");
+        verify(mapper, times(3)).insertRecord(any());
+    }
+
+    @Test
+    void 기록_시각을_미래로_수정하면_400이고_지난_시각은_저장한다() {
+        when(mapper.selectRecord(PET, RCD)).thenReturn(record(WALK, new BigDecimal("30"), null));
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+
+        assertFields(() -> service.update(MBR, PET, RCD,
+                new DailyHealthRecordUpdateRequest(now.plusMinutes(6), null, null)), "rcdDt");
+        verify(mapper, never()).updateRecord(any(), anyString());
+
+        service.update(MBR, PET, RCD, new DailyHealthRecordUpdateRequest(now.minusDays(1), null, null));
+        verify(mapper).updateRecord(any(), anyString());
     }
 
     private static void assertFields(org.assertj.core.api.ThrowableAssert.ThrowingCallable call, String... fields) {

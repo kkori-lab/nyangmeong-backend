@@ -625,6 +625,28 @@
 - 완료 조건 결과: 검증 `통과`(2026-11-10, 1회차), 사람 확인 2026-11-10. 정한 것: 건수는 새 쿼리 `selectAdminJobStatusCountsInPeriod`(기간만), 기존 `selectAdminJobStatusCounts`는 대시보드 `charFailCnt`(기간 없이 전체)용으로 남김. `docs/api/admin.md` `charFailCnt`에 기간 없는 값이라고 적음
 - 연결 남음: 없음(프론트 SCR-ADM-082 캐릭터 생성 현황 API 연결 추가-1이 이미 `fromYmd`·`toYmd`를 보냄. 프론트 세션에 알리기만)
 
+## SCR-HLT-003 토탈 케어리스트 · 메인 표시 컬럼 DB 기준 파일 정리 — 끝
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-HLT-003(케어 항목). Java 코드 정리는 JAJ PR #212(병합됨 2026-11-11), 이 절은 `db/` 기준 SQL·시드만(사람 결정 2026-11-10)
+- 기다리는 것: 없음(JAJ PR #212 병합됨 2026-11-11). 구현 커밋 `fce54b0`, 검증·사람 확인 남음. 2026-11-11 사람 결정으로 SCR-MAN-001 바로가기 세부 메뉴 공통코드 뒤로 미룸
+- 완료 조건: 기준 SQL 본문 `CARE_ARTCL`에 `MAIN_EXPSR_YN`·`MAIN_SORT_SEQ`·체크 `CK_CARE_ARTCL_MAIN_EXPSR_YN`이 없고 `IDX_CARE_ARTCL_1`이 `(PET_SN, DEL_YN)`이라 공용 DB와 같다. 변경 절 `v0.14 (10)`이 있다. 시드 `CARE_ARTCL` INSERT에서 두 칸이 빠지고 행 수는 그대로다
+- 완료 조건 결과: 검증 `통과`(2026-11-11, 1회차), 사람 확인 2026-11-11. 변경 절 번호를 (8) → (10)으로 고침(기준 데이터 파일의 SJM (8)·SCR-MAN-001 (9)와 겹침). 공용 DB `information_schema`가 본문과 같음(검증 에이전트가 읽기만 해서 확인)
+- 연결 남음: 없음
+
+## SCR-MAN-001 메인 · 바로가기 세부 메뉴 공통코드 — 끝
+- 기능: 명세 기능 ID 추가 없음(프론트 요청 2026-11-11), 걸치는 기능 FN-MAN-008. `db/` 기준 데이터만, Java 수정 없음(사람 결정)
+- 기다리는 것: 없음. 공용 DB 실행은 사람
+- 완료 조건: 기준 데이터 v0.14에 MANG02 하위 MANC0011~0018(정렬 40~110)이 변경 절 (9)와 본문에 있고, 공용 DB 반영 뒤 `PUT /api/pets/main-shortcuts`가 그 코드를 받아 저장한다
+- 완료 조건 결과: 검증 `통과`(2026-11-11, 2회차. 1회차는 공용 DB에 (9) 미실행), 사람 확인 2026-11-11. 공용 DB에 (9) 실행함(2026-11-11)
+- 연결 남음: FN-MAN-008 (프론트 연결 `features/dashboard/shortcutTypes.js` 가정 코드 주석 정리·실제 저장 확인, 프론트 저장소에서 /start)
+
+## SCR-AIM-004 AI 대화 · 대화창 도구 조건 조정 — 끝
+- 기능: 명세 기능 ID 추가 없음(ai-cb 요청 2026-11-11, 플레이스 변경은 YAY 확인 2026-11-11), 걸치는 기능 FN-AIM-004-02, FN-HOS-001-03~07·17
+- 기다리는 것: 없음
+- 완료 조건: `GET /internal/ai/tools`에 `list_care_schedules`가 없다. `GET /api/places`는 좌표 6칸 없이 `plcClsfCd`(+`keyword`)만으로 200이고 `distance`가 null이다. 좌표가 일부만 오거나, 좌표 없이 `sort=DISTANCE`가 오면 400이다. `GET /api/place-bookmarks`는 `plcClsfCd` 없이 전체 분류를 준다. 좌표·분류를 보내는 기존 요청의 응답은 그대로다
+- 완료 조건 결과: 검증 `통과`(2026-11-11, 1회차, 8082에서 실제 카카오·fake 둘 다 확인), 사람 확인 2026-11-11. 정한 것: 좌표 일부만 오면 400 `data[].field`에 빠진 칸, 좌표 없이 `DISTANCE`는 400 `field`=`sort`, 좌표 없으면 카카오에 `rect`·`x`·`y`를 보내지 않음(전국 정확도순), 즐겨찾기 `plcClsfCd`는 빈 값도 전체 분류, `list_care_schedules`의 `CareScheduleSearchCond` `@AiCode`는 남김. 계약은 `docs/api/place.md`·`ai.md`·`health.md`
+- 추가: 추가-1 `FakePlaceSearchClient` 좌표 없음 처리, 추가-2 `PlaceAiToolCatalogTest` required 표시, 추가-3 `PlaceControllerTest` 좌표 없이 분류만 → 서비스로 넘김
+- 연결 남음: 걸치는 기능 FN-AIM-004-02 (ai 저장소 `tool_prompts.yaml`의 `list_places`·`list_place_bookmarks` skip 해제·스냅샷 갱신, ai-cb)
+
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
 - FN-COM-002-11: 채팅 안 읽은 수 API는 KSJ(채팅, 마일스톤 담당 표 COM-009)

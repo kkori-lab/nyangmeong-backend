@@ -124,6 +124,17 @@ class KakaoPlaceSearchClientTest {
     }
 
     @Test
+    void 좌표가_없으면_rect_x_y_없이_전국_정확도순으로_보낸다() {
+        client().search(new PlaceSearchQuery("전주 동물병원", false, null, null, null, null, null, null, 1));
+
+        assertThat(lastQuery).containsEntry("query", "전주 동물병원")
+                .containsEntry("sort", "accuracy")
+                .containsEntry("page", "1")
+                .containsEntry("size", "15")
+                .doesNotContainKeys("rect", "x", "y");
+    }
+
+    @Test
     void 거리순이면_sort를_distance로_보낸다() {
         client().search(query(true));
 

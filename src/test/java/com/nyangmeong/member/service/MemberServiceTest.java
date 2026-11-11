@@ -40,6 +40,7 @@ import com.nyangmeong.global.setting.SystemSetting;
 import com.nyangmeong.global.setting.SystemSettingService;
 import com.nyangmeong.member.domain.JoinPath;
 import com.nyangmeong.member.domain.Member;
+import com.nyangmeong.member.domain.SnsAccountLink;
 import com.nyangmeong.member.dto.AdminMemberDetailResponse;
 import com.nyangmeong.member.dto.AdminMemberSearchCond;
 import com.nyangmeong.member.dto.AdminMemberStatusHistorySummary;
@@ -747,5 +748,104 @@ class MemberServiceTest {
         verify(memberMapper).selectWithdrawnList(MemberStatus.WITHDRAWN.getCode(), 45);
         assertThat(page.content().get(0).getMaskedAcntEml()).isEqualTo("lea***@gmail.com");
         assertThat(page.content().get(0).getPurgeYmd()).isEqualTo(LocalDate.of(2026, 12, 9));
+    }
+
+    private static final String NAVER = "USRC0007";
+
+    private static SnsAccountLink snsLink(Long linkSn, Long mbrSn, String useYn) {
+        SnsAccountLink link = new SnsAccountLink();
+        link.setSnsAcntLinkSn(linkSn);
+        link.setMbrSn(mbrSn);
+        link.setSnsOffrCd(NAVER);
+        link.setUseYn(useYn);
+        return link;
+    }
+
+    @Test
+    void SNS_연동은_새_계정이면_등록하고_연동_뒤_응답을_돌려준다() {
+        when(memberMapper.selectBySn(7L)).thenReturn(stored(7L, MemberStatus.NORMAL.getCode(), "나비집사", "Y"));
+        when(memberMapper.selectSnsLink(NAVER, "naver-1")).thenReturn(null);
+        when(memberMapper.selectSnsOffrCds(7L)).thenReturn(List.of(), List.of(NAVER));
+
+        MemberResponse response = service.linkSns(7L, NAVER, "naver-1");
+
+        verify(memberMapper).insertSnsLink(7L, NAVER, "naver-1");
+        verify(memberMapper, never()).updateSnsLinkRevive(anyLong(), anyLong());
+        assertThat(response.snsAcntLinks()).hasSize(1);
+    }
+
+    @Test
+    void SNS_연동은_이미_내_연동이면_저장하지_않고_성공한다() {
+        when(memberMapper.selectBySn(7L)).thenReturn(stored(7L, MemberStatus.NORMAL.getCode(), "나비집사", "Y"));
+        when(memberMapper.selectSnsLink(NAVER, "naver-1")).thenReturn(snsLink(3L, 7L, "Y"));
+        when(memberMapper.selectSnsOffrCds(7L)).thenReturn(List.of(NAVER));
+
+        MemberResponse response = service.linkSns(7L, NAVER, "naver-1");
+
+        verify(memberMapper, never()).insertSnsLink(anyLong(), anyString(), anyString());
+        verify(memberMapper, never()).updateSnsLinkRevive(anyLong(), anyLong());
+        assertThat(response.snsAcntLinks()).hasSize(1);
+    }
+
+    @Test
+    void SNS_연동은_다른_회원에게_연결된_계정이면_거절한다() {
+        when(memberMapper.selectBySn(7L)).thenReturn(stored(7L, MemberStatus.NORMAL.getCode(), "나비집사", "Y"));
+        when(memberMapper.selectSnsLink(NAVER, "naver-1")).thenReturn(snsLink(3L, 8L, "Y"));
+
+        assertCode(catchThrowable(() -> service.linkSns(7L, NAVER, "naver-1")), ErrorCode.SNS_ACCOUNT_LINKED_TO_OTHER);
+        verify(memberMapper, never()).insertSnsLink(anyLong(), anyString(), anyString());
+        verify(memberMapper, never()).updateSnsLinkRevive(anyLong(), anyLong());
+    }
+
+    @Test
+    void SNS_연동은_같은_제공자의_다른_계정이_이미_연결돼_있으면_거절한다() {
+        when(memberMapper.selectBySn(7L)).thenReturn(stored(7L, MemberStatus.NORMAL.getCode(), "나비집사", "Y"));
+        when(memberMapper.selectSnsLink(NAVER, "naver-2")).thenReturn(null);
+        when(memberMapper.selectSnsOffrCds(7L)).thenReturn(List.of(NAVER));
+
+        assertCode(catchThrowable(() -> service.linkSns(7L, NAVER, "naver-2")), ErrorCode.SNS_PROVIDER_ALREADY_LINKED);
+        verify(memberMapper, never()).insertSnsLink(anyLong(), anyString(), anyString());
+    }
+
+    @Test
+    void SNS_연동은_해제한_같은_계정_행을_새_행_대신_되살린다() {
+        when(memberMapper.selectBySn(7L)).thenReturn(stored(7L, MemberStatus.NORMAL.getCode(), "나비집사", "Y"));
+        when(memberMapper.selectSnsLink(NAVER, "naver-1")).thenReturn(snsLink(3L, 8L, "N"));
+        when(memberMapper.selectSnsOffrCds(7L)).thenReturn(List.of(), List.of(NAVER));
+        when(memberMapper.updateSnsLinkRevive(3L, 7L)).thenReturn(1);
+
+        MemberResponse response = service.linkSns(7L, NAVER, "naver-1");
+
+        verify(memberMapper).updateSnsLinkRevive(3L, 7L);
+        verify(memberMapper, never()).insertSnsLink(anyLong(), anyString(), anyString());
+        assertThat(response.snsAcntLinks()).hasSize(1);
+    }
+
+    @Test
+    void SNS_연동은_되살리는_사이_다른_요청이_먼저_바꿨으면_거절한다() {
+        when(memberMapper.selectBySn(7L)).thenReturn(stored(7L, MemberStatus.NORMAL.getCode(), "나비집사", "Y"));
+        when(memberMapper.selectSnsLink(NAVER, "naver-1")).thenReturn(snsLink(3L, 8L, "N"));
+        when(memberMapper.selectSnsOffrCds(7L)).thenReturn(List.of());
+        when(memberMapper.updateSnsLinkRevive(3L, 7L)).thenReturn(0);
+
+        assertCode(catchThrowable(() -> service.linkSns(7L, NAVER, "naver-1")), ErrorCode.SNS_ACCOUNT_LINKED_TO_OTHER);
+    }
+
+    @Test
+    void SNS_연동은_등록_중_같은_계정이_겹치면_거절한다() {
+        when(memberMapper.selectBySn(7L)).thenReturn(stored(7L, MemberStatus.NORMAL.getCode(), "나비집사", "Y"));
+        when(memberMapper.selectSnsLink(NAVER, "naver-1")).thenReturn(null);
+        when(memberMapper.selectSnsOffrCds(7L)).thenReturn(List.of());
+        when(memberMapper.insertSnsLink(7L, NAVER, "naver-1")).thenThrow(new DuplicateKeyException("uk"));
+
+        assertCode(catchThrowable(() -> service.linkSns(7L, NAVER, "naver-1")), ErrorCode.SNS_ACCOUNT_LINKED_TO_OTHER);
+    }
+
+    @Test
+    void SNS_연동은_회원이_없으면_거절한다() {
+        when(memberMapper.selectBySn(7L)).thenReturn(null);
+
+        assertCode(catchThrowable(() -> service.linkSns(7L, NAVER, "naver-1")), ErrorCode.MEMBER_NOT_FOUND);
+        verify(memberMapper, never()).selectSnsLink(anyString(), anyString());
     }
 }

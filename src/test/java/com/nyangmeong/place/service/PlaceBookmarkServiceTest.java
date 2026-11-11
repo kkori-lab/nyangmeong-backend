@@ -8,6 +8,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -137,6 +138,16 @@ class PlaceBookmarkServiceTest {
 
         assertThat(res).isEmpty();
         verify(placeBookmarkMapper).selectList(MBR, "PLCC0001");
+    }
+
+    @Test
+    void 목록의_카테고리가_없거나_빈_값이면_전체_분류로_조회한다() {
+        when(placeBookmarkMapper.selectList(MBR, null)).thenReturn(List.of());
+
+        service.search(MBR, null);
+        service.search(MBR, " ");
+
+        verify(placeBookmarkMapper, times(2)).selectList(MBR, null);
     }
 
     @Test

@@ -12,6 +12,6 @@ import jakarta.validation.constraints.Size;
  */
 public record DailyHealthRecordUpdateRequest(
         LocalDateTime rcdDt,
-        @Digits(integer = 5, fraction = 3) BigDecimal rcdNvl,
+        @Digits(integer = 5, fraction = 2) BigDecimal rcdNvl,
         @Size(max = 8) String crsdSttsCd) {
 }

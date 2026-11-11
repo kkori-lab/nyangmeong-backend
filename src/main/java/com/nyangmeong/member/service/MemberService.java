@@ -22,6 +22,7 @@ import com.nyangmeong.global.setting.SystemSettingService;
 import com.nyangmeong.global.validation.PhoneNumberNormalizer;
 import com.nyangmeong.member.domain.JoinPath;
 import com.nyangmeong.member.domain.Member;
+import com.nyangmeong.member.domain.SnsAccountLink;
 import com.nyangmeong.member.dto.AdminDailyMemberSummary;
 import com.nyangmeong.member.dto.AdminMemberDetailResponse;
 import com.nyangmeong.member.dto.AdminDashboardMemberSummary;
@@ -339,6 +340,43 @@ public class MemberService {
             throw new CustomException(ErrorCode.SNS_ACCOUNT_ALREADY_LINKED);
         }
         return member;
+    }
+
+    /**
+     * 로그인 회원에 SNS 계정 연동 : 연동 뒤의 회원 응답을 돌려준다
+     * - 이미 내 연동이면 그대로 성공, 다른 회원 연동이면 SNS_ACCOUNT_LINKED_TO_OTHER
+     * - 같은 제공자의 다른 계정이 내게 연동돼 있으면 SNS_PROVIDER_ALREADY_LINKED
+     * - 해제한 같은 계정 행은 UK 때문에 새 행 대신 되살린다
+     */
+    @Transactional
+    public MemberResponse linkSns(Long mbrSn, String snsOffrCd, String offrAcntId) {
+        Member member = memberMapper.selectBySn(mbrSn);
+        if (member == null) {
+            throw new CustomException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+        SnsAccountLink link = memberMapper.selectSnsLink(snsOffrCd, offrAcntId);
+        if (link != null && "Y".equals(link.getUseYn())) {
+            if (!mbrSn.equals(link.getMbrSn())) {
+                throw new CustomException(ErrorCode.SNS_ACCOUNT_LINKED_TO_OTHER);
+            }
+            return toResponse(member);
+        }
+        if (memberMapper.selectSnsOffrCds(mbrSn).contains(snsOffrCd)) {
+            throw new CustomException(ErrorCode.SNS_PROVIDER_ALREADY_LINKED);
+        }
+        if (link != null) {
+            if (memberMapper.updateSnsLinkRevive(link.getSnsAcntLinkSn(), mbrSn) != 1) {
+                /** 조회 뒤 다른 요청이 먼저 이 계정을 연결함 */
+                throw new CustomException(ErrorCode.SNS_ACCOUNT_LINKED_TO_OTHER);
+            }
+        } else {
+            try {
+                memberMapper.insertSnsLink(mbrSn, snsOffrCd, offrAcntId);
+            } catch (DuplicateKeyException e) {
+                throw new CustomException(ErrorCode.SNS_ACCOUNT_LINKED_TO_OTHER);
+            }
+        }
+        return toResponse(member);
     }
 
     /**

@@ -1,7 +1,7 @@
 -- =====================================================================
 -- 냥멍케어 MySQL DDL v0.14  |  MySQL 8.0.16+ / InnoDB / utf8mb4_0900_ai_ci
 -- 대상: DBeaver (전체 선택 후 스크립트 실행 Alt+X, 또는 스키마 우클릭 → Tools → Execute script)
--- 원천: DDL v0.13(db/archive/v0.13/) 본문(v0.13 변경 절 (1)이 들어 있다) 위에 아래 "v0.13 → v0.14 변경"을 더한 것 (95 테이블 / 1006 컬럼 / 관계 FK 156 / 공통코드 FK 120)
+-- 원천: DDL v0.13(db/archive/v0.13/) 본문(v0.13 변경 절 (1)이 들어 있다) 위에 아래 "v0.13 → v0.14 변경"을 더한 것 (95 테이블 / 1004 컬럼 / 관계 FK 156 / 공통코드 FK 120)
 --       UK·INDEX·CHECK·생성열·공통코드 FK 는 v0.8 그대로 유지
 -- 구성: [1] DROP  [2] CREATE(PK·UK·INDEX·CHECK·생성열)  [3] 관계 FK  [4] 공통코드 FK
 -- 주의: 전체 DROP 후 재생성합니다. 기존 데이터가 있으면 먼저 백업하세요. 공용 DB에는 실행하지 않습니다.
@@ -35,6 +35,11 @@
 -- v0.14 (7) 대시보드 케어 최대 노출 수 설정 삭제 (2026-11-10, LJS, 근거: 메인 표시(★) 기능 제거 사람 결정 2026-11-10(프론트 PR #311, 백엔드 PR #205), 관리자 화면설계서 v0.5 운영 설정에서 제외, SCR-ADM-110). 이 컬럼을 쓰는 Java 코드(관리자 운영 설정)를 뺀 PR이 병합된 뒤에 실행한다. CARE_ARTCL 메인 표시 컬럼은 health(JAJ)가 따로 정한다. 공용 DB 실행함(2026-11-10)
 --   SET NAMES utf8mb4;
 --   ALTER TABLE `SYS_STNG` DROP COLUMN `DSHBD_CARE_MAX_EXPSR_CNT`;
+-- v0.14 (10) 케어 항목 메인 표시 컬럼 삭제 (2026-11-10, LJS, 근거: 메인 표시(★) 기능 제거 사람 결정 2026-11-10(백엔드 PR #205), 공용 DB에서 두 컬럼이 먼저 지워져 케어 API가 500 → 컬럼 복구가 아니라 코드에서 뺀다는 사람 결정 2026-11-10(Java 정리는 JAJ PR #212), SCR-HLT-003). 이 컬럼을 쓰는 Java 코드를 뺀 PR #212가 병합된 뒤에 실행한다(병합됨 2026-11-11). 공용 DB에는 이 절을 적기 전에 이미 실행돼 있었다(2026-11-10 확인, 실행자 미상)
+--   SET NAMES utf8mb4;
+--   ALTER TABLE `CARE_ARTCL` DROP CHECK `CK_CARE_ARTCL_MAIN_EXPSR_YN`;
+--   ALTER TABLE `CARE_ARTCL` DROP INDEX `IDX_CARE_ARTCL_1`, ADD INDEX `IDX_CARE_ARTCL_1` (`PET_SN`, `DEL_YN`);
+--   ALTER TABLE `CARE_ARTCL` DROP COLUMN `MAIN_EXPSR_YN`, DROP COLUMN `MAIN_SORT_SEQ`;
 -- =====================================================================
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -1776,21 +1781,18 @@ CREATE TABLE `CARE_ARTCL` (
   `RPRS_ICON_ID` varchar(20) NOT NULL DEFAULT 'DEFAULT' COMMENT '대표아이콘ID',
   `NXTM_PRNMNT_YMD` date NULL COMMENT '차기예정일자',
   `LAST_CMPTN_YMD` date NULL COMMENT '최종완료일자',
-  `MAIN_EXPSR_YN` char(1) NOT NULL DEFAULT 'N' COMMENT '메인노출여부',
   `DEL_YN` char(1) NOT NULL DEFAULT 'N' COMMENT '삭제여부',
   `REG_DT` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
   `MDFCN_DT` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
   `RGTR_ID` varchar(20) NOT NULL DEFAULT 'SYSTEM' COMMENT '등록자ID',
   `MDFR_ID` varchar(20) NOT NULL DEFAULT 'SYSTEM' COMMENT '수정자ID',
-  `MAIN_SORT_SEQ` decimal(10,0) NOT NULL DEFAULT '0' COMMENT '메인정렬순서',
   `BSC_ARTCL_YN` char(1) NOT NULL DEFAULT 'N' COMMENT '기본항목여부',
   PRIMARY KEY (`CARE_ARTCL_SN`),
-  KEY `IDX_CARE_ARTCL_1` (`PET_SN`, `DEL_YN`, `MAIN_EXPSR_YN`),
+  KEY `IDX_CARE_ARTCL_1` (`PET_SN`, `DEL_YN`),
   KEY `IDX_CARE_ARTCL_2` (`PRSC_SN`),
   KEY `IDX_CARE_ARTCL_3` (`REPT_PRVNT_MNG_SN`),
   KEY `IDX_CARE_ARTCL_4` (`CARE_ZONE_CD`),
   KEY `IDX_CARE_ARTCL_5` (`CARE_CYCLE_CD`),
-  CONSTRAINT `CK_CARE_ARTCL_MAIN_EXPSR_YN` CHECK (`MAIN_EXPSR_YN` IN ('Y','N')),
   CONSTRAINT `CK_CARE_ARTCL_DEL_YN` CHECK (`DEL_YN` IN ('Y','N')),
   CONSTRAINT `CK_CARE_ARTCL_BSC_ARTCL_YN` CHECK (`BSC_ARTCL_YN` IN ('Y','N')),
   CONSTRAINT `CK_CARE_ARTCL_ORGN_ONE` CHECK (((`PRSC_SN` IS NOT NULL) + (`REPT_PRVNT_MNG_SN` IS NOT NULL)) <= 1)

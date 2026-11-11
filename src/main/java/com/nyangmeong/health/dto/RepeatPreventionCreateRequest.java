@@ -15,6 +15,6 @@ public record RepeatPreventionCreateRequest(
         @NotNull Long ckupRcdSn,
         @NotBlank String reptPrvntArtclCd,
         @NotBlank String reptCycleCd,
-        @Min(1) @Max(9999) Integer cycleDrctInptDayCnt,
+        @Min(1) @Max(365) Integer cycleDrctInptDayCnt,
         @NotNull LocalDate bgngYmd) {
 }

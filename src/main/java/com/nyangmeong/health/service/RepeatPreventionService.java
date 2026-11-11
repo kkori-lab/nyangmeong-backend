@@ -35,8 +35,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class RepeatPreventionService {
 
-    private static final int MAX_DAY_CNT = 9999;
-
     private final RepeatPreventionMapper repeatPreventionMapper;
     private final CareScheduleMapper careScheduleMapper;
     private final CheckupService checkupService;
@@ -84,7 +82,7 @@ public class RepeatPreventionService {
         }
         CareCycle cycle = CareCycle.of(req.reptCycleCd()).orElseThrow(this::invalid);
         Integer dayCnt = req.cycleDrctInptDayCnt();
-        if (cycle == CareCycle.CUSTOM && (dayCnt == null || dayCnt < 1 || dayCnt > MAX_DAY_CNT)) {
+        if (cycle == CareCycle.CUSTOM && (dayCnt == null || dayCnt < 1 || dayCnt > CareCycle.MAX_CUSTOM_DAY_CNT)) {
             throw invalid();
         }
         String actorId = String.valueOf(mbrSn);
