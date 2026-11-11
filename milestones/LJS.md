@@ -625,6 +625,11 @@
 - 완료 조건 결과: 검증 `통과`(2026-11-10, 1회차), 사람 확인 2026-11-10. 정한 것: 건수는 새 쿼리 `selectAdminJobStatusCountsInPeriod`(기간만), 기존 `selectAdminJobStatusCounts`는 대시보드 `charFailCnt`(기간 없이 전체)용으로 남김. `docs/api/admin.md` `charFailCnt`에 기간 없는 값이라고 적음
 - 연결 남음: 없음(프론트 SCR-ADM-082 캐릭터 생성 현황 API 연결 추가-1이 이미 `fromYmd`·`toYmd`를 보냄. 프론트 세션에 알리기만)
 
+## SCR-HLT-003 토탈 케어리스트 · 메인 표시 컬럼 DB 기준 파일 정리 — 진행
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-HLT-003(케어 항목). Java 코드 정리는 JAJ PR #212(열림), 이 절은 `db/` 기준 SQL·시드만(사람 결정 2026-11-10)
+- 기다리는 것: JAJ PR #212 병합(이 PR은 그 뒤에 병합한다. 먼저 병합하면 새로 만든 DB에서 develop 코드가 500)
+- 완료 조건: 기준 SQL 본문 `CARE_ARTCL`에 `MAIN_EXPSR_YN`·`MAIN_SORT_SEQ`·체크 `CK_CARE_ARTCL_MAIN_EXPSR_YN`이 없고 `IDX_CARE_ARTCL_1`이 `(PET_SN, DEL_YN)`이라 공용 DB와 같다. 변경 절 `v0.14 (8)`이 있다. 시드 `CARE_ARTCL` INSERT에서 두 칸이 빠지고 행 수는 그대로다
+
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
 - FN-COM-002-11: 채팅 안 읽은 수 API는 KSJ(채팅, 마일스톤 담당 표 COM-009)

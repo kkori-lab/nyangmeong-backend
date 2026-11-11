@@ -2,10 +2,18 @@
 
 ## 지금 하는 것
 
-SCR-ADM-082 처리 현황 · 캐릭터 생성 현황 기간 조회 — 끝 (2026-11-10). `GET /api/admin/processing/character-jobs`에 `fromYmd`·`toYmd`(둘 다 선택, `REG_DT` 날짜 양끝 포함, 역전 400)를 더했다. `sttsCnts`는 기간만 따르고(새 쿼리 `selectAdminJobStatusCountsInPeriod`), 대시보드 `charFailCnt`는 기간 없이 전체 그대로(기존 쿼리). 계약은 `docs/api/pet.md`·`admin.md`. 검증 `통과`(1회차), 사람 확인 2026-11-10
+SCR-HLT-003 토탈 케어리스트 · 메인 표시 컬럼 DB 기준 파일 정리 — 구현 중 (승인 2026-11-10 17:15, 시작 2026-11-10 17:12)
+
+배경: 공용 DB의 `CARE_ARTCL`에서 `MAIN_EXPSR_YN`·`MAIN_SORT_SEQ`(인덱스 `IDX_CARE_ARTCL_1`의 해당 칸, 체크 `CK_CARE_ARTCL_MAIN_EXPSR_YN` 포함)가 변경 절 기록 없이 지워져 케어 API가 500을 냈다. 컬럼 복구가 아니라 코드에서 뺀다(사람 결정 2026-11-10). Java 코드는 JAJ PR #212(열림)가 뺐다. 이 작업은 그 PR에 없는 `db/` 기준 SQL·시드만 공용 DB 모양에 맞춘다(사람 결정 2026-11-10 "디비 파일들만 수정"). 처음 기획(코드 포함)에서 DB 항목만 남긴 것이다. 이 PR은 #212 병합 뒤에 병합한다(먼저 병합하면 새로 만든 DB에서 develop 코드가 500).
+
+- 기준 SQL: `db/20261109_create_tables_v0.14.sql` 본문 `CARE_ARTCL`에서 두 컬럼·체크를 빼고 `IDX_CARE_ARTCL_1`을 `(PET_SN, DEL_YN)`으로, 머리말 컬럼 수 1006 → 1004. 변경 절에 `v0.14 (8)`(DROP CHECK, 인덱스 재생성, DROP COLUMN 두 개, "공용 DB에는 이미 실행돼 있었다(2026-11-10 확인, 실행자 미상)")을 더한다. 완료 조건 `명령:` `./gradlew build -q`, 본문 `CARE_ARTCL`의 컬럼(이름·순서·타입)·인덱스·체크가 공용 DB `information_schema`와 같다(읽기만)
+- 시드: `db/seed/20261028_seed_data.sql` `CARE_ARTCL` INSERT의 컬럼 목록과 모든 행에서 `MAIN_EXPSR_YN`·`MAIN_SORT_SEQ` 칸을 빼고, 머리말에 2026-11-10 v0.14 (8) 줄(공용 DB에는 실행하지 않는다)을 더한다. 완료 조건 `명령:` 컬럼 목록 17개, 모든 행의 값 17개, 행 수와 나머지 값은 수정 전과 같다
+
+새 의존성: 없음
 
 ## 다음에 할 것
 
+- SCR-MAN-001 메인 바로가기 세부 메뉴 공통코드(프론트 요청 2026-11-11, 별도 작업으로 `/start`, 사람 결정): MANG02에 MANC0011~0018 8개를 추가한다(건강기록 변화·지속 관찰·검진기록·캘린더·케어리스트·케어미션·캐릭터 꾸미기·반려동물 정보 수정, SORT_SEQ 40~110, 설명은 프론트 제안대로). `PetShortcutService`는 DB의 사용 코드로 검사하므로 Java 수정은 없고 `db/` 기준 데이터 SQL INSERT와 변경 절만 고친다. 공용 DB 실행은 사람. 끝나면 프론트 세션에 코드 값과 공용 DB 반영 여부를 알린다(프론트는 `features/dashboard/shortcutTypes.js` 기준으로 저장을 다시 확인)
 - 프론트 세션에 알린다(SCR-ADM-082 캐릭터 생성 현황 기간 조회 끝): `GET /api/admin/processing/character-jobs`가 `fromYmd`·`toYmd`를 받는다(둘 다 선택, `YYYY-MM-DD`, 양끝 포함). `fromYmd > toYmd`·날짜 형식 오류는 400 `INVALID_INPUT_VALUE`. `sttsCnts`는 기간만 따르고 상태 필터와 무관, 응답 모양 그대로. 대시보드 `charFailCnt`는 기간 없이 전체
 - 팀에 알린다(SCR-ADM-110, PR #207 병합됨, 공용 DB에는 2026-11-10 실행함): 기준 SQL v0.14 (7) `SYS_STNG.DSHBD_CARE_MAX_EXPSR_CNT` 삭제. 각자 로컬 DB에 그 절을 실행한다. 실행 전 DB에서도 develop 코드는 그 컬럼을 읽지 않아 동작한다
 - SCR-ADM-110 연결 남음: FN-ADM-110-01·02 (프론트 연결 관리자 운영 설정 화면, 프론트 저장소에서 /start). 프론트 `src`에는 `dshbdCareMaxExpsrCnt` 칸이 원래 없어 지울 것이 없다(2026-11-10 확인). 프론트 기존 절 `SCR-ADM-110 운영 설정 · 운영 설정 API 연결 — 대기`에 서버에서 이 필드를 지웠다는 참고 줄을 넣었다(커밋은 프론트 저장소 다음 /end)
