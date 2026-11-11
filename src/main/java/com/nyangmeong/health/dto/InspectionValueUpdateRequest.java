@@ -15,7 +15,7 @@ import jakarta.validation.constraints.Size;
  * - 참고범위는 refRange 묶음 : 안 보내면 유지, 보내면 두 값으로 덮어씀({null, null}이면 비움)
  */
 public record InspectionValueUpdateRequest(
-        @Digits(integer = 11, fraction = 4) BigDecimal rsltNvl,
+        @Digits(integer = 11, fraction = 2) BigDecimal rsltNvl,
         @Size(max = 20) String unitNm,
         @Valid RefRange refRange,
         @Size(max = 200) String memoCn) {
@@ -25,8 +25,8 @@ public record InspectionValueUpdateRequest(
      * - 둘 다 값 또는 둘 다 null (DB 짝 제약과 같음), 하한 ≤ 상한
      */
     public record RefRange(
-            @Digits(integer = 11, fraction = 4) BigDecimal refLlmtNvl,
-            @Digits(integer = 11, fraction = 4) BigDecimal refUplmtNvl) {
+            @Digits(integer = 11, fraction = 2) BigDecimal refLlmtNvl,
+            @Digits(integer = 11, fraction = 2) BigDecimal refUplmtNvl) {
 
         @JsonIgnore
         @AssertTrue(message = "참고범위 하한·상한은 둘 다 입력하거나 둘 다 비워 주세요")

@@ -323,7 +323,7 @@
 | --- | --- | --- | --- | --- |
 | dailyRcdIdctCd | String | Y | HLTG09 공통코드(체중·식사량·음수량·배변상태·산책) | DAILY_HLTH_RCD.DAILY_RCD_IDCT_CD, HLT-002-11 |
 | rcdDt | LocalDateTime | Y | 화면은 시간만 입력, 날짜는 오늘("오늘 기록하기") | DAILY_HLTH_RCD.RCD_DT, HLT-002-11 |
-| rcdNvl | BigDecimal | N | 식사량 g·음수량 ml·산책 분·체중 kg. 배변상태가 아니면 필수. 0 초과, 정수 5자리·소수 3자리. 체중은 200 이하(※신규 정책, 넘으면 400 `rcdNvl`) | DAILY_HLTH_RCD.RCD_NVL, HLT-002-11 |
+| rcdNvl | BigDecimal | N | 식사량 g·음수량 ml·산책 분·체중 kg. 배변상태가 아니면 필수. 0 초과, 정수 5자리·소수 둘째 자리까지(셋째 자리부터 400). 체중은 200 이하(※신규 정책, 넘으면 400 `rcdNvl`) | DAILY_HLTH_RCD.RCD_NVL, HLT-002-11 |
 | crsdSttsCd | String | N | HLTG10 공통코드(정상·딱딱함·무름·설사·변비). 배변상태면 필수 | DAILY_HLTH_RCD.CRSD_STTS_CD, HLT-002-11 |
 
 ### DailyHealthRecordResponse
@@ -395,7 +395,7 @@ CreatinineIndicator: `latestNvl`, `unitNm`, `refLlmtNvl`, `refUplmtNvl`(최신 �
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | rcdDt | LocalDateTime | N | 인라인 편집의 시각 | DAILY_HLTH_RCD.RCD_DT, HLT-002-13 |
-| rcdNvl | BigDecimal | N | 0 초과, 정수 5자리·소수 3자리. 체중은 200 이하(※신규 정책, 넘으면 400 `rcdNvl`) | DAILY_HLTH_RCD.RCD_NVL, HLT-002-13 |
+| rcdNvl | BigDecimal | N | 0 초과, 정수 5자리·소수 둘째 자리까지(셋째 자리부터 400). 체중은 200 이하(※신규 정책, 넘으면 400 `rcdNvl`) | DAILY_HLTH_RCD.RCD_NVL, HLT-002-13 |
 | crsdSttsCd | String | N | HLTG10. 배변상태 기록만 | DAILY_HLTH_RCD.CRSD_STTS_CD, HLT-002-13 |
 
 ### EtcInspectionCreateRequest
@@ -448,10 +448,10 @@ CreatinineIndicator: `latestNvl`, `unitNm`, `refLlmtNvl`, `refUplmtNvl`(최신 �
 | --- | --- | --- | --- | --- |
 | inspArtclCd | String | N | HLTG12 공통코드(12종). 이 값과 직접입력명 중 하나는 필수 | INSP_NVL.INSP_ARTCL_CD, HLT-007-02 |
 | inspArtclDrctInptNm | String | N | 최대 40자. 12종에 없을 때 직접입력 | INSP_NVL.INSP_ARTCL_DRCT_INPT_NM, HLT-007-02 |
-| rsltNvl | BigDecimal | Y | 정수 11자리·소수 4자리 | INSP_NVL.RSLT_NVL, HLT-007-02 |
+| rsltNvl | BigDecimal | Y | 정수 11자리·소수 둘째 자리까지(셋째 자리부터 400) | INSP_NVL.RSLT_NVL, HLT-007-02 |
 | unitNm | String | Y | 최대 20자 | INSP_NVL.UNIT_NM, HLT-007-02 |
-| refLlmtNvl | BigDecimal | N | 상한과 함께 입력하거나 둘 다 비움. 하한 ≤ 상한 | INSP_NVL.REF_LLMT_NVL, HLT-007-02 |
-| refUplmtNvl | BigDecimal | N | 하한과 함께 입력하거나 둘 다 비움. 하한 ≤ 상한 | INSP_NVL.REF_UPLMT_NVL, HLT-007-02 |
+| refLlmtNvl | BigDecimal | N | 정수 11자리·소수 둘째 자리까지. 상한과 함께 입력하거나 둘 다 비움. 하한 ≤ 상한 | INSP_NVL.REF_LLMT_NVL, HLT-007-02 |
+| refUplmtNvl | BigDecimal | N | 정수 11자리·소수 둘째 자리까지. 하한과 함께 입력하거나 둘 다 비움. 하한 ≤ 상한 | INSP_NVL.REF_UPLMT_NVL, HLT-007-02 |
 | memoCn | String | N | 최대 200자 | INSP_NVL.MEMO_CN, HLT-007-02 |
 
 ### InspectionValueResponse
@@ -490,9 +490,9 @@ CreatinineIndicator: `latestNvl`, `unitNm`, `refLlmtNvl`, `refUplmtNvl`(최신 �
 쓰는 API: PATCH /pets/{petSn}/inspection-values/{inspNvlSn} (검사 항목 변경 불가)
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| rsltNvl | BigDecimal | N | 정수 11자리·소수 4자리 | INSP_NVL.RSLT_NVL, HLT-007-02 |
+| rsltNvl | BigDecimal | N | 정수 11자리·소수 둘째 자리까지(셋째 자리부터 400) | INSP_NVL.RSLT_NVL, HLT-007-02 |
 | unitNm | String | N | 최대 20자. 비울 수 없음(필수 항목) | INSP_NVL.UNIT_NM, HLT-007-02 |
-| refRange | RefRange | N | 참고범위 묶음(객체: refLlmtNvl, refUplmtNvl, 각 정수 11자리·소수 4자리). 둘 다 값 또는 둘 다 null, 하한 ≤ 상한. 보내면 두 값으로 덮어씀({null,null}이면 비움), 안 보내면 유지 | INSP_NVL.REF_LLMT_NVL·REF_UPLMT_NVL, HLT-007-02 |
+| refRange | RefRange | N | 참고범위 묶음(객체: refLlmtNvl, refUplmtNvl, 각 정수 11자리·소수 둘째 자리까지). 둘 다 값 또는 둘 다 null, 하한 ≤ 상한. 보내면 두 값으로 덮어씀({null,null}이면 비움), 안 보내면 유지 | INSP_NVL.REF_LLMT_NVL·REF_UPLMT_NVL, HLT-007-02 |
 | memoCn | String | N | 최대 200자 | INSP_NVL.MEMO_CN, HLT-007-02 |
 
 ### ObservationCycleCreateRequest
@@ -502,7 +502,7 @@ CreatinineIndicator: `latestNvl`, `unitNm`, `refLlmtNvl`, `refUplmtNvl`(최신 �
 | obsrvArtclSn | Long | Y | 이 반려동물의 관찰 항목. 종료된 항목은 불가 | OBSRV_CYCL.OBSRV_ARTCL_SN, HLT-002-19 |
 | file | MultipartFile | Y | 사진 1장. jpg·jpeg·png·webp, 10MB 이하, 확장자·실제 형식 이중 검증 | OBSRV_CYCL.ATCH_FILE_SN, HLT-002-22 |
 | obsrvDt | LocalDateTime | Y | 관찰일. 오늘 이후 불가. 화면은 날짜만 입력(issues 8) | OBSRV_CYCL.OBSRV_DT, HLT-002-32 |
-| obsrvSz | BigDecimal | N | mm. 정수 5자리·소수 3자리 | OBSRV_CYCL.OBSRV_SZ, HLT-002-23 |
+| obsrvSz | BigDecimal | N | mm. 정수 5자리·소수 둘째 자리까지(셋째 자리부터 400) | OBSRV_CYCL.OBSRV_SZ, HLT-002-23 |
 | obsrvChgCd | String | N | HLTG17 공통코드(작아짐·그대로·커짐) | OBSRV_CYCL.OBSRV_CHG_CD, HLT-002-23 |
 | memoCn | String | N | 최대 200자 | OBSRV_CYCL.MEMO_CN, HLT-002-24 |
 
@@ -538,7 +538,7 @@ CreatinineIndicator: `latestNvl`, `unitNm`, `refLlmtNvl`, `refUplmtNvl`(최신 �
 | --- | --- | --- | --- | --- |
 | file | MultipartFile | N | 사진 교체. jpg·jpeg·png·webp, 10MB 이하, 확장자·실제 형식 이중 검증 | OBSRV_CYCL.ATCH_FILE_SN, HLT-002-22 |
 | obsrvDt | LocalDateTime | N | 오늘 이후 불가 | OBSRV_CYCL.OBSRV_DT, HLT-002-32 |
-| obsrvSz | BigDecimal | N | mm | OBSRV_CYCL.OBSRV_SZ, HLT-002-23 |
+| obsrvSz | BigDecimal | N | mm. 정수 5자리·소수 둘째 자리까지(셋째 자리부터 400) | OBSRV_CYCL.OBSRV_SZ, HLT-002-23 |
 | obsrvChgCd | String | N | HLTG17 | OBSRV_CYCL.OBSRV_CHG_CD, HLT-002-23 |
 | memoCn | String | N | 최대 200자. 빈 문자열이면 비움 | OBSRV_CYCL.MEMO_CN, HLT-002-24 |
 | clearFields | List<String> | N | 비울 필드 이름(`obsrvSz`·`obsrvChgCd`·`memoCn`). 반복 키 또는 쉼표로 보냄. 빈 칸은 "안 보냄"과 구분되지 않아 따로 받는다. 그 밖의 이름은 400(`clearFields[i]`), 같은 필드에 값과 함께 보내면 400(`clearFieldsDistinct`). 사진은 비울 수 없다(교체만) | HLT-002-19·23·24 |
@@ -552,7 +552,7 @@ CreatinineIndicator: `latestNvl`, `unitNm`, `refLlmtNvl`, `refUplmtNvl`(최신 �
 | obsrvRegnDtlNm | String | N | 최대 40자 | OBSRV_ARTCL.OBSRV_REGN_DTL_NM, HLT-002-21 |
 | file | MultipartFile | Y | 1회차 사진 1장. jpg·jpeg·png·webp, 10MB 이하, 확장자·실제 형식 이중 검증 | OBSRV_CYCL.ATCH_FILE_SN, HLT-002-22 |
 | obsrvDt | LocalDateTime | Y | 1회차 관찰일. 오늘 이후 불가(issues 8) | OBSRV_CYCL.OBSRV_DT, HLT-002-32 |
-| obsrvSz | BigDecimal | N | mm. 1회차는 변화(obsrvChgCd) 입력 없음 | OBSRV_CYCL.OBSRV_SZ, HLT-002-23 |
+| obsrvSz | BigDecimal | N | mm. 정수 5자리·소수 둘째 자리까지(셋째 자리부터 400). 1회차는 변화(obsrvChgCd) 입력 없음 | OBSRV_CYCL.OBSRV_SZ, HLT-002-23 |
 | memoCn | String | N | 최대 200자 | OBSRV_CYCL.MEMO_CN, HLT-002-24 |
 
 ### ObservationItemResponse
