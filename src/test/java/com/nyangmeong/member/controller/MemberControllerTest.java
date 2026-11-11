@@ -51,6 +51,7 @@ import com.nyangmeong.member.dto.MemberCreateRequest;
 import com.nyangmeong.member.dto.MemberJoinResult;
 import com.nyangmeong.member.dto.MemberNicknameAvailabilityResponse;
 import com.nyangmeong.member.dto.MemberNicknameUpdateRequest;
+import com.nyangmeong.member.dto.MemberSnsLinkRequest;
 import com.nyangmeong.member.dto.MemberPhoneAvailabilityResponse;
 import com.nyangmeong.member.dto.MemberRecoverRequest;
 import com.nyangmeong.member.dto.MemberRecoveryInfoRequest;
@@ -64,6 +65,7 @@ import com.nyangmeong.member.service.MemberJoinService;
 import com.nyangmeong.member.service.MemberPasswordService;
 import com.nyangmeong.member.service.MemberRecoveryService;
 import com.nyangmeong.member.service.MemberService;
+import com.nyangmeong.member.service.MemberSnsLinkService;
 import com.nyangmeong.member.service.MemberWithdrawService;
 import com.nyangmeong.member.service.NicknameSetupTokenManager;
 
@@ -109,6 +111,9 @@ class MemberControllerTest {
 
     @MockitoBean
     MemberWithdrawService memberWithdrawService;
+
+    @MockitoBean
+    MemberSnsLinkService memberSnsLinkService;
 
     @MockitoBean
     LoginSessionManager loginSessionManager;
@@ -460,6 +465,57 @@ class MemberControllerTest {
                 .andExpect(status().isUnauthorized());
 
         verify(memberService, never()).updateMember(any(), any());
+    }
+
+    private MockHttpServletRequestBuilder linkSns(String body) {
+        return post("/api/members/me/sns-links")
+                .header("X-Requested-With", "XMLHttpRequest")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body);
+    }
+
+    @Test
+    @WithMockLoginMember(id = 5L)
+    void SNS_연동은_로그인_회원의_번호와_요청으로_부르고_회원_응답을_준다() throws Exception {
+        when(memberSnsLinkService.link(eq(5L), any(MemberSnsLinkRequest.class))).thenReturn(memberResponse);
+
+        mockMvc.perform(linkSns("{\"snsOffrCd\":\"USRC0007\",\"code\":\"fake-a\",\"state\":\"s\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.joinPathCd").value("USRC0006"));
+
+        ArgumentCaptor<MemberSnsLinkRequest> captor = ArgumentCaptor.forClass(MemberSnsLinkRequest.class);
+        verify(memberSnsLinkService).link(eq(5L), captor.capture());
+        assertThat(captor.getValue().snsOffrCd()).isEqualTo("USRC0007");
+        assertThat(captor.getValue().code()).isEqualTo("fake-a");
+        assertThat(captor.getValue().state()).isEqualTo("s");
+    }
+
+    @Test
+    @WithMockLoginMember(id = 5L)
+    void SNS_연동에서_다른_회원의_계정이면_409다() throws Exception {
+        when(memberSnsLinkService.link(eq(5L), any(MemberSnsLinkRequest.class)))
+                .thenThrow(new CustomException(ErrorCode.SNS_ACCOUNT_LINKED_TO_OTHER));
+
+        mockMvc.perform(linkSns("{\"snsOffrCd\":\"USRC0007\",\"code\":\"fake-a\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("SNS_ACCOUNT_LINKED_TO_OTHER"));
+    }
+
+    @Test
+    @WithMockLoginMember(id = 5L)
+    void SNS_연동은_제공자와_인가_코드가_없으면_400이다() throws Exception {
+        mockMvc.perform(linkSns("{\"snsOffrCd\":\"USRC0007\"}"))
+                .andExpect(status().isBadRequest());
+
+        verify(memberSnsLinkService, never()).link(any(), any());
+    }
+
+    @Test
+    void SNS_연동은_로그인하지_않으면_401이다() throws Exception {
+        mockMvc.perform(linkSns("{\"snsOffrCd\":\"USRC0007\",\"code\":\"fake-a\"}"))
+                .andExpect(status().isUnauthorized());
+
+        verify(memberSnsLinkService, never()).link(any(), any());
     }
 
     private MockHttpServletRequestBuilder verifyPassword(String body) {

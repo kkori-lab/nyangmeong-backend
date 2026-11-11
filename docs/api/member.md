@@ -28,6 +28,7 @@
 | POST | /members/me/password-verification | 현재 비밀번호 확인(회원정보 수정 진입 전 본인 확인). 서버에 상태를 남기지 않고 맞으면 200, 틀리면 400 CURRENT_PASSWORD_MISMATCH, 비밀번호 없는 SNS 회원은 400 SNS_ONLY_MEMBER, 정지·탈퇴 회원은 403 MEMBER_INACTIVE *통합 때 추가* | MYP-040-01 | YAY | PasswordVerifyRequest | - |
 | POST | /members/recovery | 30일 이내 탈퇴 회원 기존 정보 복구 실행(탈퇴 → 정상, 상태 이력 "재가입 복구" 한 번). 로그인 없이 부르고 본문의 복구 확인 권한 토큰으로 본인확인하며 성공해도 로그인 쿠키를 만들지 않는다. 권한 문제는 400 MEMBER_RECOVERY_NOT_AVAILABLE, 보관 기간 지남은 400 MEMBER_RECOVERY_EXPIRED, 빠진 필수 약관 미동의는 400 REQUIRED_TERMS_NOT_AGREED, 번호는 INVALID_PHONE_NUMBER·409 PHONE_ALREADY_USED. 이미 쓴 권한이라도 그 회원이 지금 정상이면 바꾸는 것 없이 200(중복 클릭·응답 유실) | ACC-001-45 | YAY | MemberRecoverRequest | - |
 | POST | /members/me/withdraw | 회원탈퇴(상태·이력 반영, 모든 로그인·인증 권한 종료, 30일 보관) | ACC-020-03·14·16, AIM-011-19, MYP-002-08 (기능 분배 3.1절 5번) | YAY | MemberWithdrawRequest | - |
+| POST | /members/me/sns-links | SNS 계정 연동(로그인 필요). 프론트가 인가 창에서 받은 `code`(네이버는 `state`도)를 넘기면 서버가 제공자 계정 ID를 받아 로그인 회원에 연결하고, 응답은 연동 뒤의 `MemberResponse`다. 이미 내 연동이면 그대로 200. 다른 회원에게 연결된 계정은 409 SNS_ACCOUNT_LINKED_TO_OTHER, 내게 같은 제공자의 다른 계정이 이미 연결돼 있으면 409 SNS_PROVIDER_ALREADY_LINKED, 모르는 제공자 400 BAD_REQUEST, 제공자 실패 400 SNS_AUTH_FAILED, 비로그인 401. 해제했던 같은 계정은 새 행 대신 되살린다(issues 로그인 2 (4)). 연동 해제는 없다(명세) | MYP-040-14 | YAY | MemberSnsLinkRequest | MemberResponse |
 | PATCH | /members/me | 회원정보 수정. 휴대전화(저장 시 중복 재검사)·프로필 사진 | MYP-040-02·05·08·11 | SJM | MemberUpdateRequest | MemberResponse |
 | PATCH | /members/me/nickname | 닉네임 설정 확정(로그인 회원 또는 가입 직후 받은 `ncnm_setup` 쿠키, 둘 다 없으면 401), 설정 완료 여부 반영 | ACC-001-26 | YAY | MemberNicknameUpdateRequest | MemberResponse |
 | PATCH | /members/me/password | 로그인 상태에서 비밀번호 변경. 현재 비밀번호를 같은 요청에서 다시 검사(틀리면 400 CURRENT_PASSWORD_MISMATCH), `pswd`와 `pswdCnfrm` 불일치 400 PASSWORD_MISMATCH, 새 비밀번호가 현재 비밀번호와 같으면 400 PASSWORD_SAME_AS_CURRENT, SNS 회원 400 SNS_ONLY_MEMBER. 성공하면 모든 기기의 로그인을 끝내고 요청한 기기에는 새 로그인 쿠키를 다시 준다 *통합 때 추가* | MYP-040-06 | YAY | PasswordChangeRequest | - |
@@ -344,7 +345,7 @@
 | missingTrms | List<TermsSummary> | Y | 다시 받아야 할 현재 버전 약관. 없으면 빈 목록 | TRMS, MBR_TRMS_AGRE, ACC-001-44 |
 
 ### MemberResponse
-쓰는 API: GET /members/me; PATCH /members/me; PATCH /members/me/nickname; POST /members
+쓰는 API: GET /members/me; PATCH /members/me; PATCH /members/me/nickname; POST /members; POST /members/me/sns-links
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | acntEml | String | Y | 복호화한 로그인 이메일(수정 불가 표시) | MBR.ACNT_EML_ENC, MYP-040-03 |
@@ -378,6 +379,14 @@
 | --- | --- | --- | --- | --- |
 | mbrSn | Long | Y | 쿠키의 회원 번호(인증 필터가 판정) | MBR.MBR_SN |
 | mbrAuthrtCd | String | Y | USRG02 공통코드 | MBR.MBR_AUTHRT_CD |
+
+### MemberSnsLinkRequest
+쓰는 API: POST /members/me/sns-links
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| snsOffrCd | String | Y | 공통코드 USRG03(네이버·카카오·구글). 이메일(USRC0006)이나 모르는 값은 400 BAD_REQUEST | SNS_ACNT_LINK.SNS_OFFR_CD, MYP-040-14 |
+| code | String | Y | 제공자 인가 결과 코드. `SnsLoginRequest.code`와 같다. 로컬 가짜 제공자(`app.sns.client=fake`)는 `fake-이름` 형식 | MYP-040-14 |
+| state | String | N | 네이버는 필수(토큰 교환에 필요). 서버는 확인하지 않고 그대로 넘긴다. `redirectUri`는 받지 않고 서버 설정에 고정한다 | MYP-040-14 |
 
 ### MemberUpdateRequest
 쓰는 API: PATCH /members/me

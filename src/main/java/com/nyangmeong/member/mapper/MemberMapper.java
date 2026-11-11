@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import com.nyangmeong.member.domain.Member;
+import com.nyangmeong.member.domain.SnsAccountLink;
 import com.nyangmeong.member.dto.AdminAccountSummary;
 import com.nyangmeong.member.dto.AdminDailyMemberSummary;
 import com.nyangmeong.member.dto.AdminDashboardMemberSummary;
@@ -68,6 +69,16 @@ public interface MemberMapper {
      */
     int insertSnsLink(@Param("mbrSn") Long mbrSn, @Param("snsOffrCd") String snsOffrCd,
             @Param("offrAcntId") String offrAcntId);
+
+    /**
+     * SNS 제공자 계정의 연동 행 조회 (해제한 행 포함), 없으면 null
+     */
+    SnsAccountLink selectSnsLink(@Param("snsOffrCd") String snsOffrCd, @Param("offrAcntId") String offrAcntId);
+
+    /**
+     * 해제한 연동 행을 회원에 연결해 되살림, 그 사이 다른 요청이 먼저 바꿨으면 0
+     */
+    int updateSnsLinkRevive(@Param("snsAcntLinkSn") Long snsAcntLinkSn, @Param("mbrSn") Long mbrSn);
 
     /**
      * 회원 등록 (mbrSn 채움)

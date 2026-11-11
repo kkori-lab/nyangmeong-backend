@@ -132,6 +132,30 @@
            AND L.OFFR_ACNT_ID = #{offrAcntId}
            AND L.USE_YN = 'Y'
     </select>
+    <resultMap id="snsAccountLinkResultMap" type="com.nyangmeong.member.domain.SnsAccountLink">
+        <id     column="SNS_ACNT_LINK_SN" property="snsAcntLinkSn" />
+        <result column="MBR_SN"           property="mbrSn" />
+        <result column="SNS_OFFR_CD"      property="snsOffrCd" />
+        <result column="USE_YN"           property="useYn" />
+    </resultMap>
+    <select id="selectSnsLink" resultMap="snsAccountLinkResultMap">
+        /* SNS 제공자 계정의 연동 행 조회 : 해제한 행도 UK 에 걸리므로 USE_YN 을 거르지 않는다 */
+        SELECT SNS_ACNT_LINK_SN
+             , MBR_SN
+             , SNS_OFFR_CD
+             , USE_YN
+          FROM SNS_ACNT_LINK
+         WHERE SNS_OFFR_CD = #{snsOffrCd}
+           AND OFFR_ACNT_ID = #{offrAcntId}
+    </select>
+    <update id="updateSnsLinkRevive">
+        /* 해제한 SNS 연동 되살림 : 조회 뒤 다른 요청이 먼저 바꿨으면 0행 */
+        UPDATE SNS_ACNT_LINK
+           SET MBR_SN = #{mbrSn}
+             , USE_YN = 'Y'
+         WHERE SNS_ACNT_LINK_SN = #{snsAcntLinkSn}
+           AND USE_YN = 'N'
+    </update>
     <insert id="insertSnsLink">
         /* SNS 연동 등록 */
         INSERT INTO SNS_ACNT_LINK (
