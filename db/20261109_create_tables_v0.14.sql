@@ -35,7 +35,7 @@
 -- v0.14 (7) 대시보드 케어 최대 노출 수 설정 삭제 (2026-11-10, LJS, 근거: 메인 표시(★) 기능 제거 사람 결정 2026-11-10(프론트 PR #311, 백엔드 PR #205), 관리자 화면설계서 v0.5 운영 설정에서 제외, SCR-ADM-110). 이 컬럼을 쓰는 Java 코드(관리자 운영 설정)를 뺀 PR이 병합된 뒤에 실행한다. CARE_ARTCL 메인 표시 컬럼은 health(JAJ)가 따로 정한다. 공용 DB 실행함(2026-11-10)
 --   SET NAMES utf8mb4;
 --   ALTER TABLE `SYS_STNG` DROP COLUMN `DSHBD_CARE_MAX_EXPSR_CNT`;
--- v0.14 (8) 케어 항목 메인 표시 컬럼 삭제 (2026-11-10, LJS, 근거: 메인 표시(★) 기능 제거 사람 결정 2026-11-10(백엔드 PR #205), 공용 DB에서 두 컬럼이 먼저 지워져 케어 API가 500 → 컬럼 복구가 아니라 코드에서 뺀다는 사람 결정 2026-11-10(Java 정리는 JAJ PR #212), SCR-HLT-003). 이 컬럼을 쓰는 Java 코드를 뺀 PR #212가 병합된 뒤에 실행한다. 공용 DB에는 이 절을 적기 전에 이미 실행돼 있었다(2026-11-10 확인, 실행자 미상)
+-- v0.14 (10) 케어 항목 메인 표시 컬럼 삭제 (2026-11-10, LJS, 근거: 메인 표시(★) 기능 제거 사람 결정 2026-11-10(백엔드 PR #205), 공용 DB에서 두 컬럼이 먼저 지워져 케어 API가 500 → 컬럼 복구가 아니라 코드에서 뺀다는 사람 결정 2026-11-10(Java 정리는 JAJ PR #212), SCR-HLT-003). 이 컬럼을 쓰는 Java 코드를 뺀 PR #212가 병합된 뒤에 실행한다(병합됨 2026-11-11). 공용 DB에는 이 절을 적기 전에 이미 실행돼 있었다(2026-11-10 확인, 실행자 미상)
 --   SET NAMES utf8mb4;
 --   ALTER TABLE `CARE_ARTCL` DROP CHECK `CK_CARE_ARTCL_MAIN_EXPSR_YN`;
 --   ALTER TABLE `CARE_ARTCL` DROP INDEX `IDX_CARE_ARTCL_1`, ADD INDEX `IDX_CARE_ARTCL_1` (`PET_SN`, `DEL_YN`);

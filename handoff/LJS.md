@@ -2,35 +2,13 @@
 
 ## 지금 하는 것
 
-SCR-MAN-001 메인 · 바로가기 세부 메뉴 공통코드 — 끝 (2026-11-11). 기준 데이터 v0.14 (9)로 MANG02에 MANC0011~0018 추가, 공용 DB 실행함, 검증 2회차 통과·사람 확인 (승인 2026-11-11 10:11, 시작 2026-11-11 10:07)
-
-배경: 프론트 요청 2026-11-11. 프론트 `features/dashboard/shortcutTypes.js`가 가정 코드 MANC0011~0018을 쓰는데 서버 MANG02에 없어 PUT `/api/pets/main-shortcuts`가 400 `INVALID_INPUT_VALUE`다. `PetShortcutService`는 DB의 MANG02 사용 코드로 검사하므로 Java·API·DTO는 바꾸지 않고 `db/` 기준 데이터 SQL만 고친다(사람 결정). 걸치는 기능 FN-MAN-008. 명세 기능 ID 추가 없음. 진행 중이던 SCR-HLT-003은 사람 결정(2026-11-11)으로 뒤로 미뤘다("다음에 할 것" 맨 위).
-
-- 기준 데이터: `db/20261109_insert_base_data_v0.14.sql`
-  - 변경 절에 `v0.14 (9) 메인 바로가기 세부 메뉴 코드 (2026-11-11, LJS, 근거: 프론트 요청 2026-11-11 SCR-MAN-001 바로가기 편집 트리, FN-MAN-008)`와 `SET NAMES utf8mb4;`·INSERT 8줄(기존 (1)과 같은 `COM_CD_PRNT_SN` 하위 SELECT 형식). 번호 (9)는 v0.14 변경 번호가 DDL·기준 데이터 두 파일에 걸쳐 이어지고 (8)까지 쓰였기 때문이다
-  - 본문 공통코드 끝에 `-- v0.14 추가: 메인 바로가기 세부 메뉴 (v0.14 (9))`와 같은 INSERT 8줄(공용 DB 실행 순서대로 파일 끝 규칙)
-  - 머리말 범위 `331개 코드`와 파일 끝 합계 `코드 320건 = 398건`을 각각 8 늘린다(두 숫자가 원래 서로 다르므로 각자 +8만 하고 맞추지 않는다)
-  - 코드·이름·정렬·설명(이동 화면은 프론트 `shortcutTypes.js` 기준):
-    - MANC0011 건강기록 변화 40 "건강 일지의 건강기록 변화 그래프로 이동(건강 일지 MANC0009의 세부 메뉴)"
-    - MANC0012 지속 관찰 50 "건강 일지의 지속 관찰로 이동(건강 일지 MANC0009의 세부 메뉴)"
-    - MANC0013 검진기록 60 "건강 일지의 검진기록으로 이동(건강 일지 MANC0009의 세부 메뉴)"
-    - MANC0014 캘린더 70 "케어 캘린더의 캘린더로 이동(케어 캘린더 MANC0010의 세부 메뉴)"
-    - MANC0015 케어리스트 80 "케어 캘린더의 케어리스트로 이동(케어 캘린더 MANC0010의 세부 메뉴)"
-    - MANC0016 케어미션 90 "마이페이지 포인트의 케어미션으로 이동"
-    - MANC0017 캐릭터 꾸미기 100 "마이페이지 캐릭터 꾸미기로 이동"
-    - MANC0018 반려동물 정보 수정 110 "마이페이지 반려동물 목록에서 그 반려동물 수정 창을 연다"
-  - 완료 조건 `명령:` `./gradlew build -q` 종료 코드 0, MANC0011~0018이 파일에 각각 두 번(변경 절 주석 한 번, 본문 한 번), 본문 MANG02 하위 코드 INSERT 11줄
-  - 완료 조건 `화면:` 사람이 공용 DB에 (9)를 실행한 뒤 `GET /api/common-codes?prntComCd=MANG02`가 11개를 정렬 순서대로 준다. `PUT /api/pets/main-shortcuts`에 `MANC0011`·`MANC0018`을 넣으면 200, 이어 `GET /api/pets/main-shortcuts`가 같은 순서로 준다. 없는 `MANC0019`는 400 `INVALID_INPUT_VALUE`
-- Java: 없음(`MainShortcut` enum은 기본값 MANC0008만 쓰므로 새 코드를 넣지 않는다)
-- 프론트 연결: `features/dashboard/shortcutTypes.js` 주석 "MANC0011~0018은 가정 코드" 정리와 저장 재확인 (프론트 저장소에서 /start)
-
-새 의존성: 없음
+SCR-HLT-003 토탈 케어리스트 · 메인 표시 컬럼 DB 기준 파일 정리 — 끝 (2026-11-11). DDL 변경 절 번호를 v0.14 (8) → (10)으로 고쳐 SJM (8)·SCR-MAN-001 (9)와 겹치지 않게 함(SQL·본문·시드 INSERT는 `fce54b0` 그대로), 검증 1회차 통과·사람 확인 (승인 2026-11-11 10:32, 시작 2026-11-11 10:29)
 
 ## 다음에 할 것
 
+- 팀에 알린다(PR 본문 "DB 변경 있음, v0.14 (10)", 공용 DB에는 이미 반영됨 2026-11-10): 기준 SQL `CARE_ARTCL.MAIN_EXPSR_YN`·`MAIN_SORT_SEQ`·체크 `CK_CARE_ARTCL_MAIN_EXPSR_YN` 삭제, `IDX_CARE_ARTCL_1` → `(PET_SN, DEL_YN)`. 예전에 이 절을 (8)로 본 사람은 번호만 (10)으로 바뀐 것이다. 각자 로컬 DB에 그 절을 실행한다
 - SCR-MAN-001 바로가기 세부 메뉴 연결 남음: FN-MAN-008 (프론트 연결 `features/dashboard/shortcutTypes.js` 가정 코드 주석 정리·실제 저장 확인, 프론트 저장소에서 /start. 프론트 마일스톤 절 "바로가기 세부 메뉴 서버 코드 연결 — 대기" 넣음)
 - 팀에 알린다(PR 본문 "DB 변경 있음, v0.14 (9)", 공용 DB에는 2026-11-11 실행함): 기준 데이터 MANG02 아래 MANC0011~0018 추가. 각자 로컬 DB에 그 절을 실행한다
-- SCR-HLT-003 토탈 케어리스트 · 메인 표시 컬럼 DB 기준 파일 정리 이어 가기(2026-11-11 사람 결정으로 SCR-MAN-001 뒤로 미룸, 승인 2026-11-10 17:15): 구현은 커밋 `fce54b0`으로 끝났고 기다리던 JAJ PR #212는 병합됨. `/start SCR-HLT-003` 뒤 `/impl`로 검증하고 `/end`. 기획 요약: 기준 SQL `db/20261109_create_tables_v0.14.sql` 본문 `CARE_ARTCL`에서 `MAIN_EXPSR_YN`·`MAIN_SORT_SEQ`·체크 `CK_CARE_ARTCL_MAIN_EXPSR_YN`을 빼고 `IDX_CARE_ARTCL_1`을 `(PET_SN, DEL_YN)`으로, 머리말 컬럼 수 1006 → 1004, 변경 절 DDL 쪽 (8). 시드 `CARE_ARTCL` INSERT 컬럼 17개·행 수 그대로. 완료 조건 `./gradlew build -q`, 본문 `CARE_ARTCL`이 공용 DB `information_schema`와 같다(읽기만). 주의: 변경 번호 (8)을 SJM이 기준 데이터 파일(털색 얼룩 사용 안 함)에 이미 썼다. 이어 갈 때 DDL 쪽 (8)을 빈 번호(SCR-MAN-001이 (9)를 쓰면 (10))로 바꾸고 시드 머리말 줄도 같이 고친다
 - 프론트 세션에 알린다(SCR-ADM-082 캐릭터 생성 현황 기간 조회 끝): `GET /api/admin/processing/character-jobs`가 `fromYmd`·`toYmd`를 받는다(둘 다 선택, `YYYY-MM-DD`, 양끝 포함). `fromYmd > toYmd`·날짜 형식 오류는 400 `INVALID_INPUT_VALUE`. `sttsCnts`는 기간만 따르고 상태 필터와 무관, 응답 모양 그대로. 대시보드 `charFailCnt`는 기간 없이 전체
 - 팀에 알린다(SCR-ADM-110, PR #207 병합됨, 공용 DB에는 2026-11-10 실행함): 기준 SQL v0.14 (7) `SYS_STNG.DSHBD_CARE_MAX_EXPSR_CNT` 삭제. 각자 로컬 DB에 그 절을 실행한다. 실행 전 DB에서도 develop 코드는 그 컬럼을 읽지 않아 동작한다
 - SCR-ADM-110 연결 남음: FN-ADM-110-01·02 (프론트 연결 관리자 운영 설정 화면, 프론트 저장소에서 /start). 프론트 `src`에는 `dshbdCareMaxExpsrCnt` 칸이 원래 없어 지울 것이 없다(2026-11-10 확인). 프론트 기존 절 `SCR-ADM-110 운영 설정 · 운영 설정 API 연결 — 대기`에 서버에서 이 필드를 지웠다는 참고 줄을 넣었다(커밋은 프론트 저장소 다음 /end)
