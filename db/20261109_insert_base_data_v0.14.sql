@@ -1,7 +1,7 @@
 -- =====================================================================
 -- 냥멍케어 기준 데이터 v0.14 (2026-11-09)  |  공통코드 + 케어미션 마스터
 -- 대상 DDL : 20261109_create_tables_v0.14.sql  (테이블 COM_CD, CARE_MSN, AI_ROUT_MPNG, KWRD_DICT)
--- 범위     : [1] 공통코드 그룹 78개 전체 (331개 코드)  [2] 케어미션 마스터 21건  [3] AI 라우팅 매핑 45건  [4] 키워드 사전 66건
+-- 범위     : [1] 공통코드 그룹 78개 전체 (339개 코드)  [2] 케어미션 마스터 21건  [3] AI 라우팅 매핑 45건  [4] 키워드 사전 66건
 -- 원천     : 기준 데이터 v0.13(db/archive/v0.13/) 본문(v0.13 변경 절 (2)·(3)·(4)가 모두 들어 있다) 위에 아래 "v0.13 → v0.14 변경"을 더한 것
 --            새 코드는 기존 DB와 COM_CD_SN이 같도록 공용 DB에 실행한 순서대로 파일 끝에 둔다
 -- 채번 규칙: 그룹 = 도메인3자 + G + 2자리(ERD 그대로) / 코드 = 도메인3자 + C + 4자리
@@ -63,6 +63,16 @@
 -- v0.14 (6) 캘린더 뱃지 색상 HLTG21 본문 복원 (2026-11-09, JAJ, 근거: v0.12 (6)이 v0.13 기준 파일을 만든 뒤에 들어가 v0.13·v0.14 본문에서 빠졌다). 본문만 고친다. 공용 DB에는 v0.12 (6)이 이미 실행돼 있어 실행할 SQL 없음
 -- v0.14 (8) 반려동물 털색 얼룩(PETC0011) 사용 안 함 (2026-11-10, SJM, 근거: 마이페이지 시드 정리 9단계, SCR-MYP-003 털색은 품종별로 실제 있는 색만 배정). 코드는 지우지 않고 USE_YN='N'. 본문의 PETC0011 INSERT도 USE_YN='N'으로 넣는다. 공용 DB는 2026-11-10 반영 완료
 --   UPDATE `COM_CD` SET `USE_YN`='N', `MDFCN_DT`=NOW() WHERE `COM_CD`='PETC0011';
+-- v0.14 (9) 메인 바로가기 세부 메뉴 코드 (2026-11-11, LJS, 근거: 프론트 요청 2026-11-11 SCR-MAN-001 바로가기 편집 트리, FN-MAN-008). MANG02 아래 MANC0011~0018. 이동 화면은 프론트 features/dashboard/shortcutTypes.js 기준
+--   SET NAMES utf8mb4;
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='MANG02') p),'MANC0011','건강기록 변화','건강 일지의 건강기록 변화 그래프로 이동(건강 일지 MANC0009의 세부 메뉴)',40);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='MANG02') p),'MANC0012','지속 관찰','건강 일지의 지속 관찰로 이동(건강 일지 MANC0009의 세부 메뉴)',50);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='MANG02') p),'MANC0013','검진기록','건강 일지의 검진기록으로 이동(건강 일지 MANC0009의 세부 메뉴)',60);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='MANG02') p),'MANC0014','캘린더','케어 캘린더의 캘린더로 이동(케어 캘린더 MANC0010의 세부 메뉴)',70);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='MANG02') p),'MANC0015','케어리스트','케어 캘린더의 케어리스트로 이동(케어 캘린더 MANC0010의 세부 메뉴)',80);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='MANG02') p),'MANC0016','케어미션','마이페이지 포인트의 케어미션으로 이동',90);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='MANG02') p),'MANC0017','캐릭터 꾸미기','마이페이지 캐릭터 꾸미기로 이동',100);
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='MANG02') p),'MANC0018','반려동물 정보 수정','마이페이지 반려동물 목록에서 그 반려동물 수정 창을 연다',110);
 SET NAMES utf8mb4;
 START TRANSACTION;
 
@@ -591,6 +601,15 @@ INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG25') p),'HLTC0094','알레르기·기저질환','프론트 id: allergy',110);
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG25') p),'HLTC0095','예방접종·정기검진','프론트 id: vacc',120);
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='HLTG25') p),'HLTC0096','케어리스트','프론트 id: care',130);
+-- v0.14 추가: 메인 바로가기 세부 메뉴 (v0.14 (9))
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='MANG02') p),'MANC0011','건강기록 변화','건강 일지의 건강기록 변화 그래프로 이동(건강 일지 MANC0009의 세부 메뉴)',40);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='MANG02') p),'MANC0012','지속 관찰','건강 일지의 지속 관찰로 이동(건강 일지 MANC0009의 세부 메뉴)',50);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='MANG02') p),'MANC0013','검진기록','건강 일지의 검진기록으로 이동(건강 일지 MANC0009의 세부 메뉴)',60);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='MANG02') p),'MANC0014','캘린더','케어 캘린더의 캘린더로 이동(케어 캘린더 MANC0010의 세부 메뉴)',70);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='MANG02') p),'MANC0015','케어리스트','케어 캘린더의 케어리스트로 이동(케어 캘린더 MANC0010의 세부 메뉴)',80);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='MANG02') p),'MANC0016','케어미션','마이페이지 포인트의 케어미션으로 이동',90);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='MANG02') p),'MANC0017','캐릭터 꾸미기','마이페이지 캐릭터 꾸미기로 이동',100);
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='MANG02') p),'MANC0018','반려동물 정보 수정','마이페이지 반려동물 목록에서 그 반려동물 수정 창을 연다',110);
 
 -- =====================================================================
 -- [2] 케어미션 마스터 (CARE_MSN) — 20261027_02_update_care_msn_and_ckup_pnt 의 최종 상태
@@ -747,4 +766,4 @@ INSERT INTO `KWRD_DICT` (`DICT_USG_CD`,`KWRD_CLSF_NM`,`ARTCL_NM`,`KWRD_CN`,`INTR
   ('AIMC0038','가계부 카테고리','돌봄','돌봄, 펫시터, 펫호텔, 유치원','가계부 카테고리 = 돌봄(MYPG05)','MYPC0017',60,'어디에도 안 걸리면 기타(MYPC0018). 관리자 SCR-ADM-081에서 편집. FN-ADM-081-03');
 
 COMMIT;
--- 합계: 공통코드 그룹 78건 + 코드 320건 = 398건, 케어미션 21건, AI 라우팅 매핑 45건, 키워드 사전 29건
+-- 합계: 공통코드 그룹 78건 + 코드 328건 = 406건, 케어미션 21건, AI 라우팅 매핑 45건, 키워드 사전 29건

@@ -2,10 +2,13 @@
 
 ## 지금 하는 것
 
-SCR-ADM-082 처리 현황 · 캐릭터 생성 현황 기간 조회 — 끝 (2026-11-10). `GET /api/admin/processing/character-jobs`에 `fromYmd`·`toYmd`(둘 다 선택, `REG_DT` 날짜 양끝 포함, 역전 400)를 더했다. `sttsCnts`는 기간만 따르고(새 쿼리 `selectAdminJobStatusCountsInPeriod`), 대시보드 `charFailCnt`는 기간 없이 전체 그대로(기존 쿼리). 계약은 `docs/api/pet.md`·`admin.md`. 검증 `통과`(1회차), 사람 확인 2026-11-10
+SCR-HLT-003 토탈 케어리스트 · 메인 표시 컬럼 DB 기준 파일 정리 — 끝 (2026-11-11). DDL 변경 절 번호를 v0.14 (8) → (10)으로 고쳐 SJM (8)·SCR-MAN-001 (9)와 겹치지 않게 함(SQL·본문·시드 INSERT는 `fce54b0` 그대로), 검증 1회차 통과·사람 확인 (승인 2026-11-11 10:32, 시작 2026-11-11 10:29)
 
 ## 다음에 할 것
 
+- 팀에 알린다(PR 본문 "DB 변경 있음, v0.14 (10)", 공용 DB에는 이미 반영됨 2026-11-10): 기준 SQL `CARE_ARTCL.MAIN_EXPSR_YN`·`MAIN_SORT_SEQ`·체크 `CK_CARE_ARTCL_MAIN_EXPSR_YN` 삭제, `IDX_CARE_ARTCL_1` → `(PET_SN, DEL_YN)`. 예전에 이 절을 (8)로 본 사람은 번호만 (10)으로 바뀐 것이다. 각자 로컬 DB에 그 절을 실행한다
+- SCR-MAN-001 바로가기 세부 메뉴 연결 남음: FN-MAN-008 (프론트 연결 `features/dashboard/shortcutTypes.js` 가정 코드 주석 정리·실제 저장 확인, 프론트 저장소에서 /start. 프론트 마일스톤 절 "바로가기 세부 메뉴 서버 코드 연결 — 대기" 넣음)
+- 팀에 알린다(PR 본문 "DB 변경 있음, v0.14 (9)", 공용 DB에는 2026-11-11 실행함): 기준 데이터 MANG02 아래 MANC0011~0018 추가. 각자 로컬 DB에 그 절을 실행한다
 - 프론트 세션에 알린다(SCR-ADM-082 캐릭터 생성 현황 기간 조회 끝): `GET /api/admin/processing/character-jobs`가 `fromYmd`·`toYmd`를 받는다(둘 다 선택, `YYYY-MM-DD`, 양끝 포함). `fromYmd > toYmd`·날짜 형식 오류는 400 `INVALID_INPUT_VALUE`. `sttsCnts`는 기간만 따르고 상태 필터와 무관, 응답 모양 그대로. 대시보드 `charFailCnt`는 기간 없이 전체
 - 팀에 알린다(SCR-ADM-110, PR #207 병합됨, 공용 DB에는 2026-11-10 실행함): 기준 SQL v0.14 (7) `SYS_STNG.DSHBD_CARE_MAX_EXPSR_CNT` 삭제. 각자 로컬 DB에 그 절을 실행한다. 실행 전 DB에서도 develop 코드는 그 컬럼을 읽지 않아 동작한다
 - SCR-ADM-110 연결 남음: FN-ADM-110-01·02 (프론트 연결 관리자 운영 설정 화면, 프론트 저장소에서 /start). 프론트 `src`에는 `dshbdCareMaxExpsrCnt` 칸이 원래 없어 지울 것이 없다(2026-11-10 확인). 프론트 기존 절 `SCR-ADM-110 운영 설정 · 운영 설정 API 연결 — 대기`에 서버에서 이 필드를 지웠다는 참고 줄을 넣었다(커밋은 프론트 저장소 다음 /end)
