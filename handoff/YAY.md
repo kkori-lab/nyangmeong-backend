@@ -1,12 +1,11 @@
 # YAY 핸드오프
 
 ## 지금 하는 것
-SCR-ACC-001 회원가입 (이메일) · 약관 본문 채우기 — 끝남 (승인 2026-11-11 11:30, 검증 2회차 통과, 사람 확인 2026-11-11). 1회차는 공용 DB에 v1.1을 등록하기 전이라 화면을 확인하지 못했다. 관리자 약관 관리에서 SERVICE·PRIVACY·MARKETING v1.1(trmsSn 5·6·7)을 등록한 뒤 `GET /api/terms`·상세와 회원가입 모달을 확인했다
-- 기준: 로그인·회원가입 기능명세서 FN-ACC-001-13 약관 전문 조회(`GET /terms/{trmsSn}`, 모달 `TermsModal`). 2026-11-11 요청 "약관 동의에서 누르면 모달로 약관이 나와야 하는데 그럴듯하게 채워 달라". 지금 본문은 "시드 데이터용 문구로 실제 약관이 아닙니다" 같은 자리 채우기 문구다. 코드는 바꾸지 않는다(모달은 `trmsCn`을 `whitespace-pre-wrap`으로 그대로 보인다)
-- 결정(문구): 서비스 이용약관(13개 조, 약 2000자)·개인정보 수집·이용 동의(약 1100자)·마케팅 정보 수신 동의(약 400자). 실제 기능에 맞춘다(탈퇴 30일 보관·복구, 포인트 소멸, AI 답변은 진료를 대신하지 않음, 이메일·번호 암호화, 외부 메일·AI·지도·SNS). 법률 검토 전 샘플이다. 만 14세(`AGE_14`)는 체크 항목이라 그대로 둔다
-- 결정(넣는 곳): ① 시드 `db/seed/20261028_seed_data.sql`의 `TRMS` 덤프에서 1·2·4번 행의 `TRMS_CN`만 바꾼다(버전 v1.0 그대로, 빈 DB용. 줄바꿈은 `\n`). 머리말에 2026-11-11 변경 줄을 넣는다 ② 공용 DB는 덤프를 다시 실행하지 않고, 사람이 관리자 약관 관리에서 같은 문구를 새 버전 `v1.1`로 등록한다(`POST /admin/terms`, 이전 버전은 자동으로 사용 안 함, 지금 사용 중인 테스트 버전 `v9.9-human`·`v9.9-verify`도 정리된다). 기존 회원 동의는 그대로
-- FN-ACC-001-13: 바꿀 파일 `db/seed/20261028_seed_data.sql`(TRMS 1·2·4번 본문, 머리말 한 줄). 부를 API: `GET /terms`, `GET /terms/{trmsSn}`(YAY), 공용 DB 등록은 `POST /admin/terms`(LJS, 관리자 화면). 완료 조건 — 명령: `./gradlew build -q`, 시드 `TRMS` 줄에 "시드 데이터용 문구"가 없고 세 본문이 각각 4000자 이하. 화면: 공용 DB에 v1.1을 등록한 뒤 `GET /api/terms`에 SERVICE·PRIVACY·MARKETING이 `v1.1`, `GET /api/terms/{trmsSn}`의 `trmsCn`이 새 문구(제1조로 시작, 줄바꿈 포함). 회원가입 `http://localhost:5173/signup` 약관 [내용보기] 모달에 새 문구가 줄바꿈된 채 보인다
-- 하지 않는 것: 코드·DDL 변경, 기능별 동의 약관(펫돌봄 이용수칙 등), 법률 검토
+SCR-MYP-040 회원정보 수정 · SNS 연동 실패 문구 — 끝남 (승인 2026-11-11 16:22, 검증 1회차 통과, 사람 확인 2026-11-11). 연동 API 제공자 실패가 400 `SNS_LINK_FAILED`, SNS 로그인은 그대로 `SNS_AUTH_FAILED`임을 Postman으로 확인했다. 기획과 달라진 것: 기존 `MemberSnsLinkServiceTest`의 제공자 실패 케이스가 `SNS_AUTH_FAILED`를 기대해 이번 결정과 부딪쳐서, 새 케이스를 더하지 않고 그 케이스의 이름·기대값을 `SNS_LINK_FAILED`로 바꿨다
+- 기준: 마이페이지 기능명세서 FN-MYP-040-14 SNS 계정 연동(`POST /members/me/sns-links`). 2026-11-11 SJM 요청 "연동하다 실패해도 서버 메시지가 'SNS 로그인에 실패했습니다'로 와서 토스트에 '로그인'으로 나온다. 연동 API에서는 연동용 문구로 바꿔 달라". 원인: `MemberSnsLinkService.link`가 로그인과 같은 `snsOAuthClient.fetchProfile`을 부르고, 그 실패 `SNS_AUTH_FAILED`를 그대로 내보낸다
+- 결정: `ErrorCode`에 `SNS_LINK_FAILED`(400, "SNS 계정 연동에 실패했습니다. 다시 시도해 주세요.")를 SNS 구획(`SNS_PROVIDER_ALREADY_LINKED` 아래)에 추가한다. 문구는 다른 오류처럼 "~습니다"체로 한다(SJM 제안 "실패했어요"에서 바꿈). `MemberSnsLinkService.link`에서만 `SNS_AUTH_FAILED`를 잡아 `SNS_LINK_FAILED`로 바꿔 던지고, 다른 오류(`BAD_REQUEST`·409 두 개 등)와 SNS 로그인 쪽은 그대로 둔다
+- FN-MYP-040-14: 바꿀 파일 `global/error/ErrorCode.java`(한 줄), `member/service/MemberSnsLinkService.java`, `src/test/java/com/nyangmeong/member/service/MemberSnsLinkServiceTest.java`(제공자 실패 시 `SNS_LINK_FAILED` 케이스 추가, 기존 케이스는 고치지 않음), `docs/api/member.md`(연동 행의 "제공자 실패 400 SNS_AUTH_FAILED"를 `SNS_LINK_FAILED`로). 부를 API: `POST /members/me/sns-links`(YAY). 완료 조건 — 명령: `./gradlew build -q`. 화면: 가짜 SNS(`app.sns.client=fake`)로 로그인 회원이 `POST /api/members/me/sns-links` `{ "snsOffrCd": "USRC0009", "code": "bad" }`(fake- 접두어 없음) → 400, `code` `SNS_LINK_FAILED`, 메시지 "SNS 계정 연동에 실패했습니다. 다시 시도해 주세요.". 같은 잘못된 코드로 `POST /api/auth/sns-login`은 그대로 400 `SNS_AUTH_FAILED`. 정상 연동 200·409 두 경우는 그대로. 프론트 연결: 없음(SJM 화면이 서버 메시지를 그대로 토스트로 쓴다. 병합 뒤 SJM에게 새 코드만 알린다)
+- 하지 않는 것: SNS 로그인·가입 오류 문구 변경, 프론트 코드
 - 새 의존성: 없음
 ### 추가 요청
 | 번호 | 바꿀 파일 | 완료 조건 | 요청 |
@@ -14,6 +13,7 @@ SCR-ACC-001 회원가입 (이메일) · 약관 본문 채우기 — 끝남 (승�
 
 ## 다음에 할 것
 
+- SJM 알림: develop에 병합되면 연동 API 제공자 실패 코드가 `SNS_LINK_FAILED`("SNS 계정 연동에 실패했습니다. 다시 시도해 주세요.")로 바뀌었다고 알린다. 화면이 서버 메시지를 그대로 쓰면 프론트는 바꿀 것 없음
 - 연결 남음: FN-MYP-040-14 (프론트 연결 회원정보 수정 SNS 계정 연동 성공 토스트·"연동됨" 전환·409 `SNS_ACCOUNT_LINKED_TO_OTHER`·`SNS_PROVIDER_ALREADY_LINKED` 서버 문구 토스트, 화면 SJM, 프론트 저장소에서 /start). 화면 담당이 SJM이라 프론트 YAY 마일스톤에 절을 넣지 않았다. develop에 병합되면 SJM에게 알린다
 - 팀 확인(SNS, 2026-11-11): 네이버 앱이 아직 "개발 중"이라 등록한 테스터 아이디만 로그인된다(배포 뒤에도 같음). 개발자센터 멤버관리에 테스터 ID를 넣거나 검수 요청으로 서비스 적용 상태로 바꾼다. 카카오·구글 앱 상태도 같이 확인한다
 - 연결 남음: 로그인 유지 (프론트 연결 `api/axios.js` 재발급 401 뒤 로그인 화면으로 보내기 전에 원래 요청 한 번 재시도, 프론트 저장소에서 /start). 프론트 YAY 마일스톤에 "SCR-ACC-002 로그인 (이메일) · 재발급 실패 뒤 원래 요청 재시도" 절을 넣었다

@@ -57,9 +57,9 @@ class MemberSnsLinkServiceTest {
     }
 
     @Test
-    void 제공자_호출이_실패하면_SNS_AUTH_FAILED고_연동을_부르지_않는다() {
+    void 제공자_호출이_실패하면_연동용_SNS_LINK_FAILED고_연동을_부르지_않는다() {
         assertCode(catchThrowable(() -> service.link(7L, new MemberSnsLinkRequest(NAVER, "wrong-code", null))),
-                ErrorCode.SNS_AUTH_FAILED);
+                ErrorCode.SNS_LINK_FAILED);
         verify(memberService, never()).linkSns(anyLong(), anyString(), anyString());
     }
 }
