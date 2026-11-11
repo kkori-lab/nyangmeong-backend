@@ -10,6 +10,7 @@
 -- 2026-11-06: 고양이+얼룩(PETC0011) 55마리를 젖소(PETC0032)로 PET 덤프에서 직접 수정. 공용 DB는 팀장이 같은 UPDATE를 반영함
 -- 2026-11-10: v0.14 (7)에 맞춰 SYS_STNG 덤프에서 DSHBD_CARE_MAX_EXPSR_CNT 칸을 뺐다. 공용 DB에는 실행하지 않는다(v0.14 (7)이 컬럼을 지운다)
 -- 2026-11-10: PET·DAILY_HLTH_RCD의 SEED 행을 마이페이지 시드 정리 규칙(1~8단계)대로 덤프에서 직접 수정(코숏 믹스→코리안 숏헤어, 진도 믹스→진돗개 믹스, 품종별 털색·얼룩 미사용·직접 입력 4마리, 체중·정상범위·목표체중·체중 기록 소수 첫째 자리, 프로필 체중=최근 체중 기록). 공용 DB는 2026-11-10 반영 완료. 이 파일은 빈 DB용이다
+-- 2026-11-11: CARE_ARTCL 기본 항목을 BasicCareItem 표준 11개로 보정(파일 끝 UPDATE·INSERT). 빗질하기→빗질·양치하기→양치(일상관리라 주기·다음 예정일 NULL), 발톱 정리→발톱 관리, 귀 청소 주기 2주→1주, 아이콘을 표준 값으로 변경, 종합백신은 BSC_ARTCL_YN='N', 반려동물마다 빠진 표준 항목 추가. 공용 DB에는 같은 SQL을 @BASE_YMD = CURDATE()로 실행한다
 -- 빈 DB에만 실행한다. 기준 데이터가 넣은 CARE_MSN 행은 아래에서 지우고 시드 행으로 바꾼다
 -- =====================================================================
 
@@ -1134,6 +1135,67 @@ LOCK TABLES `VRTY` WRITE;
 INSERT INTO `VRTY` (`VRTY_SN`, `VRTY_CD`, `PET_SE_CD`, `VRTY_NM`, `SORT_SEQ`, `USE_YN`, `REG_DT`, `MDFCN_DT`, `RGTR_ID`, `MDFR_ID`) VALUES (1,'DOGV0001','PETC0001','말티즈',10,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(2,'DOGV0002','PETC0001','푸들',20,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(3,'DOGV0003','PETC0001','포메라니안',30,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(4,'DOGV0004','PETC0001','비숑 프리제',40,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(5,'DOGV0005','PETC0001','시츄',50,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(6,'DOGV0006','PETC0001','치와와',60,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(7,'DOGV0007','PETC0001','요크셔 테리어',70,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(8,'DOGV0008','PETC0001','말티푸',80,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(9,'DOGV0009','PETC0001','페키니즈',90,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(10,'DOGV0010','PETC0001','닥스훈트',100,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(11,'DOGV0011','PETC0001','웰시 코기',110,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(12,'DOGV0012','PETC0001','시바견',120,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(13,'DOGV0013','PETC0001','비글',130,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(14,'DOGV0014','PETC0001','프렌치 불독',140,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(15,'DOGV0015','PETC0001','퍼그',150,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(16,'DOGV0016','PETC0001','슈나우저',160,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(17,'DOGV0017','PETC0001','스피츠',170,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(18,'DOGV0018','PETC0001','진돗개',180,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(19,'DOGV0019','PETC0001','보더 콜리',190,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(20,'DOGV0020','PETC0001','사모예드',200,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(21,'DOGV0021','PETC0001','시베리안 허스키',210,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(22,'DOGV0022','PETC0001','골든 리트리버',220,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(23,'DOGV0023','PETC0001','래브라도 리트리버',230,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(24,'CATV0001','PETC0002','코리안 숏헤어',10,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(25,'CATV0002','PETC0002','러시안 블루',20,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(26,'CATV0003','PETC0002','페르시안',30,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(27,'CATV0004','PETC0002','스코티시 폴드',40,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(28,'CATV0005','PETC0002','브리티시 숏헤어',50,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(29,'CATV0006','PETC0002','먼치킨',60,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(30,'CATV0007','PETC0002','랙돌',70,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(31,'CATV0008','PETC0002','벵갈',80,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(32,'CATV0009','PETC0002','샴',90,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(33,'CATV0010','PETC0002','아비시니안',100,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(34,'CATV0011','PETC0002','노르웨이 숲',110,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(35,'CATV0012','PETC0002','메인쿤',120,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(36,'CATV0013','PETC0002','터키시 앙고라',130,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED'),(37,'CATV0014','PETC0002','스핑크스',140,'Y','2026-10-28 19:17:09','2026-10-28 19:17:09','SEED','SEED');
 /*!40000 ALTER TABLE `VRTY` ENABLE KEYS */;
 UNLOCK TABLES;
+-- 2026-11-11: CARE_ARTCL 기본 항목을 BasicCareItem 표준 11개로 보정 (PET·CARE_CMPTN_HSTRY가 다 들어간 뒤라 파일 끝에 둔다)
+-- 기준일: 시드 파일은 '2026-10-28'(시드 날짜 고정일), 공용 DB는 CURDATE()
+SET @BASE_YMD = '2026-10-28';
+
+-- 1) 시드 옛 이름 → 표준 이름 (완료 기록은 CARE_ARTCL_SN이 그대로라 이어짐)
+-- 일상관리는 주기·다음 예정일이 없음(시드는 HLTC0038이 들어가 있음)
+UPDATE CARE_ARTCL
+   SET CARE_ARTCL_NM = '빗질', RPRS_ICON_ID = 'brush', CARE_CYCLE_CD = NULL, NXTM_PRNMNT_YMD = NULL
+ WHERE RGTR_ID = 'SEED' AND BSC_ARTCL_YN = 'Y' AND CARE_ARTCL_NM = '빗질하기';
+
+UPDATE CARE_ARTCL
+   SET CARE_ARTCL_NM = '양치', RPRS_ICON_ID = 'dentistry', CARE_CYCLE_CD = NULL, NXTM_PRNMNT_YMD = NULL
+ WHERE RGTR_ID = 'SEED' AND BSC_ARTCL_YN = 'Y' AND CARE_ARTCL_NM = '양치하기';
+
+UPDATE CARE_ARTCL
+   SET CARE_ARTCL_NM = '발톱 관리', RPRS_ICON_ID = 'content_cut'
+ WHERE RGTR_ID = 'SEED' AND BSC_ARTCL_YN = 'Y' AND CARE_ARTCL_NM = '발톱 정리';
+
+-- 귀 청소: 주기 2주(HLTC0039) → 1주(HLTC0038), 다음 예정일 = 최근 완료일(없으면 등록일) + 1주
+UPDATE CARE_ARTCL A
+   SET A.RPRS_ICON_ID = 'hearing',
+       A.CARE_CYCLE_CD = 'HLTC0038',
+       A.NXTM_PRNMNT_YMD = COALESCE(
+             (SELECT MAX(H.CMPTN_YMD) FROM CARE_CMPTN_HSTRY H
+               WHERE H.CARE_ARTCL_SN = A.CARE_ARTCL_SN AND H.DEL_YN = 'N'),
+             DATE(A.REG_DT)) + INTERVAL 7 DAY
+ WHERE A.RGTR_ID = 'SEED' AND A.BSC_ARTCL_YN = 'Y' AND A.CARE_ARTCL_NM = '귀 청소';
+
+-- 2) 종합백신은 표준 11개에 없음 → 기본 항목에서 내림(사용자 항목처럼 보이고 삭제 가능)
+UPDATE CARE_ARTCL
+   SET BSC_ARTCL_YN = 'N'
+ WHERE RGTR_ID = 'SEED' AND BSC_ARTCL_YN = 'Y' AND CARE_ARTCL_NM = '종합백신';
+
+-- 3) 살아 있는 모든 반려동물에 표준 11개 중 빠진 것만 추가 (BasicCareItem.java 순서·값)
+INSERT INTO CARE_ARTCL
+       (PET_SN, CARE_ZONE_CD, CARE_CYCLE_CD, CARE_ARTCL_NM, RPRS_ICON_ID, NXTM_PRNMNT_YMD, BSC_ARTCL_YN, RGTR_ID, MDFR_ID)
+SELECT P.PET_SN, B.ZONE_CD, B.CYCLE_CD, B.NM, B.ICON,
+       CASE B.CYCLE_CD WHEN 'HLTC0038' THEN @BASE_YMD + INTERVAL 7 DAY
+                       WHEN 'HLTC0039' THEN @BASE_YMD + INTERVAL 14 DAY
+                       WHEN 'HLTC0040' THEN @BASE_YMD + INTERVAL 1 MONTH END,
+       'Y', 'SEED', 'SEED'
+  FROM PET P
+ CROSS JOIN (
+        SELECT  1 ORD, '화장실 청소'    NM, 'HLTC0036' ZONE_CD, NULL       CYCLE_CD, 'cleaning_services'   ICON
+  UNION ALL SELECT  2, '양치',          'HLTC0036', NULL,       'dentistry'
+  UNION ALL SELECT  3, '빗질',          'HLTC0036', NULL,       'brush'
+  UNION ALL SELECT  4, '발 관리',       'HLTC0036', NULL,       'task_alt'
+  UNION ALL SELECT  5, '놀이',          'HLTC0036', NULL,       'task_alt'
+  UNION ALL SELECT  6, '귀 청소',       'HLTC0037', 'HLTC0038', 'hearing'
+  UNION ALL SELECT  7, '발톱 관리',     'HLTC0037', 'HLTC0039', 'content_cut'
+  UNION ALL SELECT  8, '목욕',          'HLTC0037', 'HLTC0040', 'bathtub'
+  UNION ALL SELECT  9, '눈 주변 관리',  'HLTC0037', 'HLTC0039', 'task_alt'
+  UNION ALL SELECT 10, '발바닥 털 관리', 'HLTC0037', 'HLTC0039', 'content_cut'
+  UNION ALL SELECT 11, '구강 상태 확인', 'HLTC0037', 'HLTC0039', 'sentiment_satisfied'
+ ) B
+ WHERE P.DEL_YN = 'N'
+   AND NOT EXISTS (SELECT 1 FROM CARE_ARTCL A
+                    WHERE A.PET_SN = P.PET_SN AND A.CARE_ARTCL_NM = B.NM
+                      AND A.BSC_ARTCL_YN = 'Y' AND A.DEL_YN = 'N')
+ ORDER BY P.PET_SN, B.ORD;
+
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
