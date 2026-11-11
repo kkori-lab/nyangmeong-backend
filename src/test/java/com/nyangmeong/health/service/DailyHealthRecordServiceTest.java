@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -336,6 +337,36 @@ class DailyHealthRecordServiceTest {
                 NORMAL)), "crsdSttsCd");
         assertFields(() -> service.create(MBR, PET, new DailyHealthRecordCreateRequest(WEIGHT, AT,
                 new BigDecimal("0"), null)), "rcdNvl");
+    }
+
+    @Test
+    void 기록_시각은_지금_더하기_5분까지_등록하고_넘으면_400이다() {
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+        service.create(MBR, PET, new DailyHealthRecordCreateRequest(WALK, now, new BigDecimal("30"), null));
+        service.create(MBR, PET,
+                new DailyHealthRecordCreateRequest(WALK, now.plusMinutes(5), new BigDecimal("30"), null));
+        service.create(MBR, PET,
+                new DailyHealthRecordCreateRequest(WALK, now.minusDays(3), new BigDecimal("30"), null));
+        verify(mapper, times(3)).insertRecord(any());
+
+        assertFields(() -> service.create(MBR, PET,
+                new DailyHealthRecordCreateRequest(WALK, now.plusMinutes(6), new BigDecimal("30"), null)), "rcdDt");
+        assertFields(() -> service.create(MBR, PET,
+                new DailyHealthRecordCreateRequest(WALK, now.plusDays(1), new BigDecimal("30"), null)), "rcdDt");
+        verify(mapper, times(3)).insertRecord(any());
+    }
+
+    @Test
+    void 기록_시각을_미래로_수정하면_400이고_지난_시각은_저장한다() {
+        when(mapper.selectRecord(PET, RCD)).thenReturn(record(WALK, new BigDecimal("30"), null));
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+
+        assertFields(() -> service.update(MBR, PET, RCD,
+                new DailyHealthRecordUpdateRequest(now.plusMinutes(6), null, null)), "rcdDt");
+        verify(mapper, never()).updateRecord(any(), anyString());
+
+        service.update(MBR, PET, RCD, new DailyHealthRecordUpdateRequest(now.minusDays(1), null, null));
+        verify(mapper).updateRecord(any(), anyString());
     }
 
     private static void assertFields(org.assertj.core.api.ThrowableAssert.ThrowingCallable call, String... fields) {
