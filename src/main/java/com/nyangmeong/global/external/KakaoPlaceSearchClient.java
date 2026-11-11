@@ -66,15 +66,18 @@ public class KakaoPlaceSearchClient implements PlaceSearchClient {
         long startedAt = System.currentTimeMillis();
         try {
             byte[] body = restClient.get()
-                    .uri(uriBuilder -> uriBuilder.path(KEYWORD_PATH)
-                            .queryParam("query", query.query())
-                            .queryParam("rect", rect(query))
-                            .queryParam("x", query.cntrLot().toPlainString())
-                            .queryParam("y", query.cntrLat().toPlainString())
-                            .queryParam("sort", query.distanceFirst() ? "distance" : "accuracy")
-                            .queryParam("page", query.page())
-                            .queryParam("size", PAGE_SIZE)
-                            .build())
+                    .uri(uriBuilder -> {
+                        uriBuilder.path(KEYWORD_PATH).queryParam("query", query.query());
+                        if (query.hasArea()) {
+                            uriBuilder.queryParam("rect", rect(query))
+                                    .queryParam("x", query.cntrLot().toPlainString())
+                                    .queryParam("y", query.cntrLat().toPlainString());
+                        }
+                        return uriBuilder.queryParam("sort", query.distanceFirst() ? "distance" : "accuracy")
+                                .queryParam("page", query.page())
+                                .queryParam("size", PAGE_SIZE)
+                                .build();
+                    })
                     .header(HttpHeaders.AUTHORIZATION, "KakaoAK " + properties.getRestApiKey())
                     .retrieve()
                     .body(byte[].class);

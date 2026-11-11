@@ -23,6 +23,7 @@ public interface PlaceSearchClient {
 
     /**
      * 검색 조건 : 범위는 남서·북동 모서리, 중앙은 거리순 정렬 기준
+     * - 좌표가 모두 null 이면 범위·중앙 없이 전국 검색 (거리순 불가)
      */
     record PlaceSearchQuery(
             String query,
@@ -34,6 +35,14 @@ public interface PlaceSearchClient {
             BigDecimal cntrLat,
             BigDecimal cntrLot,
             int page) {
+
+        /**
+         * 범위·중앙 좌표가 있는지
+         */
+        public boolean hasArea() {
+            return swLat != null && swLot != null && neLat != null && neLot != null && cntrLat != null
+                    && cntrLot != null;
+        }
     }
 
     /**
