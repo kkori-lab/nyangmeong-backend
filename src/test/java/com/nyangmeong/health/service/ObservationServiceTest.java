@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -362,6 +363,31 @@ class ObservationServiceTest {
                 "HLTC9999", null)), "obsrvChgCd");
         assertFields(() -> service.createCycle(MBR, PET, new ObservationCycleCreateRequest(ITEM,
                 new MockMultipartFile("file", new byte[0]), PAST, null, null, null)), "file");
+    }
+
+    @Test
+    void 촬영일은_오늘까지_저장하고_내일은_등록_추가_수정_모두_400이다() {
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+        LocalDateTime tomorrow = now.toLocalDate().plusDays(1).atStartOfDay();
+        when(mapper.selectItem(PET, ITEM)).thenReturn(item(ONGOING));
+        ObservationCycle cycle = new ObservationCycle();
+        cycle.setObsrvCyclSn(CYCLE);
+        cycle.setObsrvArtclSn(ITEM);
+        cycle.setObsrvDt(PAST);
+        when(mapper.selectCycle(PET, CYCLE)).thenReturn(cycle);
+
+        service.createItem(MBR, PET, itemRequest("HLTC0043", now, null));
+        service.createCycle(MBR, PET, new ObservationCycleCreateRequest(ITEM, photo, now, null, null, null));
+        service.updateCycle(MBR, PET, CYCLE,
+                new ObservationCycleUpdateRequest(null, now, null, null, null, null));
+        assertThat(cycle.getObsrvDt()).isEqualTo(now);
+
+        assertFields(() -> service.createItem(MBR, PET, itemRequest("HLTC0043", tomorrow, null)), "obsrvDt");
+        assertFields(() -> service.createCycle(MBR, PET,
+                new ObservationCycleCreateRequest(ITEM, photo, tomorrow, null, null, null)), "obsrvDt");
+        assertFields(() -> service.updateCycle(MBR, PET, CYCLE,
+                new ObservationCycleUpdateRequest(null, tomorrow, null, null, null, null)), "obsrvDt");
+        assertThat(cycle.getObsrvDt()).isEqualTo(now);
     }
 
     private static void assertFields(org.assertj.core.api.ThrowableAssert.ThrowingCallable call, String... fields) {
