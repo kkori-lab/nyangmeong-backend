@@ -46,7 +46,8 @@ import com.nyangmeong.health.service.RepeatPreventionService;
 
 /**
  * [검사 - 건강 도메인 AI 도구 목록]
- * - 실제 건강 컨트롤러의 @AiTool이 빠짐없이 실리는지 (READ 13 + CARD 7)
+ * - 실제 건강 컨트롤러의 @AiTool이 빠짐없이 실리는지 (READ 12 + CARD 7)
+ * - 반려동물 1마리 일정 목록은 도구가 아님 : 회원 단위 list_my_care_schedules 가 대신 (MyCareScheduleAiToolCatalogTest)
  */
 @WebMvcTest(controllers = {AiToolCatalogController.class, CareScheduleController.class, CareItemController.class,
         DailyHealthRecordController.class, CheckupController.class, CheckupAttachmentController.class,
@@ -102,35 +103,27 @@ class HealthAiToolCatalogTest {
     }
 
     @Test
-    void 건강_READ_13개와_CARD_7개가_빠짐없이_실린다() throws Exception {
+    void 건강_READ_12개와_CARD_7개가_빠짐없이_실린다() throws Exception {
         givenCodes();
         mockMvc.perform(get(PATH))
-                .andExpect(jsonPath("$.data.tools.length()").value(20))
+                .andExpect(jsonPath("$.data.tools.length()").value(19))
                 .andExpect(jsonPath("$.data.tools[*].name", containsInAnyOrder("draft_care_completion", "draft_care_item",
                         "draft_care_item_update", "draft_daily_health_record", "draft_observation_cycle",
                         "draft_schedule", "draft_schedule_update",
                         "get_checkup", "get_health_indicators", "list_care_completions", "list_care_items",
-                        "list_care_schedules", "list_checkups", "list_daily_health_records",
+                        "list_checkups", "list_daily_health_records",
                         "list_etc_inspections", "list_inspection_values", "list_observation_cycles",
                         "list_observation_items", "list_prescriptions", "list_repeat_preventions")))
-                .andExpect(jsonPath("$.data.tools[?(@.kind == 'READ')].name", hasSize(13)));
+                .andExpect(jsonPath("$.data.tools[?(@.kind == 'READ')].name", hasSize(12)));
     }
 
     @Test
-    void 일정_목록_도구의_칸() throws Exception {
+    void 반려동물_1마리_일정_목록은_도구로_싣지_않는다() throws Exception {
         givenCodes();
-        String t = tool("list_care_schedules");
         mockMvc.perform(get(PATH))
-                .andExpect(jsonPath(t + ".call.method").value("GET"))
-                .andExpect(jsonPath(t + ".call.path").value("/api/pets/{petSn}/care-schedules"))
-                .andExpect(jsonPath(t + ".params.petSn.in").value("path"))
-                .andExpect(jsonPath(t + ".params.petSn.required").value(true))
-                .andExpect(jsonPath(t + ".params.fromYmd.type").value("date"))
-                .andExpect(jsonPath(t + ".params.toYmd.in").value("query"))
-                .andExpect(jsonPath(t + ".params.schdlKndCd.group").value("HLTG19"))
-                .andExpect(jsonPath(t + ".params.schdlKndCd.codes[0].cd").value("C0001"))
-                .andExpect(jsonPath(t + ".params.ckupTypeCd.group").value("HLTG01"))
-                .andExpect(jsonPath(t + ".params.size.max").value(50));
+                .andExpect(jsonPath(tool("list_care_schedules"), hasSize(0)))
+                .andExpect(jsonPath("$.data.tools[?(@.call.path == '/api/pets/{petSn}/care-schedules' "
+                        + "&& @.call.method == 'GET')]", hasSize(0)));
     }
 
     @Test

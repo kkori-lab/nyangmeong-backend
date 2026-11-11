@@ -39,11 +39,11 @@ public class PlaceBookmarkController {
 
     private final PlaceBookmarkService placeBookmarkService;
 
-    @Operation(summary = "내 장소 즐겨찾기 목록 (카테고리별, 저장 최신순)")
+    @Operation(summary = "내 장소 즐겨찾기 목록 (카테고리별, 생략하면 전체 분류, 저장 최신순)")
     @AiTool(name = "list_place_bookmarks", domain = "place", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<List<PlaceBookmarkSummary>>> search(@AuthenticationPrincipal LoginMember me,
-            @AiCode("PLCG01") @RequestParam String plcClsfCd) {
+            @AiCode("PLCG01") @RequestParam(required = false) String plcClsfCd) {
         return ResponseEntity.ok(ApiResponse.success(placeBookmarkService.search(me.id(), plcClsfCd)));
     }
 

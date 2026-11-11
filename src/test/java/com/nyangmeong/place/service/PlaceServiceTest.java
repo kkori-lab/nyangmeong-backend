@@ -266,4 +266,77 @@ class PlaceServiceTest {
                 ErrorCode.EXTERNAL_API_ERROR);
         verify(placeMapper, never()).upsertKakaoPlaces(anyList());
     }
+
+    /** 좌표 6칸이 모두 없는 조건 (AI 대화창) */
+    private PlaceSearchCond condWithoutCoordinates(String keyword) {
+        PlaceSearchCond cond = new PlaceSearchCond();
+        cond.setPlcClsfCd(HOSPITAL);
+        cond.setKeyword(keyword);
+        return cond;
+    }
+
+    private void assertInvalidFields(Runnable call, String... fields) {
+        assertThatThrownBy(call::run).isInstanceOfSatisfying(CustomException.class, e -> {
+            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+            assertThat(e.getFields()).containsExactly(fields);
+        });
+    }
+
+    @Test
+    void 좌표가_없으면_범위_없이_검색하고_거리는_null이다() {
+        when(placeSearchClient.search(any())).thenReturn(
+                new PlaceSearchPage(List.of(item("1", "가병원", PET_HOSPITAL)), 1, true));
+        when(placeMapper.selectByKakaoPlcIds(any(), anyList()))
+                .thenReturn(List.of(saved("1", 11L, "가병원", null)));
+
+        PageResponse<PlaceSummary> res = service.search(MBR, condWithoutCoordinates("전주"),
+                new PageQuery(null, null, null));
+
+        PlaceSearchQuery query = lastQuery();
+        assertThat(query.hasArea()).isFalse();
+        assertThat(query.distanceFirst()).isFalse();
+        assertThat(query.query()).isEqualTo("전주 동물병원");
+        assertThat(res.content()).extracting(PlaceSummary::getPlcSn).containsExactly(11L);
+        assertThat(res.content().get(0).getDistance()).isNull();
+    }
+
+    @Test
+    void 좌표가_없어도_이름순은_검색한다() {
+        when(placeSearchClient.search(any())).thenReturn(new PlaceSearchPage(List.of(), 0, true));
+
+        service.search(MBR, condWithoutCoordinates(null), new PageQuery(1, null, "NAME"));
+
+        assertThat(lastQuery().hasArea()).isFalse();
+    }
+
+    @Test
+    void 좌표가_없는데_거리순이면_400이고_칸은_sort다() {
+        assertInvalidFields(() -> service.search(MBR, condWithoutCoordinates(null),
+                new PageQuery(null, null, "DISTANCE")), "sort");
+        verify(placeSearchClient, never()).search(any());
+    }
+
+    @Test
+    void 좌표가_일부만_오면_400이고_빠진_칸을_담는다() {
+        PlaceSearchCond cond = condWithoutCoordinates(null);
+        cond.setSwLat(new BigDecimal("35.70"));
+        cond.setCntrLot(new BigDecimal("127.1480"));
+
+        assertInvalidFields(() -> service.search(MBR, cond, new PageQuery(null, null, null)),
+                "swLot", "neLat", "neLot", "cntrLat");
+        verify(placeSearchClient, never()).search(any());
+    }
+
+    @Test
+    void 좌표가_모두_있으면_범위와_거리를_그대로_쓴다() {
+        when(placeSearchClient.search(any())).thenReturn(
+                new PlaceSearchPage(List.of(item("1", "가병원", PET_HOSPITAL)), 1, true));
+        when(placeMapper.selectByKakaoPlcIds(any(), anyList()))
+                .thenReturn(List.of(saved("1", 11L, "가병원", null)));
+
+        PageResponse<PlaceSummary> res = service.search(MBR, cond(HOSPITAL, null), new PageQuery(null, null, null));
+
+        assertThat(lastQuery().hasArea()).isTrue();
+        assertThat(res.content().get(0).getDistance()).isNotNull();
+    }
 }
