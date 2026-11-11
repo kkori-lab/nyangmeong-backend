@@ -13,6 +13,7 @@
 -- 2026-11-10: PET·DAILY_HLTH_RCD의 SEED 행을 마이페이지 시드 정리 규칙(1~8단계)대로 덤프에서 직접 수정(코숏 믹스→코리안 숏헤어, 진도 믹스→진돗개 믹스, 품종별 털색·얼룩 미사용·직접 입력 4마리, 체중·정상범위·목표체중·체중 기록 소수 첫째 자리, 프로필 체중=최근 체중 기록). 공용 DB는 2026-11-10 반영 완료. 이 파일은 빈 DB용이다
 -- 2026-11-11: TRMS 덤프의 SERVICE·PRIVACY·MARKETING v1.0 본문을 자리 채우기 문구에서 실제처럼 쓴 약관으로 바꿨다(법률 검토 전 샘플, 버전은 v1.0 그대로). 공용 DB에는 실행하지 않는다(관리자 약관 관리에서 같은 문구를 v1.1로 등록)
 -- 2026-11-11: CARE_ARTCL 기본 항목을 BasicCareItem 표준 11개로 보정(파일 끝 UPDATE·INSERT). 빗질하기→빗질·양치하기→양치(일상관리라 주기·다음 예정일 NULL), 발톱 정리→발톱 관리, 귀 청소 주기 2주→1주, 아이콘을 표준 값으로 변경, 종합백신은 BSC_ARTCL_YN='N', 반려동물마다 빠진 표준 항목 추가. 공용 DB에는 같은 SQL을 @BASE_YMD = CURDATE()로 실행한다
+-- 2026-11-11: 수치 소수 둘째 자리 통일·1회 상한(회의 결정, ※신규 정책)에 맞춰 DAILY_HLTH_RCD·OBSRV_CYCL·INSP_NVL 수치를 둘째 자리로 반올림하고, 식사량(HLTC0015) 체중×50g·음수량(HLTC0016) 체중×100ml 초과분을 상한으로 맞추는 UPDATE를 파일 끝에 추가. 공용 DB에는 같은 UPDATE를 2026-11-11에 실행함(JAJ)
 -- 빈 DB에만 실행한다. 기준 데이터가 넣은 CARE_MSN 행은 아래에서 지우고 시드 행으로 바꾼다
 -- =====================================================================
 
@@ -1197,6 +1198,44 @@ SELECT P.PET_SN, B.ZONE_CD, B.CYCLE_CD, B.NM, B.ICON,
                     WHERE A.PET_SN = P.PET_SN AND A.CARE_ARTCL_NM = B.NM
                       AND A.BSC_ARTCL_YN = 'Y' AND A.DEL_YN = 'N')
  ORDER BY P.PET_SN, B.ORD;
+
+-- =====================================================================
+-- 2026-11-11 수치 소수 둘째 자리 통일·1회 상한 보정 (JAJ)
+-- 근거: 회의 결정(전체 수치 소수 둘째 자리까지 입력·표시), 산책 120분·식사량 체중×50g·음수량 체중×100ml 1회 상한(※신규 정책)
+-- 시드 체중·산책은 상한 초과 0건이라 손대지 않는다. PET 체중 반올림은 마이페이지 담당 구획에서 한다
+-- 상한은 반올림한 체중 기준(ROUND(PET_BDWG, 2))으로 계산해 PET 반올림 뒤에도 상한을 넘지 않게 한다
+-- =====================================================================
+
+-- 1) 소수 둘째 자리 반올림
+UPDATE DAILY_HLTH_RCD
+   SET RCD_NVL = ROUND(RCD_NVL, 2)
+ WHERE RCD_NVL <> ROUND(RCD_NVL, 2);
+
+UPDATE OBSRV_CYCL
+   SET OBSRV_SZ = ROUND(OBSRV_SZ, 2)
+ WHERE OBSRV_SZ <> ROUND(OBSRV_SZ, 2);
+
+UPDATE INSP_NVL
+   SET RSLT_NVL      = ROUND(RSLT_NVL, 2),
+       REF_LLMT_NVL  = ROUND(REF_LLMT_NVL, 2),
+       REF_UPLMT_NVL = ROUND(REF_UPLMT_NVL, 2)
+ WHERE RSLT_NVL <> ROUND(RSLT_NVL, 2)
+    OR REF_LLMT_NVL <> ROUND(REF_LLMT_NVL, 2)
+    OR REF_UPLMT_NVL <> ROUND(REF_UPLMT_NVL, 2);
+
+-- 2) 식사량 1회 상한(체중×50g) 초과분을 상한으로
+UPDATE DAILY_HLTH_RCD R
+  JOIN PET P ON P.PET_SN = R.PET_SN
+   SET R.RCD_NVL = TRUNCATE(ROUND(P.PET_BDWG, 2) * 50, 2)
+ WHERE R.DAILY_RCD_IDCT_CD = 'HLTC0015'
+   AND R.RCD_NVL > ROUND(P.PET_BDWG, 2) * 50;
+
+-- 3) 음수량 1회 상한(체중×100ml) 초과분을 상한으로
+UPDATE DAILY_HLTH_RCD R
+  JOIN PET P ON P.PET_SN = R.PET_SN
+   SET R.RCD_NVL = TRUNCATE(ROUND(P.PET_BDWG, 2) * 100, 2)
+ WHERE R.DAILY_RCD_IDCT_CD = 'HLTC0016'
+   AND R.RCD_NVL > ROUND(P.PET_BDWG, 2) * 100;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
