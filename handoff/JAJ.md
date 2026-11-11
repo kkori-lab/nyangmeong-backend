@@ -2,10 +2,13 @@
 
 ## 지금 하는 것
 
-끝남. SCR-HLT-003 케어 캘린더 · 회원 단위 일정 조회(2026-11-11). `GET /api/care-schedules?petSns=`로 여러 반려동물 일정을 한 번에 준다(size는 반려동물마다 N건, petSns 생략·빈 문자열이면 양육 중인 반려동물 전체, 볼 수 없는 번호는 오류 없이 제외). AI 도구 `list_my_care_schedules`. 공용 DB에서 기존 주소(마리마다 합침)와 schdlSn이 이번 달 22건·다가오는 일정 18건·월 이동 10건으로 같음(검증 1회 통과, 사람 확인 2026-11-11)
+끝남. SCR-HLT-002 일상 기록 1회 상한(산책 120분, 식사량 체중×50g, 음수량 체중×100ml, ※신규 정책)은 #222로 병합됨. 시드 수치 소수 둘째 자리 반올림·식사량·음수량 상한 보정(`c082df5`)은 푸시함, PR은 직접 열어야 함(`gh` 없음). 공용 DB 확인: 소수·상한 초과 0건(사람 확인 2026-11-11)
+
+이전: SCR-HLT-003 케어 캘린더 · 회원 단위 일정 조회(2026-11-11). `GET /api/care-schedules?petSns=`로 여러 반려동물 일정을 한 번에 준다(size는 반려동물마다 N건, petSns 생략·빈 문자열이면 양육 중인 반려동물 전체, 볼 수 없는 번호는 오류 없이 제외). AI 도구 `list_my_care_schedules`. 공용 DB에서 기존 주소(마리마다 합침)와 schdlSn이 이번 달 22건·다가오는 일정 18건·월 이동 10건으로 같음(검증 1회 통과, 사람 확인 2026-11-11)
 
 ## 다음에 할 것
 
+- PR 열기: https://github.com/kkori-lab/nyangmeong-backend/compare/develop...JAJ (시드 보정 `c082df5`만 들어감)
 - 연결 남음: FN-HLT-003-29·31·40 회원 단위 일정 조회 (프론트 연결 `features/health/api.js`의 `getSchedules` 하나만 `GET /api/care-schedules`로, `CareCalendarPage.jsx`·`UpcomingSchedules.jsx`·`queries.js`는 고치지 않음, 프론트 저장소에서 /start)
 - 팀원 전달: `PetAuthorizer.searchCaregiverPetSns`·`PetAuthMapper.selectCaregiverPetSns` 추가(공유 파일, 기존 `checkCaregiver`·`checkPrimary`는 그대로). 디스코드에 전달 문구 올리기
 - LJS의 AI 대화 일정 저장 연결(FN-AIM-012-13·14) 후 AI 생성 일정·케어 항목이 케어 캘린더와 케어리스트에 보이고 케어미션에는 반영되지 않는지 확인
