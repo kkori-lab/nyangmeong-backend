@@ -46,6 +46,7 @@ class DailyHealthRecordServiceTest {
     private static final String WEIGHT = "HLTC0014";
     private static final String MEAL = "HLTC0015";
     private static final String STOOL = "HLTC0017";
+    private static final String WALK = "HLTC0018";
     private static final String NORMAL = "HLTC0019";
     private static final LocalDateTime AT = LocalDateTime.of(2026, 10, 29, 8, 15);
 
@@ -154,6 +155,32 @@ class DailyHealthRecordServiceTest {
                 new DailyHealthRecordUpdateRequest(null, new BigDecimal("999"), null)));
         verify(mapper, never()).updateRecord(any(), anyString());
         verify(petService, never()).syncWeight(anyLong(), any(), anyLong());
+    }
+
+    @Test
+    void 산책은_120분까지_등록하고_넘으면_400이다() {
+        service.create(MBR, PET, new DailyHealthRecordCreateRequest(WALK, AT, new BigDecimal("120"), null));
+        verify(mapper).insertRecord(any());
+
+        assertInvalid(() -> service.create(MBR, PET,
+                new DailyHealthRecordCreateRequest(WALK, AT, new BigDecimal("120.01"), null)));
+        verify(mapper).insertRecord(any());
+    }
+
+    @Test
+    void 산책을_120분_넘게_수정하면_400이다() {
+        when(mapper.selectRecord(PET, RCD)).thenReturn(record(WALK, new BigDecimal("30"), null));
+
+        assertInvalid(() -> service.update(MBR, PET, RCD,
+                new DailyHealthRecordUpdateRequest(null, new BigDecimal("121"), null)));
+        verify(mapper, never()).updateRecord(any(), anyString());
+    }
+
+    @Test
+    void 산책_상한은_식사량에_적용하지_않는다() {
+        service.create(MBR, PET, new DailyHealthRecordCreateRequest(MEAL, AT, new BigDecimal("500"), null));
+
+        verify(mapper).insertRecord(any());
     }
 
     @Test

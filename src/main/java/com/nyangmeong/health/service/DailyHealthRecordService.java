@@ -38,6 +38,9 @@ public class DailyHealthRecordService {
     /** 체중 기록 상한(kg, ※신규 정책) */
     private static final BigDecimal MAX_WEIGHT_KG = new BigDecimal("200");
 
+    /** 산책 기록 1회 상한(분, ※신규 정책) */
+    private static final BigDecimal MAX_WALK_MIN = new BigDecimal("120");
+
     private static final Map<DailyRecordIndicator, CareMission> MISSIONS = new EnumMap<>(DailyRecordIndicator.class);
 
     static {
@@ -186,13 +189,16 @@ public class DailyHealthRecordService {
 
     /**
      * 수치 검사
-     * - 0 초과, 체중은 200kg 이하
+     * - 0 초과, 체중은 200kg 이하, 산책은 1회 120분 이하
      */
     private void checkNumber(DailyRecordIndicator indicator, BigDecimal rcdNvl) {
         if (rcdNvl.signum() <= 0) {
             throw invalid("rcdNvl");
         }
         if (indicator == DailyRecordIndicator.WEIGHT && rcdNvl.compareTo(MAX_WEIGHT_KG) > 0) {
+            throw invalid("rcdNvl");
+        }
+        if (indicator == DailyRecordIndicator.WALK && rcdNvl.compareTo(MAX_WALK_MIN) > 0) {
             throw invalid("rcdNvl");
         }
     }
