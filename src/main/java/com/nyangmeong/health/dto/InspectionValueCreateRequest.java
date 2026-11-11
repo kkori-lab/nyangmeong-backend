@@ -25,10 +25,10 @@ public record InspectionValueCreateRequest(
     public record InspectionValueItemRequest(
             @Size(max = 8) String inspArtclCd,
             @Size(max = 40) String inspArtclDrctInptNm,
-            @NotNull @Digits(integer = 11, fraction = 4) BigDecimal rsltNvl,
+            @NotNull @Digits(integer = 11, fraction = 2) BigDecimal rsltNvl,
             @NotBlank @Size(max = 20) String unitNm,
-            @Digits(integer = 11, fraction = 4) BigDecimal refLlmtNvl,
-            @Digits(integer = 11, fraction = 4) BigDecimal refUplmtNvl,
+            @Digits(integer = 11, fraction = 2) BigDecimal refLlmtNvl,
+            @Digits(integer = 11, fraction = 2) BigDecimal refUplmtNvl,
             @Size(max = 200) String memoCn) {
     }
 }

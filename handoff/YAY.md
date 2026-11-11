@@ -1,14 +1,12 @@
 # YAY 핸드오프
 
 ## 지금 하는 것
-로그인 유지 · access 쿠키 수명·동시 재발급 쿠키 삭제 — 끝남 (승인 2026-11-06 13:59, 검증 통과, 사람 확인 2026-11-06). 토큰 1분으로 띄워 만료 뒤 401 `TOKEN_EXPIRED` → refresh 200 → 원래 요청 200을 Postman으로 확인했다. 기획과 달라진 것: `TokenCookiesTest`의 기존 기대값(30분)을 refresh 수명으로 바꿨다
-- 기준: 로그인 유지(명세 기능 ID 없음, docs/api/member.md `POST /auth/refresh`). 2026-11-06 프론트 세션 진단: access 쿠키가 토큰과 같이 30분에 사라져 서버가 `TOKEN_EXPIRED`가 아닌 `UNAUTHORIZED`를 보내고, 프론트가 재발급하지 않아 로그인이 풀린다
-- 결정: access 쿠키 Max-Age를 refresh 토큰 수명(24시간)으로 한다. 토큰 자체 만료(30분)는 그대로. 만료 토큰은 필터가 `TOKEN_EXPIRED`만 기록하고 미인증으로 넘기므로 비로그인 API는 그대로 동작한다
-- 결정: `rotate`에서 동시 회전에 진 요청(`updateDiscard != 1`)은 쿠키를 지우지 않고 401 `UNAUTHORIZED`만 보낸다. 진 응답이 이긴 요청의 새 쿠키를 지워 모든 탭이 로그아웃되던 문제다. 위조·폐기·만료 토큰은 지금처럼 지운다
-- 바꿀 파일: `global/security/jwt/TokenCookies`(`accessToken` 수명, 주석), `global/security/session/LoginSessionManager`(`rotate` 진 요청 분기), `TokenCookiesTest`(access Max-Age 기대값을 30분 → refresh 수명으로, 이번에 바꾸는 동작이라), `LoginSessionManagerTest`(케이스 추가). 부를 API: `POST /auth/refresh`(YAY)
-- 완료 조건 — 명령: `TokenCookiesTest`(access 쿠키 Max-Age = refresh 수명), `LoginSessionManagerTest`(동시 회전에 진 요청은 `UNAUTHORIZED`이고 Set-Cookie 삭제 헤더 없음, 그 밖의 실패는 삭제), `./gradlew build -q`. 화면: 로그인 뒤 응답의 `access_token` Set-Cookie Max-Age=86400, 짧은 access 수명(예: `app.jwt.access-token-expiry-ms=60000`)으로 띄워 1분 뒤 요청이 401 `TOKEN_EXPIRED` → `/auth/refresh` 200 → 원래 요청 200
-- 프론트 연결: 재발급이 401로 실패해도 쿠키가 남아 있을 수 있다(다른 탭이 이긴 경우). 로그인 화면으로 보내기 전에 원래 요청을 한 번 다시 보낸다 (프론트 저장소에서 /start)
-- 하지 않는 것: 프론트 재발급 조건 변경, 만료 `RFRSH_TKN` 행 정리 배치
+SCR-ACC-001 회원가입 (이메일) · 약관 본문 채우기 — 끝남 (승인 2026-11-11 11:30, 검증 2회차 통과, 사람 확인 2026-11-11). 1회차는 공용 DB에 v1.1을 등록하기 전이라 화면을 확인하지 못했다. 관리자 약관 관리에서 SERVICE·PRIVACY·MARKETING v1.1(trmsSn 5·6·7)을 등록한 뒤 `GET /api/terms`·상세와 회원가입 모달을 확인했다
+- 기준: 로그인·회원가입 기능명세서 FN-ACC-001-13 약관 전문 조회(`GET /terms/{trmsSn}`, 모달 `TermsModal`). 2026-11-11 요청 "약관 동의에서 누르면 모달로 약관이 나와야 하는데 그럴듯하게 채워 달라". 지금 본문은 "시드 데이터용 문구로 실제 약관이 아닙니다" 같은 자리 채우기 문구다. 코드는 바꾸지 않는다(모달은 `trmsCn`을 `whitespace-pre-wrap`으로 그대로 보인다)
+- 결정(문구): 서비스 이용약관(13개 조, 약 2000자)·개인정보 수집·이용 동의(약 1100자)·마케팅 정보 수신 동의(약 400자). 실제 기능에 맞춘다(탈퇴 30일 보관·복구, 포인트 소멸, AI 답변은 진료를 대신하지 않음, 이메일·번호 암호화, 외부 메일·AI·지도·SNS). 법률 검토 전 샘플이다. 만 14세(`AGE_14`)는 체크 항목이라 그대로 둔다
+- 결정(넣는 곳): ① 시드 `db/seed/20261028_seed_data.sql`의 `TRMS` 덤프에서 1·2·4번 행의 `TRMS_CN`만 바꾼다(버전 v1.0 그대로, 빈 DB용. 줄바꿈은 `\n`). 머리말에 2026-11-11 변경 줄을 넣는다 ② 공용 DB는 덤프를 다시 실행하지 않고, 사람이 관리자 약관 관리에서 같은 문구를 새 버전 `v1.1`로 등록한다(`POST /admin/terms`, 이전 버전은 자동으로 사용 안 함, 지금 사용 중인 테스트 버전 `v9.9-human`·`v9.9-verify`도 정리된다). 기존 회원 동의는 그대로
+- FN-ACC-001-13: 바꿀 파일 `db/seed/20261028_seed_data.sql`(TRMS 1·2·4번 본문, 머리말 한 줄). 부를 API: `GET /terms`, `GET /terms/{trmsSn}`(YAY), 공용 DB 등록은 `POST /admin/terms`(LJS, 관리자 화면). 완료 조건 — 명령: `./gradlew build -q`, 시드 `TRMS` 줄에 "시드 데이터용 문구"가 없고 세 본문이 각각 4000자 이하. 화면: 공용 DB에 v1.1을 등록한 뒤 `GET /api/terms`에 SERVICE·PRIVACY·MARKETING이 `v1.1`, `GET /api/terms/{trmsSn}`의 `trmsCn`이 새 문구(제1조로 시작, 줄바꿈 포함). 회원가입 `http://localhost:5173/signup` 약관 [내용보기] 모달에 새 문구가 줄바꿈된 채 보인다
+- 하지 않는 것: 코드·DDL 변경, 기능별 동의 약관(펫돌봄 이용수칙 등), 법률 검토
 - 새 의존성: 없음
 ### 추가 요청
 | 번호 | 바꿀 파일 | 완료 조건 | 요청 |
@@ -16,18 +14,19 @@
 
 ## 다음에 할 것
 
+- 연결 남음: FN-MYP-040-14 (프론트 연결 회원정보 수정 SNS 계정 연동 성공 토스트·"연동됨" 전환·409 `SNS_ACCOUNT_LINKED_TO_OTHER`·`SNS_PROVIDER_ALREADY_LINKED` 서버 문구 토스트, 화면 SJM, 프론트 저장소에서 /start). 화면 담당이 SJM이라 프론트 YAY 마일스톤에 절을 넣지 않았다. develop에 병합되면 SJM에게 알린다
+- 팀 확인(SNS, 2026-11-11): 네이버 앱이 아직 "개발 중"이라 등록한 테스터 아이디만 로그인된다(배포 뒤에도 같음). 개발자센터 멤버관리에 테스터 ID를 넣거나 검수 요청으로 서비스 적용 상태로 바꾼다. 카카오·구글 앱 상태도 같이 확인한다
 - 연결 남음: 로그인 유지 (프론트 연결 `api/axios.js` 재발급 401 뒤 로그인 화면으로 보내기 전에 원래 요청 한 번 재시도, 프론트 저장소에서 /start). 프론트 YAY 마일스톤에 "SCR-ACC-002 로그인 (이메일) · 재발급 실패 뒤 원래 요청 재시도" 절을 넣었다
 - 알림(팀): access 쿠키가 이제 24시간 남는다(토큰 만료는 30분 그대로). 30분 뒤 요청은 401 `TOKEN_EXPIRED`라 프론트가 재발급한다
 - 팀 공유(설정, 2026-11-06): 디스코드 `application.properties`와 배포 서버에서 `app.email-cert.fail-limit=1`로 바꾸고 `app.mail.from-name` 줄을 지운다(Spring Boot가 .properties를 ISO-8859-1로 읽어 보낸 사람 한글이 깨짐, 기본값 "냥멍케어"는 코드에 있다). `app.news.query`도 같은 이유로 한글이 깨지니 추가한 담당에게 알린다
 - 연결 남음: FN-ACC-001-04·06, FN-ACC-012-03 (프론트 연결 인증번호 429면 확인 버튼 막고 재발송 안내, 도메인 400 문구와 "메일이 안 오면 주소·스팸함 확인" 안내, 재설정 새 비밀번호 칸의 `PASSWORD_SAME_AS_CURRENT`, 프론트 저장소에서 /start). 프론트 YAY 마일스톤에 "SCR-ACC-001 회원가입 (이메일) · 인증번호 1회·도메인 오류·비밀번호 재사용 안내" 절을 넣었다
-- 연결 남음: FN-MYP-040-06 (프론트 연결 회원정보 수정 비밀번호 변경의 `PASSWORD_SAME_AS_CURRENT`는 새 비밀번호 칸, 화면 SJM). SJM에게 알린다
+- 연결 남음: FN-MYP-040-06 (프론트 연결 회원정보 수정 비밀번호 변경의 `PASSWORD_SAME_AS_CURRENT`를 새 비밀번호 칸 아래 서버 문구로, 화면 SJM). 2026-11-09 SJM 답: 지금은 "잠시 후 다시 시도해 주세요"로 떠서 SJM이 고친다
 - 알림(팀): 인증번호는 이제 한 번 틀리면 무효(가입·비밀번호 찾기·복구 모두)
 - 연결 남음: FN-MAN-001·003·004·005·006·007·009 (프론트 연결 메인 히어로 캐릭터·반려동물 탭·프로필 요약·건강 지표 위젯 카드와 순서 저장·토탈 케어리스트, 프론트 저장소에서 /start). 프론트 YAY 마일스톤에 "SCR-MAN-001 메인페이지 · 위젯 순서·건강 대시보드 API 연결" 절을 넣었다. API: 위젯 순서 YAY, 반려동물·캐릭터 SJM·LJS, 건강 지표·케어리스트 JAJ
 - 연결 남음: FN-ACC-020-02·03·14·15·16·20, FN-AIM-011-19, FN-MYP-002-08 (프론트 연결 탈퇴 안내·문구 입력 모달·실행·실패/결과 확인·완료 화면, 마이페이지·AI 매니저 탈퇴 진입, 프론트 저장소에서 /start). 프론트 YAY 마일스톤에 "SCR-ACC-020 회원탈퇴 · 탈퇴 API 연결" 절을 넣었다. 마이페이지 진입 버튼 화면은 SJM(SCR-MYP-040·002)
-- 팀 확인(명세 FN-ACC-020-02·04): 탈퇴 회원의 게시물·댓글·포인트와 남은 공동양육자의 조회 범위는 정책 미정이라 손대지 않았다
+- 팀 확인(명세 FN-ACC-020-02·04, 팀장과 정함): 탈퇴 회원의 게시물·댓글·포인트와 남은 공동양육자의 조회 범위는 정책 미정이라 손대지 않았다. 2026-11-09 제안: 글·댓글은 남기고 작성자를 "탈퇴한 회원"으로, 포인트는 소멸(탈퇴 안내에 미리 고지)
 - 연결 남음: FN-ACC-001-04·41, 비밀번호 찾기 발송 (프론트 연결 이메일 단계의 502 `MAIL_SEND_FAILED` 안내, 회원가입 문구 "인증번호를 보내지 못했습니다…"만 서버 문구로 맞추기, 프론트 저장소에서 /start). 프론트 YAY 마일스톤에 "SCR-ACC-001 회원가입 (이메일) · 메일 발송 실패(502) 안내" 절을 넣었다
 - 팀 메일 계정(2026-11-05 정함): `nyangmeongcare@gmail.com`. 로컬에서 Gmail SMTP(`smtp.gmail.com:587`, 앱 비밀번호) 실제 발송 확인함. 설정 공유·배포 `smtp`·개인 앱 비밀번호 삭제·배포 메일 설정은 2026-11-06 끝남(사람)
-- 알림(SJM): 공동양육 초대 메일도 `CertificationMailEvent`라 발송 실패 시 초대가 저장되지 않고 502 `MAIL_SEND_FAILED`가 된다(전에는 저장되고 메일만 빠짐)
 - 알림(LJS): `app.mail.client=smtp`를 켜면 케어 일정 알림 메일(`CareScheduleAlarmService`)도 실제로 나간다. 그쪽은 `MailSender`를 직접 불러 동작은 바뀌지 않았다
 - 알림(프론트, 2026-11-05 확인): 비밀번호 재설정 API(`POST /email-certifications/{emlCertSn}/password-reset`)는 이미 develop에 있다. 프론트 SCR-ACC-012 연결은 기다릴 것 없음
 - 연결 남음: FN-ACC-002-09·10·11, FN-ACC-001-31·32 (프론트 연결 SNS 버튼·콜백 화면과 SNS 가입 확인 화면, 프론트 저장소에서 /start). 프론트 YAY 마일스톤에 "SCR-ACC-002 SNS 로그인 · SNS 로그인·가입 API 연결" 절을 넣었다
@@ -42,5 +41,5 @@
 - 연결 남음: FN-HOS-001-01~32·FN-PLC-001~004-01 (프론트 연결 `features/place/` 검색·재검색·정렬·무한 스크롤·즐겨찾기 고정 영역·별 버튼·카카오맵 상세 새 탭, 프론트 저장소에서 /start). 프론트 마일스톤에 "SCR-HOS-001 플레이스 · 장소 검색·즐겨찾기 API 연결" 절을 넣었다. `kakaoUrlPath`가 `null`이면 상세 버튼을 숨기거나 `https://map.kakao.com/link/map/{plcConm},{plcLat},{plcLot}`, `rprsTelno`가 `null`이면 전화 줄을 숨긴다
 - 연결 남음(프론트 저장소에서 /start): 회원가입 `features/member/signup/`(닉네임 요청은 `withCredentials`, 가입 요청에 `certNo`, 재전송 제한은 400 `EMAIL_CERT_RESEND_NOT_YET`의 `data.resendAvailableDt`), 비밀번호 찾기 `features/member/password/`(`certRslt`로 화면 분기, 다시 입력은 `invalidate`), 비밀번호 재설정 FN-ACC-012-01~06(`emlCertSn`·`pswdInitTkn`을 메모리로, 만료·400 `PASSWORD_RESET_NOT_AVAILABLE`이면 만료 화면, 자동 로그인 없음), 재가입 복구 FN-ACC-001-40~46(409 `MEMBER_RECOVERY_AVAILABLE` → 복구 목적 발송 → verify → `recovery-info` → `recovery`, 완료 뒤 자동 로그인 없음)
 - 알림(KSJ, issues 13): 커뮤니티 지도 선택(CMU-002-11·004-10·005-05)은 지금 `GET /places`를 카테고리와 함께 쓰는 것까지다. 일반 주소·좌표 검색은 만들지 않았다
-- 팀 확인(공용 DB): `LGN_ATMPT_LMT`의 테스트 행(번호 7, 출처 불명)과 2026-11-03 로그인 진단 중 생긴 `probe@example.com` 실패 행을 지워도 되는지
+- 공용 DB 정리(2026-11-09 팀 답: 테스트 행이면 지워도 됨): `LGN_ATMPT_LMT` 번호 7·`probe@example.com` 행은 이미 없다. 남은 4행 확인함: 12는 시드 회원 200(행복한냥집사), 16·17·20은 회원이 없는 이메일의 실패 기록(1~3회, 보안코드 요구 없음). `DELETE FROM LGN_ATMPT_LMT WHERE LGN_ATMPT_LMT_SN IN (12,16,17,20);`은 AI 도구 권한에서 막혀 사람이 직접 실행한다
 - 작은 정리: `member/dto/EmailCertificationCreateRequest` 클래스 주석이 아직 "가입·비밀번호 찾기 목적만 받는다"이다(복구도 받음). 다음에 이 파일을 고칠 때 같이 고친다. `DevTokenController` 삭제는 팀 공지 뒤

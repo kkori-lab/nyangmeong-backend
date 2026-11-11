@@ -140,7 +140,7 @@ class HealthCardAiToolCatalogTest {
                 .andExpect(jsonPath(t + ".params.dailyRcdIdctCd.required").value(true))
                 .andExpect(jsonPath(t + ".params.crsdSttsCd.group").value("HLTG10"))
                 .andExpect(jsonPath(t + ".params.rcdDt.type").value("datetime"))
-                .andExpect(jsonPath(t + ".params.rcdNvl.scale").value(3))
+                .andExpect(jsonPath(t + ".params.rcdNvl.scale").value(2))
                 .andExpect(jsonPath(t + ".rules.length()").value(5))
                 .andExpect(jsonPath(t + ".rules[0].requiredIf.field").value("crsdSttsCd"))
                 .andExpect(jsonPath(t + ".rules[0].requiredIf.equals").value("HLTC0017"))
