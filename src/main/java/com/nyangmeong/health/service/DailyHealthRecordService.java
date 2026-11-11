@@ -41,6 +41,12 @@ public class DailyHealthRecordService {
     /** 산책 기록 1회 상한(분, ※신규 정책) */
     private static final BigDecimal MAX_WALK_MIN = new BigDecimal("120");
 
+    /** 음수량 1회 상한 배율(체중 1kg당 ml, ※신규 정책) */
+    private static final BigDecimal MAX_WATER_ML_PER_KG = new BigDecimal("100");
+
+    /** 식사량 1회 상한 배율(체중 1kg당 g, ※신규 정책) */
+    private static final BigDecimal MAX_MEAL_G_PER_KG = new BigDecimal("50");
+
     private static final Map<DailyRecordIndicator, CareMission> MISSIONS = new EnumMap<>(DailyRecordIndicator.class);
 
     static {
@@ -80,7 +86,7 @@ public class DailyHealthRecordService {
         petAuthorizer.checkCaregiver(mbrSn, petSn);
         DailyRecordIndicator indicator = DailyRecordIndicator.of(req.dailyRcdIdctCd())
                 .orElseThrow(() -> invalid("dailyRcdIdctCd"));
-        checkValue(indicator, req.rcdNvl(), req.crsdSttsCd());
+        checkValue(mbrSn, petSn, indicator, req.rcdNvl(), req.crsdSttsCd());
         String actorId = String.valueOf(mbrSn);
 
         DailyHealthRecord record = new DailyHealthRecord();
@@ -123,7 +129,7 @@ public class DailyHealthRecordService {
                 throw invalid();
             }
             if (req.rcdNvl() != null) {
-                checkNumber(indicator, req.rcdNvl());
+                checkNumber(mbrSn, petSn, indicator, req.rcdNvl());
                 record.setRcdNvl(req.rcdNvl());
             }
         }
@@ -161,7 +167,8 @@ public class DailyHealthRecordService {
      * 등록 값 검사
      * - 배변상태 : 상태 코드만, 그 밖 : 수치만
      */
-    private void checkValue(DailyRecordIndicator indicator, BigDecimal rcdNvl, String crsdSttsCd) {
+    private void checkValue(Long mbrSn, Long petSn, DailyRecordIndicator indicator, BigDecimal rcdNvl,
+            String crsdSttsCd) {
         if (indicator.isStool()) {
             if (rcdNvl != null) {
                 throw invalid("rcdNvl");
@@ -178,7 +185,7 @@ public class DailyHealthRecordService {
         if (rcdNvl == null) {
             throw invalid("rcdNvl");
         }
-        checkNumber(indicator, rcdNvl);
+        checkNumber(mbrSn, petSn, indicator, rcdNvl);
     }
 
     private void checkStoolStatus(String crsdSttsCd) {
@@ -190,8 +197,9 @@ public class DailyHealthRecordService {
     /**
      * 수치 검사
      * - 0 초과, 체중은 200kg 이하, 산책은 1회 120분 이하
+     * - 음수량은 1회 프로필 체중×100ml 이하, 식사량은 1회 프로필 체중×50g 이하
      */
-    private void checkNumber(DailyRecordIndicator indicator, BigDecimal rcdNvl) {
+    private void checkNumber(Long mbrSn, Long petSn, DailyRecordIndicator indicator, BigDecimal rcdNvl) {
         if (rcdNvl.signum() <= 0) {
             throw invalid("rcdNvl");
         }
@@ -199,6 +207,14 @@ public class DailyHealthRecordService {
             throw invalid("rcdNvl");
         }
         if (indicator == DailyRecordIndicator.WALK && rcdNvl.compareTo(MAX_WALK_MIN) > 0) {
+            throw invalid("rcdNvl");
+        }
+        BigDecimal perKg = switch (indicator) {
+            case WATER -> MAX_WATER_ML_PER_KG;
+            case MEAL -> MAX_MEAL_G_PER_KG;
+            default -> null;
+        };
+        if (perKg != null && rcdNvl.compareTo(petService.getPet(mbrSn, petSn).petBdwg().multiply(perKg)) > 0) {
             throw invalid("rcdNvl");
         }
     }
