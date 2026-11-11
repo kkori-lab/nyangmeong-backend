@@ -15,6 +15,9 @@ public enum CareCycle {
     YEAR_1("HLTC0041"),
     CUSTOM("HLTC0042");
 
+    /** 직접입력 일수 상한 (1년). 요청 DTO의 @Max(365)와 같은 값 */
+    public static final int MAX_CUSTOM_DAY_CNT = 365;
+
     private final String code;
 
     CareCycle(String code) {

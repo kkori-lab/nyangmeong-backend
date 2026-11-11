@@ -132,13 +132,17 @@ class CareItemControllerTest {
 
     @Test
     @WithMockLoginMember
-    void 직접입력_일수가_0이거나_네_자리를_넘으면_400() throws Exception {
-        mockMvc.perform(post("/api/pets/10/care-items").header(XHR, "XMLHttpRequest")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"careArtclNm\":\"a\",\"careZoneCd\":\"HLTC0037\",\"careCycleCd\":\"HLTC0042\","
-                        + "\"cycleDrctInptDayCnt\":10000}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("INVALID_INPUT_VALUE"));
+    void 직접입력_일수가_1_365를_벗어나면_400() throws Exception {
+        for (int dayCnt : new int[] {366, 0, -1}) {
+            mockMvc.perform(post("/api/pets/10/care-items").header(XHR, "XMLHttpRequest")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"careArtclNm\":\"a\",\"careZoneCd\":\"HLTC0037\",\"careCycleCd\":\"HLTC0042\","
+                            + "\"cycleDrctInptDayCnt\":" + dayCnt + "}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_INPUT_VALUE"))
+                    .andExpect(jsonPath("$.data[0].field").value("cycleDrctInptDayCnt"));
+        }
+        verify(careItemService, never()).create(anyLong(), anyLong(), any());
     }
 
     @Test

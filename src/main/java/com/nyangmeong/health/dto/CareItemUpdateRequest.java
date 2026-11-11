@@ -17,5 +17,5 @@ public record CareItemUpdateRequest(
         @Size(max = 20) String rprsIconId,
         @AiCode("HLTG13") String careZoneCd,
         @AiCode("HLTG15") String careCycleCd,
-        @Min(1) @Max(9999) Integer cycleDrctInptDayCnt) {
+        @Min(1) @Max(365) Integer cycleDrctInptDayCnt) {
 }

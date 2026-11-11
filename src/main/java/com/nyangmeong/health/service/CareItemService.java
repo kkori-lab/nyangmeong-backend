@@ -431,7 +431,7 @@ public class CareItemService {
      */
     private CareCycle applyCycle(CareItem item, String careCycleCd, Integer dayCnt) {
         CareCycle cycle = CareCycle.of(careCycleCd).orElseThrow(() -> invalid("careCycleCd"));
-        if (cycle == CareCycle.CUSTOM && (dayCnt == null || dayCnt < 1 || dayCnt > 9999)) {
+        if (cycle == CareCycle.CUSTOM && (dayCnt == null || dayCnt < 1 || dayCnt > CareCycle.MAX_CUSTOM_DAY_CNT)) {
             throw invalid("cycleDrctInptDayCnt");
         }
         item.setCareCycleCd(cycle.getCode());
