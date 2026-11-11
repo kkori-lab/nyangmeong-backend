@@ -129,6 +129,13 @@
 - 다른 건강기록 알림 확인(2026-11-09): `health`는 `NotificationEvent`를 발행하지 않는다. 건강기록 알림은 케어 일정 알림 하나다. 반려동물 관련 다른 알림의 링크는 공동양육 초대 `/mypage/invitations/<번호>`, 공동양육 연동 해제 `/mypage/pets`, 캐릭터 `/mypage/characters`이고, 모두 건강기록 화면이 아니라 바꾸지 않는다
 - 연결 남음: 없음(프론트 수정 없음)
 
+## SCR-HLT-003 케어 캘린더 · 회원 단위 일정 조회 — 끝
+- 기능: 새 API(명세 기능 추가 없음, FN-HLT-003-29·31·40 조회 방식만 개선). `GET /api/care-schedules?petSns=1,2,3` 여러 반려동물 일정을 한 번에 준다. 반려동물마다 부르던 화면당 3종 조회(이번 달·다가오는 일정·월 이동 판단)를 마리 수와 관계없이 3번으로 줄인다. AI 도구 `list_my_care_schedules`(AI 매니저 담당 요청)
+- 기다리는 것: 없음
+- 프론트 연결: `features/health/api.js`의 `getSchedules` 하나만 새 주소로(`CareCalendarPage.jsx`·`UpcomingSchedules.jsx`·`queries.js`는 고치지 않음, 프론트 저장소에서 /start)
+- 완료 조건: 새 주소와 기존 주소(마리마다 호출해 합친 결과)의 schdlSn 목록이 이번 달·다가오는 일정(size=3)·월 이동(size=1)에서 같다. 볼 수 없는 반려동물 번호는 오류 없이 빠진다. `./gradlew build -q` 통과
+- 연결 남음: FN-HLT-003-29·31·40 (프론트 연결 `features/health/api.js`의 `getSchedules`, 프론트 저장소에서 /start)
+
 ## 제외
 - FN-HLT-002-33 등록 방법 선택: 화면만 있다(서버 동작 없음, 화면은 JAJ 프론트)
 - FN-HLT-002-34~45 영수증 인식 결과 확인 모달: API는 LJS (담당 표 HLT-002-34~46)
