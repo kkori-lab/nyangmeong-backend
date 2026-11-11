@@ -12,6 +12,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -88,8 +91,7 @@ class CareItemControllerTest {
         mockMvc.perform(get("/api/pets/10/care-items").param("careArtclNm", "양치"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].careArtclNm").value("양치"))
-                .andExpect(jsonPath("$.data[0].mainExpsrYn").doesNotExist())
-                .andExpect(jsonPath("$.data[0].mainSortSeq").doesNotExist())
+                .andExpect(content().string(not(containsString("\"main"))))
                 .andExpect(jsonPath("$.data[0].bscArtclYn").value(true))
                 .andExpect(jsonPath("$.data[0].todayCmptnCnt").value(1));
         verify(careItemService).search(eq(1L), eq(10L), argThat(cond -> "양치".equals(cond.getCareArtclNm())));

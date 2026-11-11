@@ -33,8 +33,6 @@
         <result column="RPRS_ICON_ID"             property="rprsIconId" />
         <result column="NXTM_PRNMNT_YMD"          property="nxtmPrnmntYmd" />
         <result column="LAST_CMPTN_YMD"           property="lastCmptnYmd" />
-        <result column="MAIN_EXPSR_YN"            property="mainExpsrYn" />
-        <result column="MAIN_SORT_SEQ"            property="mainSortSeq" />
         <result column="BSC_ARTCL_YN"             property="bscArtclYn" />
         <result column="DEL_YN"                   property="delYn" />
         <result column="REG_DT"                   property="regDt" />
@@ -180,8 +178,6 @@
              , RPRS_ICON_ID
              , NXTM_PRNMNT_YMD
              , LAST_CMPTN_YMD
-             , MAIN_EXPSR_YN
-             , MAIN_SORT_SEQ
              , BSC_ARTCL_YN
              , DEL_YN
              , REG_DT
@@ -208,8 +204,6 @@
              , RPRS_ICON_ID
              , NXTM_PRNMNT_YMD
              , LAST_CMPTN_YMD
-             , MAIN_EXPSR_YN
-             , MAIN_SORT_SEQ
              , BSC_ARTCL_YN
              , DEL_YN
              , REG_DT
@@ -227,8 +221,6 @@
              , #{rprsIconId}
              , #{nxtmPrnmntYmd}
              , #{lastCmptnYmd}
-             , #{mainExpsrYn}
-             , #{mainSortSeq}
              , #{bscArtclYn}
              , 'N'
              , NOW()
@@ -257,8 +249,6 @@
         /* 케어 항목 삭제 */
         UPDATE CARE_ARTCL
            SET DEL_YN        = 'Y'
-             , MAIN_EXPSR_YN = 'N'
-             , MAIN_SORT_SEQ = 0
              , MDFR_ID       = #{actorId}
              , MDFCN_DT      = NOW()
          WHERE CARE_ARTCL_SN = #{careArtclSn}
@@ -424,8 +414,6 @@
         /* 처방약 연동 투약 항목 삭제(완료 기록은 유지) */
         UPDATE CARE_ARTCL
            SET DEL_YN        = 'Y'
-             , MAIN_EXPSR_YN = 'N'
-             , MAIN_SORT_SEQ = 0
              , MDFR_ID       = #{actorId}
              , MDFCN_DT      = NOW()
          WHERE PRSC_SN = #{prscSn}
@@ -436,8 +424,6 @@
         /* 반복 예방 연동 케어 항목 삭제(완료 기록은 유지) */
         UPDATE CARE_ARTCL
            SET DEL_YN        = 'Y'
-             , MAIN_EXPSR_YN = 'N'
-             , MAIN_SORT_SEQ = 0
              , MDFR_ID       = #{actorId}
              , MDFCN_DT      = NOW()
          WHERE REPT_PRVNT_MNG_SN = #{reptPrvntMngSn}
@@ -468,8 +454,6 @@
         /* 반려동물의 케어 항목 전체 삭제 (반려동물 삭제) */
         UPDATE CARE_ARTCL
            SET DEL_YN        = 'Y'
-             , MAIN_EXPSR_YN = 'N'
-             , MAIN_SORT_SEQ = 0
              , MDFR_ID       = #{actorId}
              , MDFCN_DT      = NOW()
          WHERE PET_SN = #{petSn}
