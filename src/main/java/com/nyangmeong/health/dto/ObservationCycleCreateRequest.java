@@ -19,7 +19,7 @@ public record ObservationCycleCreateRequest(
         @NotNull Long obsrvArtclSn,
         @NotNull MultipartFile file,
         @NotNull LocalDateTime obsrvDt,
-        @Digits(integer = 5, fraction = 3) BigDecimal obsrvSz,
+        @Digits(integer = 5, fraction = 2) BigDecimal obsrvSz,
         @Size(max = 8) @AiCode("HLTG17") String obsrvChgCd,
         @Size(max = 200) String memoCn) {
 }
