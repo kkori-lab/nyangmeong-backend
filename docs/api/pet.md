@@ -57,8 +57,9 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 | POST | /internal/ai/characters/jobs | 생성 작업을 만든다. 주양육자만, 201. 이미 있음 `PIXEL_CHARACTER_ALREADY_EXISTS`, 생성 중 `PIXEL_CHARACTER_CREATING`(409). 실패로 끝나 결과가 없으면 다시 요청할 수 있다 | MYP-010-08·09 | LJS | CharacterJobCreateRequest | CharacterJobResponse |
 | POST | /internal/ai/characters/jobs/{charCrtJobSn}/success | 생성 성공 보고. 작업을 만든 회원만. 이미 완료면 같은 번호, 실패로 끝났으면 409 `ALREADY_PROCESSED`, 규격 밖 400 `FILE_TYPE_NOT_ALLOWED` | MYP-010-09·17 | LJS | CharacterSuccessRequest | CharacterSuccessResponse |
 | POST | /internal/ai/characters/jobs/{charCrtJobSn}/failure | 생성 실패 보고. 작업을 만든 회원만. 끝난 작업이면 바꾸지 않고 200. 시작 뒤 10분이 넘은 작업은 `CharacterJobTimeoutJob`이 `CHARACTER_TIMEOUT`으로 실패 처리한다 | MYP-010-12 | LJS | CharacterFailureRequest | - |
-| GET | /internal/ai/characters/bake-items | 굽기 대상(판매 중이고 굽기 지시 `BAKE_HINT` 있음, 신발은 사용 안 하는 부위) | MYP-011-01, ADM-070-02 | LJS | - | List<BakeItemSummary> |
+| GET | /internal/ai/characters/bake-items | 굽기 대상(판매 중이고 굽기 지시 `BAKE_HINT`가 있거나 그림 참고 굽기 `BAKE_IMG_REF_YN`='Y', 신발은 사용 안 하는 부위). `bakeImgRefYn`이 true면 `bake-image`로 그림을 받아 참고로 굽는다 | MYP-011-01, ADM-070-02 | LJS | - | List<BakeItemSummary> |
 | GET | /internal/ai/items/{itemSn}/bake-targets?page= | 그 아이템을 아직 안 구운 캐릭터(맨몸 시트가 있고 그 아이템의 착용 시트·굽기 실패 표시가 없음). 관리자 쿠키만, 아니면 403 `ADMIN_ONLY`. `page`는 0부터(기본 0), 한 페이지 100개, 캐릭터 번호순. 굽기 대상 아이템이 아니면 404 `ITEM_NOT_FOUND`, `page` 음수 400 | ADM-070-02 | LJS | - | BakeTargetPageResponse |
+| GET | /internal/ai/items/{itemSn}/bake-image | 굽기 참고용 아이템 그림(파일 자체 응답, `Content-Type`은 저장된 형식 jpg·png·webp). 회원·관리자 쿠키 모두. 굽기 대상 아이템이 아니면 404 `ITEM_NOT_FOUND`, 파일이 없으면 404 `FILE_NOT_FOUND` | MYP-011-01, ADM-070-02 | LJS | - | 파일 |
 | PUT | /internal/ai/characters/{pixelCharSn}/item-sheets/{itemSn} | 착용 시트 저장(주양육자만, 관리자 쿠키면 남의 캐릭터도(전체 굽기 FN-ADM-070-02), 다시 받으면 교체). 굽기 대상이 아니면 404 `ITEM_NOT_FOUND`, 1024 PNG가 아니면 400 | MYP-011-01 | LJS | ItemSheetSaveRequest | - |
 | POST | /internal/ai/characters/{pixelCharSn}/item-sheets/{itemSn}/failure | 굽기 실패 표시(주양육자만, 관리자 쿠키면 남의 캐릭터도(전체 굽기 FN-ADM-070-02)). 구운 시트가 있으면 유지 | MYP-011-01 | LJS | - | - |
 | GET | /internal/ai/characters/{pixelCharSn}/sheets?itemSns= | 합성용 시트 정보(주양육자만, 관리자 쿠키면 남의 캐릭터도(전체 굽기 FN-ADM-070-02), 안 산 아이템도 조회). 맨몸 시트가 없으면 404 `PIXEL_CHARACTER_NOT_FOUND` | MYP-010-13, MYP-011-01·06 | LJS | - | CharacterSheetsResponse |
@@ -104,7 +105,9 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 | --- | --- | --- | --- | --- |
 | itemSn | Long | Y | | ITEM.ITEM_SN |
 | regnCd | String | Y | 부위 MYPG01 | ITEM.ITEM_REGN_CD |
-| bakeHint | String | Y | 영어 한 문장 굽기 지시 | ITEM.BAKE_HINT |
+| bakeHint | String | N | 영어 한 문장 굽기 지시. 그림 참고 아이템은 null일 수 있다 | ITEM.BAKE_HINT |
+| bakeImgRefYn | boolean | Y | true면 아이템 그림을 참고로 굽는다 | ITEM.BAKE_IMG_REF_YN |
+| atchFileSn | Long | Y | 아이템 그림 파일 번호(그림이 바뀌면 번호가 바뀐다). 그림은 `/internal/ai/items/{itemSn}/bake-image` | ITEM.ATCH_FILE_SN |
 
 ### BakeTargetPageResponse
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
@@ -234,6 +237,7 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 | sortSeq | Long | Y | 부위 안 상점 순서 | ITEM.SORT_SEQ |
 | atchFileSn | Long | Y | 이미지는 `/admin/items/{itemSn}/image`로 연다 | ITEM.ATCH_FILE_SN |
 | bakeHint | String | N | 굽기 지시, 없으면 null | ITEM.BAKE_HINT |
+| bakeImgRefYn | boolean | Y | 그림 참고 굽기면 true | ITEM.BAKE_IMG_REF_YN |
 | hldMbrCnt | Long | Y | 보유 회원 수(그 아이템을 보유한 캐릭터 수, 캐릭터는 반려동물당 1개) | HLD_ITEM |
 
 ### AdminItemCreateRequest
@@ -244,7 +248,8 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 | itemNm | String | Y | 1~50자, 앞뒤 공백 제거. 같은 이름 409 | ITEM.ITEM_NM |
 | needPnt | Long | Y | 0~1,000,000 | ITEM.NEED_PNT |
 | ntslYn | Boolean | Y | | ITEM.NTSL_YN |
-| bakeHint | String | N | 300자 이하, 비우면 굽지 않음. 신발(MYPC0006)은 사용 안 하는 부위라 등록 400(부위 검사). 초안은 AI `/ai/items/bake-hints` | ITEM.BAKE_HINT |
+| bakeHint | String | N | 300자 이하, 비우고 `bakeImgRefYn`도 false면 굽지 않음. 신발(MYPC0006)은 사용 안 하는 부위라 등록 400(부위 검사). 초안은 AI `/ai/items/bake-hints` | ITEM.BAKE_HINT |
+| bakeImgRefYn | Boolean | N | true면 굽기 지시 없이도 굽기 대상이고 아이템 그림을 참고로 굽는다. 없으면 false | ITEM.BAKE_IMG_REF_YN |
 | image | MultipartFile | Y | 이미지 파일(형식·용량은 공통 파일 규칙) | ITEM.ATCH_FILE_SN |
 
 ### AdminItemCreateResponse
@@ -261,6 +266,7 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 | needPnt | Long | N | 0~1,000,000 | ITEM.NEED_PNT |
 | ntslYn | Boolean | N | false면 판매 중지 | ITEM.NTSL_YN |
 | bakeHint | String | N | 300자 이하. 빈 문자열이면 지운다 | ITEM.BAKE_HINT |
+| bakeImgRefYn | Boolean | N | 그림 참고 굽기 여부. 바꿔도 이미 구운 착용 시트는 그대로다 | ITEM.BAKE_IMG_REF_YN |
 | image | MultipartFile | N | 바꿀 때만 | ITEM.ATCH_FILE_SN |
 
 ### AdminItemOrderRequest

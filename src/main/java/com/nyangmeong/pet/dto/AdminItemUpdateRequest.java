@@ -18,5 +18,6 @@ public record AdminItemUpdateRequest(
         @Min(0) @Max(1_000_000) Long needPnt,
         Boolean ntslYn,
         @Size(max = 300) String bakeHint,
+        Boolean bakeImgRefYn,
         MultipartFile image) {
 }

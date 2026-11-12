@@ -2,10 +2,14 @@
 
 ## 지금 하는 것
 
-SCR-AIM-004 AI 대화 · 대화창 도구 조건 조정 — 끝 (2026-11-11). `list_care_schedules` 도구 뺌, `GET /api/places` 좌표 6칸 선택(전부 생략 시 전국 정확도순·`distance` null, 일부·`DISTANCE`는 400), `GET /api/place-bookmarks` `plcClsfCd` 선택(생략 시 전체 분류), 가짜 장소 검색도 좌표 없음 처리(추가-1~3). 검증 1회차 통과·사람 확인 (승인 2026-11-11 14:53, 시작 2026-11-11 14:50)
+SCR-MYP-011 아이템 상점 모달 · 픽셀 아이템 그림 참고 굽기 내부 API — 끝 (2026-11-12). `ITEM.BAKE_IMG_REF_YN`(v0.14 (11)) 추가, 굽기 대상 조건을 "굽기 지시가 있거나 그림 참고"로, `bake-items` 응답에 `bakeImgRefYn`·`atchFileSn`, 새 `GET /internal/ai/items/{itemSn}/bake-image`, 관리자 아이템 등록·수정·목록에 `bakeImgRefYn`. 검증 3회차 통과·사람 확인 (승인 2026-11-11 22:25, 시작 2026-11-11 22:21)
 
 ## 다음에 할 것
 
+- ai 세션에 알린다(SCR-MYP-011 그림 참고 굽기 끝, 백엔드 커밋·develop 병합 뒤): `GET /internal/ai/characters/bake-items` 행에 `bakeImgRefYn`(boolean)·`atchFileSn`이 더 있고 그림 참고 아이템은 `bakeHint`가 null일 수 있다. 그림은 `GET /internal/ai/items/{itemSn}/bake-image`(회원·관리자 쿠키, 굽기 대상이 아니면 404 `ITEM_NOT_FOUND`). 응답 `Content-Type`은 저장된 형식(jpg·png·webp) 그대로다 — PNG만 받아야 하면 알려 달라(등록 때 형식 제한 또는 변환을 정한다). 계약은 `docs/api/pet.md`, ai `docs/api/internal.md` bake-items 행과 새 행은 ai 저장소에서 고친다
+- SCR-MYP-011 연결 남음: FN-MYP-011-01 (ai 연결 그림 참고 굽기 구현, ai 저장소에서 /start), FN-ADM-070-02 (프론트 연결 관리자 아이템 등록·수정 화면 "그림 참고 굽기" 칸, 프론트 저장소에서 /start. 프론트 마일스톤 절 "SCR-ADM-070 아이템 · 그림 참고 굽기 칸 — 대기" 넣음)
+- 팀에 알린다(PR 본문 "DB 변경 있음, v0.14 (11)", 공용 DB에는 이미 반영됨 2026-11-11 확인): 기준 SQL `ITEM.BAKE_IMG_REF_YN char(1) NOT NULL DEFAULT 'N'`·체크 `CK_ITEM_BAKE_IMG_REF_YN` 추가. 각자 로컬 DB에 그 절을 실행한다. 실행 전 DB에서는 `bake-items`와 관리자 아이템 목록·등록·수정이 실패한다
+- 정하기(사람): 기존 아이템을 그림 참고로 바꿀 때 이미 구운 착용 시트를 다시 굽게 할지(지금은 `bakeImgRefYn`을 바꿔도 시트를 지우지 않는다. 굽기 지시를 바꾸면 지우는 기존 동작과 다르다)
 - ai-cb에 알린다(SCR-AIM-004 끝, 백엔드 커밋·develop 병합 뒤): `list_care_schedules`는 도구 목록에서 빠졌다(`list_my_care_schedules`만). `list_places`는 좌표 6칸이 선택(모두 생략하면 전국 정확도순·`distance` null, 일부만이면 400 `data[].field`에 빠진 칸, 좌표 없이 `sort=DISTANCE`는 400 `field`=`sort`). `list_place_bookmarks`의 `plcClsfCd`는 선택(생략하면 전체 분류). tool_prompts.yaml skip 해제와 스냅샷 갱신은 ai 저장소에서
 - YAY에게 알린다(PR 전, SCR-AIM-004, 사전 확인 받음 2026-11-11): 플레이스 `PlaceSearchCond` 좌표 `@NotNull` 제거와 서비스 검사, `PlaceSearchQuery.hasArea()`, `KakaoPlaceSearchClient`·`FakePlaceSearchClient` 좌표 없음 처리, 즐겨찾기 `plcClsfCd` 선택(매퍼 `<if>`). 좌표·분류를 보내는 기존 요청은 그대로. 바꾼 테스트: `PlaceControllerTest`(좌표 없이 분류만 → 서비스로 넘김), `PlaceBookmarkControllerTest`(분류 없음 → 전체), `PlaceAiToolCatalogTest`(required 표시)
 - JAJ에게 알린다(PR 전, SCR-AIM-004): `CareScheduleController`의 `list_care_schedules` `@AiTool`만 지웠다(화면 API 그대로). `HealthAiToolCatalogTest` READ 13 → 12, `MyCareScheduleAiToolCatalogTest`는 "회원 단위 하나만 실림"으로 바꿨다

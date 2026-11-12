@@ -55,6 +55,17 @@ public class ItemService {
     }
 
     /**
+     * 굽기 참고용 아이템 그림 조회 (굽기 대상만)
+     */
+    @Transactional(readOnly = true)
+    public StoredFile getBakeImage(Long itemSn) {
+        if (itemMapper.countBakeItem(itemSn) == 0) {
+            throw new CustomException(ErrorCode.ITEM_NOT_FOUND);
+        }
+        return getImage(itemSn);
+    }
+
+    /**
      * 상점 아이템 목록 조회
      */
     @Transactional(readOnly = true)

@@ -34,7 +34,7 @@ public interface ItemMapper {
             @Param("itemSns") List<Long> itemSns);
 
     /**
-     * 굽기 대상 아이템 조회 (판매 중이고 굽기 지시 있음)
+     * 굽기 대상 아이템 조회 (판매 중이고 굽기 지시가 있거나 그림 참고 굽기)
      */
     List<BakeItemSummary> selectBakeItems();
 

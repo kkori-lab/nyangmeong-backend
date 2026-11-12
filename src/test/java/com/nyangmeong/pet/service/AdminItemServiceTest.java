@@ -58,7 +58,7 @@ class AdminItemServiceTest {
     }
 
     private AdminItemUpdateRequest update(String regnCd, String bakeHint, Boolean ntslYn) {
-        return new AdminItemUpdateRequest(regnCd, null, null, ntslYn, bakeHint, null);
+        return new AdminItemUpdateRequest(regnCd, null, null, ntslYn, bakeHint, null, null);
     }
 
     @Test
@@ -66,7 +66,7 @@ class AdminItemServiceTest {
         when(fileStore.store(any(), anyString())).thenReturn(11L);
         when(itemMapper.selectMaxSortSeq("MYPC0001")).thenReturn(5L);
 
-        service.create(1L, new AdminItemCreateRequest("MYPC0001", " 새 모자 ", 300L, true, " a hat ", image));
+        service.create(1L, new AdminItemCreateRequest("MYPC0001", " 새 모자 ", 300L, true, " a hat ", null, image));
 
         ArgumentCaptor<Item> captor = ArgumentCaptor.forClass(Item.class);
         verify(itemMapper).insert(captor.capture());
@@ -83,14 +83,14 @@ class AdminItemServiceTest {
         when(itemMapper.insert(any())).thenThrow(new DuplicateKeyException("dup"));
 
         assertThatThrownBy(
-                () -> service.create(1L, new AdminItemCreateRequest("MYPC0001", "밀짚모자", 300L, true, null, image)))
+                () -> service.create(1L, new AdminItemCreateRequest("MYPC0001", "밀짚모자", 300L, true, null, null, image)))
                 .extracting("errorCode").isEqualTo(ErrorCode.ITEM_NAME_DUPLICATED);
     }
 
     @Test
     void 신발에_굽기_지시를_주면_400() {
         assertThatThrownBy(
-                () -> service.create(1L, new AdminItemCreateRequest("MYPC0006", "장화", 300L, true, "boots", image)))
+                () -> service.create(1L, new AdminItemCreateRequest("MYPC0006", "장화", 300L, true, "boots", null, image)))
                 .extracting("errorCode").isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
         verify(itemMapper, never()).insert(any());
     }
@@ -98,7 +98,7 @@ class AdminItemServiceTest {
     @Test
     void 신발은_사용하지_않는_부위라_등록하면_400() {
         assertThatThrownBy(
-                () -> service.create(1L, new AdminItemCreateRequest("MYPC0006", "장화", 300L, true, null, image)))
+                () -> service.create(1L, new AdminItemCreateRequest("MYPC0006", "장화", 300L, true, null, null, image)))
                 .extracting("errorCode").isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
         verify(itemMapper, never()).insert(any());
     }
@@ -122,7 +122,7 @@ class AdminItemServiceTest {
     @Test
     void 없는_부위면_400() {
         assertThatThrownBy(
-                () -> service.create(1L, new AdminItemCreateRequest("MYPC9999", "모자", 300L, true, null, image)))
+                () -> service.create(1L, new AdminItemCreateRequest("MYPC9999", "모자", 300L, true, null, null, image)))
                 .extracting("errorCode").isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
     }
 
@@ -220,5 +220,28 @@ class AdminItemServiceTest {
                     .extracting("errorCode").isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
         }
         verify(itemMapper, never()).updateSortSeq(anyLong(), anyLong(), anyString());
+    }
+
+    @Test
+    void 그림_참고_굽기로_등록하면_굽기_지시_없이_Y로_넣는다() {
+        when(fileStore.store(any(), anyString())).thenReturn(11L);
+
+        service.create(1L, new AdminItemCreateRequest("MYPC0001", "거북이 가방", 300L, true, null, true, image));
+
+        ArgumentCaptor<Item> captor = ArgumentCaptor.forClass(Item.class);
+        verify(itemMapper).insert(captor.capture());
+        assertThat(captor.getValue().getBakeImgRefYn()).isEqualTo("Y");
+        assertThat(captor.getValue().getBakeHint()).isNull();
+    }
+
+    @Test
+    void 그림_참고_굽기를_안_보내면_N으로_등록한다() {
+        when(fileStore.store(any(), anyString())).thenReturn(11L);
+
+        service.create(1L, new AdminItemCreateRequest("MYPC0001", "털모자", 300L, true, "a fur hat", null, image));
+
+        ArgumentCaptor<Item> captor = ArgumentCaptor.forClass(Item.class);
+        verify(itemMapper).insert(captor.capture());
+        assertThat(captor.getValue().getBakeImgRefYn()).isEqualTo("N");
     }
 }

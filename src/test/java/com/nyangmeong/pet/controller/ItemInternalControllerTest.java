@@ -3,6 +3,7 @@ package com.nyangmeong.pet.controller;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -18,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.error.GlobalExceptionHandler;
+import com.nyangmeong.global.file.StoredFile;
 import com.nyangmeong.global.log.SensitiveDataMasker;
 import com.nyangmeong.global.security.AuthMemberMapper;
 import com.nyangmeong.global.security.SecurityConfig;
@@ -41,6 +43,7 @@ import com.nyangmeong.pet.service.ItemService;
 class ItemInternalControllerTest {
 
     private static final String URL = "/internal/ai/items/7/bake-targets";
+    private static final String BAKE_IMAGE_URL = "/internal/ai/items/7/bake-image";
 
     @Autowired
     MockMvc mockMvc;
@@ -77,6 +80,33 @@ class ItemInternalControllerTest {
     @Test
     void 로그인하지_않으면_401() throws Exception {
         mockMvc.perform(get(URL))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 회원_쿠키로_굽기_참고_그림을_받는다() throws Exception {
+        when(itemService.getBakeImage(7L)).thenReturn(new StoredFile(new byte[] {1, 2, 3}, "image/png", "hat.png"));
+
+        mockMvc.perform(get(BAKE_IMAGE_URL))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("image/png"))
+                .andExpect(content().bytes(new byte[] {1, 2, 3}));
+    }
+
+    @Test
+    @WithMockLoginMember(mbrAuthrtCd = "USRC0005")
+    void 굽기_대상이_아닌_아이템의_그림은_404() throws Exception {
+        when(itemService.getBakeImage(7L)).thenThrow(new CustomException(ErrorCode.ITEM_NOT_FOUND));
+
+        mockMvc.perform(get(BAKE_IMAGE_URL))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("ITEM_NOT_FOUND"));
+    }
+
+    @Test
+    void 로그인하지_않으면_그림도_401() throws Exception {
+        mockMvc.perform(get(BAKE_IMAGE_URL))
                 .andExpect(status().isUnauthorized());
     }
 }

@@ -31,6 +31,7 @@ import lombok.RequiredArgsConstructor;
  * - 삭제 없음 : 판매 중지(NTSL_YN='N'), 이미 산 회원의 보유는 그대로
  * - 굽기 지시가 바뀌면 그 아이템의 착용 시트를 지워 다시 굽기 대상으로 (사람 결정 2026-11-03)
  * - 신발은 굽지 않아 굽기 지시를 넣을 수 없음
+ * - 그림 참고 굽기(BAKE_IMG_REF_YN='Y')면 굽기 지시 없이도 굽기 대상, 바꿔도 이미 구운 시트는 그대로
  */
 @Service
 @RequiredArgsConstructor
@@ -45,10 +46,10 @@ public class AdminItemService {
 
     /** 감사 로그 전후 값 */
     private record ItemState(String itemRegnCd, String itemNm, Long needPnt, String ntslYn, Long sortSeq,
-            String bakeHint, Long atchFileSn) {
+            String bakeHint, String bakeImgRefYn, Long atchFileSn) {
         static ItemState from(Item item) {
             return new ItemState(item.getItemRegnCd(), item.getItemNm(), item.getNeedPnt(), item.getNtslYn(),
-                    item.getSortSeq(), item.getBakeHint(), item.getAtchFileSn());
+                    item.getSortSeq(), item.getBakeHint(), item.getBakeImgRefYn(), item.getAtchFileSn());
         }
     }
 
@@ -84,6 +85,7 @@ public class AdminItemService {
         item.setSortSeq(itemMapper.selectMaxSortSeq(req.itemRegnCd()) + 1);
         item.setNtslYn(toYn(req.ntslYn()));
         item.setBakeHint(bakeHint);
+        item.setBakeImgRefYn(toYn(req.bakeImgRefYn()));
         item.setRgtrId(actorId);
         item.setMdfrId(actorId);
         try {
@@ -124,6 +126,7 @@ public class AdminItemService {
         item.setNeedPnt(req.needPnt());
         item.setNtslYn(req.ntslYn() == null ? null : toYn(req.ntslYn()));
         item.setBakeHint(bakeHint);
+        item.setBakeImgRefYn(req.bakeImgRefYn() == null ? null : toYn(req.bakeImgRefYn()));
         if (req.image() != null && !req.image().isEmpty()) {
             item.setAtchFileSn(fileStore.store(req.image(), actorId));
         }

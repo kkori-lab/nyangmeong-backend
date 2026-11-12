@@ -187,6 +187,24 @@ class CharacterInternalControllerTest {
 
     @Test
     @WithMockLoginMember
+    void 그림_참고_아이템은_굽기_지시_없이_그림_번호와_함께_나온다() throws Exception {
+        BakeItemSummary item = new BakeItemSummary();
+        item.setItemSn(8L);
+        item.setRegnCd("MYPC0002");
+        item.setBakeImgRefYn(true);
+        item.setAtchFileSn(50L);
+        when(characterSheetService.searchBakeItems()).thenReturn(List.of(item));
+
+        mockMvc.perform(get(BASE + "/bake-items"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].itemSn").value(8))
+                .andExpect(jsonPath("$.data[0].bakeHint").doesNotExist())
+                .andExpect(jsonPath("$.data[0].bakeImgRefYn").value(true))
+                .andExpect(jsonPath("$.data[0].atchFileSn").value(50));
+    }
+
+    @Test
+    @WithMockLoginMember
     void 착용_시트는_PUT_multipart로_저장한다() throws Exception {
         mockMvc.perform(multipart(HttpMethod.PUT, BASE + "/3/item-sheets/7").file(sheet).header(REQUESTED_WITH, XHR))
                 .andExpect(status().isOk());
