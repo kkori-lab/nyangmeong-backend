@@ -18,5 +18,6 @@ public class AdminItemSummary {
     private Long sortSeq;
     private Long atchFileSn;
     private String bakeHint;
+    private Boolean bakeImgRefYn;
     private Long hldMbrCnt;
 }

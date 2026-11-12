@@ -14,6 +14,8 @@
         <id     column="ITEM_SN"         property="itemSn" />
         <result column="ITEM_REGN_CD"    property="regnCd" />
         <result column="BAKE_HINT"       property="bakeHint" />
+        <result column="BAKE_IMG_REF_YN" property="bakeImgRefYn" />
+        <result column="ATCH_FILE_SN"    property="atchFileSn" />
     </resultMap>
 
     <resultMap id="itemResultMap" type="com.nyangmeong.pet.domain.Item">
@@ -25,6 +27,7 @@
         <result column="SORT_SEQ"     property="sortSeq" />
         <result column="NTSL_YN"      property="ntslYn" />
         <result column="BAKE_HINT"    property="bakeHint" />
+        <result column="BAKE_IMG_REF_YN" property="bakeImgRefYn" />
         <result column="REG_DT"       property="regDt" />
         <result column="MDFCN_DT"     property="mdfcnDt" />
         <result column="RGTR_ID"      property="rgtrId" />
@@ -41,6 +44,7 @@
         <result column="SORT_SEQ"        property="sortSeq" />
         <result column="ATCH_FILE_SN"    property="atchFileSn" />
         <result column="BAKE_HINT"       property="bakeHint" />
+        <result column="BAKE_IMG_REF_YN" property="bakeImgRefYn" />
         <result column="HLD_MBR_CNT"     property="hldMbrCnt" />
     </resultMap>
 
@@ -94,9 +98,12 @@
         SELECT ITEM_SN
              , ITEM_REGN_CD
              , BAKE_HINT
+             , CASE WHEN BAKE_IMG_REF_YN = 'Y' THEN TRUE ELSE FALSE END AS BAKE_IMG_REF_YN
+             , ATCH_FILE_SN
           FROM ITEM
          WHERE NTSL_YN = 'Y'
-           AND BAKE_HINT IS NOT NULL
+           AND ( BAKE_HINT IS NOT NULL
+              OR BAKE_IMG_REF_YN = 'Y' )
          ORDER BY ITEM_SN
     </select>
 
@@ -106,7 +113,8 @@
           FROM ITEM
          WHERE ITEM_SN = #{itemSn}
            AND NTSL_YN = 'Y'
-           AND BAKE_HINT IS NOT NULL
+           AND ( BAKE_HINT IS NOT NULL
+              OR BAKE_IMG_REF_YN = 'Y' )
     </select>
 
     <insert id="insertHeldItems">
@@ -140,6 +148,7 @@
              , I.SORT_SEQ
              , I.ATCH_FILE_SN
              , I.BAKE_HINT
+             , CASE WHEN I.BAKE_IMG_REF_YN = 'Y' THEN TRUE ELSE FALSE END AS BAKE_IMG_REF_YN
              , ( SELECT COUNT(*)
                    FROM HLD_ITEM H
                    JOIN PIXEL_CHAR P
@@ -171,6 +180,7 @@
              , SORT_SEQ
              , NTSL_YN
              , BAKE_HINT
+             , BAKE_IMG_REF_YN
              , REG_DT
              , MDFCN_DT
              , RGTR_ID
@@ -216,6 +226,7 @@
              , SORT_SEQ
              , NTSL_YN
              , BAKE_HINT
+             , BAKE_IMG_REF_YN
              , REG_DT
              , MDFCN_DT
              , RGTR_ID
@@ -228,6 +239,7 @@
              , #{sortSeq}
              , #{ntslYn}
              , #{bakeHint}
+             , #{bakeImgRefYn}
              , NOW()
              , NOW()
              , #{rgtrId}
@@ -259,6 +271,9 @@
             </if>
             <if test="bakeHintChanged">
              , BAKE_HINT = #{item.bakeHint}
+            </if>
+            <if test="item.bakeImgRefYn != null">
+             , BAKE_IMG_REF_YN = #{item.bakeImgRefYn}
             </if>
          WHERE ITEM_SN = #{item.itemSn}
     </update>

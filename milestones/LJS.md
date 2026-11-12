@@ -725,3 +725,12 @@
 - 완료 조건 결과: 검증 `통과`(2026-11-06, 1회차), 사람 확인 2026-11-06(Postman: 쿠키 없이 `GET /internal/ai/tools` 200·도구 15개, 카드 2개는 바뀌기 전과 같음, 기동·첫 호출 뒤 `[AiTool] 제외` 없음). 정한 것: 경로 변수와 같은 이름의 검색 조건 필드는 뺌(서비스가 덮어씀), `PageQuery`는 `page`·`size`(max 50)만, 읽기 결과 자르기는 Java 기존 상한 그대로·나머지 Python 요약, 기존 테스트 `search_fake` 기대값 변경(사람 결정, 별도 커밋). 계약은 `docs/api/ai.md`
 - 추가: 없음
 - 연결 남음: 걸치는 기능 FN-AIM-004-02 (ai 저장소 ① READ 실행 경로 → ② `data/tool_prompts.yaml` 13개 설명·스냅샷 갱신, ai 세션)
+
+## SCR-MYP-011 아이템 상점 모달 · 픽셀 아이템 그림 참고 굽기 내부 API — 끝
+- 기능: 명세 기능 ID 추가 없음(ai 저장소 설계 `docs/design/pixel-character-engine.md` 9절, 사람 결정 2026-11-11 "굽기에 상점 그림을 둘째 그림으로"), 걸치는 기능 FN-MYP-011-01, FN-ADM-070-02
+- 기다리는 것: 없음. AI 서버 마일스톤 "SCR-MYP-011 아이템 굽기 · 픽셀 아이템 그림을 참고로 굽기 — 대기"가 이 작업을 기다린다
+- 완료 조건: 그림 참고로 등록한 아이템(`bakeHint` 없음, `bakeImgRefYn` true)이 `GET /internal/ai/characters/bake-items`에 `bakeImgRefYn: true`·`atchFileSn`과 함께 나오고, `GET /internal/ai/items/{itemSn}/bake-image`가 그 그림 바이트를 준다. 기존 아이템은 `bakeImgRefYn: false`로 늘어난 칸 말고 그대로다. 굽기 지시도 그림 참고도 없는 아이템은 목록에 없고 `bake-image`·착용 시트 저장이 404 `ITEM_NOT_FOUND`다. DB 기준 SQL v0.14 (11) `ITEM.BAKE_IMG_REF_YN`
+- 완료 조건 결과: 검증 `통과`(2026-11-12, 3회차. 1회차는 서버가 바뀌기 전 코드, 2회차는 공용 DB에 그림 참고 아이템이 없어 실측 못 함 — 둘 다 코드 수정 없음), 사람 확인 2026-11-12(공용 DB 8080). 정한 것: 판별 컬럼 `ITEM.BAKE_IMG_REF_YN`(기존 아이템 'N'), 그림은 새 내부 API `GET /internal/ai/items/{itemSn}/bake-image`(회원·관리자 쿠키, 저장된 형식 그대로 응답), 그림 참고 아이템의 `bakeHint`는 선택, `bakeImgRefYn`을 바꿔도 이미 구운 착용 시트는 지우지 않음(다시 굽기 범위 밖). 기존 테스트 `AdminItemServiceTest` 생성자 호출 6곳에 `null` 인자 추가(사람 승인, 기대값 그대로). 확인용 아이템 47·48은 공용 DB에서 지움(첨부 4531·4532 기록은 남음)
+- 추가: 없음
+- 연결 남음: FN-ADM-070-02 (프론트 연결 관리자 아이템 등록·수정 화면 "그림 참고 굽기" 칸, 프론트 저장소에서 /start)
+- 연결 남음: FN-MYP-011-01 (ai 연결 `docs/api/internal.md` bake-items 행·새 `bake-image` 행과 그림 참고 굽기 구현, LJS ai 저장소에서 /start)
