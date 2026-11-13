@@ -477,14 +477,14 @@ class MemberControllerTest {
     @Test
     @WithMockLoginMember(id = 5L)
     void SNS_연동은_로그인_회원의_번호와_요청으로_부르고_회원_응답을_준다() throws Exception {
-        when(memberSnsLinkService.link(eq(5L), any(MemberSnsLinkRequest.class))).thenReturn(memberResponse);
+        when(memberSnsLinkService.link(eq(5L), any(MemberSnsLinkRequest.class), any())).thenReturn(memberResponse);
 
         mockMvc.perform(linkSns("{\"snsOffrCd\":\"USRC0007\",\"code\":\"fake-a\",\"state\":\"s\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.joinPathCd").value("USRC0006"));
 
         ArgumentCaptor<MemberSnsLinkRequest> captor = ArgumentCaptor.forClass(MemberSnsLinkRequest.class);
-        verify(memberSnsLinkService).link(eq(5L), captor.capture());
+        verify(memberSnsLinkService).link(eq(5L), captor.capture(), any());
         assertThat(captor.getValue().snsOffrCd()).isEqualTo("USRC0007");
         assertThat(captor.getValue().code()).isEqualTo("fake-a");
         assertThat(captor.getValue().state()).isEqualTo("s");
@@ -493,7 +493,7 @@ class MemberControllerTest {
     @Test
     @WithMockLoginMember(id = 5L)
     void SNS_연동에서_다른_회원의_계정이면_409다() throws Exception {
-        when(memberSnsLinkService.link(eq(5L), any(MemberSnsLinkRequest.class)))
+        when(memberSnsLinkService.link(eq(5L), any(MemberSnsLinkRequest.class), any()))
                 .thenThrow(new CustomException(ErrorCode.SNS_ACCOUNT_LINKED_TO_OTHER));
 
         mockMvc.perform(linkSns("{\"snsOffrCd\":\"USRC0007\",\"code\":\"fake-a\"}"))
@@ -507,7 +507,7 @@ class MemberControllerTest {
         mockMvc.perform(linkSns("{\"snsOffrCd\":\"USRC0007\"}"))
                 .andExpect(status().isBadRequest());
 
-        verify(memberSnsLinkService, never()).link(any(), any());
+        verify(memberSnsLinkService, never()).link(any(), any(), any());
     }
 
     @Test
@@ -515,7 +515,7 @@ class MemberControllerTest {
         mockMvc.perform(linkSns("{\"snsOffrCd\":\"USRC0007\",\"code\":\"fake-a\"}"))
                 .andExpect(status().isUnauthorized());
 
-        verify(memberSnsLinkService, never()).link(any(), any());
+        verify(memberSnsLinkService, never()).link(any(), any(), any());
     }
 
     private MockHttpServletRequestBuilder verifyPassword(String body) {

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -120,8 +121,9 @@ public class MemberController {
     @Operation(summary = "SNS 계정 연동(로그인 상태)")
     @PostMapping("/me/sns-links")
     public ResponseEntity<ApiResponse<MemberResponse>> linkSns(@AuthenticationPrincipal LoginMember me,
-            @Valid @RequestBody MemberSnsLinkRequest req) {
-        return ResponseEntity.ok(ApiResponse.success(memberSnsLinkService.link(me.id(), req)));
+            @Valid @RequestBody MemberSnsLinkRequest req,
+            @RequestHeader(value = HttpHeaders.ORIGIN, required = false) String origin) {
+        return ResponseEntity.ok(ApiResponse.success(memberSnsLinkService.link(me.id(), req, origin)));
     }
 
     @Operation(summary = "현재 비밀번호 확인(회원정보 수정 본인 확인)")

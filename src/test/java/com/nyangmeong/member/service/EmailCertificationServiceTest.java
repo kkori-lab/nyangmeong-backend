@@ -282,6 +282,31 @@ class EmailCertificationServiceTest {
     }
 
     @Test
+    void 직전_인증을_틀려_무효가_됐으면_간격_안이어도_곧바로_다시_보낼_수_있다() {
+        when(mapper.selectRegDtList(eq(emailHmac), anyString(), any()))
+                .thenReturn(List.of(LocalDateTime.now().minusSeconds(20)));
+        when(mapper.countLatestFailLocked(emailHmac, EmailCertPurpose.SIGNUP.getCode(), 5)).thenReturn(1);
+
+        assertThat(service.send(sendRequest()).succeeded()).isTrue();
+        verify(mapper).insert(any());
+    }
+
+    @Test
+    void 직전_인증을_틀렸어도_집계_구간_발송_횟수가_차면_거절한다() {
+        LocalDateTime now = LocalDateTime.now();
+        List<LocalDateTime> recent = List.of(now.minusMinutes(50), now.minusMinutes(40), now.minusMinutes(30),
+                now.minusMinutes(20), now.minusSeconds(20));
+        when(mapper.selectRegDtList(eq(emailHmac), anyString(), any())).thenReturn(recent);
+        when(mapper.countLatestFailLocked(emailHmac, EmailCertPurpose.SIGNUP.getCode(), 5)).thenReturn(1);
+
+        EmailCertificationResult result = service.send(sendRequest());
+
+        assertThat(result.error()).isEqualTo(ErrorCode.EMAIL_CERT_RESEND_NOT_YET);
+        assertThat(result.response().resendAvailableDt()).isEqualTo(recent.get(0).plusMinutes(60));
+        verify(mapper, never()).insert(any());
+    }
+
+    @Test
     void 확인에_성공하면_완료_시각을_남기고_가입_진행_결과를_준다() {
         when(mapper.selectBySn(3L)).thenReturn(freshCert(0));
 

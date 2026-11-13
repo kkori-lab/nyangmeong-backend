@@ -1,9 +1,11 @@
 package com.nyangmeong.auth.controller;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -70,8 +72,8 @@ public class AuthLoginController {
     @Operation(summary = "SNS 로그인(네이버·카카오·구글 인가 코드)")
     @PostMapping("/sns-login")
     public ResponseEntity<ApiResponse<SnsLoginResponse>> snsLogin(@Valid @RequestBody SnsLoginRequest req,
-            HttpServletResponse response) {
-        SnsLoginResult result = snsLoginService.login(req);
+            @RequestHeader(value = HttpHeaders.ORIGIN, required = false) String origin, HttpServletResponse response) {
+        SnsLoginResult result = snsLoginService.login(req, origin);
         if (result.loginMbrSn() != null) {
             loginSessionManager.issue(result.loginMbrSn(), response);
         }
