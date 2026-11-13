@@ -64,7 +64,7 @@ class AiHealthReportServiceTest {
     private PetResponse pet(String vrtyNm, String vrtyDrctInptNm) {
         return new PetResponse(PET, "콩이", "PETC0001", null, vrtyNm, vrtyDrctInptNm, "PETC0003",
                 LocalDate.of(2024, 11, 5), new BigDecimal("4.2"), "PETC0010", null, null, null, null, null,
-                "PETC0020", true, true, new BigDecimal("4.000"), null, null, List.of());
+                "PETC0020", true, true, new BigDecimal("4.000"), null, null, "Y", List.of());
     }
 
     private DailyHealthRecordSummary record(long sn, DailyRecordIndicator indicator, String value,

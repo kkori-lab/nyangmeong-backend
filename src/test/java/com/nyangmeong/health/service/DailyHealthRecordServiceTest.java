@@ -77,7 +77,7 @@ class DailyHealthRecordServiceTest {
 
     private static PetResponse pet(BigDecimal petBdwg) {
         return new PetResponse(PET, null, null, null, null, null, null, null, petBdwg, null, null, null, null,
-                null, null, null, false, false, null, null, null, List.of());
+                null, null, null, false, false, null, null, null, "Y", List.of());
     }
 
     private static DailyHealthRecord record(String indicator, BigDecimal value, String stool) {

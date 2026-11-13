@@ -13,6 +13,7 @@ import jakarta.validation.constraints.Size;
 /**
  * [반려동물 등록 요청]
  * - 품종은 vrtySn·vrtyDrctInptNm 중 하나, 털색 직접 입력이면 colrDrctInptNm 필수 (서비스에서 검사)
+ * - bdwgRngDrctInptYn : 'Y' 직접 입력(minBdwg·maxBdwg 필수), 'N' 자동 계산(두 값은 무시), 안 보내면 'Y'
  */
 public record PetCreateRequest(@NotBlank @Size(max = 20) String petNm,
         @NotBlank String petSeCd,
@@ -24,8 +25,9 @@ public record PetCreateRequest(@NotBlank @Size(max = 20) String petNm,
         @NotNull Boolean nutrYn,
         @NotNull @Positive @Digits(integer = 5, fraction = 3) BigDecimal petBdwg,
         @Positive @Digits(integer = 5, fraction = 3) BigDecimal goalBdwg,
-        @NotNull @Positive @Digits(integer = 5, fraction = 3) BigDecimal minBdwg,
-        @NotNull @Positive @Digits(integer = 5, fraction = 3) BigDecimal maxBdwg,
+        @Positive @Digits(integer = 5, fraction = 3) BigDecimal minBdwg,
+        @Positive @Digits(integer = 5, fraction = 3) BigDecimal maxBdwg,
+        @Pattern(regexp = "^[YN]$") String bdwgRngDrctInptYn,
         @NotBlank String colrCd,
         @Size(max = 20) String colrDrctInptNm,
         @Size(max = 1000) String chrcCn,
