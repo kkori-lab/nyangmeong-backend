@@ -273,7 +273,7 @@
 | --- | --- | --- | --- | --- |
 | ckupYmd | LocalDate | Y | 기본값 오늘, 미래 날짜 허용. 같은 날짜 병원 일정에 자동 연결(2건 이상이면 먼저 등록된 일정), 없으면 새로 만듦 | HLT-002-27·30, SCHDL.SCHDL_DT (CKUP_RCD에 검진일 컬럼 없음, `issues.md` API의 AI매니저·건강기록 1번) |
 | hsptlNm | String | Y | 최대 80자(직접 입력은 명세에 길이 없음, issues 11) | CKUP_RCD.HSPTL_NM, HLT-002-28 |
-| ckupTypeCd | String | Y | HLTG01 공통코드(정기검진·예방접종·질병진료·검사·기타 진료) | CKUP_RCD.CKUP_TYPE_CD, HLT-002-28 |
+| ckupTypeCd | String | Y | HLTG01 공통코드(정기검진·예방접종·질병진료·검사·기타진료) | CKUP_RCD.CKUP_TYPE_CD, HLT-002-28 |
 | ckupCn | String | N | 최대 500자 | CKUP_RCD.CKUP_CN, HLT-002-29 |
 | ckupMemoCn | String | N | 최대 200자. 일정 메모와 별개 | CKUP_RCD.CKUP_MEMO_CN, HLT-002-29 |
 | schdlSn | Long | N | [옮겨 연결하기]를 고른 경우만. 같은 반려동물·검진기록 미연결 병원 일정, 검진일 앞뒤 7일. 일정 날짜를 검진일로 옮기고 연결 | CKUP_RCD.SCHDL_SN, HLT-002-46 |
