@@ -46,6 +46,20 @@
          ORDER BY REG_DT, EML_CERT_SN
     </select>
 
+    <!-- 가장 최근 발송 인증 한 건이 틀린 횟수 제한으로 무효가 됐는지 -->
+    <select id="countLatestFailLocked" resultType="int">
+        SELECT COUNT(*)
+          FROM (SELECT CERT_FAIL_NMTM
+                     , CERT_INVLD_DT
+                  FROM EML_CERT
+                 WHERE CERT_TRGT_EML_HMAC = #{certTrgtEmlHmac}
+                   AND EML_CERT_PRPS_CD = #{emlCertPrpsCd}
+                 ORDER BY REG_DT DESC, EML_CERT_SN DESC
+                 LIMIT 1) LATEST
+         WHERE LATEST.CERT_INVLD_DT IS NOT NULL
+           AND LATEST.CERT_FAIL_NMTM &gt;= #{failLimit}
+    </select>
+
     <insert id="insert" parameterType="com.nyangmeong.member.domain.EmailCertification"
             useGeneratedKeys="true" keyProperty="emlCertSn">
         INSERT INTO EML_CERT (

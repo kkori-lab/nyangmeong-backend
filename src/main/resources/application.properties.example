@@ -25,6 +25,7 @@ app.jwt.refresh-token-expiry-ms=86400000
 # 쿠키 Secure 플래그. 운영(HTTPS)만 true
 app.cookie.secure=false
 # 쿠키를 실어 보낼 수 있는 프론트 오리진(쉼표 구분). 개발은 Vite 주소
+# SNS 토큰 교환의 redirect_uri 도 요청 Origin 이 이 목록에 있으면 그 주소로 정한다. 운영 서버는 운영 프론트 주소를 넣는다(예: http://localhost:5173,https://pawever.cloud)
 app.cors.allowed-origins=http://localhost:5173
 # 로그인 없이 여는 경로(쉼표 구분). 목록 밖은 전부 인증이 필요하다. 생략하면 아래와 같은 기본값
 app.security.permit-all-paths=/api/auth/dev-tokens,/api/auth/login,/api/auth/sns-login,/api/auth/login-attempt-limits,/api/auth/captchas,/api/auth/refresh,/api/auth/logout,/api/terms,/api/terms/*,/api/email-certifications,/api/email-certifications/*/verify,/api/email-certifications/*/invalidate,/api/email-certifications/*/password-reset,/api/members,/api/members/nickname-availability,/api/members/phone-availability,/api/members/recovery-info,/api/members/recovery,/api/members/me/nickname,/api/files/public/**,/swagger-ui/**,/swagger-ui.html,/v3/api-docs/**,/internal/ai/tools
@@ -55,7 +56,8 @@ spring.mail.properties.mail.smtp.timeout=5000
 spring.mail.properties.mail.smtp.writetimeout=5000
 
 # SNS 로그인. 이 줄이 없으면 실제 호출(real, 앱 키 필요)이다. 로컬에서 앱 키 없이 확인할 때만 fake 로 두고 code 를 fake-이름 으로 보낸다. 배포 서버에는 fake 를 두지 않는다
-# redirect-uri 는 비워 두면 app.front-base-url + /login/sns/{naver|kakao|google}/callback 이다. 환경마다 app.front-base-url 만 바꾸고, 그 주소를 제공자 콘솔에도 등록한다
+# redirect-uri 는 보통 비워 둔다. 요청 Origin 이 app.cors.allowed-origins 에 있으면 그 Origin + /login/sns/{naver|kakao|google}/callback, 아니면 이 값, 이것도 비면 app.front-base-url 기준이다
+# {baseUrl} 같은 자리표시자는 치환하지 않는다. 쓰는 프론트 주소마다 콜백 주소를 제공자 콘솔에 등록한다
 app.sns.client=fake
 app.sns.timeout-ms=3000
 app.sns.naver.client-id=

@@ -21,7 +21,7 @@ public class FakeSnsOAuthClient implements SnsOAuthClient {
     private static final String NO_EMAIL_SUFFIX = "-noemail";
 
     @Override
-    public SnsProfile fetchProfile(SnsProvider provider, String code, String state) {
+    public SnsProfile fetchProfile(SnsProvider provider, String code, String state, String requestOrigin) {
         if (code == null || !code.startsWith(CODE_PREFIX) || code.length() == CODE_PREFIX.length()) {
             throw new CustomException(ErrorCode.SNS_AUTH_FAILED);
         }

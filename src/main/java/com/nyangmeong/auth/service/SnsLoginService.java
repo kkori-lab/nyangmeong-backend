@@ -28,11 +28,19 @@ public class SnsLoginService {
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public SnsLoginResult login(SnsLoginRequest req) {
+        return login(req, null);
+    }
+
+    /**
+     * requestOrigin : 브라우저 요청의 Origin 헤더. 토큰 교환의 redirect_uri 를 프론트가 쓴 주소에 맞춘다
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public SnsLoginResult login(SnsLoginRequest req, String requestOrigin) {
         SnsProvider provider = SnsProvider.fromCode(req.snsOffrCd());
         if (provider == null) {
             throw new CustomException(ErrorCode.BAD_REQUEST);
         }
-        SnsProfile profile = snsOAuthClient.fetchProfile(provider, req.code(), req.state());
+        SnsProfile profile = snsOAuthClient.fetchProfile(provider, req.code(), req.state(), requestOrigin);
         return snsLoginProcessor.process(profile);
     }
 }
