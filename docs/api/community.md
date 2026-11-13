@@ -706,7 +706,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | regDt | LocalDateTime | Y | 경과 시간 표시 | PST.REG_DT, CMU-004-01 |
 | owner | Boolean | Y | 내 글 배지 | PST.MBR_SN, CMU-004-01 |
 
-목록 검색 조건(`CareRecruitmentSearchCond`, 쿼리): `rcrtSttsCd`(없으면 전체, `PCAC0001`이면 모집중), `mineYn`, `rgnSn`(하위 지역 포함), `prtcBgngDe`~`prtcEndDe`(일정이 기간과 겹치는 글, 일정 없는 글은 제외), `petSeCd`, `petSizeCd`(고양이만 고르면 무시). 모두 AND, 10건 최신순.
+목록 검색 조건(`CareRecruitmentSearchCond`, 쿼리): `rcrtSttsCd`(없으면 전체, `PCAC0001`이면 모집중), `mineYn`, `rgnSn`(하위 지역 포함), `prtcBgngDe`~`prtcEndDe`(일정이 기간과 겹치는 글, 일정 없는 글은 제외), `petSeCd`, `petSizeCd`(고양이만 고르면 무시). 모두 AND, 10건. 기본 정렬은 모집 상태 코드 오름차순(PCAC0001 모집중 → 0002 매칭완료 → 0003 거래완료), 같은 상태 안에서는 최신순.
 ### MinimumWageResponse
 쓰는 API: GET /care-recruitments/minimum-wage
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
