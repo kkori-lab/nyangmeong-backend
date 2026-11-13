@@ -53,7 +53,7 @@
 | tab | String | Y | 행의 탭(`CARE`·`COMMUNITY`·`INFO`). 유형 라벨은 화면이 정한다 | COM-004-04 |
 | notiTtl | String | Y | | INAPP_NOTI.NOTI_TTL |
 | notiCn | String | Y | | INAPP_NOTI.NOTI_CN |
-| mvmnPath | String | N | 유형별 이동 대상 | INAPP_NOTI.MVMN_PATH, COM-004-07 |
+| mvmnPath | String | N | 유형별 이동 대상. 펫돌봄 거래(AIMC0009)는 `/chat?otoChatRoomSn={방 번호}`이고 프론트가 쿼리의 방 번호로 채팅 모달을 연다 | INAPP_NOTI.MVMN_PATH, COM-004-07 |
 | prslDt | LocalDateTime | N | null이면 미읽음 | INAPP_NOTI.PRSL_DT, COM-004-06·11 |
 | regDt | LocalDateTime | Y | 받은 시각 | INAPP_NOTI.REG_DT |
 
