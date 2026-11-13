@@ -2,12 +2,31 @@
 
 ## 지금 하는 것
 
-끝남(커밋 전). SCR-HLT-007 검사 수치 결과값·참고범위를 0 이상, 정수 7자리·소수 둘째 자리까지로 제한(FN-HLT-007-02·03, ※신규 정책: 검사 수치 0 이상 · 정수 7자리). `InspectionValueCreateRequest`·`InspectionValueUpdateRequest`에 `@DecimalMin("0") @Digits(integer = 7, fraction = 2)`, DB decimal(15,4)는 그대로. PDF 분석 결과도 같은 `POST inspection-values`라 따로 막을 경로 없음. 공용 DB 확인: 까미(1번) 검진기록 5에서 -5·10000000·하한 -1 → 400, 9999999.99 → 201(확인 기록 INSP_NVL 3103 삭제함), PATCH -5 → 400(사람 확인 2026-11-11)
+끝남(커밋 전). 건강기록 문구 통일 DB 데이터 2건(2026-11-13).
+- 검진유형 HLTC0005 이름 '기타 진료' → '기타진료': `db/20261109_insert_base_data_v0.14.sql` 변경 절 v0.14 (13) 추가(본문은 그대로, 번호는 DDL 파일과 같이 매겨 (10)~(12)는 DDL이 씀). 시드(RGTR_ID='SEED') `SCHDL.SCHDL_NM` 93행, `CKUP_RCD.CKUP_CN` 문장 앞 '기타진료 진행.' 93행(다음 내원 시 재검 권장 38·특이사항 없음 29·약 처방 후 경과 관찰 26), `docs/api/health.md` ckupTypeCd 설명. 코드는 HLTC0005 코드 값으로만 비교해 고칠 곳 없음
+- 처방 투약 케어 항목명 '{약 이름} 복용' → 약 이름: 시드 `CARE_ARTCL` 208행(SN 2943~3271, 전부 PRSC.MDCN_NM과 일치). 서비스 코드는 이미 약 이름 그대로라 안 고침
+- 공용 DB 반영 완료(2026-11-13): COM_CD 2, KWRD_DICT 1, SCHDL 93, CARE_ARTCL 208, CKUP_RCD 93 (사람이 실행, CKUP_RCD는 12:38). 실행한 SQL은 "다음에 할 것" 첫 항목
+
+직전: SCR-HLT-007 검사 수치 결과값·참고범위를 0 이상, 정수 7자리·소수 둘째 자리까지로 제한(FN-HLT-007-02·03, ※신규 정책: 검사 수치 0 이상 · 정수 7자리). `InspectionValueCreateRequest`·`InspectionValueUpdateRequest`에 `@DecimalMin("0") @Digits(integer = 7, fraction = 2)`, DB decimal(15,4)는 그대로. PDF 분석 결과도 같은 `POST inspection-values`라 따로 막을 경로 없음. 공용 DB 확인: 까미(1번) 검진기록 5에서 -5·10000000·하한 -1 → 400, 9999999.99 → 201(확인 기록 INSP_NVL 3103 삭제함), PATCH -5 → 400(사람 확인 2026-11-11)
 
 이전: SCR-HLT-002 일상 기록 시각·관찰 촬영일 미래 입력 막기는 #225, 일상 기록 1회 상한은 #222, 시드 수치 보정은 #223으로 병합됨
 
 ## 다음에 할 것
 
+- 공용 DB 반영 완료(2026-11-13): COM_CD 2, KWRD_DICT 1, SCHDL 93, CARE_ARTCL 208, CKUP_RCD 93. 아래는 실행한 SQL 기록이다(다시 실행하지 않는다)
+  ```sql
+  SET NAMES utf8mb4;
+  -- 기준 데이터 v0.14 (13)
+  UPDATE `COM_CD` SET `COM_CD_NM`='기타진료', `COM_CD_EXPLN`='기타진료 — 일정 종류 ''기타''(HLTG19)와 표기 충돌을 피하기 위한 명칭 (09-15 회의)', `MDFCN_DT`=NOW() WHERE `COM_CD`='HLTC0005';
+  UPDATE `COM_CD` SET `COM_CD_EXPLN`='기타진료·그 밖의 일정 기본 톤', `MDFCN_DT`=NOW() WHERE `COM_CD`='HLTC0083';
+  UPDATE `KWRD_DICT` SET `INTRP_RSLT_CN`='검진유형 = 기타진료(HLTG01)', `MDFCN_DT`=NOW() WHERE `DICT_USG_CD`='AIMC0037' AND `MPNG_CD`='HLTC0005' AND `INTRP_RSLT_CN`='검진유형 = 기타 진료(HLTG01)';
+  -- 시드 일정 이름 (시드 93행)
+  UPDATE `SCHDL` SET `SCHDL_NM`='기타진료', `MDFCN_DT`=NOW() WHERE `SCHDL_NM`='기타 진료' AND `CKUP_TYPE_CD`='HLTC0005' AND `RGTR_ID`='SEED';
+  -- 시드 검진 내용 문장 앞 (시드 93행)
+  UPDATE `CKUP_RCD` SET `CKUP_CN`=CONCAT('기타진료 진행.', SUBSTRING(`CKUP_CN`, CHAR_LENGTH('기타 진료 진행.') + 1)), `MDFCN_DT`=NOW() WHERE `RGTR_ID`='SEED' AND `CKUP_TYPE_CD`='HLTC0005' AND `CKUP_CN` LIKE '기타 진료 진행.%';
+  -- 처방 투약 케어 항목명 (시드 208행)
+  UPDATE `CARE_ARTCL` A JOIN `PRSC` P ON P.`PRSC_SN` = A.`PRSC_SN` SET A.`CARE_ARTCL_NM` = P.`MDCN_NM`, A.`MDFCN_DT` = NOW() WHERE A.`CARE_ARTCL_NM` = CONCAT(P.`MDCN_NM`, ' 복용') AND A.`RGTR_ID`='SEED';
+  ```
 - 연결 남음: FN-HLT-002-11·13 일상 기록 시각 (프론트 연결: 오늘 기록 시간 입력이 지금 이후 시각을 고를 수 있으면 막고, 400 `rcdDt` 메시지를 보여 줄지 정하기, 프론트 저장소에서 /start)
 - 연결 남음: FN-HLT-003-29·31·40 회원 단위 일정 조회 (프론트 연결 `features/health/api.js`의 `getSchedules` 하나만 `GET /api/care-schedules`로, `CareCalendarPage.jsx`·`UpcomingSchedules.jsx`·`queries.js`는 고치지 않음, 프론트 저장소에서 /start)
 - 팀원 전달: `PetAuthorizer.searchCaregiverPetSns`·`PetAuthMapper.selectCaregiverPetSns` 추가(공유 파일, 기존 `checkCaregiver`·`checkPrimary`는 그대로). 디스코드에 전달 문구 올리기

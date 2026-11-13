@@ -30,7 +30,7 @@ import com.nyangmeong.pet.mapper.PetShortcutMapper;
 
 /**
  * [검사 - 반려동물 메인 바로가기]
- * - 저장한 적 없는 반려동물은 종합 건강기록, 전부 숨기면 빈 목록
+ * - 저장한 적 없거나 전부 숨기면 빈 목록
  * - 형식이 틀리거나 남의 반려동물이면 아무것도 저장하지 않음
  */
 class PetShortcutServiceTest {
