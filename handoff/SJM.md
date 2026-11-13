@@ -1,20 +1,17 @@
 # SJM 핸드오프
 
 ## 지금 하는 것
-마이페이지 시드 정리 · PET·DAILY_HLTH_RCD 시드 원본 정리 — 끝남 (승인 2026-11-10 16:04). 검증 통과 1회차, 사람 확인 완료(빈 DB에 create_tables → base_data → seed 순서로 넣고 SQL 10단계 확인 쿼리 기대값 0/0/4/0/N/0/0/0/0/0 일치)
+마이페이지 · 반려동물 체중 입력 규칙 확정 반영(SCR-MYP-003, FN-MYP-003-01·04) — 끝남 (승인 2026-11-13 11:27). 검증 통과 2회차(1회차는 로컬 application.properties의 permit-all-paths에 `/api/files/public/**`가 없어 무관한 FileControllerTest 2건 실패), 사람 확인 완료(Postman 19/19 통과, 시험 데이터 정리함)
 
-기능 ID 없음(시드 SQL 정리). 근거: 마이페이지 시드 정리 SQL(사람이 준 파일) 1~9단계를 덤프에 그대로 적용. 대상은 `DEL_YN='N'`·`RGTR_ID='SEED'` 행만.
-
-- `db/seed/20261028_seed_data.sql`: PET 줄(593)과 DAILY_HLTH_RCD 줄(241~247)만 파싱 스크립트로 바꾼다. 품종명은 덤프 VRTY 줄 기준. 1단계 품종(코숏 믹스→VRTY_SN 24, 진도 믹스→진돗개 믹스, `믹스`는 시드에 없어 할 일 없음, 믹스묘·푸들 믹스·믹스견은 직접 입력 유지), 2·3단계 털색(품종명+MOD(PET_SN) 규칙 그대로), 4단계 털색 직접 입력 4마리(2·3단계 뒤), 5~8단계 체중 소수 첫째 자리·프로필 체중=최근 기록. 머리말에 날짜별 이력 한 줄(공용 DB는 2026-11-10 반영 완료)
-- `db/20261109_insert_base_data_v0.14.sql`: PETC0011(얼룩) INSERT에 `USE_YN='N'`, 맨 위 변경 절에 새 항목(UPDATE COM_CD … PETC0011) 주석으로 추가. 기존 항목은 고치지 않는다
-- 변환 스크립트는 scratchpad에만 두고 커밋하지 않는다. SQL 파일은 저장소로 복사하지 않는다
-- 완료 조건:
-  - 명령: `./gradlew build -q` 통과
-  - 확인: SQL 10단계 확인 항목 기대값 0/0/4/0/N/0/0/0/0/0, 줄 수 1146 유지, 바꾼 컬럼 외 바이트 동일, SQL 규칙 재계산과 PET_SN별 일치, 재실행해도 결과 같음
-- 프론트 연결: 없음
-새 의존성: 없음
+체중·목표·최소·최대 체중은 소수 둘째 자리까지, 200kg 이하(`@Digits(integer = 3, fraction = 2)` + `@DecimalMax("200.00")`). `PetBdwgRange`는 최대 200으로, 최소가 200 이상이면 199.99로 자른다. `syncWeight`(건강기록 체중)는 건드리지 않았다. DB 변경 없음.
 
 ## 다음에 할 것
+- 프론트 연결(SCR-MYP-003, FN-MYP-003-01·04): 등록·수정 모달의 체중·목표·최소·최대 체중 입력을 소수 둘째 자리·200kg 이하로 제한(프론트 저장소에서 `/start`, 프론트 마일스톤에 대기 절을 넣어 뒀다)
+- JAJ에게 전달(SCR-HLT-002): `PetService.syncWeight`는 건강기록 체중을 `PET_BDWG`에 그대로 넣는다. 건강기록 체중 입력에도 소수 둘째 자리·200kg 이하 검증이 필요하다(회의 확정). 건강기록 체중 때 범위 갱신은 `PetBdwgRange.of()`가 200에서 자른다
+- 로컬 설정(SJM): `application.properties` permit-all-paths의 `/api/files/public/**`는 PR #234 병합 뒤 develop을 합칠 때 다시 지운다(git에 올라가지 않음)
+- 프론트 연결(SCR-MYP-003, FN-MYP-003-04): 등록·수정 모달이 `bdwgRngDrctInptYn`을 보내고 보여 주기(프론트 저장소에서 `/start`, 프론트 마일스톤에 대기 절을 넣어 뒀다)
+- JAJ에게 전달(건강기록 체중 범위 갱신, FN-MYP-003-04): 정상 범위 계산은 `com.nyangmeong.pet.service.PetBdwgRange`(public record `min`·`max`)에 있다. 사용: `PetBdwgRange r = PetBdwgRange.of(기준체중);` 후 `r.min()`·`r.max()`를 `PET.MIN_BDWG`·`MAX_BDWG`에 저장한다(다른 도메인이므로 `pet/service` 클래스를 바로 쓴다). 규칙: 최소 = 기준 체중 × 0.9, 최대 = × 1.1, 둘 다 소수 둘째 자리 HALF_UP(4.25 → 3.83 ~ 4.68). 아주 작은 체중은 최소를 0.01 이상, 최대를 최소+0.01 이상으로 보정한다(`CK_PET_WGHT_RANGE` 유지). 체중이 null이거나 0 이하면 `IllegalArgumentException`. 최대는 200kg(`PetBdwgRange.MAX_BDWG_LIMIT`)에서 자른다. 최소가 200 이상이면 199.99로 자른다. 갱신 전에 `PET.BDWG_RNG_DRCT_INPT_YN`을 확인해 `'Y'`(사용자 직접 입력)이면 범위를 바꾸지 않는다. 마이페이지(등록·수정)는 이미 이 메서드를 쓴다
+- DB 공용 반영(SCR-MYP-003): `db/20261109_create_tables_v0.14.sql` 변경 절 v0.14 (12)는 공용 DB에 반영 완료(2026-11-13, 사람이 실행). 병합 뒤 다시 실행하지 않는다(중복 컬럼 오류). PR 본문에 "DB 변경 있음: v0.14 (12)"를 적고 완료 댓글을 남긴다. 기존 PET 행은 DEFAULT로 모두 'Y'
 - 팀에 알린다(시드): `db/seed/20261028_seed_data.sql`의 PET·체중 기록(HLTC0014)을 정리했고(품종 직접 입력명, 품종별 털색, 얼룩 미사용, 체중 소수 첫째 자리) `db/20261109_insert_base_data_v0.14.sql` 변경 절 v0.14 (8)로 얼룩(PETC0011)을 사용 중지했다. 공용 DB는 2026-11-10 반영 완료. 이미 시드를 넣은 로컬 DB는 시드를 다시 넣지 말고 팀에서 받은 정리 SQL로 맞춘다
 - 확인: 등록 직후 출제(`PetCreatedEventListener`)가 UK_DAY_MSN_1 등으로 실패하면 `issueFor`가 리스너의 REQUIRES_NEW 트랜잭션에 합류해 롤백 전용이 되어, 커밋 때 `UnexpectedRollbackException` 로그가 함께 찍힐 수 있다(등록 응답에는 영향 없음, 다음 정각 배치가 채움). 거슬리면 `issueFor`를 `REQUIRES_NEW`로 바꾸는 것을 고려
 - Postman 컬렉션: 3번 회원이 정지(`MEMBER_INACTIVE`)라 그 회원을 쓰는 변수(`mbrSnB`·`emailB`·`delCoMbrSn`·`delCoEmail`·`invReceiverMbrSn`·`infoOtherMbrSn`)가 있는 폴더는 403. 돌릴 때 정상 회원으로 바꾼다(이메일은 `GET /members/me`의 `acntEml`)

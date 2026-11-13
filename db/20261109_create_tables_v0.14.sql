@@ -44,6 +44,10 @@
 --   SET NAMES utf8mb4;
 --   ALTER TABLE `ITEM` ADD COLUMN `BAKE_IMG_REF_YN` char(1) NOT NULL DEFAULT 'N' COMMENT '그림참고굽기여부' AFTER `BAKE_HINT`;
 --   ALTER TABLE `ITEM` ADD CONSTRAINT `CK_ITEM_BAKE_IMG_REF_YN` CHECK (`BAKE_IMG_REF_YN` IN ('Y','N'));
+-- v0.14 (12) 반려동물 체중 정상범위 직접 입력 여부 (2026-11-13, SJM, 근거: 사람 결정 2026-11-13 정상범위 = 기준 체중 × 0.9 ~ × 1.1 자동 계산, SCR-MYP-003 FN-MYP-003-04). 'Y'면 사용자가 범위를 직접 입력한 것이라 자동으로 바꾸지 않고, 'N'이면 기준 체중으로 자동 계산한다. 기존 행은 지금까지 사용자가 직접 넣었으므로 모두 'Y'(DEFAULT). 공용 DB 실행함(2026-11-13)
+--   SET NAMES utf8mb4;
+--   ALTER TABLE `PET` ADD COLUMN `BDWG_RNG_DRCT_INPT_YN` char(1) NOT NULL DEFAULT 'Y' COMMENT '체중범위직접입력여부' AFTER `MAX_BDWG`;
+--   ALTER TABLE `PET` ADD CONSTRAINT `CK_PET_BDWG_RNG_DRCT_INPT_YN` CHECK (`BDWG_RNG_DRCT_INPT_YN` IN ('Y','N'));
 -- =====================================================================
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -449,6 +453,7 @@ CREATE TABLE `PET` (
   `GOAL_BDWG` decimal(8,3) NULL COMMENT '목표체중',
   `MIN_BDWG` decimal(8,3) NOT NULL COMMENT '최소체중',
   `MAX_BDWG` decimal(8,3) NOT NULL COMMENT '최대체중',
+  `BDWG_RNG_DRCT_INPT_YN` char(1) NOT NULL DEFAULT 'Y' COMMENT '체중범위직접입력여부',
   `MIN_MEAL_QTY` decimal(8,3) NULL COMMENT '최소식사량',
   `MAX_MEAL_QTY` decimal(8,3) NULL COMMENT '최대식사량',
   `MIN_WATR_QTY` decimal(8,3) NULL COMMENT '최소음수량',
@@ -467,6 +472,7 @@ CREATE TABLE `PET` (
   CONSTRAINT `CK_PET_NUTR_YN` CHECK (`NUTR_YN` IN ('Y','N')),
   CONSTRAINT `CK_PET_DEL_YN` CHECK (`DEL_YN` IN ('Y','N')),
   CONSTRAINT `CK_PET_WGHT_RANGE` CHECK (`MIN_BDWG` > 0 AND `MIN_BDWG` < `MAX_BDWG`),
+  CONSTRAINT `CK_PET_BDWG_RNG_DRCT_INPT_YN` CHECK (`BDWG_RNG_DRCT_INPT_YN` IN ('Y','N')),
   CONSTRAINT `CK_PET_FOOD_RANGE` CHECK ((`MIN_MEAL_QTY` IS NULL) = (`MAX_MEAL_QTY` IS NULL)),
   CONSTRAINT `CK_PET_WATR_RANGE` CHECK ((`MIN_WATR_QTY` IS NULL) = (`MAX_WATR_QTY` IS NULL))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='반려동물';

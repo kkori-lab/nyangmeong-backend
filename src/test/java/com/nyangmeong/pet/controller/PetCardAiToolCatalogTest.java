@@ -82,7 +82,7 @@ class PetCardAiToolCatalogTest {
                 .andExpect(jsonPath(t + ".params.colrCd.group").value("PETG03"))
                 .andExpect(jsonPath(t + ".params.colrCd.codes[0].cd").value("C0001"))
                 .andExpect(jsonPath(t + ".params.petBdwg.positive").value(true))
-                .andExpect(jsonPath(t + ".params.petBdwg.scale").value(3))
+                .andExpect(jsonPath(t + ".params.petBdwg.scale").value(2))
                 .andExpect(jsonPath(t + ".params.chipNo.pattern").value("^[0-9]{0,20}$"))
                 .andExpect(jsonPath(t + ".params.goalBdwgReset.type").value("boolean"))
                 .andExpect(jsonPath(t + ".params.petNm.required").doesNotExist());

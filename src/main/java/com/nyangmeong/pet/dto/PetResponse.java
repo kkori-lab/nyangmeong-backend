@@ -16,13 +16,13 @@ public record PetResponse(Long petSn, String petNm, String petSeCd, Long vrtySn,
         String vrtyDrctInptNm, String petGndrCd, LocalDate petBrdt, BigDecimal petBdwg, String colrCd,
         String colrDrctInptNm, String chipNo, String chrcCn, String algyCn, String dssCn, String brupRoleCd,
         boolean rprsPetYn, boolean nutrYn, BigDecimal goalBdwg, BigDecimal minBdwg, BigDecimal maxBdwg,
-        List<CaregiverSummary> caregivers) {
+        String bdwgRngDrctInptYn, List<CaregiverSummary> caregivers) {
 
     public static PetResponse from(Pet pet, String vrtyNm, BrupRel rel, List<CaregiverSummary> caregivers) {
         return new PetResponse(pet.getPetSn(), pet.getPetNm(), pet.getPetSeCd(), pet.getVrtySn(), vrtyNm,
                 pet.getVrtyDrctInptNm(), pet.getPetGndrCd(), pet.getPetBrdt(), pet.getPetBdwg(), pet.getColrCd(),
                 pet.getColrDrctInptNm(), pet.getChipNo(), pet.getChrcCn(), pet.getAlgyCn(), pet.getDssCn(),
                 rel.getBrupRoleCd(), "Y".equals(rel.getRprsPetYn()), "Y".equals(pet.getNutrYn()),
-                pet.getGoalBdwg(), pet.getMinBdwg(), pet.getMaxBdwg(), caregivers);
+                pet.getGoalBdwg(), pet.getMinBdwg(), pet.getMaxBdwg(), pet.getBdwgRngDrctInptYn(), caregivers);
     }
 }

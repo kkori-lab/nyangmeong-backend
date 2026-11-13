@@ -25,6 +25,7 @@ public class PetSummary {
     private boolean nutrYn;
     private BigDecimal minBdwg;
     private BigDecimal maxBdwg;
+    private String bdwgRngDrctInptYn;
     private String colrCd;
     private String colrDrctInptNm;
     private String chipNo;

@@ -15,6 +15,7 @@
         <result column="NUTR_YN"           property="nutrYn" />
         <result column="MIN_BDWG"          property="minBdwg" />
         <result column="MAX_BDWG"          property="maxBdwg" />
+        <result column="BDWG_RNG_DRCT_INPT_YN" property="bdwgRngDrctInptYn" />
         <result column="COLR_CD"           property="colrCd" />
         <result column="COLR_DRCT_INPT_NM" property="colrDrctInptNm" />
         <result column="CHIP_NO"           property="chipNo" />
@@ -77,6 +78,7 @@
              , CASE WHEN P.NUTR_YN = 'Y' THEN TRUE ELSE FALSE END AS NUTR_YN
              , P.MIN_BDWG
              , P.MAX_BDWG
+             , P.BDWG_RNG_DRCT_INPT_YN
              , P.COLR_CD
              , P.COLR_DRCT_INPT_NM
              , P.CHIP_NO
@@ -123,6 +125,7 @@
         <result column="GOAL_BDWG"         property="goalBdwg" />
         <result column="MIN_BDWG"          property="minBdwg" />
         <result column="MAX_BDWG"          property="maxBdwg" />
+        <result column="BDWG_RNG_DRCT_INPT_YN" property="bdwgRngDrctInptYn" />
         <result column="MIN_MEAL_QTY"      property="minMealQty" />
         <result column="MAX_MEAL_QTY"      property="maxMealQty" />
         <result column="MIN_WATR_QTY"      property="minWatrQty" />
@@ -174,6 +177,7 @@
              , GOAL_BDWG
              , MIN_BDWG
              , MAX_BDWG
+             , BDWG_RNG_DRCT_INPT_YN
              , MIN_MEAL_QTY
              , MAX_MEAL_QTY
              , MIN_WATR_QTY
@@ -364,6 +368,7 @@
              , GOAL_BDWG
              , MIN_BDWG
              , MAX_BDWG
+             , BDWG_RNG_DRCT_INPT_YN
              , NUTR_YN
              , RGTR_ID
              , MDFR_ID
@@ -385,6 +390,7 @@
              , #{goalBdwg}
              , #{minBdwg}
              , #{maxBdwg}
+             , #{bdwgRngDrctInptYn}
              , #{nutrYn}
              , #{rgtrId}
              , #{mdfrId}
@@ -429,6 +435,7 @@
              , GOAL_BDWG         = #{pet.goalBdwg}
              , MIN_BDWG          = #{pet.minBdwg}
              , MAX_BDWG          = #{pet.maxBdwg}
+             , BDWG_RNG_DRCT_INPT_YN = #{pet.bdwgRngDrctInptYn}
              , NUTR_YN           = #{pet.nutrYn}
              , MDFR_ID           = #{actorId}
              , MDFCN_DT          = NOW()

@@ -29,6 +29,7 @@ public class Pet {
     private BigDecimal goalBdwg;
     private BigDecimal minBdwg;
     private BigDecimal maxBdwg;
+    private String bdwgRngDrctInptYn;
     private BigDecimal minMealQty;
     private BigDecimal maxMealQty;
     private BigDecimal minWatrQty;
