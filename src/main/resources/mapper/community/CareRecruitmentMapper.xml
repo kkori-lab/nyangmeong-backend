@@ -197,7 +197,8 @@
             </if>
                        )
         </if>
-         ORDER BY P.REG_DT DESC
+         ORDER BY R.RCRT_STTS_CD
+                , P.REG_DT DESC
                 , R.PET_PRTC_RCRT_SN DESC
     </select>
 
