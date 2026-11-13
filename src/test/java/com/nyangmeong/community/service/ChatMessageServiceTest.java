@@ -78,7 +78,7 @@ class ChatMessageServiceTest {
             return 1;
         }).when(chatMessageMapper).insertMessage(any(ChatMessage.class));
         AtomicLong fileSn = new AtomicLong(500);
-        when(fileStore.store(any(MultipartFile.class), anyString())).thenAnswer(inv -> fileSn.getAndIncrement());
+        when(fileStore.store(any(MultipartFile.class), any(), any(), anyString())).thenAnswer(inv -> fileSn.getAndIncrement());
     }
 
     private void stubParticipant(String ptcpSttsCd) {
@@ -194,7 +194,7 @@ class ChatMessageServiceTest {
     void 사진이_없거나_열한_장이면_거부한다() {
         assertError(() -> service.send(OWNER, ROOM, photos(0)), ErrorCode.INVALID_INPUT_VALUE);
         assertError(() -> service.send(OWNER, ROOM, photos(11)), ErrorCode.INVALID_INPUT_VALUE);
-        verify(fileStore, never()).store(any(MultipartFile.class), anyString());
+        verify(fileStore, never()).store(any(MultipartFile.class), any(), any(), anyString());
         verify(chatMessageMapper, never()).insertMessage(any());
     }
 

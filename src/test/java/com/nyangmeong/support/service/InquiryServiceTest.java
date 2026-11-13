@@ -139,7 +139,7 @@ class InquiryServiceTest {
     @Test
     void 작성하면_접수_상태로_저장하고_이력과_첨부를_남긴다() {
         stubSavedInquiry(inquiry(MBR, InquiryStatus.RECEIVED));
-        when(fileStore.store(any(MultipartFile.class), anyString())).thenReturn(101L, 102L);
+        when(fileStore.store(any(MultipartFile.class), any(), any(), anyString())).thenReturn(101L, 102L);
         when(inquiryMapper.selectImageSummaries(INQ))
                 .thenReturn(List.of(imageSummary(101L, 0, "a.png"), imageSummary(102L, 1, "b.png")));
         when(inquiryMapper.selectCodeName("CSCC0008")).thenReturn("커뮤니티");
@@ -191,7 +191,7 @@ class InquiryServiceTest {
 
         service.create(MBR, createRequest(InquiryType.ETC.getCode(), List.of(empty), null));
 
-        verify(fileStore, never()).store(any(MultipartFile.class), anyString());
+        verify(fileStore, never()).store(any(MultipartFile.class), any(), any(), anyString());
         verify(inquiryMapper, never()).insertPhoto(any(InquiryPhoto.class));
     }
 
@@ -199,7 +199,7 @@ class InquiryServiceTest {
     void 캐릭터_오류_문의는_캐릭터_번호를_저장하고_pet_접수가_돌려준_이미지를_첫_첨부로_붙인다() {
         stubSavedInquiry(inquiry(MBR, InquiryStatus.RECEIVED));
         when(pixelCharacterService.receiveErrorInquiry(MBR, 3L, INQ)).thenReturn(900L);
-        when(fileStore.store(any(MultipartFile.class), anyString())).thenReturn(101L);
+        when(fileStore.store(any(MultipartFile.class), any(), any(), anyString())).thenReturn(101L);
 
         service.create(MBR, createRequest(InquiryType.PIXEL_CHARACTER.getCode(), List.of(image("a.png")), 3L));
 
@@ -257,7 +257,7 @@ class InquiryServiceTest {
                 createRequest(InquiryType.PIXEL_CHARACTER.getCode(), List.of(image("a.png")), 3L)))
                 .isInstanceOfSatisfying(CustomException.class, e -> assertThat(e.getErrorCode())
                         .isEqualTo(ErrorCode.PIXEL_CHARACTER_INQUIRY_ALREADY_RECEIVED));
-        verify(fileStore, never()).store(any(MultipartFile.class), anyString());
+        verify(fileStore, never()).store(any(MultipartFile.class), any(), any(), anyString());
     }
 
     @Test
@@ -387,7 +387,7 @@ class InquiryServiceTest {
         when(inquiryMapper.selectInquiry(INQ)).thenReturn(inquiry(MBR, InquiryStatus.RECEIVED));
         when(inquiryMapper.selectPhotos(INQ)).thenReturn(List.of(photo(101L, 0), photo(102L, 1)));
         when(inquiryMapper.updateInquiry(eq(INQ), any(), eq("새 제목"), any(), eq("CSCC0012"))).thenReturn(1);
-        when(fileStore.store(any(MultipartFile.class), anyString())).thenReturn(103L);
+        when(fileStore.store(any(MultipartFile.class), any(), any(), anyString())).thenReturn(103L);
         when(inquiryMapper.selectImageSummaries(INQ))
                 .thenReturn(List.of(imageSummary(102L, 1, "b.png"), imageSummary(103L, 2, "c.png")));
 

@@ -25,6 +25,7 @@ import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.external.CharacterGenerationRequest;
 import com.nyangmeong.global.external.CharacterSpec;
+import com.nyangmeong.global.file.FileCategory;
 import com.nyangmeong.global.file.FileExtension;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.file.StoredFile;
@@ -80,8 +81,8 @@ class CharacterCreationServiceTest {
     @Test
     void 성공_보고는_결과와_맨몸_시트를_저장하고_이전_착용_시트를_지우고_알림을_보낸다() {
         givenReport(CharacterJobStatus.CREATING);
-        when(fileStore.storePublic(any(byte[].class), eq(FileExtension.PNG), anyString(), anyString())).thenReturn(30L);
-        when(fileStore.store(any(byte[].class), eq(FileExtension.PNG), anyString(), anyString())).thenReturn(31L);
+        when(fileStore.store(any(byte[].class), eq(FileExtension.PNG), anyString(), eq(FileCategory.PET_CHARACTER), any(), anyString())).thenReturn(30L);
+        when(fileStore.store(any(byte[].class), eq(FileExtension.PNG), anyString(), eq(FileCategory.PET_SHEET), any(), anyString())).thenReturn(31L);
 
         CharacterSuccessResponse res = service.reportSuccess(1L, 5L, success(png(512), png(1024)));
 
@@ -101,7 +102,7 @@ class CharacterCreationServiceTest {
         CharacterSuccessResponse res = service.reportSuccess(1L, 5L, success(png(512), png(1024)));
 
         assertThat(res.pixelCharSn()).isEqualTo(3L);
-        verify(fileStore, never()).storePublic(any(byte[].class), any(), anyString(), anyString());
+        verify(fileStore, never()).store(any(byte[].class), any(), anyString(), eq(FileCategory.PET_CHARACTER), any(), anyString());
         verify(eventPublisher, never()).publish(any(NotificationEvent.class));
     }
 
@@ -121,7 +122,7 @@ class CharacterCreationServiceTest {
                 .extracting("errorCode").isEqualTo(ErrorCode.FILE_TYPE_NOT_ALLOWED);
         assertThatThrownBy(() -> service.reportSuccess(1L, 5L, success(png(512), png(512))))
                 .extracting("errorCode").isEqualTo(ErrorCode.FILE_TYPE_NOT_ALLOWED);
-        verify(fileStore, never()).storePublic(any(byte[].class), any(), anyString(), anyString());
+        verify(fileStore, never()).store(any(byte[].class), any(), anyString(), eq(FileCategory.PET_CHARACTER), any(), anyString());
     }
 
     @Test
@@ -236,7 +237,7 @@ class CharacterCreationServiceTest {
         when(mapper.selectJob(5L)).thenReturn(job(CharacterJobStatus.CREATING));
         when(mapper.selectByPetSn(10L)).thenReturn(character());
         when(mapper.selectPetProfile(10L)).thenReturn(pet());
-        when(fileStore.storePublic(any(byte[].class), eq(FileExtension.PNG), anyString(), eq("SYSTEM"))).thenReturn(30L);
+        when(fileStore.store(any(byte[].class), eq(FileExtension.PNG), anyString(), eq(FileCategory.PET_CHARACTER), any(), eq("SYSTEM"))).thenReturn(30L);
 
         service.complete(5L, new byte[] {1});
 

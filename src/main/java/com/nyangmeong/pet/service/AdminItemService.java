@@ -10,6 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.file.FileCategory;
+import com.nyangmeong.global.file.FileOwner;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.log.AdminTaskLogService;
 import com.nyangmeong.global.log.AdminTaskType;
@@ -78,7 +80,7 @@ public class AdminItemService {
 
         String actorId = String.valueOf(actorSn);
         Item item = new Item();
-        item.setAtchFileSn(fileStore.store(req.image(), actorId));
+        item.setAtchFileSn(fileStore.store(req.image(), FileCategory.ASSET_ITEM, FileOwner.service(), actorId));
         item.setItemRegnCd(req.itemRegnCd());
         item.setItemNm(req.itemNm().strip());
         item.setNeedPnt(req.needPnt());
@@ -128,7 +130,7 @@ public class AdminItemService {
         item.setBakeHint(bakeHint);
         item.setBakeImgRefYn(req.bakeImgRefYn() == null ? null : toYn(req.bakeImgRefYn()));
         if (req.image() != null && !req.image().isEmpty()) {
-            item.setAtchFileSn(fileStore.store(req.image(), actorId));
+            item.setAtchFileSn(fileStore.store(req.image(), FileCategory.ASSET_ITEM, FileOwner.service(), actorId));
         }
         item.setMdfrId(actorId);
         try {

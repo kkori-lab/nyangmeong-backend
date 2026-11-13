@@ -19,6 +19,8 @@ import org.springframework.web.multipart.MultipartFile;
 import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.file.FileCategory;
+import com.nyangmeong.global.file.FileOwner;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.file.StoredFile;
 import com.nyangmeong.health.domain.HealthCodeGroup;
@@ -37,6 +39,7 @@ import com.nyangmeong.health.dto.ObservationItemSummary;
 import com.nyangmeong.health.mapper.ObservationMapper;
 import com.nyangmeong.pet.domain.CareMission;
 import com.nyangmeong.pet.service.CareMissionService;
+import com.nyangmeong.pet.service.PetService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -55,6 +58,7 @@ public class ObservationService {
     private final PetAuthorizer petAuthorizer;
     private final FileStore fileStore;
     private final CareMissionService careMissionService;
+    private final PetService petService;
 
     /**
      * 관찰 항목 목록 조회
@@ -135,7 +139,7 @@ public class ObservationService {
         observationMapper.insertItem(item);
         observationMapper.insertItemStatusHistory(item.getObsrvArtclSn(), mbrSn, null, item.getObsrvSttsCd());
 
-        ObservationCycle cycle = newCycle(item.getObsrvArtclSn(), req.file(), req.obsrvDt(), req.obsrvSz(), null,
+        ObservationCycle cycle = newCycle(petSn, item.getObsrvArtclSn(), req.file(), req.obsrvDt(), req.obsrvSz(), null,
                 req.memoCn(), actorId);
         observationMapper.insertCycle(cycle);
 
@@ -174,7 +178,7 @@ public class ObservationService {
             checkCode(HealthCodeGroup.OBSERVATION_CHANGE, req.obsrvChgCd(), "obsrvChgCd");
         }
 
-        ObservationCycle cycle = newCycle(item.getObsrvArtclSn(), req.file(), req.obsrvDt(), req.obsrvSz(),
+        ObservationCycle cycle = newCycle(petSn, item.getObsrvArtclSn(), req.file(), req.obsrvDt(), req.obsrvSz(),
                 req.obsrvChgCd(), req.memoCn(), String.valueOf(mbrSn));
         observationMapper.insertCycle(cycle);
 
@@ -217,7 +221,7 @@ public class ObservationService {
             cycle.setMemoCn(null);
         }
         if (req.file() != null && !req.file().isEmpty()) {
-            cycle.setAtchFileSn(fileStore.store(req.file(), actorId));
+            cycle.setAtchFileSn(fileStore.store(req.file(), FileCategory.HEALTH_OBSERVATION, photoOwner(petSn), actorId));
         }
         observationMapper.updateCycle(cycle, actorId);
         return ObservationCycleResponse.from(getSummary(petSn, cycle.getObsrvArtclSn(), obsrvCyclSn));
@@ -269,18 +273,25 @@ public class ObservationService {
         return null;
     }
 
+    /**
+     * 관찰 사진 저장 폴더 소유자 : 올린 사람이 아니라 주양육자 폴더
+     */
+    private FileOwner photoOwner(Long petSn) {
+        return FileOwner.pet(petService.getPrimaryCaregiverMbrSn(petSn), petSn);
+    }
+
     private LocalDateTime lastObservedAt(ObservationItemSummary item) {
         return item.getLastCycle() == null ? LocalDateTime.MIN : item.getLastCycle().getObsrvDt();
     }
 
-    private ObservationCycle newCycle(Long obsrvArtclSn, MultipartFile file, LocalDateTime obsrvDt,
+    private ObservationCycle newCycle(Long petSn, Long obsrvArtclSn, MultipartFile file, LocalDateTime obsrvDt,
             BigDecimal obsrvSz, String obsrvChgCd, String memoCn, String actorId) {
         if (file.isEmpty()) {
             throw invalid("file");
         }
         ObservationCycle cycle = new ObservationCycle();
         cycle.setObsrvArtclSn(obsrvArtclSn);
-        cycle.setAtchFileSn(fileStore.store(file, actorId));
+        cycle.setAtchFileSn(fileStore.store(file, FileCategory.HEALTH_OBSERVATION, photoOwner(petSn), actorId));
         cycle.setObsrvDt(obsrvDt);
         cycle.setObsrvSz(obsrvSz);
         cycle.setObsrvChgCd(obsrvChgCd);

@@ -22,6 +22,7 @@ import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.external.CharacterSpec;
+import com.nyangmeong.global.file.FileCategory;
 import com.nyangmeong.global.file.FileExtension;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.file.StoredFile;
@@ -84,7 +85,7 @@ class CharacterSheetServiceTest {
     void 착용_시트를_비공개로_저장한다() {
         givenCharacter(50L);
         when(itemMapper.countBakeItem(7L)).thenReturn(1);
-        when(fileStore.store(any(byte[].class), eq(FileExtension.PNG), anyString(), eq("1"))).thenReturn(60L);
+        when(fileStore.store(any(byte[].class), eq(FileExtension.PNG), anyString(), eq(FileCategory.PET_SHEET), any(), eq("1"))).thenReturn(60L);
 
         service.saveItemSheet(MBR, false, CHAR, 7L, sheet(1024));
 
@@ -213,7 +214,7 @@ class CharacterSheetServiceTest {
     void 관리자는_남의_캐릭터_시트를_읽고_쓴다() {
         givenCharacter(50L);
         when(itemMapper.countBakeItem(7L)).thenReturn(1);
-        when(fileStore.store(any(byte[].class), any(), any(), any())).thenReturn(60L);
+        when(fileStore.store(any(byte[].class), any(), any(), any(), any(), any())).thenReturn(60L);
         when(fileStore.load(50L)).thenReturn(new StoredFile(new byte[] {1}, "image/png", "sheet.png"));
 
         service.saveItemSheet(9L, true, CHAR, 7L, sheet(1024));

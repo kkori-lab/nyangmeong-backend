@@ -55,10 +55,11 @@ class CareRecruitmentMapperSqlTest {
     }
 
     @Test
-    void 목록은_조건이_없으면_정상_글만_최신순으로_고른다() {
+    void 목록은_조건이_없으면_정상_글만_모집_상태순_같은_상태는_최신순으로_고른다() {
         String sql = sql("CareRecruitmentMapper.selectList", listParam());
 
-        assertThat(sql).contains("P.PST_STTS_CD = ?").contains("ORDER BY P.REG_DT DESC")
+        assertThat(sql).contains("P.PST_STTS_CD = ?")
+                .containsPattern("ORDER BY R\\.RCRT_STTS_CD\\s*,\\s*P\\.REG_DT DESC\\s*,\\s*R\\.PET_PRTC_RCRT_SN DESC")
                 .doesNotContain("R.RCRT_STTS_CD = ?").doesNotContain("RCRT_PET_KND").doesNotContain("PRTC_END_DT >=");
     }
 

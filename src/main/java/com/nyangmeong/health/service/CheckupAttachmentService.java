@@ -10,6 +10,8 @@ import com.github.pagehelper.PageInfo;
 import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.file.FileCategory;
+import com.nyangmeong.global.file.FileOwner;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.file.StoredFile;
 import com.nyangmeong.global.response.PageQuery;
@@ -25,6 +27,7 @@ import com.nyangmeong.health.dto.CheckupAttachmentUpdateRequest;
 import com.nyangmeong.health.dto.CheckupSummary;
 import com.nyangmeong.health.mapper.CareScheduleMapper;
 import com.nyangmeong.health.mapper.CheckupAttachmentMapper;
+import com.nyangmeong.pet.service.PetService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +49,7 @@ public class CheckupAttachmentService {
     private final CheckupService checkupService;
     private final PetAuthorizer petAuthorizer;
     private final FileStore fileStore;
+    private final PetService petService;
 
     /**
      * 검진기록 첨부 목록 조회
@@ -88,7 +92,8 @@ public class CheckupAttachmentService {
         CheckupAttachment attachment = new CheckupAttachment();
         attachment.setCkupRcdSn(req.ckupRcdSn());
         applyType(attachment, req.atchTypeCd(), req.imgKndCd(), req.shtRegnCd());
-        attachment.setAtchFileSn(fileStore.storeDocument(req.file(), actorId));
+        attachment.setAtchFileSn(fileStore.store(req.file(), FileCategory.HEALTH_CHECKUP,
+                FileOwner.pet(petService.getPrimaryCaregiverMbrSn(petSn), petSn), actorId));
         attachment.setRgtrId(actorId);
         attachment.setMdfrId(actorId);
         checkupAttachmentMapper.insertAttachment(attachment);
@@ -110,7 +115,8 @@ public class CheckupAttachmentService {
         String shtRegnCd = req.shtRegnCd() != null ? req.shtRegnCd() : attachment.getShtRegnCd();
         applyType(attachment, atchTypeCd, imgKndCd, shtRegnCd);
         if (req.file() != null && !req.file().isEmpty()) {
-            attachment.setAtchFileSn(fileStore.storeDocument(req.file(), actorId));
+            attachment.setAtchFileSn(fileStore.store(req.file(), FileCategory.HEALTH_CHECKUP,
+                FileOwner.pet(petService.getPrimaryCaregiverMbrSn(petSn), petSn), actorId));
         }
         checkupAttachmentMapper.updateAttachment(attachment, actorId);
         return CheckupAttachmentResponse.from(checkupAttachmentMapper.selectSummary(ckupRcdAtchSn));

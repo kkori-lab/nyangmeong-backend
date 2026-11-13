@@ -41,6 +41,7 @@ import com.nyangmeong.health.dto.ObservationItemSummary;
 import com.nyangmeong.health.mapper.ObservationMapper;
 import com.nyangmeong.pet.domain.CareMission;
 import com.nyangmeong.pet.service.CareMissionService;
+import com.nyangmeong.pet.service.PetService;
 
 /**
  * [검사 - 관찰 항목·회차]
@@ -61,7 +62,7 @@ class ObservationServiceTest {
     private final FileStore fileStore = mock(FileStore.class);
     private final CareMissionService careMissionService = mock(CareMissionService.class);
     private final ObservationService service = new ObservationService(mapper, petAuthorizer, fileStore,
-            careMissionService);
+            careMissionService, mock(PetService.class));
 
     private final MultipartFile photo = new MockMultipartFile("file", "a.png", "image/png", new byte[] { 1 });
 
@@ -69,7 +70,7 @@ class ObservationServiceTest {
     void setUp() {
         when(mapper.existsChildCode("HLTG16", "HLTC0043")).thenReturn(true);
         when(mapper.existsChildCode("HLTG17", "HLTC0054")).thenReturn(true);
-        when(fileStore.store(any(MultipartFile.class), anyString())).thenReturn(77L);
+        when(fileStore.store(any(MultipartFile.class), any(), any(), anyString())).thenReturn(77L);
         when(mapper.insertItem(any())).thenAnswer(call -> {
             ObservationItem item = call.getArgument(0);
             item.setObsrvArtclSn(ITEM);

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -30,6 +31,7 @@ import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.external.CharacterSpec;
+import com.nyangmeong.global.file.FileCategory;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.file.StoredFile;
 import com.nyangmeong.global.notification.EventPublisher;
@@ -458,7 +460,7 @@ class PixelCharacterServiceTest {
         when(mapper.selectPixelCharacter(CHAR)).thenReturn(character("N"));
         when(mapper.selectHeldItems(CHAR))
                 .thenReturn(List.of(equipped(1L, 7L, true), equipped(2L, 8L, true), equipped(3L, 9L, false)));
-        when(fileStore.storePublic(any(byte[].class), any(), anyString(), anyString())).thenReturn(70L);
+        when(fileStore.store(any(byte[].class), any(), anyString(), eq(FileCategory.PET_WEAR), any(), anyString())).thenReturn(70L);
 
         service.saveEquippedImage(MBR, CHAR,
                 new EquippedImageSaveRequest(png(512), List.of(8L, 7L)));
@@ -471,7 +473,7 @@ class PixelCharacterServiceTest {
     void 맨몸이면_itemSns_없이_저장한다() {
         when(mapper.selectPixelCharacter(CHAR)).thenReturn(character("N"));
         when(mapper.selectHeldItems(CHAR)).thenReturn(List.of(equipped(1L, 7L, false)));
-        when(fileStore.storePublic(any(byte[].class), any(), anyString(), anyString())).thenReturn(70L);
+        when(fileStore.store(any(byte[].class), any(), anyString(), eq(FileCategory.PET_WEAR), any(), anyString())).thenReturn(70L);
 
         service.saveEquippedImage(MBR, CHAR, new EquippedImageSaveRequest(png(512), null));
 

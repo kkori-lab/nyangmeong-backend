@@ -10,7 +10,9 @@ import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.external.CharacterGenerationRequest;
 import com.nyangmeong.global.external.CharacterSpec;
+import com.nyangmeong.global.file.FileCategory;
 import com.nyangmeong.global.file.FileExtension;
+import com.nyangmeong.global.file.FileOwner;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.notification.EventPublisher;
 import com.nyangmeong.global.notification.NotificationEvent;
@@ -116,7 +118,7 @@ public class CharacterCreationService {
 
         saveResult(charCrtJobSn, character, pet, image);
         Long sheetFileSn = fileStore.store(sheet, FileExtension.PNG, "sheet-" + character.getPixelCharSn() + ".png",
-                SYSTEM);
+                FileCategory.PET_SHEET, FileOwner.pet(character.getMbrSn(), character.getPetSn()), SYSTEM);
         pixelCharacterMapper.updateBodySheet(character.getPixelCharSn(), sheetFileSn, req.scale(), req.originX(),
                 req.originY(), SYSTEM);
         pixelCharacterMapper.updateItemSheetDelete(character.getPixelCharSn());
@@ -145,8 +147,9 @@ public class CharacterCreationService {
      * 결과 저장·완료 처리·알림
      */
     private void saveResult(Long charCrtJobSn, PixelCharacter character, PetProfileSummary pet, byte[] image) {
-        Long atchFileSn = fileStore.storePublic(image, FileExtension.PNG,
-                "character-" + character.getPixelCharSn() + ".png", SYSTEM);
+        Long atchFileSn = fileStore.store(image, FileExtension.PNG,
+                "character-" + character.getPixelCharSn() + ".png", FileCategory.PET_CHARACTER,
+                FileOwner.pet(character.getMbrSn(), character.getPetSn()), SYSTEM);
         pixelCharacterMapper.updatePhotoHidden(character.getPixelCharSn());
         CharacterPhoto result = new CharacterPhoto();
         result.setPixelCharSn(character.getPixelCharSn());

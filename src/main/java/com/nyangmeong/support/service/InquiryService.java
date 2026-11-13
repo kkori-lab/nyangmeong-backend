@@ -11,6 +11,8 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.file.FileCategory;
+import com.nyangmeong.global.file.FileOwner;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.file.StoredFile;
 import com.nyangmeong.global.notification.EventPublisher;
@@ -125,7 +127,7 @@ public class InquiryService {
             insertPhoto(inquiry.getOtoInqrySn(), atchFileSn, sortSeq++);
         }
         for (MultipartFile image : images) {
-            insertPhoto(inquiry.getOtoInqrySn(), fileStore.store(image, String.valueOf(mbrSn)), sortSeq++);
+            insertPhoto(inquiry.getOtoInqrySn(), fileStore.store(image, FileCategory.SUPPORT_INQUIRY, FileOwner.member(mbrSn), String.valueOf(mbrSn)), sortSeq++);
         }
         return toResponse(inquiryMapper.selectInquiry(inquiry.getOtoInqrySn()));
     }
@@ -172,7 +174,7 @@ public class InquiryService {
         }
         int sortSeq = remaining.stream().mapToInt(InquiryPhoto::getSortSeq).max().orElse(-1) + 1;
         for (MultipartFile image : images) {
-            insertPhoto(otoInqrySn, fileStore.store(image, String.valueOf(mbrSn)), sortSeq++);
+            insertPhoto(otoInqrySn, fileStore.store(image, FileCategory.SUPPORT_INQUIRY, FileOwner.member(mbrSn), String.valueOf(mbrSn)), sortSeq++);
         }
         return toResponse(inquiryMapper.selectInquiry(otoInqrySn));
     }

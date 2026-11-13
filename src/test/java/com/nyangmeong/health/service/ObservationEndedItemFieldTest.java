@@ -18,6 +18,7 @@ import com.nyangmeong.health.domain.ObservationItem;
 import com.nyangmeong.health.dto.ObservationCycleCreateRequest;
 import com.nyangmeong.health.mapper.ObservationMapper;
 import com.nyangmeong.pet.service.CareMissionService;
+import com.nyangmeong.pet.service.PetService;
 
 /**
  * [검사 - 종료된 관찰 항목에 회차 추가]
@@ -32,7 +33,7 @@ class ObservationEndedItemFieldTest {
 
     private final ObservationMapper mapper = mock(ObservationMapper.class);
     private final ObservationService service = new ObservationService(mapper, mock(PetAuthorizer.class),
-            mock(FileStore.class), mock(CareMissionService.class));
+            mock(FileStore.class), mock(CareMissionService.class), mock(PetService.class));
 
     @Test
     void 종료된_항목에_회차를_추가하면_항목_번호_칸을_담는다() {

@@ -39,6 +39,7 @@ import com.nyangmeong.health.mapper.CheckupAttachmentMapper;
 import com.nyangmeong.health.mapper.InspectionValueMapper;
 import com.nyangmeong.health.mapper.PrescriptionMapper;
 import com.nyangmeong.health.mapper.RepeatPreventionMapper;
+import com.nyangmeong.pet.service.PetService;
 
 /**
  * [검사 - 종합 건강기록 반려동물 전체 조회]
@@ -64,7 +65,7 @@ class HealthOverviewServiceTest {
 
     private final CheckupAttachmentMapper attachmentMapper = mock(CheckupAttachmentMapper.class);
     private final CheckupAttachmentService attachmentService = new CheckupAttachmentService(attachmentMapper,
-            mock(CareScheduleMapper.class), checkupService, petAuthorizer, mock(FileStore.class));
+            mock(CareScheduleMapper.class), checkupService, petAuthorizer, mock(FileStore.class), mock(PetService.class));
 
     private final RepeatPreventionMapper repeatMapper = mock(RepeatPreventionMapper.class);
     private final RepeatPreventionService repeatService = new RepeatPreventionService(repeatMapper,

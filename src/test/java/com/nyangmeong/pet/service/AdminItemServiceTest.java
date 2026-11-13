@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
@@ -63,7 +64,7 @@ class AdminItemServiceTest {
 
     @Test
     void 등록하면_부위_마지막_다음_순서로_넣는다() {
-        when(fileStore.store(any(), anyString())).thenReturn(11L);
+        when(fileStore.store(any(MultipartFile.class), any(), any(), anyString())).thenReturn(11L);
         when(itemMapper.selectMaxSortSeq("MYPC0001")).thenReturn(5L);
 
         service.create(1L, new AdminItemCreateRequest("MYPC0001", " 새 모자 ", 300L, true, " a hat ", null, image));
@@ -224,7 +225,7 @@ class AdminItemServiceTest {
 
     @Test
     void 그림_참고_굽기로_등록하면_굽기_지시_없이_Y로_넣는다() {
-        when(fileStore.store(any(), anyString())).thenReturn(11L);
+        when(fileStore.store(any(MultipartFile.class), any(), any(), anyString())).thenReturn(11L);
 
         service.create(1L, new AdminItemCreateRequest("MYPC0001", "거북이 가방", 300L, true, null, true, image));
 
@@ -236,7 +237,7 @@ class AdminItemServiceTest {
 
     @Test
     void 그림_참고_굽기를_안_보내면_N으로_등록한다() {
-        when(fileStore.store(any(), anyString())).thenReturn(11L);
+        when(fileStore.store(any(MultipartFile.class), any(), any(), anyString())).thenReturn(11L);
 
         service.create(1L, new AdminItemCreateRequest("MYPC0001", "털모자", 300L, true, "a fur hat", null, image));
 

@@ -22,7 +22,7 @@
 | GET | /items/{itemSn}/image | 아이템 이미지(로그인 회원, 판매 중 아이템) | MYP-010-14, MYP-011-02 | LJS | - | 이미지 파일 |
 | GET | /members/me/points | 보유 포인트, 이번 달 적립·사용 합계와 건수, 오늘 미션 요약(주양육 반려동물 전체) | MYP-001-03·04, MYP-011-05, MYP-020-01·09 | SJM | - | PointResponse |
 | GET | /pets | 내 반려동물 목록(주양육·공동양육, 역할·대표 여부·공동양육 인원 포함) | MYP-001-01, MYP-002-01~03, MYP-005-02, MYP-006-04, MYP-020-03 | SJM | - | List<PetSummary> |
-| GET | /pets/main-shortcuts | 메인 반려동물별 바로가기. 양육 중인 반려동물(연동 중, 삭제 안 함) 전부를 양육관계 순서로, 코드(MANG02)는 보일 순서대로. 저장한 적 없는 반려동물은 `[MANC0008]`(종합 건강기록), 전부 숨겼으면 `[]`. 사용 안 하는 코드는 빠짐 | MAN-008 | LJS | - | List<PetShortcutSummary> |
+| GET | /pets/main-shortcuts | 메인 반려동물별 바로가기. 양육 중인 반려동물(연동 중, 삭제 안 함) 전부를 양육관계 순서로, 코드(MANG02)는 보일 순서대로. 저장한 적 없거나 전부 숨겼으면 `[]`. 사용 안 하는 코드는 빠짐 | MAN-008 | LJS | - | List<PetShortcutSummary> |
 | GET | /pets/{petSn} | 반려동물 프로필 상세(수정 모달 채우기, 양육자 목록). 체중 잠금은 화면이 건강기록 API로 판단(`issues.md` API의 마이페이지 2번) | MYP-002-04, MYP-003-01 | SJM | - | PetResponse |
 | GET | /pets/{petSn}/caregivers | 공동양육자 목록. 주양육자가 첫 줄. 주양육자에게는 전원, 공동양육자에게는 주양육자와 본인 | MYP-004-01·03·04, MYP-006-04 | SJM | - | List<CaregiverSummary> |
 | GET | /pets/{petSn}/character-image | 캐릭터 이미지 `?part=full`(전신, 기본)·`face`(얼굴). 미생성·오류 확인 중이면 종별 기본 캐릭터. 착용 모습 대표 이미지가 있으면 그것, 없으면 맨몸 결과. `face`는 (96, 32)부터 320×320을 256×256으로 줄인 PNG | MYP-001-01, MYP-002-02, MYP-010-12·23 | LJS | - | 이미지 파일 |

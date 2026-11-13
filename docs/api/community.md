@@ -59,7 +59,7 @@
 | GET | /admin/lost-reports/{lostTpofSn} | 관리자 실종제보 상세. 실종·만료는 본문·사진·만료 기준일, 찾았어요는 제목·상태·처리 시각만(결정 13). 조회수는 올리지 않는다. 없거나 정상 글이 아니면 404 LOST_REPORT_NOT_FOUND | ADM-021-02 | LJS | - | AdminLostReportResponse |
 | GET | /admin/care-matches | 관리자 펫돌봄 모집글 목록. 정상 게시글만(블라인드·삭제 글은 `/admin/posts`), 최신순 20건씩. 모르는 상태 코드 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-022-01 | LJS | AdminCareMatchSearchCond | PageResponse<AdminCareMatchSummary> |
 | GET | /admin/care-matches/{petPrtcRcrtSn} | 관리자 펫돌봄 매칭 상세(분쟁 대응, 1:1 문의의 `?rcrtSn=`도 이 번호). 모집글 정보 + 매칭 목록(최신순, 매칭마다 합의 조건 버전·상태 이력·완료 요청 회차와 사진·보호자 확인 결과). 블라인드 글도 열고, 없거나 삭제 글이면 404 CARE_RECRUITMENT_NOT_FOUND. 채팅 메시지·채팅방 번호는 주지 않는다(ADM-022-03, 결정 14·26) | ADM-022-02·03 | LJS | - | AdminCareMatchResponse |
-| GET | /admin/care-matches/{petPrtcRcrtSn}/images/{atchFileSn} | 관리자 펫돌봄 완료 사진 이미지. 완료 사진은 비공개 저장이라 공개 주소(`/files/public/…`)로 열리지 않으므로 이 경로로 연다(상세 응답 `cmptnDmnds[].imgs[].atchFileSn`을 쓴다). 관리자만(일반 회원 403, 비로그인 401). 이 모집글 매칭의 완료 요청 회차 사진이 아니면 파일이 있어도 404 `FILE_NOT_FOUND`, 없거나 삭제된 모집글은 404 `CARE_RECRUITMENT_NOT_FOUND`. 응답은 이미지 바이트(`Cache-Control: no-cache`)이고 `ApiResponse`로 감싸지 않는다(문의 첨부 이미지와 같은 방식) | ADM-022-02 | KSJ | - | (이미지) |
+| GET | /admin/care-matches/{petPrtcRcrtSn}/images/{atchFileSn} | 관리자 펫돌봄 완료 사진 이미지. 완료 사진은 도메인 API 전용 파일이라 공통 주소(`/files/{atchFileSn}`)로 열리지 않으므로 이 경로로 연다(상세 응답 `cmptnDmnds[].imgs[].atchFileSn`을 쓴다). 관리자만(일반 회원 403, 비로그인 401). 이 모집글 매칭의 완료 요청 회차 사진이 아니면 파일이 있어도 404 `FILE_NOT_FOUND`, 없거나 삭제된 모집글은 404 `CARE_RECRUITMENT_NOT_FOUND`. 응답은 이미지 바이트(`Cache-Control: no-cache`)이고 `ApiResponse`로 감싸지 않는다(문의 첨부 이미지와 같은 방식) | ADM-022-02 | KSJ | - | (이미지) |
 | GET | /admin/community/exposure/health-tips | 관리자 오늘의 건강팁 현황. 노출 자리 순서 최대 3건. 지정 글(정상 펫정보, 자리 1~3)은 그 자리에, 빈 자리는 자동 선정 글(지정 안 된 정상 펫정보 글 중 제목·본문에 건강 키워드가 든 글, 좋아요순·최신순)로 앞에서부터 채운다. 건강 키워드는 `KWRD_DICT` 뉴스 분류(AIMC0039)의 건강(CMUC0018) 행(SCR-ADM-050에서 편집). 일반 회원 403 ADMIN_ONLY | ADM-023-01·03 | LJS | - | List<AdminHealthTipResponse> |
 | PUT | /admin/community/exposure/health-tips/{pstSn} | 건강팁 지정(감사 로그). 같은 자리의 기존 지정은 풀리고, 다른 자리에 지정된 글이면 옮긴다. 글 검색은 `GET /admin/posts?bbsCd=CMUC0001`. 자리가 1~3이 아니거나 펫정보 글이 아니면 400 INVALID_INPUT_VALUE, 없거나 정상 글이 아니면 404 POST_NOT_FOUND | ADM-023-02 | LJS | AdminHealthTipAssignRequest | - |
 | DELETE | /admin/community/exposure/health-tips/{pstSn} | 건강팁 지정 해제(감사 로그). 지정 안 된 글 409 ALREADY_PROCESSED, 없는 글 404 POST_NOT_FOUND. 지정 글이 삭제·블라인드되면 지정은 자동으로 풀린다(ADM-023-03, 복구해도 돌아오지 않음) | ADM-023-02·03 | LJS | - | - |
@@ -71,7 +71,7 @@
 | GET | /admin/news | 관리자 뉴스 목록. 숨긴 기사(`useYn=false`) 포함, 등록 최신순 20건씩. 쿼리 `newsSrcCd`(CMUG07)·`newsClsfCd`(CMUG06), 없거나 공백이면 전체. 모르는 코드 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-050-01 | LJS | AdminNewsSearchCond | PageResponse<AdminNewsSummary> |
 | POST | /admin/news | 관리자 뉴스 등록(201, 감사 로그). 출처 관리자 등록(CMUC0023), 발행일시는 지금, 원문 경로 없음. 썸네일은 먼저 `POST /admin/news/images`로 올린다. 제목 1~200자·요약 1~1000자(앞뒤 공백 지운 뒤)가 아니거나 카테고리 코드가 틀리면 400 INVALID_INPUT_VALUE | ADM-050-02 | LJS | AdminNewsCreateRequest | AdminNewsCreateResponse |
 | PATCH | /admin/news/{newsSn} | 뉴스 수정(보낸 칸만, 감사 로그). 제목·요약·썸네일은 관리자 등록 기사만(수집 기사에 보내면 400), 카테고리·사용 여부는 모든 기사. 숨긴 기사는 사용자 `GET /news` 목록·상세에서 빠진다. 아무 칸도 없으면 400 INVALID_INPUT_VALUE, 없는 기사 404 NEWS_NOT_FOUND | ADM-050-02·03 | LJS | AdminNewsUpdateRequest | - |
-| POST | /admin/news/images | 관리자 뉴스 썸네일 업로드(201, multipart `image`). 공개 파일이라 `/api/files/public/{atchFileSn}`으로 열린다. 파일이 없으면 400 INVALID_INPUT_VALUE | ADM-050-02 | LJS | - | AdminNewsImageResponse |
+| POST | /admin/news/images | 관리자 뉴스 썸네일 업로드(201, multipart `image`). 로그인 회원 누구나 `/api/files/{atchFileSn}`으로 연다(`assets/news/`에 저장). 파일이 없으면 400 INVALID_INPUT_VALUE | ADM-050-02 | LJS | - | AdminNewsImageResponse |
 | GET | /admin/news/keywords | 뉴스 분류 키워드 목록(`KWRD_DICT` 뉴스 분류 AIMC0039, 정렬순). 키워드 하나가 한 행. 수집 때 제목에 든 키워드 중 정렬 순서가 앞선 카테고리로 분류하고, 건강(CMUC0018) 키워드는 건강팁 자동 선정에도 쓴다 | ADM-050-05 | LJS | - | List<AdminNewsKeywordResponse> |
 | POST | /admin/news/keywords | 뉴스 분류 키워드 등록(201, 감사 로그). 정렬 순서는 그 카테고리 기존 행과 같다(없으면 뉴스 분류 최대 + 10). 키워드 1~50자(앞뒤 공백 지운 뒤)·쉼표 없음·카테고리 CMUG06 4종이 아니면 400 INVALID_INPUT_VALUE, 같은 카테고리에 같은 키워드(대소문자 무시) 409 DUPLICATE_NEWS_KEYWORD | ADM-050-05 | LJS | AdminNewsKeywordCreateRequest | AdminNewsKeywordCreateResponse |
 | DELETE | /admin/news/keywords/{kwrdDictSn} | 뉴스 분류 키워드 삭제(`DEL_YN='Y'`, 감사 로그). 다음 수집부터 쓰이지 않는다. 없거나 이미 삭제 404 NEWS_KEYWORD_NOT_FOUND | ADM-050-05 | LJS | - | - |
@@ -203,7 +203,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | 필드 | 타입 | 필수 | 설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | newsSn | Long | Y | | NEWS.NEWS_SN |
-| atchFileSn | Long | N | 관리자 등록 썸네일(`/api/files/public/{atchFileSn}`) | NEWS.ATCH_FILE_SN |
+| atchFileSn | Long | N | 관리자 등록 썸네일(`/api/files/{atchFileSn}`) | NEWS.ATCH_FILE_SN |
 | newsClsfCd | String | Y | 공통코드 CMUG06 | NEWS.NEWS_CLSF_CD |
 | newsSrcCd | String | Y | 공통코드 CMUG07 | NEWS.NEWS_SRC_CD |
 | newsSrcCdNm | String | Y | 출처 이름 | COM_CD.COM_CD_NM |
@@ -566,7 +566,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 #### ImageItem (응답 record. 펫이야기는 접미어 규칙에 맞춰 `PostImageSummary`로 쓴다. 쓰는 DTO: CareRecruitmentResponse, ChatMessageResponse, ChatMessageSummary, LostReportResponse, PostResponse)
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| atchFileSn | Long | Y | 공개 사진(펫이야기 등)은 `GET /api/files/public/{atchFileSn}`, 1:1 문의 사진은 `GET /api/inquiries/{otoInqrySn}/images/{atchFileSn}`(본인만), 채팅 사진은 `GET /api/chat-rooms/{otoChatRoomSn}/images/{atchFileSn}`(방 참여자만) | PST_IMG·CHAT_MSG_PHOTO·INQRY_ATCH_PHOTO의 ATCH_FILE_SN |
+| atchFileSn | Long | Y | 게시글 사진(펫이야기 등)은 `GET /api/files/{atchFileSn}`, 1:1 문의 사진은 `GET /api/inquiries/{otoInqrySn}/images/{atchFileSn}`(본인만), 채팅 사진은 `GET /api/chat-rooms/{otoChatRoomSn}/images/{atchFileSn}`(방 참여자만) | PST_IMG·CHAT_MSG_PHOTO·INQRY_ATCH_PHOTO의 ATCH_FILE_SN |
 | sortSeq | Integer | Y | | 같은 테이블들의 SORT_SEQ |
 
 ### CareMatchCancelRequest
@@ -706,7 +706,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | regDt | LocalDateTime | Y | 경과 시간 표시 | PST.REG_DT, CMU-004-01 |
 | owner | Boolean | Y | 내 글 배지 | PST.MBR_SN, CMU-004-01 |
 
-목록 검색 조건(`CareRecruitmentSearchCond`, 쿼리): `rcrtSttsCd`(없으면 전체, `PCAC0001`이면 모집중), `mineYn`, `rgnSn`(하위 지역 포함), `prtcBgngDe`~`prtcEndDe`(일정이 기간과 겹치는 글, 일정 없는 글은 제외), `petSeCd`, `petSizeCd`(고양이만 고르면 무시). 모두 AND, 10건 최신순.
+목록 검색 조건(`CareRecruitmentSearchCond`, 쿼리): `rcrtSttsCd`(없으면 전체, `PCAC0001`이면 모집중), `mineYn`, `rgnSn`(하위 지역 포함), `prtcBgngDe`~`prtcEndDe`(일정이 기간과 겹치는 글, 일정 없는 글은 제외), `petSeCd`, `petSizeCd`(고양이만 고르면 무시). 모두 AND, 10건. 기본 정렬은 모집 상태 코드 오름차순(PCAC0001 모집중 → 0002 매칭완료 → 0003 거래완료), 같은 상태 안에서는 최신순.
 ### MinimumWageResponse
 쓰는 API: GET /care-recruitments/minimum-wage
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
@@ -856,7 +856,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | cmntCn | String | Y | | CMNT.CMNT_CN |
 | mbrSn | Long | Y | | CMNT.MBR_SN |
 | mbrNcnm | String | Y | | MBR.MBR_NCNM |
-| mbrAtchFileSn | Long | N | 작성자 프로필 사진 번호(`GET /files/public/{번호}`). 사진이 없으면 null | MBR.ATCH_FILE_SN, 추가 요청 2026-10-30 |
+| mbrAtchFileSn | Long | N | 작성자 프로필 사진 번호(`GET /files/{번호}`). 사진이 없으면 null | MBR.ATCH_FILE_SN, 추가 요청 2026-10-30 |
 | regDt | LocalDateTime | Y | 화면의 "1시간 전" 표시용 | CMNT.REG_DT, CMU-001-11 |
 
 ### CommentSummary
@@ -869,7 +869,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | cmntCn | String | N | 삭제된 댓글이면 null | CMNT.CMNT_CN |
 | mbrSn | Long | N | 삭제된 댓글이면 null | CMNT.MBR_SN |
 | mbrNcnm | String | N | 삭제된 댓글이면 null. 파기된 회원(이메일 HMAC `PURGED`)은 「탈퇴한 회원」(탈퇴했지만 파기 전이면 원래 닉네임) | MBR.MBR_NCNM |
-| mbrAtchFileSn | Long | N | 작성자 프로필 사진 번호(`GET /files/public/{번호}`). 사진이 없거나 삭제된 댓글이면 null. 파기된 회원이면 null | MBR.ATCH_FILE_SN, 추가 요청 2026-10-30 |
+| mbrAtchFileSn | Long | N | 작성자 프로필 사진 번호(`GET /files/{번호}`). 사진이 없거나 삭제된 댓글이면 null. 파기된 회원이면 null | MBR.ATCH_FILE_SN, 추가 요청 2026-10-30 |
 | sysAutoCrtYn | boolean | Y | 찾았어요 완료 안내 자동 댓글 | CMNT.SYS_AUTO_CRT_YN, CMU-002-09 |
 | owner | Boolean | Y | 내 댓글인지(삭제 버튼) | CMNT.MBR_SN, CMU-001-11 |
 | regDt | LocalDateTime | Y | 화면의 "1시간 전" 표시용 | CMNT.REG_DT, CMU-001-11 |
@@ -919,7 +919,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | pstSn | Long | Y | 좋아요·댓글·신고에 쓴다 | LOST_TPOF.PST_SN |
 | mbrSn | Long | N | 작성자 회원 번호(댓글 「작성자」 배지). 찾았어요로 닫힌 응답은 null | PST.MBR_SN, CMU-002-07, 추가 요청 2026-10-30 |
 | mbrNcnm | String | N | 작성자 닉네임(화면 "토리맘 · 등록일시"). 파기된 회원(이메일 HMAC `PURGED`)은 「탈퇴한 회원」(탈퇴했지만 파기 전이면 원래 닉네임) | MBR.MBR_NCNM, 화면설계서 SCR-CMU-002-02 |
-| mbrAtchFileSn | Long | N | 작성자 프로필 사진 번호(`GET /files/public/{번호}`). 사진이 없거나 찾았어요로 닫힌 응답이면 null. 파기된 회원이면 null | MBR.ATCH_FILE_SN, 추가 요청 2026-10-30 |
+| mbrAtchFileSn | Long | N | 작성자 프로필 사진 번호(`GET /files/{번호}`). 사진이 없거나 찾았어요로 닫힌 응답이면 null. 파기된 회원이면 null | MBR.ATCH_FILE_SN, 추가 요청 2026-10-30 |
 | regDt | LocalDateTime | N | 게시글 등록 일시 | PST.REG_DT, 화면설계서 SCR-CMU-002-02 |
 | pstTtl | String | Y | | PST.PST_TTL, CMU-002-09 |
 | lostTpofSttsCd | String | Y | 공통코드 CMUG03(실종·찾았어요) | LOST_TPOF.LOST_TPOF_STTS_CD, CMU-002-09 |
@@ -1021,7 +1021,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | pstCn | String | Y | | PST.PST_CN, CMU-001-10 |
 | mbrSn | Long | Y | 작성자 | PST.MBR_SN, CMU-001-10 |
 | mbrNcnm | String | Y | 작성자. 파기된 회원(이메일 HMAC `PURGED`)은 「탈퇴한 회원」(탈퇴했지만 파기 전이면 원래 닉네임) | MBR.MBR_NCNM, CMU-001-10 |
-| mbrAtchFileSn | Long | N | 작성자 프로필 사진 번호(`GET /files/public/{번호}`). 사진이 없으면 null. 파기된 회원이면 null(정지 회원, 탈퇴했지만 파기 전인 회원은 그대로) | MBR.ATCH_FILE_SN, 추가 요청 2026-10-30 |
+| mbrAtchFileSn | Long | N | 작성자 프로필 사진 번호(`GET /files/{번호}`). 사진이 없으면 null. 파기된 회원이면 null(정지 회원, 탈퇴했지만 파기 전인 회원은 그대로) | MBR.ATCH_FILE_SN, 추가 요청 2026-10-30 |
 | regDt | LocalDateTime | Y | 작성일 | 공통 감사 컬럼 REG_DT, CMU-001-10 |
 | inqCnt | Integer | Y | | PST.INQ_CNT, CMU-001-10 |
 | rcmdtnCnt | Integer | Y | | PST.RCMDTN_CNT, CMU-001-09 |
@@ -1039,7 +1039,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | pstTtl | String | Y | 1행 말줄임 | PST.PST_TTL, CMU-001-01 |
 | pstCn | String | Y | 2행 말줄임 | PST.PST_CN, CMU-001-01 |
 | mbrNcnm | String | Y | 작성자. 파기된 회원(이메일 HMAC `PURGED`)은 「탈퇴한 회원」(탈퇴했지만 파기 전이면 원래 닉네임) | MBR.MBR_NCNM, CMU-001-01 |
-| mbrAtchFileSn | Long | N | 작성자 프로필 사진 번호(`GET /files/public/{번호}`). 사진이 없으면 null. 파기된 회원이면 null(정지 회원, 탈퇴했지만 파기 전인 회원은 그대로) | MBR.ATCH_FILE_SN, 추가 요청 2026-10-30 |
+| mbrAtchFileSn | Long | N | 작성자 프로필 사진 번호(`GET /files/{번호}`). 사진이 없으면 null. 파기된 회원이면 null(정지 회원, 탈퇴했지만 파기 전인 회원은 그대로) | MBR.ATCH_FILE_SN, 추가 요청 2026-10-30 |
 | regDt | LocalDateTime | Y | 작성일("1시간 전" 표시용) | 공통 감사 컬럼 REG_DT, CMU-001-01 |
 | thumbAtchFileSn | Long | N | 대표 사진(첫 장). 사진이 없으면 null | PST_IMG.ATCH_FILE_SN, CMU-001-01 |
 | rcmdtnCnt | Integer | Y | | PST.RCMDTN_CNT, CMU-001-03 |

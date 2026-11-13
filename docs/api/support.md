@@ -24,7 +24,7 @@
 | GET | /admin/notices/notification-target-count | 공지 알림 대상 수(정상 회원 수). 발송 확인 모달 "회원 N명에게 알림을 보내요" | ADM-040-03 | LJS | - | AdminNoticeTargetCountResponse |
 | POST | /admin/notices | 공지 등록(201, 감사 로그). `notiSndngYn=true`면 정상 회원마다 공지 인앱 알림을 한 번 보내고 발송 시각·대상 수를 남긴다(앱 알림 채널을 끈 회원은 받지 않지만 대상 수에는 든다). `useYn=false`와 함께 보내면 400 INVALID_INPUT_VALUE | ADM-040-02·03·05 | LJS | AdminNoticeCreateRequest | AdminNoticeResponse |
 | PATCH | /admin/notices/{ntcMttrSn} | 공지 수정·비노출(감사 로그). 알림은 다시 보내지 않는다. 삭제 API는 없고 `useYn=false`로 비노출한다. 없으면 404 NOTICE_NOT_FOUND | ADM-040-04·05 | LJS | AdminNoticeUpdateRequest | AdminNoticeResponse |
-| POST | /admin/notices/images | 공지 본문 이미지 올리기(multipart `image`, 이미지만 10MB, 공개 파일). 본문에는 `![](/api/files/public/{atchFileSn})` 한 줄로 넣는다(issues.md 고객센터 10, 2026-11-02 결정) | ADM-040-02 | LJS | - | AdminNoticeImageResponse |
+| POST | /admin/notices/images | 공지 본문 이미지 올리기(multipart `image`, 이미지만 10MB, `assets/notice/`에 저장, 로그인 회원 누구나 연다). 본문에는 `![](/api/files/{atchFileSn})` 한 줄로 넣는다(issues.md 고객센터 10, 2026-11-02 결정) | ADM-040-02 | LJS | - | AdminNoticeImageResponse |
 | GET | /admin/inquiries | 관리자 1:1 문의 목록. 접수 최신순 20건씩. `inqryTypeCd`(CSCG02)·`inqryCtgr`(DISPUTE 분쟁·ERROR 오류·ETC 기타)·`inqryPrcsSttsCd`(CSCG03)·`bgngYmd`~`endYmd`(접수일, 끝 날짜 포함)는 AND. `inclDelYn=true`면 회원이 삭제한 문의도 나온다. 내부 분류는 유형으로 정한다(건강기록·픽셀 캐릭터=오류, 커뮤니티·포인트·결제·가계부=분쟁, 나머지=기타). 없는 코드·시작일이 끝일 뒤면 400 INVALID_INPUT_VALUE. 일반 회원 403 ADMIN_ONLY | ADM-042-01·02 | LJS | AdminInquirySearchCond | PageResponse<AdminInquirySummary> |
 | GET | /admin/inquiries/{otoInqrySn} | 관리자 1:1 문의 상세(삭제 문의 포함, 상태 이력·첨부·답변·캐릭터 오류 처리 결과). 회원이 삭제한 문의는 첨부 목록이 비어 있다. 없으면 404 INQUIRY_NOT_FOUND | ADM-042-03·06·07·08 | LJS | - | AdminInquiryResponse |
 | GET | /admin/inquiries/{otoInqrySn}/images/{atchFileSn} | 관리자 1:1 문의 첨부 이미지(이미지 바이너리). 그 문의의 삭제되지 않은 첨부나 접수 시점 캐릭터 이미지(`charImgAtchFileSn`)가 아니거나 삭제된 문의면 404 FILE_NOT_FOUND | ADM-042-03·07 | LJS | - | byte[] |
@@ -170,7 +170,7 @@
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | ntcMttrTtl | String | Y | 공백 불가, 200자 이하 | NTC_MTTR.NTC_MTTR_TTL, ADM-040-02 |
-| ntcMttrCn | String | Y | 공백 불가, 4,000자 이하. 이미지는 `![](/api/files/public/{atchFileSn})` 줄 | NTC_MTTR.NTC_MTTR_CN, ADM-040-02 |
+| ntcMttrCn | String | Y | 공백 불가, 4,000자 이하. 이미지는 `![](/api/files/{atchFileSn})` 줄 | NTC_MTTR.NTC_MTTR_CN, ADM-040-02 |
 | upendFixYn | Boolean | Y | 상단 고정(개수 제한 없음) | NTC_MTTR.UPEND_FIX_YN, ADM-040-05 |
 | useYn | Boolean | Y | false면 비노출 | NTC_MTTR.USE_YN, ADM-040-02 |
 | notiSndngYn | Boolean | Y | 알림 발송. 등록 때만 받는다 | ADM-040-03 |
@@ -179,7 +179,7 @@
 쓰는 API: POST /admin/notices/images
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| atchFileSn | Long | Y | 공개 이미지 `GET /api/files/public/{atchFileSn}` | ATCH_FILE.ATCH_FILE_SN, ADM-040-02 |
+| atchFileSn | Long | Y | 로그인 회원 누구나 여는 이미지 `GET /api/files/{atchFileSn}` | ATCH_FILE.ATCH_FILE_SN, ADM-040-02 |
 
 ### AdminNoticeResponse
 쓰는 API: GET /admin/notices/{ntcMttrSn}, POST /admin/notices, PATCH /admin/notices/{ntcMttrSn}

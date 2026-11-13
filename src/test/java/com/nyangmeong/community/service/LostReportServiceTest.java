@@ -404,7 +404,7 @@ class LostReportServiceTest {
     @Test
     void 사진은_순서대로_저장한다() {
         stubCreate();
-        when(fileStore.storePublic(any(MultipartFile.class), anyString())).thenReturn(101L, 102L);
+        when(fileStore.store(any(MultipartFile.class), any(), any(), anyString())).thenReturn(101L, 102L);
 
         service.create(MBR, create(null, "믹스", true, List.of(file("a.png"), file("b.png"))));
 
@@ -629,7 +629,7 @@ class LostReportServiceTest {
         when(postMapper.updatePost(eq(PST), eq(null), anyString(), anyString(), anyString(), eq(NORMAL)))
                 .thenReturn(1);
         when(lostReportMapper.updateLostReport(any(LostReport.class), eq(MISSING))).thenReturn(1);
-        when(fileStore.storePublic(any(MultipartFile.class), anyString())).thenReturn(103L);
+        when(fileStore.store(any(MultipartFile.class), any(), any(), anyString())).thenReturn(103L);
 
         service.update(MBR, LOST, update(LAT, LOT, List.of(101L), List.of(file("c.png"))));
 

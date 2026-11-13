@@ -15,7 +15,9 @@ import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.external.CharacterSpec;
+import com.nyangmeong.global.file.FileCategory;
 import com.nyangmeong.global.file.FileExtension;
+import com.nyangmeong.global.file.FileOwner;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.file.StoredFile;
 import com.nyangmeong.pet.domain.CharacterItemSheet;
@@ -56,10 +58,11 @@ public class CharacterSheetService {
      */
     @Transactional
     public void saveItemSheet(Long mbrSn, boolean admin, Long pixelCharSn, Long itemSn, MultipartFile sheet) {
-        checkBakeTarget(mbrSn, admin, pixelCharSn, itemSn);
+        PixelCharacter character = checkBakeTarget(mbrSn, admin, pixelCharSn, itemSn);
         byte[] content = readSheet(sheet);
         Long atchFileSn = fileStore.store(content, FileExtension.PNG,
-                "sheet-" + pixelCharSn + "-" + itemSn + ".png", String.valueOf(mbrSn));
+                "sheet-" + pixelCharSn + "-" + itemSn + ".png", FileCategory.PET_SHEET,
+                FileOwner.pet(character.getMbrSn(), character.getPetSn()), String.valueOf(mbrSn));
         pixelCharacterMapper.upsertItemSheet(pixelCharSn, itemSn, atchFileSn);
     }
 
@@ -140,11 +143,12 @@ public class CharacterSheetService {
     /**
      * 굽기 결과를 받을 수 있는 캐릭터·아이템인지 검사
      */
-    private void checkBakeTarget(Long mbrSn, boolean admin, Long pixelCharSn, Long itemSn) {
-        getPrimaryCharacter(mbrSn, admin, pixelCharSn);
+    private PixelCharacter checkBakeTarget(Long mbrSn, boolean admin, Long pixelCharSn, Long itemSn) {
+        PixelCharacter character = getPrimaryCharacter(mbrSn, admin, pixelCharSn);
         if (itemMapper.countBakeItem(itemSn) == 0) {
             throw new CustomException(ErrorCode.ITEM_NOT_FOUND);
         }
+        return character;
     }
 
     /**
