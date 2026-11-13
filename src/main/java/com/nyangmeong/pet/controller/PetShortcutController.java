@@ -31,7 +31,7 @@ public class PetShortcutController {
 
     private final PetShortcutService petShortcutService;
 
-    @Operation(summary = "메인 반려동물 바로가기 조회(저장한 적 없는 반려동물은 종합 건강기록)")
+    @Operation(summary = "메인 반려동물 바로가기 조회(저장한 적 없거나 전부 숨기면 빈 목록)")
     @GetMapping
     public ResponseEntity<ApiResponse<List<PetShortcutSummary>>> search(@AuthenticationPrincipal LoginMember me) {
         return ResponseEntity.ok(ApiResponse.success(petShortcutService.search(me.id())));

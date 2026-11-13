@@ -2,11 +2,10 @@
 
 ## 지금 하는 것
 
-SCR-MAN-001 메인페이지 · 새 반려동물 기본 바로가기 없애기 — 끝 (2026-11-13). `GET /api/pets/main-shortcuts`가 바로가기를 저장한 적 없는 반려동물에 `[]`를 준다(MANC0008 기본값 삭제, 데이터 옮기기 없음). 쓰지 않게 된 `pet/domain/MainShortcut` 삭제. 검증 1회차 `통과`·사람 확인 (승인 2026-11-13 11:30, 시작 2026-11-13 11:29)
+SCR-MAN-001 메인페이지 · 바로가기 예전 기본값 설명 정리 — 끝 (2026-11-13). `PetShortcutController` Swagger summary·`PetShortcutService` 클래스 주석·`PetShortcutServiceTest` 주석의 "저장한 적 없으면 종합 건강기록" 설명을 "저장한 적 없거나 전부 숨기면 빈 목록"으로 고쳤다(동작·계약 변경 없음). 검증 1회차 `통과`·사람 확인 (승인 2026-11-13 11:57, 시작 2026-11-13 11:46)
 
 ## 다음에 할 것
 
-- 남김(SCR-MAN-001 기본 바로가기 없애기, 검증 에이전트 지적): 예전 동작("저장한 적 없으면 종합 건강기록") 설명이 `PetShortcutController.java` Swagger summary·`PetShortcutService.java` 클래스 주석·`PetShortcutServiceTest.java` 주석에 남았다. 다음 pet 작업 때 고친다
 - 팀에 알린다(SCR-MYP-010 파일 저장 경로 재구성, PR 본문 "영향"에도): ① 디스코드 공유 `application.properties`와 각자 파일의 `app.security.permit-all-paths`에서 `/api/files/public/**`를 뺀다(남아 있으면 그 서버에서는 예전 주소가 로그인 없이 열리고 `FileControllerTest`가 실패한다) ② `FileStore`의 `store`(2인자)·`storePublic`·`storeDocument`가 없어지고 `store(file, FileCategory, FileOwner, actorId)`·`store(byte[], extension, orgnlFileNm, FileCategory, FileOwner, actorId)`로 합쳐졌다. 병합 전 브랜치에서 옛 메서드를 부르면 컴파일이 깨진다. 새 용도가 생기면 `FileCategory`에 한 줄 추가 ③ 이미지 주소는 `/api/files/{atchFileSn}`(로그인 필요), 소유 검사가 필요한 파일은 지금처럼 도메인 API ④ 기다리는 것: `global`이 도메인 폴더 이름(`FileCategory`)을 아는 것에 대한 팀 합의(ArchUnit은 통과)
 - SCR-MYP-010 연결 남음: 파일 저장 경로 재구성 (프론트 연결 이미지 URL `/api/files/public/{번호}` → `/api/files/{번호}`: 공통 파일 이미지 컴포넌트, 관리자 공지 편집기·뉴스 등록, 사용자 공지·뉴스 화면, 프론트 저장소에서 /start. 프론트 마일스톤 절 "SCR-MYP-010 픽셀 캐릭터 관리 · 이미지 주소 /api/files 전환 — 대기" 넣음). 프론트가 옮긴 뒤 백엔드에서 `GET /api/files/public/{atchFileSn}`을 지운다
 - 남김(SCR-MYP-010 파일 저장 경로 재구성 범위 밖): 기존 공지·뉴스 이미지(`public/…`) 이동(파일 이동·`PHYS_STRG_PATH` UPDATE·공지 본문 URL 교체, 운영 디스크 작업이라 사람), 영수증 원본 저장 중단(따로 기획), 지운·교체한 파일 정리 배치, `AdminNewsService.create`의 `atchFileSn` 존재·위치 검사, `byte[]` 저장의 `FILE_MAX_SZ` 검사, 채팅·문의 이미지 상한 상수 10
