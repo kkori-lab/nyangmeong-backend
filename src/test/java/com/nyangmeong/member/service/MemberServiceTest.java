@@ -29,6 +29,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.nyangmeong.global.error.BaseException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.file.FileCategory;
+import com.nyangmeong.global.file.FileOwner;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.response.PageResponse;
@@ -438,7 +440,7 @@ class MemberServiceTest {
     void 회원정보_수정은_사진을_공개_이미지로_저장한다() {
         givenNormalMember(5L);
         MultipartFile photo = png();
-        when(fileStore.storePublic(photo, "5")).thenReturn(77L);
+        when(fileStore.store(eq(photo), eq(FileCategory.MEMBER_PROFILE), eq(FileOwner.member(5L)), eq("5"))).thenReturn(77L);
 
         service.updateMember(5L, new MemberUpdateRequest(null, photo, null));
 
@@ -452,7 +454,7 @@ class MemberServiceTest {
         service.updateMember(5L, new MemberUpdateRequest(null, null, true));
 
         verify(memberMapper).updateProfile(eq(5L), isNull(), isNull(), isNull(), eq(true), eq("5"));
-        verify(fileStore, never()).storePublic(any(MultipartFile.class), anyString());
+        verify(fileStore, never()).store(any(MultipartFile.class), any(), any(), anyString());
     }
 
     @Test
@@ -463,7 +465,7 @@ class MemberServiceTest {
                 () -> service.updateMember(5L, new MemberUpdateRequest(null, png(), true)));
 
         assertCode(thrown, ErrorCode.BAD_REQUEST);
-        verify(fileStore, never()).storePublic(any(MultipartFile.class), anyString());
+        verify(fileStore, never()).store(any(MultipartFile.class), any(), any(), anyString());
     }
 
     @Test

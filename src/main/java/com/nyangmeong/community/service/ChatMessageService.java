@@ -27,6 +27,8 @@ import com.nyangmeong.community.mapper.ChatMessageMapper;
 import com.nyangmeong.community.mapper.ChatRoomMapper;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.file.FileCategory;
+import com.nyangmeong.global.file.FileOwner;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.security.crypto.FieldCryptoService;
 
@@ -119,7 +121,7 @@ public class ChatMessageService {
         for (MultipartFile image : images) {
             ChatMessagePhoto photo = new ChatMessagePhoto();
             photo.setChatMsgSn(message.getChatMsgSn());
-            photo.setAtchFileSn(fileStore.store(image, String.valueOf(mbrSn)));
+            photo.setAtchFileSn(fileStore.store(image, FileCategory.COMMUNITY_CHAT, FileOwner.member(mbrSn), String.valueOf(mbrSn)));
             photo.setSortSeq(sortSeq++);
             chatMessageMapper.insertPhoto(photo);
         }

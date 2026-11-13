@@ -22,7 +22,9 @@ import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.external.CharacterSpec;
+import com.nyangmeong.global.file.FileCategory;
 import com.nyangmeong.global.file.FileExtension;
+import com.nyangmeong.global.file.FileOwner;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.file.StoredFile;
 import com.nyangmeong.global.notification.EventPublisher;
@@ -170,7 +172,8 @@ public class PixelCharacterService {
             throw new CustomException(ErrorCode.EQUIPPED_ITEMS_CHANGED);
         }
         String actorId = String.valueOf(mbrSn);
-        Long atchFileSn = fileStore.storePublic(image, FileExtension.PNG, "wear-" + pixelCharSn + ".png", actorId);
+        Long atchFileSn = fileStore.store(image, FileExtension.PNG, "wear-" + pixelCharSn + ".png",
+                FileCategory.PET_WEAR, FileOwner.pet(character.getMbrSn(), character.getPetSn()), actorId);
         pixelCharacterMapper.updateWearImage(pixelCharSn, atchFileSn, actorId);
     }
 

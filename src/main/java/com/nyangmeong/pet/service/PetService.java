@@ -352,6 +352,20 @@ public class PetService {
     }
 
     /**
+     * 주양육자 회원 번호 조회 (반려동물 파일 저장 폴더)
+     * - 권한 검사는 하지 않는다. 호출하는 쪽이 먼저 검사할 것
+     * - 삭제됐거나 없는 반려동물이면 404
+     */
+    @Transactional(readOnly = true)
+    public Long getPrimaryCaregiverMbrSn(Long petSn) {
+        Long mbrSn = petMapper.selectPrimaryCaregiverMbrSn(petSn, BrupRole.PRIMARY.getCode());
+        if (mbrSn == null) {
+            throw new CustomException(ErrorCode.PET_NOT_FOUND);
+        }
+        return mbrSn;
+    }
+
+    /**
      * 프로필 체중 동기화
      * - PET_BDWG만 바꾼다 (정상·목표 체중 범위는 그대로)
      * - 권한 검사는 하지 않는다. 호출하는 쪽(건강기록)이 먼저 검사하고, 그 트랜잭션 안에서 부를 것

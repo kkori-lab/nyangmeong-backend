@@ -88,6 +88,11 @@ public interface PetMapper {
     int countPrimaryPets(@Param("mbrSn") Long mbrSn, @Param("primaryRoleCd") String primaryRoleCd);
 
     /**
+     * 반려동물의 주양육자 회원 번호 (삭제된 반려동물이면 null)
+     */
+    Long selectPrimaryCaregiverMbrSn(@Param("petSn") Long petSn, @Param("primaryRoleCd") String primaryRoleCd);
+
+    /**
      * 반려동물 등록
      */
     int insertPet(Pet pet);

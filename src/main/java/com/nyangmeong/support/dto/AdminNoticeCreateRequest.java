@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 /**
  * [관리자 공지 등록 요청]
  * - POST /api/admin/notices (FN-ADM-040-02·03·05)
- * - ntcMttrCn : 이미지는 ![](/api/files/public/{atchFileSn}) 한 줄로 넣는다
+ * - ntcMttrCn : 이미지는 ![](/api/files/{atchFileSn}) 한 줄로 넣는다
  * - notiSndngYn : 등록 때만 받는다. 수정 때는 다시 보내지 않음
  */
 public record AdminNoticeCreateRequest(

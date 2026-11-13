@@ -331,6 +331,19 @@
            AND R.USE_YN = 'Y'
     </select>
 
+    <select id="selectPrimaryCaregiverMbrSn" resultType="long">
+        /* 반려동물 주양육자 회원 번호 조회 */
+        SELECT R.MBR_SN
+          FROM BRUP_REL R
+          JOIN PET P
+            ON P.PET_SN = R.PET_SN
+           AND P.DEL_YN = 'N'
+         WHERE R.PET_SN = #{petSn}
+           AND R.BRUP_ROLE_CD = #{primaryRoleCd}
+           AND R.USE_YN = 'Y'
+         LIMIT 1
+    </select>
+
     <insert id="insertPet" parameterType="com.nyangmeong.pet.domain.Pet"
             useGeneratedKeys="true" keyProperty="petSn" keyColumn="PET_SN">
         /* 반려동물 등록 */

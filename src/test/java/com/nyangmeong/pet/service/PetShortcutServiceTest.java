@@ -55,9 +55,9 @@ class PetShortcutServiceTest {
     }
 
     @Test
-    void 저장한_적_없는_반려동물은_종합_건강기록이다() {
-        assertThat(service.search(MBR)).containsExactly(new PetShortcutSummary(1L, List.of(HEALTH)),
-                new PetShortcutSummary(2L, List.of(HEALTH)));
+    void 저장한_적_없는_반려동물은_빈_목록이다() {
+        assertThat(service.search(MBR)).containsExactly(new PetShortcutSummary(1L, List.of()),
+                new PetShortcutSummary(2L, List.of()));
     }
 
     @Test

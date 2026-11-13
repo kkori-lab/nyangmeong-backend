@@ -12,6 +12,8 @@ import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import com.nyangmeong.global.file.FileCategory;
+import com.nyangmeong.global.file.FileOwner;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.response.PageResponse;
@@ -477,7 +479,7 @@ public class MemberService {
             return toResponse(member);
         }
         String actorId = String.valueOf(mbrSn);
-        Long atchFileSn = hasPhoto ? fileStore.storePublic(req.profilePhoto(), actorId) : null;
+        Long atchFileSn = hasPhoto ? fileStore.store(req.profilePhoto(), FileCategory.MEMBER_PROFILE, FileOwner.member(mbrSn), actorId) : null;
         try {
             memberMapper.updateProfile(mbrSn, mblTelnoEnc, mblTelnoHmac, atchFileSn, photoReset, actorId);
         } catch (DuplicateKeyException e) {

@@ -28,7 +28,7 @@ app.cookie.secure=false
 # SNS 토큰 교환의 redirect_uri 도 요청 Origin 이 이 목록에 있으면 그 주소로 정한다. 운영 서버는 운영 프론트 주소를 넣는다(예: http://localhost:5173,https://pawever.cloud)
 app.cors.allowed-origins=http://localhost:5173
 # 로그인 없이 여는 경로(쉼표 구분). 목록 밖은 전부 인증이 필요하다. 생략하면 아래와 같은 기본값
-app.security.permit-all-paths=/api/auth/dev-tokens,/api/auth/login,/api/auth/sns-login,/api/auth/login-attempt-limits,/api/auth/captchas,/api/auth/refresh,/api/auth/logout,/api/terms,/api/terms/*,/api/email-certifications,/api/email-certifications/*/verify,/api/email-certifications/*/invalidate,/api/email-certifications/*/password-reset,/api/members,/api/members/nickname-availability,/api/members/phone-availability,/api/members/recovery-info,/api/members/recovery,/api/members/me/nickname,/api/files/public/**,/swagger-ui/**,/swagger-ui.html,/v3/api-docs/**,/internal/ai/tools
+app.security.permit-all-paths=/api/auth/dev-tokens,/api/auth/login,/api/auth/sns-login,/api/auth/login-attempt-limits,/api/auth/captchas,/api/auth/refresh,/api/auth/logout,/api/terms,/api/terms/*,/api/email-certifications,/api/email-certifications/*/verify,/api/email-certifications/*/invalidate,/api/email-certifications/*/password-reset,/api/members,/api/members/nickname-availability,/api/members/phone-availability,/api/members/recovery-info,/api/members/recovery,/api/members/me/nickname,/swagger-ui/**,/swagger-ui.html,/v3/api-docs/**,/internal/ai/tools
 
 # 이메일 인증·가입(SCR-ACC-001). 모두 생략 가능, 생략하면 아래와 같은 기본값(초·분 단위는 키 이름 끝)
 app.email-cert.code-validity-seconds=180

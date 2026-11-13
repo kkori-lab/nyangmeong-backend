@@ -7,7 +7,7 @@ import lombok.Data;
 /**
  * [관리자 뉴스 목록 항목]
  * - GET /api/admin/news (FN-ADM-050-01), 숨긴 기사 포함
- * - 썸네일 : 관리자 등록은 atchFileSn(/api/files/public/{atchFileSn}), 수집 기사는 thmbUrlPath(외부 URL)
+ * - 썸네일 : 관리자 등록은 atchFileSn(/api/files/{atchFileSn}), 수집 기사는 thmbUrlPath(외부 URL)
  * - orgtxtPath : 수집 기사 원문 링크, 관리자 등록은 null
  */
 @Data

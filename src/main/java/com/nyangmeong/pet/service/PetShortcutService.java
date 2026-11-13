@@ -15,7 +15,6 @@ import com.nyangmeong.global.code.CommonCodeService;
 import com.nyangmeong.global.code.CommonCodeSummary;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
-import com.nyangmeong.pet.domain.MainShortcut;
 import com.nyangmeong.pet.domain.PetCodeGroup;
 import com.nyangmeong.pet.domain.PetMainShrtc;
 import com.nyangmeong.pet.dto.PetShortcutSaveRequest;
@@ -53,11 +52,7 @@ public class PetShortcutService {
         for (Long petSn : petShortcutMapper.selectCaregivingPetSns(mbrSn)) {
             List<PetMainShrtc> rows = rowsByPet.get(petSn);
             List<String> cds = new ArrayList<>();
-            if (rows == null) {
-                if (activeCds.contains(MainShortcut.HEALTH_RECORD.getCode())) {
-                    cds.add(MainShortcut.HEALTH_RECORD.getCode());
-                }
-            } else {
+            if (rows != null) {
                 for (PetMainShrtc row : rows) {
                     if ("Y".equals(row.getIndctYn()) && activeCds.contains(row.getShrtcCd())) {
                         cds.add(row.getShrtcCd());
