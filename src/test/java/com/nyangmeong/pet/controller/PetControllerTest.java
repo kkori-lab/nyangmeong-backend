@@ -135,7 +135,7 @@ class PetControllerTest {
     void 상세는_모달_값을_주고_체중_잠금_필드는_없다() throws Exception {
         PetResponse res = new PetResponse(10L, "뭉치", "PETC0001", 15L, "푸들", null, "PETC0003",
                 LocalDate.of(2023, 5, 1), new BigDecimal("4.250"), "PETC0006", null, null, null, null, null,
-                "PETC0018", true, true, null, new BigDecimal("3"), new BigDecimal("5"), List.of());
+                "PETC0018", true, true, null, new BigDecimal("3"), new BigDecimal("5"), "Y", List.of());
         when(petService.getPet(1L, 10L)).thenReturn(res);
 
         mockMvc.perform(get("/api/pets/10"))
@@ -168,12 +168,45 @@ class PetControllerTest {
 
     @Test
     @WithMockLoginMember
-    void 체중이_0이거나_소수_넷째_자리면_400() throws Exception {
+    void 체중이_0이거나_소수_셋째_자리거나_200을_넘으면_400() throws Exception {
         mockMvc.perform(json(post("/api/pets"), createBody("뭉치", "0", "")))
                 .andExpect(status().isBadRequest());
-        mockMvc.perform(json(post("/api/pets"), createBody("뭉치", "4.2501", "")))
+        mockMvc.perform(json(post("/api/pets"), createBody("뭉치", "4.125", "")))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(json(post("/api/pets"), createBody("뭉치", "200.01", "")))
                 .andExpect(status().isBadRequest());
         verify(petService, never()).createPet(anyLong(), any());
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 체중이_200이면_등록된다() throws Exception {
+        mockMvc.perform(json(post("/api/pets"), createBody("뭉치", "200", "")))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 등록의_목표_최소_최대_체중도_소수_둘째_자리_200_이하만_받는다() throws Exception {
+        for (String field : new String[] { "goalBdwg", "minBdwg", "maxBdwg" }) {
+            for (String bad : new String[] { "4.125", "200.01" }) {
+                String body = createBody("뭉치", "4.25", "").replaceFirst("\\}\\s*$",",\"" + field + "\":" + bad + "}");
+                mockMvc.perform(json(post("/api/pets"), body)).andExpect(status().isBadRequest());
+            }
+        }
+        verify(petService, never()).createPet(anyLong(), any());
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 수정의_체중_목표_최소_최대도_소수_둘째_자리_200_이하만_받는다() throws Exception {
+        for (String field : new String[] { "petBdwg", "goalBdwg", "minBdwg", "maxBdwg" }) {
+            for (String bad : new String[] { "4.125", "200.5" }) {
+                mockMvc.perform(json(patch("/api/pets/10"), "{\"" + field + "\":" + bad + "}"))
+                        .andExpect(status().isBadRequest());
+            }
+        }
+        verify(petService, never()).updatePet(anyLong(), anyLong(), any());
     }
 
     @Test
@@ -183,6 +216,46 @@ class PetControllerTest {
                 .andExpect(status().isBadRequest());
         mockMvc.perform(json(patch("/api/pets/10"), "{\"chipNo\":\"41000A\"}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 체중_범위_직접_입력_여부는_Y_N만_받는다() throws Exception {
+        mockMvc.perform(json(post("/api/pets"), """
+                {"petNm":"뭉치","petSeCd":"PETC0001","vrtySn":15,"petBrdt":"2023-05-01","petGndrCd":"PETC0003",
+                 "nutrYn":true,"petBdwg":4.25,"minBdwg":3,"maxBdwg":5,"bdwgRngDrctInptYn":"X","colrCd":"PETC0006"}
+                """)).andExpect(status().isBadRequest());
+        mockMvc.perform(json(patch("/api/pets/10"), "{\"bdwgRngDrctInptYn\":\"y\"}"))
+                .andExpect(status().isBadRequest());
+        verify(petService, never()).createPet(anyLong(), any());
+        verify(petService, never()).updatePet(anyLong(), anyLong(), any());
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 자동_계산이면_범위_없이_등록하고_수정에서도_N을_받는다() throws Exception {
+        when(petService.createPet(eq(1L), any())).thenReturn(null);
+        when(petService.updatePet(eq(1L), eq(10L), any())).thenReturn(null);
+
+        mockMvc.perform(json(post("/api/pets"), """
+                {"petNm":"뭉치","petSeCd":"PETC0001","vrtySn":15,"petBrdt":"2023-05-01","petGndrCd":"PETC0003",
+                 "nutrYn":true,"petBdwg":4.25,"bdwgRngDrctInptYn":"N","colrCd":"PETC0006"}
+                """)).andExpect(status().isCreated());
+        mockMvc.perform(json(patch("/api/pets/10"), "{\"bdwgRngDrctInptYn\":\"N\"}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 상세는_체중_범위_직접_입력_여부를_돌려준다() throws Exception {
+        PetResponse res = new PetResponse(10L, "뭉치", "PETC0001", 15L, "푸들", null, "PETC0003",
+                LocalDate.of(2023, 5, 1), new BigDecimal("4.250"), "PETC0006", null, null, null, null, null,
+                "PETC0018", true, true, null, new BigDecimal("3.83"), new BigDecimal("4.68"), "N", List.of());
+        when(petService.getPet(1L, 10L)).thenReturn(res);
+
+        mockMvc.perform(get("/api/pets/10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.bdwgRngDrctInptYn").value("N"));
     }
 
     @Test

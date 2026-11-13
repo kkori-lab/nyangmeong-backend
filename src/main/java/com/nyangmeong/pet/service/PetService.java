@@ -131,8 +131,17 @@ public class PetService {
         pet.setNutrYn(Boolean.TRUE.equals(req.nutrYn()) ? "Y" : "N");
         pet.setPetBdwg(req.petBdwg());
         pet.setGoalBdwg(req.goalBdwg());
-        pet.setMinBdwg(req.minBdwg());
-        pet.setMaxBdwg(req.maxBdwg());
+        /** 정상 범위 : 'N' 이면 서버가 petBdwg 로 계산(보낸 값 무시), 'Y'(기본) 이면 보낸 값 그대로 (FN-MYP-003-04) */
+        pet.setBdwgRngDrctInptYn(req.bdwgRngDrctInptYn() == null ? "Y" : req.bdwgRngDrctInptYn());
+        if ("N".equals(pet.getBdwgRngDrctInptYn())) {
+            applyAutoBdwgRange(pet);
+        } else {
+            if (req.minBdwg() == null || req.maxBdwg() == null) {
+                throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "minBdwg", "maxBdwg");
+            }
+            pet.setMinBdwg(req.minBdwg());
+            pet.setMaxBdwg(req.maxBdwg());
+        }
         pet.setColrCd(req.colrCd());
         pet.setColrDrctInptNm(emptyToNull(req.colrDrctInptNm()));
         pet.setChrcCn(emptyToNull(req.chrcCn()));
@@ -211,11 +220,27 @@ public class PetService {
         if (goalBdwgReset) {
             pet.setGoalBdwg(null);
         }
-        if (req.minBdwg() != null) {
-            pet.setMinBdwg(req.minBdwg());
-        }
-        if (req.maxBdwg() != null) {
-            pet.setMaxBdwg(req.maxBdwg());
+        /**
+         * 정상 범위 (FN-MYP-003-04)
+         * - 플래그를 안 보냈는데 범위를 보내면 직접 입력('Y')으로 바꾸고 보낸 값을 저장
+         * - 'N' 이면 현재(같이 보낸 petBdwg 가 있으면 그 값) 체중으로 다시 계산, 보낸 범위는 무시
+         * - 플래그 없이 petBdwg 만 보내면 현재 'N' 일 때만 다시 계산, 'Y' 는 범위 유지
+         */
+        boolean rangeSent = req.minBdwg() != null || req.maxBdwg() != null;
+        String nextYn = req.bdwgRngDrctInptYn() != null ? req.bdwgRngDrctInptYn()
+                : (rangeSent ? "Y" : pet.getBdwgRngDrctInptYn());
+        pet.setBdwgRngDrctInptYn(nextYn);
+        if ("N".equals(nextYn)) {
+            if (req.bdwgRngDrctInptYn() != null || req.petBdwg() != null) {
+                applyAutoBdwgRange(pet);
+            }
+        } else {
+            if (req.minBdwg() != null) {
+                pet.setMinBdwg(req.minBdwg());
+            }
+            if (req.maxBdwg() != null) {
+                pet.setMaxBdwg(req.maxBdwg());
+            }
         }
         if (req.colrCd() != null) {
             pet.setColrCd(req.colrCd());
@@ -443,6 +468,15 @@ public class PetService {
         if (pet.getMinBdwg().compareTo(pet.getMaxBdwg()) >= 0) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "minBdwg", "maxBdwg");
         }
+    }
+
+    /**
+     * 정상 범위를 현재 체중으로 계산해 채운다 (PetBdwgRange)
+     */
+    private void applyAutoBdwgRange(Pet pet) {
+        PetBdwgRange range = PetBdwgRange.of(pet.getPetBdwg());
+        pet.setMinBdwg(range.min());
+        pet.setMaxBdwg(range.max());
     }
 
     /**
