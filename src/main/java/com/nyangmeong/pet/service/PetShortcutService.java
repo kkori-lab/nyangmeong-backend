@@ -26,7 +26,7 @@ import lombok.RequiredArgsConstructor;
 /**
  * [반려동물 메인 바로가기 서비스]
  * - FN-MAN-008, 회원·반려동물마다 바로가기 종류 전부를 행으로 두고 보이는 것만 INDCT_YN='Y'
- * - 행이 없는 반려동물 -> 기본 바로가기(종합 건강기록), 행은 있고 전부 'N' -> 빈 목록
+ * - 행이 없거나 행이 전부 'N'인 반려동물 -> 빈 목록
  */
 @Service
 @RequiredArgsConstructor
