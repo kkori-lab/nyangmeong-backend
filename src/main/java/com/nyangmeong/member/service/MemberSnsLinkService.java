@@ -30,13 +30,21 @@ public class MemberSnsLinkService {
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public MemberResponse link(Long mbrSn, MemberSnsLinkRequest req) {
+        return link(mbrSn, req, null);
+    }
+
+    /**
+     * requestOrigin : 브라우저 요청의 Origin 헤더. 토큰 교환의 redirect_uri 를 프론트가 쓴 주소에 맞춘다
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public MemberResponse link(Long mbrSn, MemberSnsLinkRequest req, String requestOrigin) {
         SnsProvider provider = SnsProvider.fromCode(req.snsOffrCd());
         if (provider == null) {
             throw new CustomException(ErrorCode.BAD_REQUEST);
         }
         SnsProfile profile;
         try {
-            profile = snsOAuthClient.fetchProfile(provider, req.code(), req.state());
+            profile = snsOAuthClient.fetchProfile(provider, req.code(), req.state(), requestOrigin);
         } catch (BaseException e) {
             if (e.getErrorCode() == ErrorCode.SNS_AUTH_FAILED) {
                 throw new CustomException(ErrorCode.SNS_LINK_FAILED);

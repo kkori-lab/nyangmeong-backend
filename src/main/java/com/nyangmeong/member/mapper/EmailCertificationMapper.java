@@ -26,6 +26,12 @@ public interface EmailCertificationMapper {
             @Param("emlCertPrpsCd") String emlCertPrpsCd, @Param("since") LocalDateTime since);
 
     /**
+     * 가장 최근 발송 인증이 틀린 횟수 제한으로 무효가 됐는지 (1 이면 그렇다, 0 이면 아니거나 발송 이력 없음)
+     */
+    int countLatestFailLocked(@Param("certTrgtEmlHmac") String certTrgtEmlHmac,
+            @Param("emlCertPrpsCd") String emlCertPrpsCd, @Param("failLimit") int failLimit);
+
+    /**
      * 인증 등록 (emlCertSn 채움)
      */
     int insert(EmailCertification cert);

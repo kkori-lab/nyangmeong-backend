@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -30,18 +31,24 @@ import com.nyangmeong.global.security.crypto.FieldCryptoService;
 import com.nyangmeong.global.security.domain.MemberAuthority;
 import com.nyangmeong.global.security.domain.MemberStatus;
 import com.nyangmeong.member.domain.Member;
+import com.nyangmeong.member.dto.MemberResponse;
+import com.nyangmeong.member.dto.MemberSnsAccountSummary;
 import com.nyangmeong.member.dto.SnsSignupClaims;
 import com.nyangmeong.member.service.MemberService;
 import com.nyangmeong.member.service.SnsSignupTokenManager;
 
 /**
  * [검사 - SNS 로그인 서비스]
- * - 연결된 회원 / 같은 이메일의 회원 / 신규 계정 분기, 이메일이 같다는 이유로는 연결·복구하지 않는다
+ * - 연결된 회원 / 같은 이메일의 회원 / 신규 계정 분기
+ * - 같은 이메일의 정상 회원은 카카오·구글이면 자동 연동하고 로그인, 네이버·정지 회원·같은 제공자 연동이 이미 있으면 중복 안내
+ * - 이메일이 같다는 이유로 탈퇴 회원을 복구하지 않는다
  * - 제공자 호출은 가짜 클라이언트(fake-이름 코드)로 대신한다
  */
 class SnsLoginServiceTest {
 
     private static final String KAKAO = SnsProvider.KAKAO.getCode();
+    private static final String NAVER = SnsProvider.NAVER.getCode();
+    private static final String GOOGLE = SnsProvider.GOOGLE.getCode();
 
     private final SnsOAuthClient snsOAuthClient = new FakeSnsOAuthClient();
     private final MemberService memberService = mock(MemberService.class);
@@ -134,17 +141,75 @@ class SnsLoginServiceTest {
     }
 
     @Test
-    void 연결이_없고_같은_이메일의_정상_회원이_있으면_중복_안내이고_연결하지_않는다() {
+    void 네이버는_연결이_없고_같은_이메일의_정상_회원이_있으면_중복_안내이고_연결하지_않는다() {
         when(memberService.findForLogin(crypto.emailHmac("choco@example.com")))
                 .thenReturn(member(MemberStatus.NORMAL.getCode(), "Y", LocalDateTime.now()));
 
-        SnsLoginResult result = service.login(request(KAKAO, "fake-choco"));
+        SnsLoginResult result = service.login(request(NAVER, "fake-choco"));
 
         assertThat(result.loginMbrSn()).isNull();
         assertThat(result.response().snsLoginRslt()).isEqualTo(SnsLoginResponse.EMAIL_DUPLICATE);
         assertThat(result.response().acntEml()).isEqualTo("choco@example.com");
         verify(memberService, never()).recordLogin(anyLong());
         verify(memberService, never()).createWithSns(any(), anyString());
+        verify(memberService, never()).linkSns(anyLong(), anyString(), anyString());
+    }
+
+    private MemberResponse memberWithLinks(String... snsOffrCds) {
+        return new MemberResponse("choco@example.com", "초코맘", "01012345678", null, "USRC0006", true,
+                List.of(snsOffrCds).stream().map(MemberSnsAccountSummary::new).toList(), null, null);
+    }
+
+    @Test
+    void 카카오는_같은_이메일의_정상_회원에_자동_연동하고_로그인한다() {
+        when(memberService.findForLogin(crypto.emailHmac("choco@example.com")))
+                .thenReturn(member(MemberStatus.NORMAL.getCode(), "Y", LocalDateTime.now().minusDays(1)));
+        when(memberService.getMember(7L)).thenReturn(memberWithLinks());
+
+        SnsLoginResult result = service.login(request(KAKAO, "fake-choco"));
+
+        assertThat(result.loginMbrSn()).isEqualTo(7L);
+        assertThat(result.response().snsLoginRslt()).isEqualTo(SnsLoginResponse.LOGIN);
+        verify(memberService).linkSns(7L, KAKAO, KAKAO + ":fake-choco");
+        verify(memberService).recordLogin(7L);
+    }
+
+    @Test
+    void 구글도_다른_SNS만_연동된_같은_이메일의_정상_회원에_자동_연동한다() {
+        when(memberService.findForLogin(crypto.emailHmac("choco@example.com")))
+                .thenReturn(member(MemberStatus.NORMAL.getCode(), "Y", LocalDateTime.now().minusDays(1)));
+        when(memberService.getMember(7L)).thenReturn(memberWithLinks(KAKAO));
+
+        SnsLoginResult result = service.login(request(GOOGLE, "fake-choco"));
+
+        assertThat(result.response().snsLoginRslt()).isEqualTo(SnsLoginResponse.LOGIN);
+        verify(memberService).linkSns(7L, GOOGLE, GOOGLE + ":fake-choco");
+    }
+
+    @Test
+    void 같은_제공자의_다른_계정이_이미_연동돼_있으면_자동_연동하지_않고_중복_안내다() {
+        when(memberService.findForLogin(crypto.emailHmac("choco@example.com")))
+                .thenReturn(member(MemberStatus.NORMAL.getCode(), "Y", LocalDateTime.now()));
+        when(memberService.getMember(7L)).thenReturn(memberWithLinks(KAKAO));
+
+        SnsLoginResult result = service.login(request(KAKAO, "fake-choco"));
+
+        assertThat(result.loginMbrSn()).isNull();
+        assertThat(result.response().snsLoginRslt()).isEqualTo(SnsLoginResponse.EMAIL_DUPLICATE);
+        verify(memberService, never()).linkSns(anyLong(), anyString(), anyString());
+        verify(memberService, never()).recordLogin(anyLong());
+    }
+
+    @Test
+    void 같은_이메일의_정지_회원에는_자동_연동하지_않고_중복_안내다() {
+        when(memberService.findForLogin(crypto.emailHmac("choco@example.com")))
+                .thenReturn(member(MemberStatus.SUSPENDED.getCode(), "Y", LocalDateTime.now()));
+
+        SnsLoginResult result = service.login(request(KAKAO, "fake-choco"));
+
+        assertThat(result.loginMbrSn()).isNull();
+        assertThat(result.response().snsLoginRslt()).isEqualTo(SnsLoginResponse.EMAIL_DUPLICATE);
+        verify(memberService, never()).linkSns(anyLong(), anyString(), anyString());
     }
 
     @Test

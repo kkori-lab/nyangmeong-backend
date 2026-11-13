@@ -232,7 +232,7 @@ class AuthLoginControllerTest {
             ((RefreshToken) invocation.getArgument(0)).setRfrshTknSn(11L);
             return null;
         }).when(refreshTokenMapper).insert(any(RefreshToken.class), anyLong());
-        when(snsLoginService.login(any(SnsLoginRequest.class)))
+        when(snsLoginService.login(any(SnsLoginRequest.class), any()))
                 .thenReturn(SnsLoginResult.login(7L, SnsLoginResponse.login(true, "초코맘")));
 
         mockMvc.perform(snsLogin("{\"snsOffrCd\":\"USRC0008\",\"code\":\"abc\"}"))
@@ -246,7 +246,7 @@ class AuthLoginControllerTest {
 
     @Test
     void SNS_신규_가입_확인은_쿠키를_발급하지_않고_가입_토큰을_준다() throws Exception {
-        when(snsLoginService.login(any(SnsLoginRequest.class))).thenReturn(SnsLoginResult.notLoggedIn(
+        when(snsLoginService.login(any(SnsLoginRequest.class), any())).thenReturn(SnsLoginResult.notLoggedIn(
                 SnsLoginResponse.signupRequired("USRC0007", "new@example.com", "01012345678", true, "tkn")));
 
         mockMvc.perform(snsLogin("{\"snsOffrCd\":\"USRC0007\",\"code\":\"abc\",\"state\":\"s1\"}"))
@@ -270,12 +270,12 @@ class AuthLoginControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_INPUT_VALUE"));
 
-        verify(snsLoginService, never()).login(any());
+        verify(snsLoginService, never()).login(any(), any());
     }
 
     @Test
     void SNS_로그인에_이메일_가입_코드_USRC0006을_보내면_400이고_쿠키를_발급하지_않는다() throws Exception {
-        when(snsLoginService.login(any(SnsLoginRequest.class)))
+        when(snsLoginService.login(any(SnsLoginRequest.class), any()))
                 .thenThrow(new CustomException(ErrorCode.BAD_REQUEST));
 
         mockMvc.perform(snsLogin("{\"snsOffrCd\":\"USRC0006\",\"code\":\"fake-choco\"}"))
@@ -288,7 +288,7 @@ class AuthLoginControllerTest {
 
     @Test
     void SNS_로그인_서비스_오류는_그대로_응답한다() throws Exception {
-        when(snsLoginService.login(any(SnsLoginRequest.class)))
+        when(snsLoginService.login(any(SnsLoginRequest.class), any()))
                 .thenThrow(new CustomException(ErrorCode.SNS_AUTH_FAILED));
 
         mockMvc.perform(snsLogin("{\"snsOffrCd\":\"USRC0009\",\"code\":\"bad\"}"))

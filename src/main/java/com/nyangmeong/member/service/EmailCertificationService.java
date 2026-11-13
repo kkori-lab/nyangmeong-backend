@@ -81,7 +81,10 @@ public class EmailCertificationService {
         LocalDateTime now = LocalDateTime.now();
         List<LocalDateTime> recent = emailCertificationMapper.selectRegDtList(emailHmac, purpose.getCode(),
                 now.minusMinutes(properties.getResendWindowMinutes()));
-        LocalDateTime resendAvailableDt = resendAvailableAt(recent, now);
+        /** 직전 인증을 틀려서 무효가 됐으면 곧바로 다시 보낼 수 있게 간격만 건너뛴다(1시간 횟수 한도는 그대로) */
+        boolean afterFailLock = !recent.isEmpty() && emailCertificationMapper.countLatestFailLocked(emailHmac,
+                purpose.getCode(), properties.getFailLimit()) > 0;
+        LocalDateTime resendAvailableDt = resendAvailableAt(recent, now, afterFailLock);
         if (resendAvailableDt != null) {
             return EmailCertificationResult.fail(ErrorCode.EMAIL_CERT_RESEND_NOT_YET,
                     EmailCertificationResponse.resendLimited(resendAvailableDt));
@@ -376,10 +379,10 @@ public class EmailCertificationService {
         return now.isAfter(cert.getCertCmptnDt().plusMinutes(properties.getVerifiedKeepMinutes()));
     }
 
-    /** 다시 보낼 수 있는 시각, 바로 보낼 수 있으면 null */
-    private LocalDateTime resendAvailableAt(List<LocalDateTime> recent, LocalDateTime now) {
+    /** 다시 보낼 수 있는 시각, 바로 보낼 수 있으면 null. skipInterval 이면 발송 간격은 보지 않고 횟수 한도만 본다 */
+    private LocalDateTime resendAvailableAt(List<LocalDateTime> recent, LocalDateTime now, boolean skipInterval) {
         LocalDateTime availableAt = null;
-        if (!recent.isEmpty()) {
+        if (!recent.isEmpty() && !skipInterval) {
             LocalDateTime byInterval = recent.get(recent.size() - 1).plusSeconds(properties.getResendIntervalSeconds());
             if (now.isBefore(byInterval)) {
                 availableAt = byInterval;

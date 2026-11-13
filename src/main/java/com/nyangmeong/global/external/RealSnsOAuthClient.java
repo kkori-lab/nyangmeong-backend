@@ -2,6 +2,7 @@ package com.nyangmeong.global.external;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
@@ -29,10 +30,13 @@ import tools.jackson.databind.json.JsonMapper;
  * [실제 SNS 제공자 호출]
  * - app.sns.client 가 없거나 real 이면 이 클라이언트를 쓴다 (가짜는 fake 로 정했을 때만)
  * - 인가 코드 → 액세스 토큰 → 사용자 정보 순서로 두 번 부른다
- * - 제공자가 인증하지 않은 이메일은 받지 않은 것으로 본다 (구글 email_verified, 카카오 is_email_verified·is_email_valid)
+ * - 제공자가 인증하지 않은 이메일은 받지 않은 것으로 본다 (구글 email_verified, 카카오
+ * is_email_verified·is_email_valid)
  * - 연령 확인은 항상 false. 세 제공자 모두 연령을 받아 오지 않으므로 화면에서 만 14세 이상 약관(AGE_14) 체크로 받는다
  * - 어떤 실패든 SNS_AUTH_FAILED. 로그에는 제공자 오류 코드·설명만 남기고 토큰·인가 코드는 남기지 않는다
- * - redirect-uri 를 비워 두면 app.front-base-url + /login/sns/{naver|kakao|google}/callback (환경마다 프론트 주소만 바꾼다)
+ * - 토큰 교환의 redirect_uri 는 인가 요청 때 프론트가 쓴 값(프론트 주소 + /login/sns/{naver|kakao|google}/callback)과 같아야 한다
+ * ① 요청 Origin 이 app.cors.allowed-origins 에 있으면 그 Origin 기준 ② 아니면 redirect-uri 설정값 ③ 그것도 비면 app.front-base-url 기준
+ * 허용 목록에 로컬·운영 프론트 주소를 함께 두면 환경마다 redirect-uri 를 따로 두지 않아도 된다
  */
 @Slf4j
 @Component
@@ -47,19 +51,24 @@ public class RealSnsOAuthClient implements SnsOAuthClient {
     private static final String GOOGLE_ME_URL = "https://openidconnect.googleapis.com/v1/userinfo";
     private static final int ERROR_SUMMARY_MAX_LENGTH = 300;
     private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
-    /** 오류 설명 속 code=값·token=값 (인가 코드·토큰). error_code= 처럼 앞에 단어가 붙은 필드 이름은 건드리지 않는다 */
+    /**
+     * 오류 설명 속 code=값·token=값 (인가 코드·토큰). error_code= 처럼 앞에 단어가 붙은 필드 이름은 건드리지 않는다
+     */
     private static final Pattern CODE_VALUE = Pattern.compile("(?i)(\\b(?:code|token)\\s*[=:]\\s*)[^\\s,&;\"']+");
 
     private static final String CALLBACK_PATH = "/login/sns/%s/callback";
 
     private final SnsOAuthProperties properties;
     private final String frontBaseUrl;
+    private final List<String> allowedOrigins;
     private final RestClient restClient;
 
     public RealSnsOAuthClient(SnsOAuthProperties properties,
-            @Value("${app.front-base-url:http://localhost:5173}") String frontBaseUrl) {
+            @Value("${app.front-base-url:http://localhost:5173}") String frontBaseUrl,
+            @Value("${app.cors.allowed-origins:http://localhost:5173}") List<String> allowedOrigins) {
         this.properties = properties;
         this.frontBaseUrl = frontBaseUrl;
+        this.allowedOrigins = allowedOrigins;
         RestClient.Builder builder = RestClient.builder();
         if (properties.getTimeoutMs() > 0) {
             Duration timeout = Duration.ofMillis(properties.getTimeoutMs());
@@ -72,14 +81,14 @@ public class RealSnsOAuthClient implements SnsOAuthClient {
     }
 
     @Override
-    public SnsProfile fetchProfile(SnsProvider provider, String code, String state) {
+    public SnsProfile fetchProfile(SnsProvider provider, String code, String state, String requestOrigin) {
         SnsOAuthProperties.Provider keys = properties.of(provider);
         if (keys.getClientId().isBlank() || keys.getClientSecret().isBlank()) {
             log.warn("SNS 제공자 앱 키가 설정되지 않았습니다 : {}", provider);
             throw new CustomException(ErrorCode.SNS_AUTH_FAILED);
         }
         try {
-            String accessToken = requestAccessToken(provider, keys, code, state);
+            String accessToken = requestAccessToken(provider, keys, code, state, requestOrigin);
             JsonNode me = requestMe(provider, accessToken);
             return toProfile(provider, me);
         } catch (CustomException e) {
@@ -95,25 +104,26 @@ public class RealSnsOAuthClient implements SnsOAuthClient {
     }
 
     private String requestAccessToken(SnsProvider provider, SnsOAuthProperties.Provider keys, String code,
-            String state) {
+            String state, String requestOrigin) {
+        String redirectUri = redirectUri(provider, keys, frontBaseUrl, requestOrigin, allowedOrigins);
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("grant_type", "authorization_code");
         form.add("client_id", keys.getClientId());
         form.add("client_secret", keys.getClientSecret());
         form.add("code", code);
         String url = switch (provider) {
-        case NAVER -> {
-            form.add("state", state == null ? "" : state);
-            yield NAVER_TOKEN_URL;
-        }
-        case KAKAO -> {
-            form.add("redirect_uri", redirectUri(provider, keys, frontBaseUrl));
-            yield KAKAO_TOKEN_URL;
-        }
-        case GOOGLE -> {
-            form.add("redirect_uri", redirectUri(provider, keys, frontBaseUrl));
-            yield GOOGLE_TOKEN_URL;
-        }
+            case NAVER -> {
+                form.add("state", state == null ? "" : state);
+                yield NAVER_TOKEN_URL;
+            }
+            case KAKAO -> {
+                form.add("redirect_uri", redirectUri);
+                yield KAKAO_TOKEN_URL;
+            }
+            case GOOGLE -> {
+                form.add("redirect_uri", redirectUri);
+                yield GOOGLE_TOKEN_URL;
+            }
         };
         byte[] body = restClient.post().uri(url).contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(form).retrieve().body(byte[].class);
@@ -127,25 +137,48 @@ public class RealSnsOAuthClient implements SnsOAuthClient {
     }
 
     /**
-     * 토큰 교환에 넘길 redirect-uri : 설정값이 있으면 그 값, 없으면 프론트 주소의 콜백 경로 (인가 요청 때 프론트가 쓴 값과 같아야 한다)
+     * 토큰 교환에 넘길 redirect-uri : 설정값이 있으면 그 값, 없으면 프론트 주소의 콜백 경로 (인가 요청 때 프론트가 쓴 값과
+     * 같아야 한다)
      */
     static String redirectUri(SnsProvider provider, SnsOAuthProperties.Provider keys, String frontBaseUrl) {
+        return redirectUri(provider, keys, frontBaseUrl, null, List.of());
+    }
+
+    /**
+     * 요청 Origin 이 허용 목록에 있으면 그 Origin 의 콜백 경로, 아니면 설정값 → 프론트 주소 순서
+     * - 허용 목록 밖의 Origin 은 쓰지 않는다 (임의 주소로 토큰 교환을 시키지 않게)
+     */
+    static String redirectUri(SnsProvider provider, SnsOAuthProperties.Provider keys, String frontBaseUrl,
+            String requestOrigin, List<String> allowedOrigins) {
+        String origin = trimSlash(requestOrigin);
+        if (origin != null && allowedOrigins != null
+                && allowedOrigins.stream().map(RealSnsOAuthClient::trimSlash).anyMatch(origin::equalsIgnoreCase)) {
+            return origin + CALLBACK_PATH.formatted(provider.name().toLowerCase(Locale.ROOT));
+        }
         String configured = keys.getRedirectUri();
         if (configured != null && !configured.isBlank()) {
             return configured.strip();
         }
-        String base = frontBaseUrl.strip();
-        if (base.endsWith("/")) {
-            base = base.substring(0, base.length() - 1);
+        return trimSlash(frontBaseUrl) + CALLBACK_PATH.formatted(provider.name().toLowerCase(Locale.ROOT));
+    }
+
+    /** 앞뒤 공백과 끝의 / 를 뗀다. 비었으면 null */
+    private static String trimSlash(String url) {
+        if (url == null || url.isBlank()) {
+            return null;
         }
-        return base + CALLBACK_PATH.formatted(provider.name().toLowerCase(Locale.ROOT));
+        String value = url.strip();
+        while (value.endsWith("/")) {
+            value = value.substring(0, value.length() - 1);
+        }
+        return value.isEmpty() ? null : value;
     }
 
     private JsonNode requestMe(SnsProvider provider, String accessToken) {
         String url = switch (provider) {
-        case NAVER -> NAVER_ME_URL;
-        case KAKAO -> KAKAO_ME_URL;
-        case GOOGLE -> GOOGLE_ME_URL;
+            case NAVER -> NAVER_ME_URL;
+            case KAKAO -> KAKAO_ME_URL;
+            case GOOGLE -> GOOGLE_ME_URL;
         };
         return read(restClient.get().uri(url).header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken).retrieve()
                 .body(byte[].class));
@@ -159,24 +192,24 @@ public class RealSnsOAuthClient implements SnsOAuthClient {
         String email;
         String mblTelno = null;
         switch (provider) {
-        case NAVER -> {
-            JsonNode body = me.path("response");
-            accountId = text(body, "id");
-            email = text(body, "email");
-            mblTelno = text(body, "mobile");
-        }
-        case KAKAO -> {
-            JsonNode account = me.path("kakao_account");
-            accountId = text(me, "id");
-            boolean verified = account.path("is_email_verified").asBoolean(false)
-                    && account.path("is_email_valid").asBoolean(false);
-            email = verified ? text(account, "email") : null;
-            mblTelno = text(account, "phone_number");
-        }
-        default -> {
-            accountId = text(me, "sub");
-            email = me.path("email_verified").asBoolean(false) ? text(me, "email") : null;
-        }
+            case NAVER -> {
+                JsonNode body = me.path("response");
+                accountId = text(body, "id");
+                email = text(body, "email");
+                mblTelno = text(body, "mobile");
+            }
+            case KAKAO -> {
+                JsonNode account = me.path("kakao_account");
+                accountId = text(me, "id");
+                boolean verified = account.path("is_email_verified").asBoolean(false)
+                        && account.path("is_email_valid").asBoolean(false);
+                email = verified ? text(account, "email") : null;
+                mblTelno = text(account, "phone_number");
+            }
+            default -> {
+                accountId = text(me, "sub");
+                email = me.path("email_verified").asBoolean(false) ? text(me, "email") : null;
+            }
         }
         if (accountId == null) {
             throw new CustomException(ErrorCode.SNS_AUTH_FAILED);
@@ -185,7 +218,8 @@ public class RealSnsOAuthClient implements SnsOAuthClient {
     }
 
     /**
-     * 제공자 오류 응답 요약 : error·error_description(카카오 error_code, 네이버 사용자 정보 message 포함)만 꺼낸다
+     * 제공자 오류 응답 요약 : error·error_description(카카오 error_code, 네이버 사용자 정보 message
+     * 포함)만 꺼낸다
      * - 토큰이 실린 성공 응답이나 JSON 이 아닌 본문은 내용을 남기지 않는다
      */
     static String errorSummary(byte[] body) {
