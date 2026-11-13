@@ -191,6 +191,7 @@ class CareMatchServiceTest {
         verify(eventPublisher).publish(event.capture());
         assertThat(event.getValue().mbrSn()).isEqualTo(SITTER);
         assertThat(event.getValue().type()).isEqualTo(NotificationType.CARE_MATCH);
+        assertThat(event.getValue().mvmnPath()).isEqualTo("/chat?otoChatRoomSn=" + ROOM);
     }
 
     @Test

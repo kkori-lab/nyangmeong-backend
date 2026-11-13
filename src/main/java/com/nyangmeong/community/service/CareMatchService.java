@@ -46,6 +46,8 @@ import lombok.RequiredArgsConstructor;
 public class CareMatchService {
 
     private static final String NOTI_TTL = "펫돌봄 거래";
+    /** 거래 알림 이동 경로 : 프론트 알림 드롭다운이 쿼리의 방 번호로 채팅 모달을 연다 */
+    static final String CHAT_ROOM_PATH = "/chat?otoChatRoomSn=%d";
     private static final String CANCEL_BY_LEAVE = "채팅방 나가기";
     private static final String CANCEL_BY_OTHER_MATCH = "다른 분과 매칭되어 요청이 취소되었어요.";
 
@@ -444,7 +446,7 @@ public class CareMatchService {
             return;
         }
         eventPublisher.publish(new NotificationEvent(receiverMbrSn, NotificationType.CARE_MATCH, NOTI_TTL, content,
-                null));
+                String.format(CHAT_ROOM_PATH, otoChatRoomSn)));
     }
 
     private CareMatchResponse response(CareMatch match) {
