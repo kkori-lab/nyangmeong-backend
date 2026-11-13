@@ -197,6 +197,6 @@ class AdminNoticeServiceTest {
         assertThatThrownBy(() -> service.uploadImage(9L, null))
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode").isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
-        verify(fileStore, never()).storePublic(any(org.springframework.web.multipart.MultipartFile.class), any());
+        verify(fileStore, never()).store(any(org.springframework.web.multipart.MultipartFile.class), any(), any(), any());
     }
 }

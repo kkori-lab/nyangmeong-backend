@@ -18,10 +18,12 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.file.FileCategory;
 import com.nyangmeong.global.file.FileExtension;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.file.StoredFile;
@@ -34,6 +36,7 @@ import com.nyangmeong.health.dto.CheckupAttachmentSummary;
 import com.nyangmeong.health.dto.CheckupAttachmentUpdateRequest;
 import com.nyangmeong.health.mapper.CareScheduleMapper;
 import com.nyangmeong.health.mapper.CheckupAttachmentMapper;
+import com.nyangmeong.pet.service.PetService;
 
 /**
  * [검사 - 검진기록 첨부]
@@ -55,7 +58,7 @@ class CheckupAttachmentServiceTest {
     private final PetAuthorizer petAuthorizer = mock(PetAuthorizer.class);
     private final FileStore fileStore = mock(FileStore.class);
     private final CheckupAttachmentService service = new CheckupAttachmentService(mapper, careScheduleMapper,
-            checkupService, petAuthorizer, fileStore);
+            checkupService, petAuthorizer, fileStore, mock(PetService.class));
 
     private final MockMultipartFile file = new MockMultipartFile("file", "a.png", "image/png", new byte[] { 1 });
 
@@ -63,7 +66,7 @@ class CheckupAttachmentServiceTest {
     void setUp() {
         when(careScheduleMapper.existsChildCode(HealthCodeGroup.IMAGE_KIND.getCode(), ULTRASOUND)).thenReturn(true);
         when(careScheduleMapper.existsChildCode(HealthCodeGroup.SHOOTING_REGION.getCode(), ABDOMEN)).thenReturn(true);
-        when(fileStore.storeDocument(any(), anyString())).thenReturn(FILE);
+        when(fileStore.store(any(MultipartFile.class), any(), any(), anyString())).thenReturn(FILE);
         doAnswer(call -> {
             CheckupAttachment attachment = call.getArgument(0);
             attachment.setCkupRcdAtchSn(ATCH);
@@ -98,7 +101,7 @@ class CheckupAttachmentServiceTest {
                 ULTRASOUND, ABDOMEN));
 
         verify(checkupService).getCheckup(MBR, PET, CKUP);
-        verify(fileStore).storeDocument(file, "1");
+        verify(fileStore).store(eq(file), eq(FileCategory.HEALTH_CHECKUP), any(), eq("1"));
         verify(mapper).insertAttachment(argThat(attachment -> ULTRASOUND.equals(attachment.getImgKndCd())
                 && ABDOMEN.equals(attachment.getShtRegnCd()) && FILE.equals(attachment.getAtchFileSn())));
     }
@@ -109,7 +112,7 @@ class CheckupAttachmentServiceTest {
                 new CheckupAttachmentCreateRequest(CKUP, file, AttachmentType.IMAGE.getCode(), null, ABDOMEN)))
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode").isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
-        verify(fileStore, never()).storeDocument(any(), anyString());
+        verify(fileStore, never()).store(any(MultipartFile.class), any(), any(), anyString());
     }
 
     @Test
@@ -132,7 +135,7 @@ class CheckupAttachmentServiceTest {
     @Test
     void 교체는_같은_첨부의_파일만_바꾼다() {
         stored(AttachmentType.INSPECTION_RESULT);
-        when(fileStore.storeDocument(any(), anyString())).thenReturn(4000L);
+        when(fileStore.store(any(MultipartFile.class), any(), any(), anyString())).thenReturn(4000L);
 
         service.update(MBR, PET, ATCH, new CheckupAttachmentUpdateRequest(file, null, null, null));
 

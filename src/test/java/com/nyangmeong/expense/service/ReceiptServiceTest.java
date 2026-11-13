@@ -19,6 +19,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.nyangmeong.expense.domain.Receipt;
 import com.nyangmeong.expense.domain.ReceiptSource;
@@ -28,6 +29,8 @@ import com.nyangmeong.expense.mapper.ReceiptMapper;
 import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.file.FileCategory;
+import com.nyangmeong.global.file.FileOwner;
 import com.nyangmeong.global.file.FileStore;
 
 /**
@@ -59,7 +62,7 @@ class ReceiptServiceTest {
 
     @Test
     void 업로드는_원본을_저장하고_건강기록_출처_분석중으로_등록한다() {
-        when(fileStore.store(image, "1")).thenReturn(7L);
+        when(fileStore.store(eq(image), eq(FileCategory.EXPENSE_RECEIPT), eq(FileOwner.member(1L)), eq("1"))).thenReturn(7L);
         doAnswer(invocation -> {
             invocation.<Receipt>getArgument(0).setRecptSn(3L);
             return null;
@@ -87,7 +90,7 @@ class ReceiptServiceTest {
 
         assertThatThrownBy(() -> service.create(1L, 99L, image, null))
                 .extracting("errorCode").isEqualTo(ErrorCode.PET_ACCESS_DENIED);
-        verify(fileStore, never()).store(any(MockMultipartFile.class), anyString());
+        verify(fileStore, never()).store(any(MockMultipartFile.class), any(), any(), anyString());
         verify(mapper, never()).insert(any());
     }
 
@@ -121,7 +124,7 @@ class ReceiptServiceTest {
 
     @Test
     void 가계부_출처는_반려동물_없이_권한_검사_없이_가계부_출처로_등록한다() {
-        when(fileStore.store(image, "1")).thenReturn(7L);
+        when(fileStore.store(eq(image), eq(FileCategory.EXPENSE_RECEIPT), eq(FileOwner.member(1L)), eq("1"))).thenReturn(7L);
 
         service.create(1L, null, image, ReceiptSource.EXPENSE.getCode());
 
@@ -138,7 +141,7 @@ class ReceiptServiceTest {
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode").isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
         }
-        verify(fileStore, never()).store(any(), any());
+        verify(fileStore, never()).store(any(MultipartFile.class), any(), any(), any());
         verify(mapper, never()).insert(any());
     }
 

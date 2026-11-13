@@ -647,6 +647,11 @@
 - 추가: 추가-1 `FakePlaceSearchClient` 좌표 없음 처리, 추가-2 `PlaceAiToolCatalogTest` required 표시, 추가-3 `PlaceControllerTest` 좌표 없이 분류만 → 서비스로 넘김
 - 연결 남음: 걸치는 기능 FN-AIM-004-02 (ai 저장소 `tool_prompts.yaml`의 `list_places`·`list_place_bookmarks` skip 해제·스냅샷 갱신, ai-cb)
 
+## SCR-MAN-001 메인페이지 · 새 반려동물 기본 바로가기 없애기 — 대기
+- 기능: 명세 기능 ID 추가 없음(사람 요청 2026-11-12, 걸치는 기능 FN-MAN-008). `PetShortcutService.search`가 바로가기 행이 없는 반려동물에 MANC0008(종합 건강기록)을 기본으로 넣는 것을 빼고 빈 목록을 준다
+- 기다리는 것: 프론트 작업(2026-11-13 끝, 주석 정리만, 프론트 코드 변경 없음)
+- 완료 조건: `GET /api/pets/main-shortcuts`에서 바로가기를 저장한 적 없는 반려동물이 `shrtcCds: []`로 온다. 새로 등록한 반려동물 타일이 메인에 안 생긴다. 이미 행 없이 기본값을 받던 반려동물의 종합 건강기록도 사라져도 된다(사람 결정 2026-11-12, 데이터 옮기기 없음)
+
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
 - FN-COM-002-11: 채팅 안 읽은 수 API는 KSJ(채팅, 마일스톤 담당 표 COM-009)
@@ -734,3 +739,11 @@
 - 추가: 없음
 - 연결 남음: FN-ADM-070-02 (프론트 연결 관리자 아이템 등록·수정 화면 "그림 참고 굽기" 칸, 프론트 저장소에서 /start)
 - 연결 남음: FN-MYP-011-01 (ai 연결 `docs/api/internal.md` bake-items 행·새 `bake-image` 행과 그림 참고 굽기 구현, LJS ai 저장소에서 /start)
+
+## SCR-MYP-010 픽셀 캐릭터 관리 · 파일 저장 경로 재구성 — 끝
+- 기능: 명세 기능 ID 추가 없음(공통 모듈 정리, 2026-11-12 설계·2026-11-13 기획 대화). 저장 경로를 회원 > 도메인 > 용도로 바꾸고(공개·비공개 접두어 없음), 열람 범위는 코드(`FileCategory`)가 정한다. 공지·뉴스·아이템은 `assets/`
+- 기다리는 것: `global`이 도메인 폴더 이름(`FileCategory`)을 아는 것에 대한 팀 합의
+- 완료 조건: 새로 올린 파일의 `ATCH_FILE.PHYS_STRG_PATH`가 `{회원번호}/{도메인}/…`(반려동물 파일은 주양육자 번호), `assets/{item|notice|news}/…`를 따르고 기존 파일은 그대로 열린다. `GET /api/files/{atchFileSn}`은 로그인해야 열리고 도메인 API 전용 파일(채팅·문의·영수증·검진·관찰·시트)은 404 `FILE_NOT_FOUND`다. 로그인 없이 열리는 파일 주소가 없다
+- 완료 조건 결과: 검증 `확인 못 함 있음`(2026-11-13, 1회차, 연결 남음만), 사람 확인 2026-11-13(8080). 정한 것: 공개·비공개 접두어 없음, 로그인 없이 여는 파일 없음, 공통 주소 `/api/files/{atchFileSn}`, 예전 `/api/files/public/{atchFileSn}`은 프론트가 옮길 때까지 같은 동작(로그인 필요), `assets` 안은 `item`·`notice`·`news`, 아이템 URL 유지. 기존 테스트 17개는 새 `store` 시그니처·`PetService` 목 인자·`loadShared` 기대로 바꿈(사람 승인, 기대값 그대로). 로컬 `application.properties`의 permit-all에서 `/api/files/public/**`를 사람이 뺌
+- 추가: 없음
+- 연결 남음: 파일 저장 경로 재구성 (프론트 연결 이미지 URL `/api/files/public/{번호}` → `/api/files/{번호}`, 공통 파일 이미지 컴포넌트·관리자 공지 편집기·뉴스 등록·사용자 공지·뉴스 화면, 프론트 저장소에서 /start)

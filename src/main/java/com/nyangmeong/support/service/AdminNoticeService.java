@@ -10,6 +10,8 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.file.FileCategory;
+import com.nyangmeong.global.file.FileOwner;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.log.AdminTaskLogService;
 import com.nyangmeong.global.log.AdminTaskType;
@@ -138,7 +140,7 @@ public class AdminNoticeService {
         if (image == null || image.isEmpty()) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
-        return new AdminNoticeImageResponse(fileStore.storePublic(image, String.valueOf(actorSn)));
+        return new AdminNoticeImageResponse(fileStore.store(image, FileCategory.ASSET_NOTICE, FileOwner.service(), String.valueOf(actorSn)));
     }
 
     /**

@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.file.FileCategory.Owner;
 import com.nyangmeong.global.setting.SystemSettingService;
 
 import lombok.RequiredArgsConstructor;
@@ -23,7 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * [파일 저장·읽기]
  * - 디스크(FileRoot) + ATCH_FILE 행, 확장자 jpg·jpeg·png·webp(검진 첨부만 pdf 추가) + 실제 형식, 크기 상한 SYS_STNG.FILE_MAX_SZ
- * - 공개 파일은 public/ 아래에 저장하고(storePublic) 로그인 없이 열린다. 나머지는 비공개이며 각 도메인 API 가 소유 검사 후 준다
+ * - 저장 경로와 열람 범위는 FileCategory 가 정한다 (회원 > 도메인 > 용도, 서비스 파일은 assets/)
+ * - SHARED 분류는 로그인 회원 누구나 연다(loadShared). OWNER 분류는 각 도메인 API 가 소유 검사 후 준다(load)
  * - 트랜잭션 롤백 시 디스크 파일도 삭제
  */
 @Slf4j
@@ -31,48 +33,27 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class FileStore {
 
-    /** 공개 파일의 저장 경로 접두어 (ATCH_FILE.PHYS_STRG_PATH 는 루트를 뺀 상대 경로) */
+    /** 기존 공개 파일의 저장 경로 접두어 (ATCH_FILE.PHYS_STRG_PATH 는 루트를 뺀 상대 경로). 새 파일은 쓰지 않는다 */
     public static final String PUBLIC_PREFIX = "public/";
 
     private static final int ORGNL_FILE_NM_MAX = 200;
-    private static final DateTimeFormatter DIR_FORMAT = DateTimeFormatter.ofPattern("yyyy/MM");
+    private static final Pattern NUMBER = Pattern.compile("\\d+");
 
     private final AtchFileMapper atchFileMapper;
     private final FileRoot fileRoot;
     private final SystemSettingService systemSettingService;
 
     /**
-     * 업로드 이미지 저장 (비공개)
+     * 업로드 파일 저장
+     * - pdf 는 분류가 허용할 때만 (REQ-NFR-003 : 검진 첨부 자료만)
      */
-    public Long store(MultipartFile file, String actorId) {
-        return store(file, actorId, false);
-    }
-
-    /**
-     * 업로드 이미지 저장 (공개 : GET /api/files/public/{atchFileSn})
-     */
-    public Long storePublic(MultipartFile file, String actorId) {
-        return store(file, actorId, true);
-    }
-
-    /**
-     * 업로드 이미지·PDF 저장 (비공개)
-     * - 검진 첨부 전용 (REQ-NFR-003 : pdf는 검진 첨부 자료만 허용)
-     */
-    public Long storeDocument(MultipartFile file, String actorId) {
-        return store(file, actorId, false, true);
-    }
-
-    private Long store(MultipartFile file, String actorId, boolean publicFile) {
-        return store(file, actorId, publicFile, false);
-    }
-
-    private Long store(MultipartFile file, String actorId, boolean publicFile, boolean isPdfAllowed) {
+    public Long store(MultipartFile file, FileCategory category, FileOwner owner, String actorId) {
+        String dir = dir(category, owner);
         if (file == null || file.isEmpty()) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
         FileExtension extension = FileExtension.ofFileName(file.getOriginalFilename())
-                .filter(value -> isPdfAllowed || value.isImage())
+                .filter(value -> category.isPdfAllowed() || value.isImage())
                 .orElseThrow(() -> new CustomException(ErrorCode.FILE_TYPE_NOT_ALLOWED));
         if (file.getSize() > systemSettingService.get().getFileMaxSz()) {
             throw new CustomException(ErrorCode.FILE_TOO_LARGE);
@@ -86,39 +67,82 @@ public class FileStore {
         if (!extension.matchesContent(content)) {
             throw new CustomException(ErrorCode.FILE_TYPE_NOT_ALLOWED);
         }
-        return save(content, extension, file.getOriginalFilename(), actorId, publicFile);
+        return save(content, extension, file.getOriginalFilename(), actorId, dir);
     }
 
     /**
-     * 서버 생성 파일 저장 (비공개)
+     * 서버 생성 파일 저장
      */
-    public Long store(byte[] content, FileExtension extension, String orgnlFileNm, String actorId) {
-        return save(content, extension, orgnlFileNm, actorId, false);
+    public Long store(byte[] content, FileExtension extension, String orgnlFileNm, FileCategory category,
+            FileOwner owner, String actorId) {
+        return save(content, extension, orgnlFileNm, actorId, dir(category, owner));
     }
 
     /**
-     * 서버 생성 파일 저장 (공개)
-     */
-    public Long storePublic(byte[] content, FileExtension extension, String orgnlFileNm, String actorId) {
-        return save(content, extension, orgnlFileNm, actorId, true);
-    }
-
-    /**
-     * 파일 읽기
+     * 파일 읽기 (소유 검사는 부르는 도메인 API 가 한다)
      */
     public StoredFile load(Long atchFileSn) {
         return read(atchFileMapper.selectInUse(atchFileSn));
     }
 
     /**
-     * 공개 파일 읽기 : 공개가 아닌 파일은 없는 파일과 똑같이 FILE_NOT_FOUND
+     * 로그인 회원 누구나 여는 파일 읽기
+     * - 경로의 도메인·용도 폴더로 찾은 분류가 SHARED 이거나 기존 공개 파일(public/)일 때만
+     * - 그 밖(OWNER 분류·기존 비공개 날짜 폴더·분류 못 찾음)은 없는 파일과 똑같이 FILE_NOT_FOUND
      */
-    public StoredFile loadPublic(Long atchFileSn) {
+    public StoredFile loadShared(Long atchFileSn) {
         AtchFile atchFile = atchFileMapper.selectInUse(atchFileSn);
-        if (atchFile == null || !atchFile.getPhysStrgPath().startsWith(PUBLIC_PREFIX)) {
+        if (atchFile == null || !isShared(atchFile.getPhysStrgPath())) {
             throw new CustomException(ErrorCode.FILE_NOT_FOUND);
         }
         return read(atchFile);
+    }
+
+    /**
+     * 저장 경로로 열람 범위 판정
+     * - assets/{용도}/{파일}, {회원}/{도메인}/{용도}/{파일}, {회원}/{도메인}/{반려동물}/{용도}/{파일}
+     */
+    private boolean isShared(String physStrgPath) {
+        if (physStrgPath.startsWith(PUBLIC_PREFIX)) {
+            return true;
+        }
+        String[] parts = physStrgPath.split("/");
+        Optional<FileCategory> category = Optional.empty();
+        if (parts.length == 3 && FileCategory.ASSET_DIR.equals(parts[0])) {
+            category = FileCategory.of(Owner.SERVICE, parts[0], parts[1]);
+        } else if (parts.length == 4 && isNumber(parts[0])) {
+            category = FileCategory.of(Owner.MEMBER, parts[1], parts[2]);
+        } else if (parts.length == 5 && isNumber(parts[0]) && isNumber(parts[2])) {
+            category = FileCategory.of(Owner.PET, parts[1], parts[3]);
+        }
+        return category.map(FileCategory::isShared).orElse(false);
+    }
+
+    private boolean isNumber(String value) {
+        return NUMBER.matcher(value).matches();
+    }
+
+    /**
+     * 분류·소유자로 저장 폴더 계산
+     * - 소유자 종류가 분류와 다르거나 번호가 비면 프로그래머 실수라 IllegalArgumentException
+     */
+    private String dir(FileCategory category, FileOwner owner) {
+        if (category == null || owner == null || owner.type() != category.getOwner()) {
+            throw new IllegalArgumentException("파일 소유자 종류가 분류와 다르다 category=" + category + " owner=" + owner);
+        }
+        return switch (owner.type()) {
+            case MEMBER -> number(owner.mbrSn()) + "/" + category.getDomainDir() + "/" + category.getPurposeDir();
+            case PET -> number(owner.mbrSn()) + "/" + category.getDomainDir() + "/" + number(owner.petSn()) + "/"
+                    + category.getPurposeDir();
+            case SERVICE -> FileCategory.ASSET_DIR + "/" + category.getPurposeDir();
+        };
+    }
+
+    private Long number(Long value) {
+        if (value == null) {
+            throw new IllegalArgumentException("파일 소유자 번호가 없다");
+        }
+        return value;
     }
 
     private StoredFile read(AtchFile atchFile) {
@@ -140,9 +164,8 @@ public class FileStore {
     /**
      * 디스크 저장과 ATCH_FILE 등록
      */
-    private Long save(byte[] content, FileExtension extension, String orgnlFileNm, String actorId, boolean publicFile) {
-        String physStrgPath = (publicFile ? PUBLIC_PREFIX : "") + LocalDate.now().format(DIR_FORMAT) + "/"
-                + UUID.randomUUID() + "." + extension.getExtension();
+    private Long save(byte[] content, FileExtension extension, String orgnlFileNm, String actorId, String dir) {
+        String physStrgPath = dir + "/" + UUID.randomUUID() + "." + extension.getExtension();
         Path path = resolve(physStrgPath);
         try {
             Files.createDirectories(path.getParent());

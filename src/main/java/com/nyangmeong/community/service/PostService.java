@@ -32,6 +32,8 @@ import com.nyangmeong.community.mapper.PostMapper;
 import com.nyangmeong.global.auth.OwnerAuthorizer;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.file.FileCategory;
+import com.nyangmeong.global.file.FileOwner;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.response.PageResponse;
@@ -197,7 +199,7 @@ public class PostService {
 
         int sortSeq = 0;
         for (MultipartFile image : images) {
-            insertImage(post.getPstSn(), fileStore.storePublic(image, actorId(mbrSn)), sortSeq++, mbrSn);
+            insertImage(post.getPstSn(), fileStore.store(image, FileCategory.COMMUNITY_POST, FileOwner.member(mbrSn), actorId(mbrSn)), sortSeq++, mbrSn);
         }
         missionReflector.reflectAfterCommit(mbrSn, CareMission.PET_STORY_POST);
         return toResponse(mbrSn, getNormalOrThrow(post.getPstSn()));
@@ -238,7 +240,7 @@ public class PostService {
         }
         int sortSeq = remaining.stream().mapToInt(PostImage::getSortSeq).max().orElse(-1) + 1;
         for (MultipartFile image : images) {
-            insertImage(pstSn, fileStore.storePublic(image, actorId(mbrSn)), sortSeq++, mbrSn);
+            insertImage(pstSn, fileStore.store(image, FileCategory.COMMUNITY_POST, FileOwner.member(mbrSn), actorId(mbrSn)), sortSeq++, mbrSn);
         }
         return toResponse(mbrSn, getNormalOrThrow(pstSn));
     }

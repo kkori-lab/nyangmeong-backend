@@ -46,6 +46,8 @@ import com.nyangmeong.global.auth.OwnerAuthorizer;
 import com.nyangmeong.global.code.RegionService;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.file.FileCategory;
+import com.nyangmeong.global.file.FileOwner;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.response.PageResponse;
@@ -189,7 +191,7 @@ public class CareRecruitmentService {
         insertChildren(recruitment.getPetPrtcRcrtSn(), pets, shapes);
         int sortSeq = 0;
         for (MultipartFile image : images) {
-            insertImage(post.getPstSn(), fileStore.storePublic(image, actorId(mbrSn)), sortSeq++, mbrSn);
+            insertImage(post.getPstSn(), fileStore.store(image, FileCategory.COMMUNITY_POST, FileOwner.member(mbrSn), actorId(mbrSn)), sortSeq++, mbrSn);
         }
         return toResponse(mbrSn, getDetailOrThrow(recruitment.getPetPrtcRcrtSn()));
     }
@@ -278,7 +280,7 @@ public class CareRecruitmentService {
         }
         int sortSeq = remaining.stream().mapToInt(PostImage::getSortSeq).max().orElse(-1) + 1;
         for (MultipartFile image : images) {
-            insertImage(detail.getPstSn(), fileStore.storePublic(image, actorId(mbrSn)), sortSeq++, mbrSn);
+            insertImage(detail.getPstSn(), fileStore.store(image, FileCategory.COMMUNITY_POST, FileOwner.member(mbrSn), actorId(mbrSn)), sortSeq++, mbrSn);
         }
         return toResponse(mbrSn, getDetailOrThrow(petPrtcRcrtSn));
     }

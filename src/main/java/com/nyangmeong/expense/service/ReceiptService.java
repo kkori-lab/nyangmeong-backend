@@ -14,6 +14,8 @@ import com.nyangmeong.expense.mapper.ReceiptMapper;
 import com.nyangmeong.global.auth.PetAuthorizer;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.file.FileCategory;
+import com.nyangmeong.global.file.FileOwner;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.file.StoredFile;
 
@@ -49,7 +51,7 @@ public class ReceiptService {
             }
             petAuthorizer.checkCaregiver(mbrSn, petSn);
         }
-        Long atchFileSn = fileStore.store(file, String.valueOf(mbrSn));
+        Long atchFileSn = fileStore.store(file, FileCategory.EXPENSE_RECEIPT, FileOwner.member(mbrSn), String.valueOf(mbrSn));
 
         Receipt receipt = new Receipt();
         receipt.setMbrSn(mbrSn);
