@@ -3,6 +3,7 @@ package com.nyangmeong.pet.dto;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -13,6 +14,7 @@ import jakarta.validation.constraints.Size;
 /**
  * [반려동물 등록 요청]
  * - 품종은 vrtySn·vrtyDrctInptNm 중 하나, 털색 직접 입력이면 colrDrctInptNm 필수 (서비스에서 검사)
+ * - petBdwg·goalBdwg·minBdwg·maxBdwg : 소수 둘째 자리까지, 200kg 이하
  * - bdwgRngDrctInptYn : 'Y' 직접 입력(minBdwg·maxBdwg 필수), 'N' 자동 계산(두 값은 무시), 안 보내면 'Y'
  */
 public record PetCreateRequest(@NotBlank @Size(max = 20) String petNm,
@@ -23,10 +25,10 @@ public record PetCreateRequest(@NotBlank @Size(max = 20) String petNm,
         @Pattern(regexp = "^[0-9]{0,20}$") String chipNo,
         @NotBlank String petGndrCd,
         @NotNull Boolean nutrYn,
-        @NotNull @Positive @Digits(integer = 5, fraction = 3) BigDecimal petBdwg,
-        @Positive @Digits(integer = 5, fraction = 3) BigDecimal goalBdwg,
-        @Positive @Digits(integer = 5, fraction = 3) BigDecimal minBdwg,
-        @Positive @Digits(integer = 5, fraction = 3) BigDecimal maxBdwg,
+        @NotNull @Positive @Digits(integer = 3, fraction = 2) @DecimalMax("200.00") BigDecimal petBdwg,
+        @Positive @Digits(integer = 3, fraction = 2) @DecimalMax("200.00") BigDecimal goalBdwg,
+        @Positive @Digits(integer = 3, fraction = 2) @DecimalMax("200.00") BigDecimal minBdwg,
+        @Positive @Digits(integer = 3, fraction = 2) @DecimalMax("200.00") BigDecimal maxBdwg,
         @Pattern(regexp = "^[YN]$") String bdwgRngDrctInptYn,
         @NotBlank String colrCd,
         @Size(max = 20) String colrDrctInptNm,

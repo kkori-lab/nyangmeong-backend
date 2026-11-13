@@ -168,12 +168,45 @@ class PetControllerTest {
 
     @Test
     @WithMockLoginMember
-    void 체중이_0이거나_소수_넷째_자리면_400() throws Exception {
+    void 체중이_0이거나_소수_셋째_자리거나_200을_넘으면_400() throws Exception {
         mockMvc.perform(json(post("/api/pets"), createBody("뭉치", "0", "")))
                 .andExpect(status().isBadRequest());
-        mockMvc.perform(json(post("/api/pets"), createBody("뭉치", "4.2501", "")))
+        mockMvc.perform(json(post("/api/pets"), createBody("뭉치", "4.125", "")))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(json(post("/api/pets"), createBody("뭉치", "200.01", "")))
                 .andExpect(status().isBadRequest());
         verify(petService, never()).createPet(anyLong(), any());
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 체중이_200이면_등록된다() throws Exception {
+        mockMvc.perform(json(post("/api/pets"), createBody("뭉치", "200", "")))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 등록의_목표_최소_최대_체중도_소수_둘째_자리_200_이하만_받는다() throws Exception {
+        for (String field : new String[] { "goalBdwg", "minBdwg", "maxBdwg" }) {
+            for (String bad : new String[] { "4.125", "200.01" }) {
+                String body = createBody("뭉치", "4.25", "").replaceFirst("\\}\\s*$",",\"" + field + "\":" + bad + "}");
+                mockMvc.perform(json(post("/api/pets"), body)).andExpect(status().isBadRequest());
+            }
+        }
+        verify(petService, never()).createPet(anyLong(), any());
+    }
+
+    @Test
+    @WithMockLoginMember
+    void 수정의_체중_목표_최소_최대도_소수_둘째_자리_200_이하만_받는다() throws Exception {
+        for (String field : new String[] { "petBdwg", "goalBdwg", "minBdwg", "maxBdwg" }) {
+            for (String bad : new String[] { "4.125", "200.5" }) {
+                mockMvc.perform(json(patch("/api/pets/10"), "{\"" + field + "\":" + bad + "}"))
+                        .andExpect(status().isBadRequest());
+            }
+        }
+        verify(petService, never()).updatePet(anyLong(), anyLong(), any());
     }
 
     @Test

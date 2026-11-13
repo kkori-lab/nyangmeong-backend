@@ -478,11 +478,11 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 | chipNo | String | N | 숫자만, 최대 20자리 | PET.CHIP_NO, MYP-003-05 |
 | petGndrCd | String | Y | 성별(PETG02) | PET.PET_GNDR_CD, MYP-003-01 |
 | nutrYn | Boolean | Y | 중성화 여부 | PET.NUTR_YN, MYP-003-01·06 |
-| petBdwg | BigDecimal | Y | 0보다 큼, 소수 셋째 자리까지 | PET.PET_BDWG, MYP-003-01 |
-| goalBdwg | BigDecimal | N | 0보다 큼, 소수 셋째 자리까지 | PET.GOAL_BDWG, MYP-003-04 |
-| minBdwg | BigDecimal | 조건 | `bdwgRngDrctInptYn`이 'Y'(기본)이면 필수. 0보다 큼, 소수 셋째 자리까지, `maxBdwg`보다 작음. 'N'이면 무시하고 서버가 `petBdwg`로 계산해 저장 | PET.MIN_BDWG, MYP-003-04 |
-| maxBdwg | BigDecimal | 조건 | `bdwgRngDrctInptYn`이 'Y'(기본)이면 필수. 0보다 큼, 소수 셋째 자리까지. 'N'이면 무시 | PET.MAX_BDWG, MYP-003-04 |
-| bdwgRngDrctInptYn | String | N | 'Y' = 사용자가 정상 범위를 직접 입력, 'N' = 자동 계산. 안 보내면 'Y'. 'N'이면 범위 = `petBdwg` × 0.9 ~ × 1.1, 소수 둘째 자리 반올림(HALF_UP), 최소는 0.01 이상·최대는 최소+0.01 이상으로 보정(`PetBdwgRange.of`) | PET.BDWG_RNG_DRCT_INPT_YN, MYP-003-04 |
+| petBdwg | BigDecimal | Y | 0보다 큼, 소수 둘째 자리까지, 200 이하 | PET.PET_BDWG, MYP-003-01 |
+| goalBdwg | BigDecimal | N | 0보다 큼, 소수 둘째 자리까지, 200 이하 | PET.GOAL_BDWG, MYP-003-04 |
+| minBdwg | BigDecimal | 조건 | `bdwgRngDrctInptYn`이 'Y'(기본)이면 필수. 0보다 큼, 소수 둘째 자리까지, 200 이하, `maxBdwg`보다 작음. 'N'이면 무시하고 서버가 `petBdwg`로 계산해 저장 | PET.MIN_BDWG, MYP-003-04 |
+| maxBdwg | BigDecimal | 조건 | `bdwgRngDrctInptYn`이 'Y'(기본)이면 필수. 0보다 큼, 소수 둘째 자리까지, 200 이하. 'N'이면 무시 | PET.MAX_BDWG, MYP-003-04 |
+| bdwgRngDrctInptYn | String | N | 'Y' = 사용자가 정상 범위를 직접 입력, 'N' = 자동 계산. 안 보내면 'Y'. 'N'이면 범위 = `petBdwg` × 0.9 ~ × 1.1, 소수 둘째 자리 반올림(HALF_UP), 최소는 0.01 이상·최대는 최소+0.01 이상으로 보정, 최대가 200을 넘으면 200으로 자름(`PetBdwgRange.of`) | PET.BDWG_RNG_DRCT_INPT_YN, MYP-003-04 |
 | colrCd | String | Y | 종별 선택지(PETG03) | PET.COLR_CD, MYP-003-03 |
 | colrDrctInptNm | String | N | [직접 입력] 선택 시. 최대 20자 | PET.COLR_DRCT_INPT_NM, MYP-003-03 |
 | chrcCn | String | N | 최대 1,000자 | PET.CHRC_CN, MYP-003-01 |
@@ -578,10 +578,10 @@ Python AI 서버가 사용자 쿠키를 그대로 넘겨 부른다. 경로에 `/
 | chipNo | String | N | 숫자만, 최대 20자리 | PET.CHIP_NO, MYP-003-05 |
 | petGndrCd | String | N | 성별(PETG02) | PET.PET_GNDR_CD, MYP-003-01 |
 | nutrYn | Boolean | N | | PET.NUTR_YN, MYP-003-06 |
-| petBdwg | BigDecimal | N | 0보다 큼, 소수 셋째 자리까지. 체중 잠금은 화면에서만(서버는 막지 않음) | PET.PET_BDWG, MYP-002-04, MYP-003-01 |
-| goalBdwg | BigDecimal | N | 0보다 큼, 소수 셋째 자리까지 | PET.GOAL_BDWG, MYP-003-04 |
-| minBdwg | BigDecimal | N | 0보다 큼, 소수 셋째 자리까지, 최대보다 작음(저장 후 값 기준) | PET.MIN_BDWG, MYP-003-04 |
-| maxBdwg | BigDecimal | N | 0보다 큼, 소수 셋째 자리까지 | PET.MAX_BDWG, MYP-003-04 |
+| petBdwg | BigDecimal | N | 0보다 큼, 소수 둘째 자리까지, 200 이하. 체중 잠금은 화면에서만(서버는 막지 않음) | PET.PET_BDWG, MYP-002-04, MYP-003-01 |
+| goalBdwg | BigDecimal | N | 0보다 큼, 소수 둘째 자리까지, 200 이하 | PET.GOAL_BDWG, MYP-003-04 |
+| minBdwg | BigDecimal | N | 0보다 큼, 소수 둘째 자리까지, 200 이하, 최대보다 작음(저장 후 값 기준) | PET.MIN_BDWG, MYP-003-04 |
+| maxBdwg | BigDecimal | N | 0보다 큼, 소수 둘째 자리까지, 200 이하 | PET.MAX_BDWG, MYP-003-04 |
 | bdwgRngDrctInptYn | String | N | 'Y' / 'N'. 'N'으로 보내면 보낸 범위는 무시하고 현재 체중(같이 보낸 `petBdwg`가 있으면 그 값)으로 다시 계산. 'Y'면 보낸 범위를 저장하고, 범위를 안 보내면 기존 값을 유지 | PET.BDWG_RNG_DRCT_INPT_YN, MYP-003-04 |
 | colrCd | String | N | 종별 선택지(PETG03) | PET.COLR_CD, MYP-003-03 |
 | colrDrctInptNm | String | N | 최대 20자 | PET.COLR_DRCT_INPT_NM, MYP-003-03 |

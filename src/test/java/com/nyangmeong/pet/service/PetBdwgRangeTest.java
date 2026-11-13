@@ -63,7 +63,7 @@ class PetBdwgRangeTest {
 
     @Test
     void 보정이_없는_체중에서는_최소가_최대보다_작다() {
-        for (String weight : new String[] { "0.06", "0.5", "3", "25.5", "99999.999" }) {
+        for (String weight : new String[] { "0.06", "0.5", "3", "25.5", "199.99", "200", "250" }) {
             PetBdwgRange range = of(weight);
             assertThat(range.min()).isGreaterThan(BigDecimal.ZERO);
             assertThat(range.min()).isLessThan(range.max());
@@ -71,9 +71,28 @@ class PetBdwgRangeTest {
     }
 
     @Test
-    void 최대_체중_상한은_아직_적용하지_않는다() {
-        assertThat(PetBdwgRange.MAX_BDWG_LIMIT).isNull();
-        assertThat(of("300").max()).isEqualByComparingTo("330.00");
+    void 최대가_200을_넘으면_200으로_자른다() {
+        PetBdwgRange range = of("182");
+
+        assertThat(PetBdwgRange.MAX_BDWG_LIMIT).isEqualByComparingTo("200.00");
+        assertThat(range.min()).isEqualByComparingTo("163.80");
+        assertThat(range.max()).isEqualByComparingTo("200.00");
+    }
+
+    @Test
+    void 기준_체중이_200이면_180에서_200이다() {
+        PetBdwgRange range = of("200");
+
+        assertThat(range.min()).isEqualByComparingTo("180.00");
+        assertThat(range.max()).isEqualByComparingTo("200.00");
+    }
+
+    @Test
+    void 기준_체중이_200을_넘으면_최소도_199_99로_자른다() {
+        PetBdwgRange range = of("250");
+
+        assertThat(range.min()).isEqualByComparingTo("199.99");
+        assertThat(range.max()).isEqualByComparingTo("200.00");
     }
 
     @Test
