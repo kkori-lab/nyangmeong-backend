@@ -28,6 +28,27 @@
                )
     </select>
 
+    <resultMap id="pointLedgerResultMap" type="com.nyangmeong.pet.domain.PointLedger">
+        <id     column="PNT_GNLGR_SN"     property="pntGnlgrSn" />
+        <result column="MBR_SN"           property="mbrSn" />
+        <result column="PNT_DLNG_TYPE_CD" property="pntDlngTypeCd" />
+        <result column="DLNG_PNT"         property="dlngPnt" />
+        <result column="MEMO_CN"          property="memoCn" />
+        <result column="IDMPT_DMND_ID"    property="idmptDmndId" />
+    </resultMap>
+
+    <select id="selectLedgerByIdmptDmndId" resultMap="pointLedgerResultMap">
+        /* 멱등 요청 ID 원장 조회 */
+        SELECT PNT_GNLGR_SN
+             , MBR_SN
+             , PNT_DLNG_TYPE_CD
+             , DLNG_PNT
+             , MEMO_CN
+             , IDMPT_DMND_ID
+          FROM PNT_GNLGR
+         WHERE IDMPT_DMND_ID = #{idmptDmndId}
+    </select>
+
     <insert id="insertLedger" parameterType="com.nyangmeong.pet.domain.PointLedger"
             useGeneratedKeys="true" keyProperty="pntGnlgrSn" keyColumn="PNT_GNLGR_SN">
         /* 포인트 원장 등록 */

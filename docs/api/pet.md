@@ -36,7 +36,7 @@
 | POST | /caregiver-invitations/{jntBrupInvtnSn}/reject | 초대 거절. 초대의 반려동물 전체 | MYP-005-07·08 | SJM | - | - |
 | POST | /pets | 반려동물 등록(계정당 10마리, 첫 등록은 대표 지정) | MYP-002-01, MYP-003-01·04·05·07 | SJM | PetCreateRequest | PetResponse |
 | POST | /pets/{petSn}/representative | 대표 반려동물 지정(주양육 반려동물만) | MYP-010-05 | SJM | - | - |
-| POST | /pixel-characters/{pixelCharSn}/held-items | 아이템 일괄 구매(포인트 차감, 보관함 추가, 주양육자만). 201. 오류: `POINT_NOT_ENOUGH`(400), `PET_PRIMARY_ONLY`(403), `ITEM_NOT_FOUND`(404), `ITEM_ALREADY_HELD`(409) | MYP-011-05·06 | LJS | ItemPurchaseRequest | PixelCharacterResponse |
+| POST | /pixel-characters/{pixelCharSn}/held-items | 아이템 일괄 구매(포인트 차감, 보관함 추가, 주양육자만). 201. 오류: `POINT_NOT_ENOUGH`(400), `PET_PRIMARY_ONLY`(403), `ITEM_NOT_FOUND`(404), `ITEM_ALREADY_HELD`(409), `IDEMPOTENCY_KEY_REUSED`(409, 원장에 있는 `idmptDmndId`로 내용이 다른 구매) | MYP-011-05·06 | LJS | ItemPurchaseRequest | PixelCharacterResponse |
 | PUT | /pixel-characters/{pixelCharSn}/equipped-items | 착용 상태 확정 저장(부위당 1개, 요청에 없는 보유 아이템은 착용 해제). 착용 모습 대표 이미지를 지운다 | MYP-010-13·16 | LJS | EquippedItemSaveRequest | PixelCharacterResponse |
 | PUT | /pets/main-shortcuts | 메인 바로가기 저장. 본문은 배열 `[{ petSn, shrtcCds }]`, 반려동물마다 보일 코드를 순서대로(`[]`면 전부 숨김). 본문에 없는 반려동물은 그대로. 400 `INVALID_INPUT_VALUE`(`data[].field`가 `[i].petSn`·`[i].shrtcCds`·`[i].shrtcCds[j]`): 반려동물 번호 없음·중복, 코드 목록 없음, 같은 코드 두 번, MANG02에 없거나 사용 안 하는 코드. 남의 반려동물 403 `PET_ACCESS_DENIED`, 없는 번호 404 `PET_NOT_FOUND`(하나라도 틀리면 아무것도 저장 안 함). 응답은 조회와 같음 | MAN-008 | LJS | List<PetShortcutSaveRequest> | List<PetShortcutSummary> |
 | PATCH | /pets/{petSn} | 반려동물 수정(양육자 전원, 체중 잠금은 화면에서) | MYP-002-04, MYP-003-01·04~07 | SJM | PetUpdateRequest | PetResponse |

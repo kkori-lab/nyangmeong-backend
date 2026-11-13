@@ -6,6 +6,7 @@ import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -102,11 +103,27 @@ public class PointService {
 
     /**
      * 포인트 사용
+     * - 같은 멱등 요청 ID로 같은 사용(회원·거래 종류·금액·메모)이면 건너뜀, 내용이 다르면 IDEMPOTENCY_KEY_REUSED
      */
     @Transactional
     public void use(Long mbrSn, long amount, String idmptDmndId, String memoCn) {
-        record(mbrSn, -Math.toIntExact(amount), PointDealType.ITEM_PURCHASE, null, memoCn, idmptDmndId,
-                String.valueOf(mbrSn));
+        int delta = -Math.toIntExact(amount);
+        PointLedger prev = pointMapper.selectLedgerByIdmptDmndId(idmptDmndId);
+        if (prev == null) {
+            recordLedger(mbrSn, delta, PointDealType.ITEM_PURCHASE, null, memoCn, idmptDmndId,
+                    String.valueOf(mbrSn));
+            return;
+        }
+        if (!isSameUse(prev, mbrSn, delta, memoCn)) {
+            throw new CustomException(ErrorCode.IDEMPOTENCY_KEY_REUSED);
+        }
+    }
+
+    private static boolean isSameUse(PointLedger prev, Long mbrSn, int delta, String memoCn) {
+        return Objects.equals(prev.getMbrSn(), mbrSn)
+                && PointDealType.ITEM_PURCHASE.getCode().equals(prev.getPntDlngTypeCd())
+                && Objects.equals(prev.getDlngPnt(), delta)
+                && Objects.equals(prev.getMemoCn(), memoCn);
     }
 
     /**

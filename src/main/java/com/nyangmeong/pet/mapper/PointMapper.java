@@ -37,6 +37,11 @@ public interface PointMapper {
     boolean existsLedger(@Param("idmptDmndId") String idmptDmndId);
 
     /**
+     * 멱등 요청 ID 원장 조회 (없으면 null)
+     */
+    PointLedger selectLedgerByIdmptDmndId(@Param("idmptDmndId") String idmptDmndId);
+
+    /**
      * 포인트 원장 등록
      */
     int insertLedger(PointLedger ledger);

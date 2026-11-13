@@ -2,12 +2,13 @@
 
 ## 지금 하는 것
 
-SCR-MYP-011 아이템 상점 모달 · 포인트·연동 양육자 가짜 연결 — 끝 (2026-11-13). 아이템 상점 목록·구매가 `PointFake` 대신 `PointService`(실제 보유 포인트, 구매 원장 메모 `아이템 구매 · {이름들}` 1000자에서 자름)를, 케어 일정 사전 알림 배치가 `CaregiverFake` 대신 `PetService.searchCaregiverMbrSns`를 부른다. 두 가짜 삭제. 검증 1회차 `통과`·사람 확인 (승인 2026-11-13 12:35, 시작 2026-11-13 12:27)
+SCR-MYP-011 아이템 상점 모달 · 구매 멱등키 재사용 막기 — 끝 (2026-11-13). `PointService.use`가 키로 원장을 읽어(`selectLedgerByIdmptDmndId`, resultMap) 회원·거래 종류·금액·메모가 같으면 건너뛰고 다르면 409 `IDEMPOTENCY_KEY_REUSED`. 적립(미션·검진)은 그대로. 검증 2회차 `통과`(1회차는 resultType으로 받아 늘 null → 500)·사람 확인 (승인 2026-11-13 14:23, 시작 2026-11-13 14:11)
 
 ## 다음에 할 것
 
 - SJM에게 알린다(PR 전, SCR-MYP-011 가짜 연결): 아이템 구매가 `PointService.use`·`getHldPnt`를 부르기 시작했다(`PointFake` 삭제). 구매 원장은 `ITEM_PURCHASE`(MYPC0008), 메모 `아이템 구매 · {아이템 이름들 ", "}`(1000자에서 자름). 케어 일정 사전 알림 배치는 `PetService.searchCaregiverMbrSns`를 부른다(`CaregiverFake` 삭제). `PointService`·`PetService` 코드는 바꾸지 않았다
-- 사람이 확인·수정(2026-11-13, 범위 밖으로 뺌): `PointService.use`는 `idmptDmndId`가 원장에 이미 있으면(`UK_PNT_GNLGR_1`, 전 회원·전 거래 종류) 조용히 넘어가서, 예전 키로 다른 아이템을 사면 포인트 없이 아이템이 생긴다(`PointService.java` `record`의 `existsLedger` → `ItemService.purchase`가 결과를 안 봄). 재현: 같은 `idmptDmndId`로 아이템 A 구매 뒤 B 구매 → 둘 다 201, 두 번째는 포인트 그대로
+- SJM에게 알린다(PR 전, SCR-MYP-011 구매 멱등키): `PointService.use`가 `existsLedger` 대신 `PointMapper.selectLedgerByIdmptDmndId`(새 resultMap `pointLedgerResultMap`)로 원장을 읽는다. 같은 키에 회원·거래 종류(`ITEM_PURCHASE`)·금액·메모가 모두 같으면 지금처럼 건너뛰고, 하나라도 다르면 409 `IDEMPOTENCY_KEY_REUSED`(ErrorCode pet 구획 추가). `earnMission`·`earnCheckupPoint`·`record`·`existsLedger`는 그대로. `PointServiceTest` 기존 `같은_idmptDmndId로_두_번_쓰면_한_번만_차감한다`는 목만 새 조회로(기대값 그대로), 409 검사 4개 추가
+- SCR-MYP-011 연결 남음: FN-MYP-011-05 (프론트 연결 `features/pet/character/ItemShopModal.jsx`가 `IDEMPOTENCY_KEY_REUSED`를 받으면 새 `idmptDmndId`를 만들고 상점을 다시 읽기, `PURCHASE_ERRORS` 문구, 프론트 저장소에서 /start. 프론트 마일스톤 절 "SCR-MYP-011 아이템 상점 모달 · 구매 멱등키 재사용 409 처리 — 대기" 넣음). 그 전까지는 이 오류를 받으면 모달을 닫았다 열어야 다시 살 수 있다
 - 공용 DB 정리(사람): SCR-MYP-011 가짜 연결 검증·사람 확인으로 회원 164 캐릭터 21에 보유 아이템 43·46(과 사람 확인 때 산 두 개), 포인트 원장 5734(−20)와 사람 확인분. `HLD_ITEM` 행 삭제와 관리자 `POST /api/admin/points/adjustments`로 되돌린다. 배치 수동 실행으로 생긴 오늘 케어 일정 알림·`NOTI_SNDNG_LOG`는 실제 사전 알림과 같아 두어도 된다
 - 팀에 알린다(SCR-AIM-006 사전 알림 실제 발송): 이제 09:00 배치가 실제 양육자에게 인앱 알림과 메일을 보낸다. 공유 `application.properties`가 `app.mail.client=smtp`라 각자 띄운 서버도 실제 메일을 보낸다(중복방지키로 한 번만). 메일을 보내지 않으려면 `--app.mail.client=log`로 띄운다
 - SCR-MYP-010 연결 남음: 파일 저장 경로 재구성 (프론트 연결 이미지 URL `/api/files/public/{번호}` → `/api/files/{번호}`: 공통 파일 이미지 컴포넌트, 관리자 공지 편집기·뉴스 등록, 사용자 공지·뉴스 화면, 프론트 저장소에서 /start. 프론트 마일스톤 절 "SCR-MYP-010 픽셀 캐릭터 관리 · 이미지 주소 /api/files 전환 — 대기" 넣음). 프론트가 옮긴 뒤 백엔드에서 `GET /api/files/public/{atchFileSn}`을 지운다
