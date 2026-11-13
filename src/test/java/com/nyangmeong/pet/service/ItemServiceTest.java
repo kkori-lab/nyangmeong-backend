@@ -41,9 +41,9 @@ class ItemServiceTest {
     private final PixelCharacterMapper pixelCharacterMapper = mock(PixelCharacterMapper.class);
     private final PixelCharacterService pixelCharacterService = mock(PixelCharacterService.class);
     private final PetAuthorizer petAuthorizer = mock(PetAuthorizer.class);
-    private final PointFake pointFake = new PointFake();
+    private final PointService pointService = mock(PointService.class);
     private final ItemService service = new ItemService(itemMapper, fileStore, pixelCharacterMapper,
-            pixelCharacterService, petAuthorizer, pointFake);
+            pixelCharacterService, petAuthorizer, pointService);
 
     private PixelCharacter character(String bscCharSbstYn) {
         PixelCharacter character = new PixelCharacter();
@@ -69,10 +69,11 @@ class ItemServiceTest {
         when(pixelCharacterMapper.selectPixelCharacter(CHAR)).thenReturn(character("N"));
         List<ShopItemSummary> rows = List.of(item(1L, 600, true), item(2L, 500, false));
         when(itemMapper.selectShopItems(CHAR, "MYPC0001")).thenReturn(rows);
+        when(pointService.getHldPnt(MBR)).thenReturn(8_450);
 
         ShopItemListResponse res = service.searchShopItems(MBR, CHAR, "MYPC0001");
 
-        assertThat(res.hldPnt()).isEqualTo(PointFake.HLD_PNT);
+        assertThat(res.hldPnt()).isEqualTo(8_450L);
         assertThat(res.items()).isEqualTo(rows);
         verify(petAuthorizer).checkPrimary(MBR, PET);
     }
@@ -106,6 +107,7 @@ class ItemServiceTest {
         assertThat(result).isSameAs(res);
         verify(petAuthorizer).checkPrimary(MBR, PET);
         verify(itemMapper).insertHeldItems(CHAR, items);
+        verify(pointService).use(MBR, 1_100L, "req-1", "아이템 구매 · 아이템1, 아이템2");
     }
 
     @Test
@@ -113,6 +115,8 @@ class ItemServiceTest {
         when(pixelCharacterMapper.selectPixelCharacter(CHAR)).thenReturn(character("N"));
         when(itemMapper.selectShopItemsBySn(CHAR, List.of(1L, 2L)))
                 .thenReturn(List.of(item(1L, 8_000, false), item(2L, 500, false)));
+        doThrow(new CustomException(ErrorCode.POINT_NOT_ENOUGH)).when(pointService)
+                .use(MBR, 8_500L, "req-1", "아이템 구매 · 아이템1, 아이템2");
 
         assertThatThrownBy(() -> service.purchase(MBR, CHAR, new ItemPurchaseRequest("req-1", List.of(1L, 2L))))
                 .extracting("errorCode").isEqualTo(ErrorCode.POINT_NOT_ENOUGH);
@@ -167,5 +171,15 @@ class ItemServiceTest {
         assertThatThrownBy(() -> service.purchase(MBR, CHAR, new ItemPurchaseRequest("req-1", List.of(1L))))
                 .extracting("errorCode").isEqualTo(ErrorCode.PET_PRIMARY_ONLY);
         verify(itemMapper, never()).insertHeldItems(anyLong(), any());
+    }
+
+    @Test
+    void 구매_원장_메모는_1000자에서_자른다() {
+        ShopItemSummary longItem = item(1L, 100, false);
+        longItem.setItemNm("가".repeat(1_200));
+
+        String memo = ItemService.purchaseMemo(List.of(longItem));
+
+        assertThat(memo).hasSize(ItemService.MEMO_MAX_LEN).startsWith(ItemService.PURCHASE_MEMO_PREFIX);
     }
 }

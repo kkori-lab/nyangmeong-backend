@@ -13,6 +13,7 @@ import com.nyangmeong.global.notification.CareScheduleAlarmEvent;
 import com.nyangmeong.global.notification.EventPublisher;
 import com.nyangmeong.health.dto.HospitalScheduleSummary;
 import com.nyangmeong.health.service.CareScheduleService;
+import com.nyangmeong.pet.service.PetService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -31,7 +32,7 @@ public class CareScheduleAlarmJob implements BatchJob {
     static final List<Integer> BFHD_DAY_CNTS = List.of(0, 1, 3, 7);
 
     private final CareScheduleService careScheduleService;
-    private final CaregiverFake caregiverFake;
+    private final PetService petService;
     private final EventPublisher eventPublisher;
 
     @Override
@@ -58,7 +59,7 @@ public class CareScheduleAlarmJob implements BatchJob {
         int published = 0;
         for (int bfhdDayCnt : BFHD_DAY_CNTS) {
             for (HospitalScheduleSummary schedule : careScheduleService.searchHospitalSchedules(baseYmd.plusDays(bfhdDayCnt))) {
-                for (Long mbrSn : caregiverFake.search(schedule.getPetSn())) {
+                for (Long mbrSn : petService.searchCaregiverMbrSns(schedule.getPetSn())) {
                     eventPublisher.publish(new CareScheduleAlarmEvent(mbrSn, schedule.getSchdlSn(), schedule.getPetSn(),
                             schedule.getSchdlDt(), schedule.isHrInptYn(), schedule.getPetNm(),
                             schedule.getCkupTypeNm(), schedule.getHsptlNm(), bfhdDayCnt));

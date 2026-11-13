@@ -26,7 +26,7 @@ class ItemBakeImageServiceTest {
     private final ItemMapper itemMapper = mock(ItemMapper.class);
     private final FileStore fileStore = mock(FileStore.class);
     private final ItemService service = new ItemService(itemMapper, fileStore, mock(PixelCharacterMapper.class),
-            mock(PixelCharacterService.class), mock(PetAuthorizer.class), mock(PointFake.class));
+            mock(PixelCharacterService.class), mock(PetAuthorizer.class), mock(PointService.class));
 
     @Test
     void 굽기_대상이면_아이템_그림을_준다() {

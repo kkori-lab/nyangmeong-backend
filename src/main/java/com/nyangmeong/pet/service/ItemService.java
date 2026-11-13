@@ -1,6 +1,7 @@
 package com.nyangmeong.pet.service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -34,13 +35,15 @@ import lombok.RequiredArgsConstructor;
 public class ItemService {
 
     private static final int BAKE_TARGET_PAGE_SIZE = 100;
+    static final String PURCHASE_MEMO_PREFIX = "아이템 구매 · ";
+    static final int MEMO_MAX_LEN = 1000;
 
     private final ItemMapper itemMapper;
     private final FileStore fileStore;
     private final PixelCharacterMapper pixelCharacterMapper;
     private final PixelCharacterService pixelCharacterService;
     private final PetAuthorizer petAuthorizer;
-    private final PointFake pointFake;
+    private final PointService pointService;
 
     /**
      * 아이템 이미지 조회
@@ -71,7 +74,7 @@ public class ItemService {
     @Transactional(readOnly = true)
     public ShopItemListResponse searchShopItems(Long mbrSn, Long pixelCharSn, String itemRegnCd) {
         checkDecoratable(mbrSn, pixelCharSn, false);
-        return new ShopItemListResponse(pointFake.getHldPnt(mbrSn),
+        return new ShopItemListResponse(pointService.getHldPnt(mbrSn),
                 itemMapper.selectShopItems(pixelCharSn, itemRegnCd));
     }
 
@@ -93,7 +96,7 @@ public class ItemService {
         }
 
         long totalPnt = items.stream().mapToLong(ShopItemSummary::getNeedPnt).sum();
-        pointFake.use(mbrSn, totalPnt, req.idmptDmndId());
+        pointService.use(mbrSn, totalPnt, req.idmptDmndId(), purchaseMemo(items));
         try {
             itemMapper.insertHeldItems(pixelCharSn, items);
         } catch (DuplicateKeyException e) {
@@ -135,5 +138,14 @@ public class ItemService {
         if (checkUnderReview && "Y".equals(character.getBscCharSbstYn())) {
             throw new CustomException(ErrorCode.PIXEL_CHARACTER_UNDER_REVIEW);
         }
+    }
+
+    /**
+     * 구매 원장 메모 : "아이템 구매 · 이름, 이름" (PNT_GNLGR.MEMO_CN 1000자)
+     */
+    static String purchaseMemo(List<ShopItemSummary> items) {
+        String memo = PURCHASE_MEMO_PREFIX
+                + items.stream().map(ShopItemSummary::getItemNm).collect(Collectors.joining(", "));
+        return memo.length() > MEMO_MAX_LEN ? memo.substring(0, MEMO_MAX_LEN) : memo;
     }
 }
