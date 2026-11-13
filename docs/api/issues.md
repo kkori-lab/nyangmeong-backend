@@ -127,7 +127,7 @@ DTO를 쓰면서 명세·테이블만으로 정하지 못한 것이다.
 8. **`MemberSummaryResponse`의 필수 `Y` 2개를 확인해야 함** — `mbrNcnm`은 Y인데 MBR에 `NCNM_STNG_CMPTN_YN`(닉네임 설정 완료 여부)이 있어 닉네임이 비어 있는 회원이 있을 수 있다(추정). `maskedAcntEml`도 Y인데 소셜 가입(`JOIN_PATH_CD`)일 때 계정 이메일이 항상 있는지 DDL로 판정할 수 없다. 이메일 마스킹 규칙도 명세에 없다. 근거: 이 초안, DDL MBR.
 9. **프로필 이미지를 `atchFileSn`만으로 줌** — 규칙 10에 따라 기존 초안의 `atchFileSn`을 따랐다. 공통레이아웃·메인 묶음에는 이 번호로 이미지를 받는 조회 API가 없어서, 화면이 어느 경로로 이미지를 받을지 다른 공통레이아웃·메인 묶음PI와 맞춰야 한다(`issues.md` API의 공통레이아웃·메인 20a번). 근거: 이 초안, COM-002-15.
 10. **`GET /notifications` 쿼리 파라미터에 DTO가 없음** — `notiTypeCd`(List<String>)·`size`가 기존 초안에 있지만 입력 목록에 검색 조건 DTO(`NotificationSearchCond` 등)가 없어 쓰지 않았다. `@RequestParam`으로 받을지, `XxxSearchCond`(@Data)를 둘지 정해야 한다. 근거: 이 초안, in/dto-A.md.
-11. **알림 행 안 처리에 필요한 식별자가 없음** — 공동양육 초대 [수락]·[거절](COM-004-08)에는 `jntBrupInvtnSn`, 펫돌봄 거래 알림(COM-004-09)에는 `otoChatRoomSn`이 필요하지만 INAPP_NOTI에 컬럼이 없어 `NotificationSummary`에 넣지 않았다. `mvmnPath` 문자열을 프론트가 해석할지, 컬럼·필드를 추가할지 정해야 한다(`issues.md` API의 공통레이아웃·메인 14·15번). 근거: COM-004-08·09.
+11. **알림 행 안 처리에 필요한 식별자가 없음** — 공동양육 초대 [수락]·[거절](COM-004-08)에는 `jntBrupInvtnSn`, 펫돌봄 거래 알림(COM-004-09)에는 `otoChatRoomSn`이 필요하지만 INAPP_NOTI에 컬럼이 없어 `NotificationSummary`에 넣지 않았다. `mvmnPath` 문자열을 프론트가 해석할지, 컬럼·필드를 추가할지 정해야 한다(`issues.md` API의 공통레이아웃·메인 14·15번). 근거: COM-004-08·09. 펫돌봄 거래 알림(AIMC0009)은 정했다: `mvmnPath`를 `/chat?otoChatRoomSn={방 번호}`로 저장하고 프론트가 쿼리를 읽어 채팅 모달을 연다(2026-11-13). 공동양육 초대는 그대로 미정.
 12. **읽음 여부를 `prslDt`로만 표현함** — 기존 초안대로 `prslDt`(null이면 미읽음)를 그대로 옮겼다. 화면은 읽음 여부만 쓰고 읽은 시각을 표시한다는 명세는 없다(COM-004-06·11). 계산 필드 `read: Boolean`으로 바꿀지는 선택 사항이다. 근거: 이 초안.
 
 ### AI매니저·건강기록
