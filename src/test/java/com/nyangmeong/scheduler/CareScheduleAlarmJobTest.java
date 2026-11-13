@@ -19,6 +19,7 @@ import com.nyangmeong.global.notification.CareScheduleAlarmEvent;
 import com.nyangmeong.global.notification.EventPublisher;
 import com.nyangmeong.health.dto.HospitalScheduleSummary;
 import com.nyangmeong.health.service.CareScheduleService;
+import com.nyangmeong.pet.service.PetService;
 
 /**
  * [검사 - 케어 일정 사전 알림 스캔]
@@ -28,9 +29,9 @@ class CareScheduleAlarmJobTest {
     private static final LocalDate BASE = LocalDate.of(2026, 10, 21);
 
     private final CareScheduleService careScheduleService = mock(CareScheduleService.class);
-    private final CaregiverFake caregiverFake = mock(CaregiverFake.class);
+    private final PetService petService = mock(PetService.class);
     private final EventPublisher eventPublisher = mock(EventPublisher.class);
-    private final CareScheduleAlarmJob job = new CareScheduleAlarmJob(careScheduleService, caregiverFake,
+    private final CareScheduleAlarmJob job = new CareScheduleAlarmJob(careScheduleService, petService,
             eventPublisher);
 
     private HospitalScheduleSummary schedule(long schdlSn, LocalDate schdlYmd) {
@@ -64,7 +65,7 @@ class CareScheduleAlarmJobTest {
         LocalDate d1 = BASE.plusDays(1);
         when(careScheduleService.searchHospitalSchedules(any())).thenReturn(List.of());
         when(careScheduleService.searchHospitalSchedules(d1)).thenReturn(List.of(schedule(100L, d1)));
-        when(caregiverFake.search(10L)).thenReturn(List.of(1L, 2L));
+        when(petService.searchCaregiverMbrSns(10L)).thenReturn(List.of(1L, 2L));
 
         job.scan(BASE);
 
@@ -84,7 +85,7 @@ class CareScheduleAlarmJobTest {
     @Test
     void 양육자가_없으면_발행하지_않는다() {
         when(careScheduleService.searchHospitalSchedules(any())).thenReturn(List.of(schedule(100L, BASE)));
-        when(caregiverFake.search(10L)).thenReturn(List.of());
+        when(petService.searchCaregiverMbrSns(10L)).thenReturn(List.of());
 
         job.scan(BASE);
 

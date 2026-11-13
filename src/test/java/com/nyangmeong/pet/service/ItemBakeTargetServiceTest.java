@@ -31,7 +31,7 @@ class ItemBakeTargetServiceTest {
     private final ItemMapper itemMapper = mock(ItemMapper.class);
     private final PixelCharacterMapper pixelCharacterMapper = mock(PixelCharacterMapper.class);
     private final ItemService service = new ItemService(itemMapper, mock(FileStore.class), pixelCharacterMapper,
-            mock(PixelCharacterService.class), mock(PetAuthorizer.class), mock(PointFake.class));
+            mock(PixelCharacterService.class), mock(PetAuthorizer.class), mock(PointService.class));
 
     @AfterEach
     void clearPage() {
