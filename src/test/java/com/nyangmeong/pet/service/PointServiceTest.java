@@ -147,13 +147,54 @@ class PointServiceTest {
 
     @Test
     void 같은_idmptDmndId로_두_번_쓰면_한_번만_차감한다() {
-        when(pointMapper.existsLedger("req-1")).thenReturn(false, true);
+        when(pointMapper.selectLedgerByIdmptDmndId("req-1")).thenReturn(null,
+                useLedger(MBR, PointDealType.ITEM_PURCHASE, -600, "밀짚모자"));
 
         service.use(MBR, 600, "req-1", "밀짚모자");
         service.use(MBR, 600, "req-1", "밀짚모자");
 
         verify(pointMapper, times(1)).updateHldPnt(MBR, -600, "1");
         verify(pointMapper, times(1)).insertLedger(any());
+    }
+
+    @Test
+    void 쓴_idmptDmndId로_금액이_다른_사용이면_409이고_차감하지_않는다() {
+        assertKeyReused(useLedger(MBR, PointDealType.ITEM_PURCHASE, -300, "밀짚모자"));
+    }
+
+    @Test
+    void 쓴_idmptDmndId로_메모가_다른_사용이면_409이고_차감하지_않는다() {
+        assertKeyReused(useLedger(MBR, PointDealType.ITEM_PURCHASE, -600, "선글라스"));
+    }
+
+    @Test
+    void 다른_회원이_쓴_idmptDmndId면_409이고_차감하지_않는다() {
+        assertKeyReused(useLedger(2L, PointDealType.ITEM_PURCHASE, -600, "밀짚모자"));
+    }
+
+    @Test
+    void 적립에_쓴_idmptDmndId로_사용하면_409이고_차감하지_않는다() {
+        assertKeyReused(useLedger(MBR, PointDealType.MISSION, -600, "밀짚모자"));
+    }
+
+    private void assertKeyReused(PointLedger prev) {
+        when(pointMapper.selectLedgerByIdmptDmndId("req-1")).thenReturn(prev);
+
+        assertThatThrownBy(() -> service.use(MBR, 600, "req-1", "밀짚모자"))
+                .isInstanceOfSatisfying(BaseException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.IDEMPOTENCY_KEY_REUSED));
+        verify(pointMapper, never()).updateHldPnt(anyLong(), anyInt(), anyString());
+        verify(pointMapper, never()).insertLedger(any());
+    }
+
+    private static PointLedger useLedger(Long mbrSn, PointDealType type, int dlngPnt, String memoCn) {
+        PointLedger ledger = new PointLedger();
+        ledger.setMbrSn(mbrSn);
+        ledger.setPntDlngTypeCd(type.getCode());
+        ledger.setDlngPnt(dlngPnt);
+        ledger.setMemoCn(memoCn);
+        ledger.setIdmptDmndId("req-1");
+        return ledger;
     }
 
     @Test

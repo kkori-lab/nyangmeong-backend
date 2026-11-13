@@ -124,6 +124,18 @@ class ItemServiceTest {
     }
 
     @Test
+    void 쓴_idmptDmndId로_다른_아이템을_사면_IDEMPOTENCY_KEY_REUSED_이고_저장하지_않는다() {
+        when(pixelCharacterMapper.selectPixelCharacter(CHAR)).thenReturn(character("N"));
+        when(itemMapper.selectShopItemsBySn(CHAR, List.of(2L))).thenReturn(List.of(item(2L, 500, false)));
+        doThrow(new CustomException(ErrorCode.IDEMPOTENCY_KEY_REUSED)).when(pointService)
+                .use(MBR, 500L, "req-1", "아이템 구매 · 아이템2");
+
+        assertThatThrownBy(() -> service.purchase(MBR, CHAR, new ItemPurchaseRequest("req-1", List.of(2L))))
+                .extracting("errorCode").isEqualTo(ErrorCode.IDEMPOTENCY_KEY_REUSED);
+        verify(itemMapper, never()).insertHeldItems(anyLong(), any());
+    }
+
+    @Test
     void 이미_보유한_아이템이_있으면_ITEM_ALREADY_HELD() {
         when(pixelCharacterMapper.selectPixelCharacter(CHAR)).thenReturn(character("N"));
         when(itemMapper.selectShopItemsBySn(CHAR, List.of(1L, 2L)))
