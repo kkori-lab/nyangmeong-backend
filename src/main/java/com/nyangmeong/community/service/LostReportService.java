@@ -65,7 +65,6 @@ public class LostReportService {
 
     static final int PAGE_SIZE = 12;
     static final Set<String> PERIODS = Set.of("TODAY", "WEEK", "MONTH", "OVER_MONTH");
-    static final String FOUND_COMMENT = "🎉 여러분의 제보와 관심 덕분에 %s가 무사히 가족의 품으로 돌아갔어요.";
     /** 만료 사전 알림을 보내는 남은 일수 (화면설계서 SCR-CMU-002 : 종료 7일 전·1일 전) */
     static final Set<Integer> EXPIRY_ALARM_DAYS = Set.of(7, 1);
     static final String EXPIRY_ALARM_TTL = "실종 제보 게시 종료 안내";
@@ -256,7 +255,8 @@ public class LostReportService {
         Comment comment = new Comment();
         comment.setPstSn(detail.getPstSn());
         comment.setMbrSn(detail.getMbrSn());
-        comment.setCmntCn(FOUND_COMMENT.formatted(detail.getPetNm()));
+        /** 문구는 운영 설정(관리자 화면 「찾았어요 자동 댓글」), [펫이름]·조사는 FoundCommentText 가 맞춘다 */
+        comment.setCmntCn(foundComment(detail));
         commentMapper.insertAutoComment(comment);
     }
 
@@ -389,8 +389,18 @@ public class LostReportService {
         }
         List<PostImageSummary> imgs = postMapper.selectImages(detail.getPstSn()).stream()
                 .map(PostImageSummary::from).toList();
+        boolean owner = mbrSn.equals(detail.getMbrSn());
+        /** 찾았어요 확인 창 미리보기 : 작성자이고 아직 실종일 때만 (찾았어요·만료 뒤에는 누를 일이 없음) */
+        String dscvAutoCmntCn = owner && LostReportStatus.MISSING.is(detail.getLostTpofSttsCd())
+                ? foundComment(detail)
+                : null;
         return LostReportResponse.of(detail, fieldCryptoService.decrypt(detail.getCnplEnc()), imgs,
-                postMapper.existsLike(detail.getPstSn(), mbrSn), mbrSn.equals(detail.getMbrSn()));
+                postMapper.existsLike(detail.getPstSn(), mbrSn), owner, dscvAutoCmntCn);
+    }
+
+    /** 찾았어요 자동 댓글 문구 (운영 설정 문구에 펫 이름·조사를 맞춤) */
+    private String foundComment(LostReportDetail detail) {
+        return FoundCommentText.render(systemSettingService.get().getDscvAutoCmntCn(), detail.getPetNm());
     }
 
     private void insertPostHistory(Long pstSn, Long mbrSn, PostStatus before, PostStatus after) {

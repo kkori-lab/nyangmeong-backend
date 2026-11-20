@@ -12,6 +12,7 @@ import com.nyangmeong.community.domain.LostReportDetail;
  * - 찾았어요 상태면 작성자가 아닌 회원에게 제목·상태·전환 시각만 주고 나머지는 null (FN-CMU-002-09)
  * - expryCrtrDt 는 작성자에게만 준다
  * - mbrSn : 작성자 회원 번호(댓글 「작성자」 배지), 찾았어요 비공개 응답은 null
+ * - dscvAutoCmntCn : 찾았어요를 누르면 달릴 자동 댓글(운영 설정 문구에 펫 이름·조사를 맞춘 것), 작성자이고 실종일 때만
  */
 public record LostReportResponse(
         Long lostTpofSn,
@@ -42,13 +43,22 @@ public record LostReportResponse(
         Integer inqCnt,
         Integer rcmdtnCnt,
         Boolean liked,
-        Boolean owner) {
+        Boolean owner,
+        String dscvAutoCmntCn) {
 
     /**
      * 전체 공개 응답 (품종명은 마스터명, 없으면 직접입력명)
      */
     public static LostReportResponse of(LostReportDetail detail, String cnpl, List<PostImageSummary> imgs,
             boolean liked, boolean owner) {
+        return of(detail, cnpl, imgs, liked, owner, null);
+    }
+
+    /**
+     * 전체 공개 응답 + 찾았어요 자동 댓글 미리보기 문구
+     */
+    public static LostReportResponse of(LostReportDetail detail, String cnpl, List<PostImageSummary> imgs,
+            boolean liked, boolean owner, String dscvAutoCmntCn) {
         String vrtyNm = detail.getVrtySn() != null ? detail.getVrtyNm() : detail.getVrtyDrctInptNm();
         return new LostReportResponse(detail.getLostTpofSn(), detail.getPstSn(), detail.getPstTtl(),
                 detail.getLostTpofSttsCd(), detail.getDscvSwtcDt(), detail.getMbrSn(), detail.getMbrNcnm(),
@@ -57,7 +67,7 @@ public record LostReportResponse(
                 detail.getColrNm(), detail.getChrcCn(), detail.getLastWtnsDt(), detail.getRgnSn(),
                 detail.getRgnNm(), detail.getWtnsPlcNm(), detail.getWtnsPlcLat(), detail.getWtnsPlcLot(), cnpl,
                 owner ? detail.getExpryCrtrDt() : null, imgs, detail.getInqCnt(), detail.getRcmdtnCnt(), liked,
-                owner);
+                owner, dscvAutoCmntCn);
     }
 
     /**
@@ -66,6 +76,6 @@ public record LostReportResponse(
     public static LostReportResponse closed(LostReportDetail detail) {
         return new LostReportResponse(detail.getLostTpofSn(), detail.getPstSn(), detail.getPstTtl(),
                 detail.getLostTpofSttsCd(), detail.getDscvSwtcDt(), null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null, null, null, null, null, null, false, false);
+                null, null, null, null, null, null, null, null, null, null, null, null, null, false, false, null);
     }
 }

@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockMultipartFile;
@@ -80,6 +81,12 @@ class LostReportServiceTest {
     private final LostReportService service = new LostReportService(lostReportMapper, postMapper, commentMapper,
             fileStore, new OwnerAuthorizer(), systemSettingService, fieldCryptoService, regionService,
             breedService, eventPublisher, mock(ProfanityFilter.class));
+
+    /** 운영 설정 기본값 (작성자 상세가 찾았어요 미리보기 문구를 만들 때 읽는다) */
+    @BeforeEach
+    void stubSetting() {
+        when(systemSettingService.get()).thenReturn(new SystemSetting());
+    }
 
     @AfterEach
     void clearPage() {
@@ -684,8 +691,8 @@ class LostReportServiceTest {
         verify(commentMapper).insertAutoComment(comment.capture());
         assertThat(comment.getValue().getPstSn()).isEqualTo(PST);
         assertThat(comment.getValue().getMbrSn()).isEqualTo(MBR);
-        assertThat(comment.getValue().getCmntCn())
-                .isEqualTo("🎉 여러분의 제보와 관심 덕분에 보리가 무사히 가족의 품으로 돌아갔어요.");
+        /** 코드 상수 대신 운영 설정 기본 문구(「🎉 [펫이름]가 …」)에 펫 이름을 넣는다 (2026-11-20) */
+        assertThat(comment.getValue().getCmntCn()).isEqualTo("🎉 보리가 무사히 가족 품으로 돌아왔어요!");
     }
 
     @Test

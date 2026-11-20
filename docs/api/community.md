@@ -975,6 +975,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | rcmdtnCnt | Integer | N | | PST.RCMDTN_CNT, CMU-002-08 |
 | liked | Boolean | Y | | PST_RCMDTN.USE_YN, CMU-002-08 |
 | owner | Boolean | Y | 작성자 본인인지(찾았어요·갱신 버튼) | PST.MBR_SN, CMU-002-09 |
+| dscvAutoCmntCn | String | N | 찾았어요를 누르면 달릴 자동 댓글(확인 창 미리보기). 관리자 운영 설정 「찾았어요 자동 댓글」 문구의 `[펫이름]`을 펫 이름으로 바꾸고 바로 뒤 조사(이/가·은/는·을/를·과/와)를 받침에 맞춘 것(한글로 끝나지 않는 이름은 「(이)가」). 작성자이고 실종 상태일 때만, 그 밖은 null | SYS_STNG.DSCV_AUTO_CMNT_CN, CMU-002-09, 프론트 요청 2026-11-20 |
 
 ### LostReportSummary
 쓰는 API: GET /lost-reports
