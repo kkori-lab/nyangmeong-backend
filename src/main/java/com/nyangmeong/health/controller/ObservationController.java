@@ -60,6 +60,7 @@ public class ObservationController {
     }
 
     @Operation(summary = "관찰 항목 등록(1회차 포함)")
+    @AiTool(name = "draft_observation_item", domain = "health", kind = AiToolKind.CARD)
     @PostMapping(value = "/observation-items", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<ObservationItemResponse>> createItem(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @Valid @ModelAttribute ObservationItemCreateRequest req) {

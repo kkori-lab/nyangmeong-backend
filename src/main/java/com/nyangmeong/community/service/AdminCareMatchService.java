@@ -49,8 +49,13 @@ public class AdminCareMatchService {
         if (sttsCd != null && !CareRecruitmentStatus.exists(sttsCd)) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
+        Long mbrSn = cond.getMbrSn();
+        if (mbrSn != null && mbrSn <= 0) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
         PageHelper.startPage(pq.pageOrDefault(), pq.sizeOrDefault());
-        List<AdminCareMatchSummary> rows = careRecruitmentMapper.selectAdminList(sttsCd, PostStatus.NORMAL.getCode());
+        List<AdminCareMatchSummary> rows = careRecruitmentMapper.selectAdminList(sttsCd, PostStatus.NORMAL.getCode(),
+                mbrSn);
         return PageResponse.of(new PageInfo<>(rows));
     }
 

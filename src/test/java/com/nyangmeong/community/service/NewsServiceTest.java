@@ -359,4 +359,43 @@ class NewsServiceTest {
 
         assertThat(transactional.propagation()).isEqualTo(Propagation.NOT_SUPPORTED);
     }
+
+    private News escaped(Long newsSn, String newsTtl, String newsCn, String srcPressNm) {
+        News news = new News();
+        news.setNewsSn(newsSn);
+        news.setNewsTtl(newsTtl);
+        news.setNewsCn(newsCn);
+        news.setSrcPressNm(srcPressNm);
+        return news;
+    }
+
+    @Test
+    void 수집_전에_저장된_기사의_엔티티를_풀어_달라진_행만_수정한다() {
+        when(newsMapper.selectEscapedNews()).thenReturn(List.of(
+                escaped(1L, "반려견 &#39;산책&#39; 수칙", "요약 &amp;quot;필수&amp;quot;", "뉴스&amp;펫"),
+                escaped(2L, "엔티티 아닌 &; 글자", "요약", null)));
+        when(newsMapper.updateUnescaped(any(News.class))).thenReturn(1);
+        when(feedClient.fetchFeed(any(), any())).thenReturn(List.of());
+
+        service.collect(TODAY);
+
+        ArgumentCaptor<News> captor = ArgumentCaptor.forClass(News.class);
+        verify(newsMapper, times(1)).updateUnescaped(captor.capture());
+        News updated = captor.getValue();
+        assertThat(updated.getNewsSn()).isEqualTo(1L);
+        assertThat(updated.getNewsTtl()).isEqualTo("반려견 '산책' 수칙");
+        assertThat(updated.getNewsCn()).isEqualTo("요약 \"필수\"");
+        assertThat(updated.getSrcPressNm()).isEqualTo("뉴스&펫");
+    }
+
+    @Test
+    void 엔티티_정리가_실패해도_수집은_계속한다() {
+        when(newsMapper.selectEscapedNews()).thenReturn(List.of(escaped(1L, "&#39;a&#39;", "b", null)));
+        when(newsMapper.updateUnescaped(any(News.class))).thenThrow(new IllegalStateException("db"));
+        when(feedClient.fetchFeed(any(), any()))
+                .thenReturn(List.of(item("반려동물 보험 가입 늘어", "https://news.google.com/rss/articles/E1")));
+        when(feedClient.fetchPreview(anyString())).thenReturn(NewsPreview.empty());
+
+        assertThat(service.collect(TODAY)).isEqualTo(1);
+    }
 }

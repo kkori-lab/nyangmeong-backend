@@ -142,6 +142,7 @@ class CheckupServiceTest {
         assertThat(record.getValue().getCkupRcdSttsCd()).isEqualTo(COMPLETED);
         verify(careScheduleMapper, never()).insertSchedule(any());
         verify(checkupMapper).insertStatusHistory(CKUP, MBR, null, COMPLETED);
+        verify(careScheduleMapper).updateScheduleHospital(SCHDL, "튼튼동물병원", TYPE, "1");
     }
 
     @Test
@@ -160,6 +161,7 @@ class CheckupServiceTest {
         ArgumentCaptor<CheckupRecord> record = ArgumentCaptor.forClass(CheckupRecord.class);
         verify(checkupMapper).insertCheckup(record.capture());
         assertThat(record.getValue().getSchdlSn()).isEqualTo(777L);
+        verify(careScheduleMapper).updateScheduleHospital(777L, "튼튼동물병원", TYPE, "1");
     }
 
     @Test
@@ -204,6 +206,7 @@ class CheckupServiceTest {
         verify(checkupMapper).insertCheckup(record.capture());
         assertThat(record.getValue().getSchdlSn()).isEqualTo(SCHDL);
         verify(checkupMapper, never()).selectHospitalScheduleSn(anyLong(), any(), anyString());
+        verify(careScheduleMapper).updateScheduleHospital(SCHDL, "튼튼동물병원", TYPE, "1");
     }
 
     @Test
@@ -249,7 +252,7 @@ class CheckupServiceTest {
 
     @Test
     void 메모만_수정하면_일정_연결은_그대로다() {
-        service.update(MBR, PET, CKUP, new CheckupUpdateRequest(null, null, null, null, null, "새 메모"));
+        service.update(MBR, PET, CKUP, new CheckupUpdateRequest(null, null, null, "새 메모"));
 
         ArgumentCaptor<CheckupRecord> record = ArgumentCaptor.forClass(CheckupRecord.class);
         verify(checkupMapper).updateCheckup(record.capture(), eq("1"));
@@ -258,47 +261,60 @@ class CheckupServiceTest {
         assertThat(record.getValue().getCkupCn()).isEqualTo("내용");
         verify(checkupMapper, never()).selectHospitalScheduleSn(anyLong(), any(), anyString());
         verify(careScheduleMapper, never()).insertSchedule(any());
-        verify(checkupMapper, never()).updateLinkedCareItemsPet(anyLong(), anyLong(), anyString());
+        verify(careScheduleMapper, never()).updateLinkedCareItemsPet(anyLong(), anyLong(), anyString());
     }
 
     @Test
-    void 검진일을_바꾸면_새_날짜_병원_일정에_연결하고_원래_일정은_남긴다() {
-        LocalDate next = YMD.plusDays(30);
-        when(checkupMapper.selectHospitalScheduleSn(PET, next, HOSPITAL)).thenReturn(null);
+    void 메모만_수정하면_일정_병원명과_수정일시는_그대로다() {
+        service.update(MBR, PET, CKUP, new CheckupUpdateRequest(null, null, null, "새 메모"));
 
-        service.update(MBR, PET, CKUP, new CheckupUpdateRequest(null, next, null, null, null, null));
-
-        ArgumentCaptor<Schedule> schedule = ArgumentCaptor.forClass(Schedule.class);
-        verify(careScheduleMapper).insertSchedule(schedule.capture());
-        assertThat(schedule.getValue().getSchdlDt()).isEqualTo(next.atStartOfDay());
-        ArgumentCaptor<CheckupRecord> record = ArgumentCaptor.forClass(CheckupRecord.class);
-        verify(checkupMapper).updateCheckup(record.capture(), eq("1"));
-        assertThat(record.getValue().getSchdlSn()).isEqualTo(777L);
-        verify(careScheduleMapper, never()).deleteSchedule(anyLong(), anyString());
+        verify(careScheduleMapper, never()).updateScheduleHospital(anyLong(), any(), any(), any());
+        verify(careScheduleMapper, never()).updateSchedule(any(), anyString());
     }
 
     @Test
-    void 반려동물을_바꾸면_케어_항목과_반복_예방을_옮기고_바꿀_반려동물도_권한을_확인한다() {
-        when(checkupMapper.selectHospitalScheduleSn(OTHER_PET, YMD, HOSPITAL)).thenReturn(300L);
-        when(checkupMapper.selectDetail(CKUP, COMPLETED)).thenReturn(detail(PET, SCHDL, YMD))
-                .thenReturn(detail(OTHER_PET, 300L, YMD));
+    void 병원명_검진유형을_지금과_같은_값으로_보내면_일정을_건드리지_않는다() {
+        service.update(MBR, PET, CKUP, new CheckupUpdateRequest(" 튼튼동물병원 ", TYPE, null, null));
 
+        verify(careScheduleMapper, never()).updateScheduleHospital(anyLong(), any(), any(), any());
+    }
+
+    @Test
+    void 수정은_검진일_반려동물과_관계없이_일정을_다시_연결하지_않는다() {
         CheckupResponse response = service.update(MBR, PET, CKUP,
-                new CheckupUpdateRequest(OTHER_PET, null, null, null, null, null));
+                new CheckupUpdateRequest(null, null, "내용2", null));
 
-        verify(petAuthorizer).checkCaregiver(MBR, OTHER_PET);
         ArgumentCaptor<CheckupRecord> record = ArgumentCaptor.forClass(CheckupRecord.class);
         verify(checkupMapper).updateCheckup(record.capture(), eq("1"));
-        assertThat(record.getValue().getSchdlSn()).isEqualTo(300L);
-        verify(checkupMapper).updateLinkedCareItemsPet(CKUP, OTHER_PET, "1");
-        verify(checkupMapper).updateLinkedRepeatPreventionsPet(CKUP, OTHER_PET, "1");
-        assertThat(response.getPetSn()).isEqualTo(OTHER_PET);
+        assertThat(record.getValue().getSchdlSn()).isEqualTo(SCHDL);
+        verify(checkupMapper, never()).selectHospitalScheduleSn(anyLong(), any(), anyString());
+        verify(careScheduleMapper, never()).insertSchedule(any());
+        verify(careScheduleMapper, never()).updateSchedule(any(), anyString());
+        verify(careScheduleMapper, never()).updateLinkedCareItemsPet(anyLong(), anyLong(), anyString());
+        verify(careScheduleMapper, never()).updateLinkedRepeatPreventionsPet(anyLong(), anyLong(), anyString());
+        verify(petAuthorizer, never()).checkCaregiver(MBR, OTHER_PET);
+        assertThat(response.getPetSn()).isEqualTo(PET);
+        assertThat(response.getSchdlSn()).isEqualTo(SCHDL);
+        assertThat(response.getCkupYmd()).isEqualTo(YMD);
+    }
+
+    @Test
+    void 수정으로_병원명_검진유형을_바꾸면_연결_일정에도_같은_값으로_반영한다() {
+        when(careScheduleMapper.existsChildCode(HealthCodeGroup.CHECKUP_TYPE.getCode(), "HLTC0002")).thenReturn(true);
+
+        service.update(MBR, PET, CKUP, new CheckupUpdateRequest(" 새병원 ", "HLTC0002", null, null));
+
+        ArgumentCaptor<CheckupRecord> record = ArgumentCaptor.forClass(CheckupRecord.class);
+        verify(checkupMapper).updateCheckup(record.capture(), eq("1"));
+        assertThat(record.getValue().getHsptlNm()).isEqualTo("새병원");
+        assertThat(record.getValue().getCkupTypeCd()).isEqualTo("HLTC0002");
+        verify(careScheduleMapper).updateScheduleHospital(SCHDL, "새병원", "HLTC0002", "1");
     }
 
     @Test
     void 수정은_다른_반려동물의_검진기록이면_404() {
         assertThatThrownBy(() -> service.update(MBR, OTHER_PET, CKUP,
-                new CheckupUpdateRequest(null, null, null, null, null, "메모")))
+                new CheckupUpdateRequest(null, null, null, "메모")))
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode").isEqualTo(ErrorCode.CHECKUP_NOT_FOUND);
         verify(checkupMapper, never()).updateCheckup(any(), anyString());
@@ -455,7 +471,7 @@ class CheckupServiceTest {
     void 수정은_검진_포인트를_요청하지_않는다() {
         when(checkupMapper.selectDetail(CKUP, COMPLETED)).thenReturn(detail(PET, SCHDL, YMD));
 
-        service.update(MBR, PET, CKUP, new CheckupUpdateRequest(null, YMD.minusDays(1), null, null, null, null));
+        service.update(MBR, PET, CKUP, new CheckupUpdateRequest("다른병원", null, null, null));
 
         verify(pointService, never()).earnCheckupPoint(anyLong(), any());
     }

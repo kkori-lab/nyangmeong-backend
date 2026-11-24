@@ -147,6 +147,17 @@ public class MemberService {
     }
 
     /**
+     * 탈퇴하지 않은 회원 검사 (정지 회원은 통과)
+     */
+    @Transactional(readOnly = true)
+    public void checkNotWithdrawn(Long mbrSn) {
+        Member member = memberMapper.selectBySn(mbrSn);
+        if (member == null || MemberStatus.WITHDRAWN.is(member.getMbrSttsCd())) {
+            throw new CustomException(ErrorCode.MEMBER_NOT_FOUND);
+        }
+    }
+
+    /**
      * 휴대전화번호 마스킹 (010-****-5678)
      */
     static String maskPhone(String mblTelno) {

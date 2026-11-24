@@ -57,6 +57,12 @@ public interface CareScheduleMapper {
     int updateSchedule(@Param("schedule") Schedule schedule, @Param("actorId") String actorId);
 
     /**
+     * 검진기록 저장에 맞춰 일정의 병원명·검진유형 변경 (※신규 정책)
+     */
+    int updateScheduleHospital(@Param("schdlSn") Long schdlSn, @Param("hsptlNm") String hsptlNm,
+            @Param("ckupTypeCd") String ckupTypeCd, @Param("actorId") String actorId);
+
+    /**
      * 일정 삭제
      */
     int deleteSchedule(@Param("schdlSn") Long schdlSn, @Param("actorId") String actorId);

@@ -15,7 +15,7 @@
 | GET | /chat-rooms/{otoChatRoomSn} | 채팅방 상단 게시글 카드·매칭 진행 상태·내 역할 조회(참여자만) | CMU-005-01·11, COM-009 | KSJ | - | ChatRoomResponse |
 | GET | /chat-rooms/{otoChatRoomSn}/messages | 대화 메시지 조회(커서 방식, 최신순). `?beforeChatMsgSn=&size=30` — 처음은 `beforeChatMsgSn` 없이, 위로 스크롤하면 받은 것 중 가장 오래된 `chatMsgSn`을 넘긴다. `size` 최대 50 | CMU-005-04, COM-009 | KSJ | - | ChatMessageSliceResponse |
 | GET | /community-ai-commentaries | 오늘의 이야기 조회(`?cmtryCrtrYmd=`) | CMU-001-05 | KSJ | - | CommunityAiCommentaryResponse |
-| GET | /lost-reports | 실종 제보 목록(상태·지역·동물 구분·최종 목격 기간·키워드, 12건), `mineYn=true`면 내 글만(만료 글 포함) | CMU-002-01~04 | KSJ | - | Page<LostReportSummary> |
+| GET | /lost-reports | 실종 제보 목록(상태·지역·동물 구분·최종 목격 기간·키워드(제목·지역명·품종·특징), 12건), `mineYn=true`면 내 글만(만료 글 포함) | CMU-002-01~04 | KSJ | - | Page<LostReportSummary> |
 | GET | /lost-reports/{lostTpofSn} | 실종 제보 상세(목격 장소 좌표, 찾았어요 후 비공개 처리) | CMU-002-05·06 | KSJ | - | LostReportResponse |
 | GET | /news | 펫뉴스 목록(쿼리 `newsClsfCd`·`keyword`·`page`·`size`, 최신순 10건, 상세 하단 최신 5건은 `size=5`) | CMU-003-01~04 | KSJ | - | Page<NewsSummary> |
 | GET | /news/{newsSn} | 펫뉴스 상세 | CMU-003-04 | KSJ | - | NewsResponse |
@@ -48,7 +48,7 @@
 | POST | /posts | 펫이야기 게시글 작성(사진 최대 10장). 금칙어가 있으면 400 `PROFANITY_DETECTED`(걸린 칸 pstTtl·pstCn만 `data[].field`) | CMU-001-14 | KSJ | PostCreateRequest | PostResponse |
 | POST | /posts/{pstSn}/comments | 댓글·대댓글(1depth) 등록. 금칙어가 있으면 400 `PROFANITY_DETECTED`(걸린 칸 cmntCn만 `data[].field`) | CMU-001-11, CMU-002-07 | KSJ | CommentCreateRequest | CommentResponse |
 | POST | /posts/{pstSn}/likes | 좋아요 등록. 멱등: 이미 누른 상태여도 200과 현재 좋아요 수(`UK_PST_RCMDTN_1`로 중복 행을 막는다) | CMU-001-09, CMU-002-08, CMU-004-12 | KSJ | - | PostLikeResponse |
-| POST | /reports | 게시글·댓글 신고(사유·상세, 중복 신고 제한, 누적 처리) | CMU-001-13, CMU-002-12, CMU-004-12 | KSJ | ReportCreateRequest | ReportResponse |
+| POST | /reports | 게시글·댓글·채팅 상대 신고(사유·상세, 중복 신고 제한, 누적 처리). 채팅 상대는 `otoChatRoomSn`의 상대 회원(보호자면 지원자, 지원자면 보호자)이 대상이고 나간 방·읽기 전용 방도 신고할 수 있다. 참여자가 아니면 403 `CHAT_ROOM_ACCESS_DENIED`, 없는 방 404 `CHAT_ROOM_NOT_FOUND`, 탈퇴한 상대 404 `MEMBER_NOT_FOUND`, 같은 방 재신고 409 `REPORT_CHAT_ALREADY_EXISTS`. 같은 회원에 대한 접수 신고의 신고자 수가 `SYS_STNG.BLIND_DCLR_ACML_CNT` 이상이면 7일 자동 정지(사유 「신고 누적」, 해제는 `DELETE /admin/members/{mbrSn}/suspension`) | CMU-001-13, CMU-002-12, CMU-004-12, 채팅 상대 신고(사람 요청 2026-11-24, 기능 ID 없음) | KSJ | ReportCreateRequest | ReportResponse |
 | PATCH | /care-recruitments/{petPrtcRcrtSn} | 펫돌봄 모집 수정(작성자, 모집중만, multipart/form-data). 금칙어가 있으면 400 `PROFANITY_DETECTED`(걸린 칸 pstTtl·pstCn만 `data[].field`) | CMU-004-11 | KSJ | CareRecruitmentUpdateRequest | CareRecruitmentResponse |
 | PATCH | /posts/{pstSn} | 게시글 수정(작성자). 금칙어가 있으면 400 `PROFANITY_DETECTED`(걸린 칸 pstTtl·pstCn만 `data[].field`) | CMU-001-15 | KSJ | PostUpdateRequest | PostResponse |
 | DELETE | /care-recruitments/{petPrtcRcrtSn} | 펫돌봄 모집 삭제(작성자, 매칭·채팅 기록 유지) | CMU-004-11 | KSJ | - | - |
@@ -61,7 +61,7 @@
 | POST | /admin/posts/{pstSn}/restore | 블라인드 복구(상태 이력, 감사 로그). 신고 누적 자동 블라인드 포함. 블라인드 글이 아니면 409 ALREADY_PROCESSED, 없는 글 404 POST_NOT_FOUND | ADM-020-05 | LJS | AdminPostStatusChangeRequest | - |
 | GET | /admin/lost-reports | 관리자 실종제보 목록. 정상 게시글만(블라인드·삭제 글은 `/admin/posts`), 최신순 20건씩. 만료 기준 일시가 지난 실종 글은 만료(CMUC0008)로 내리고 필터도 같은 기준. 찾았어요 행은 `expryCrtrDt` null. 강제 만료·기간 조정 API는 없다(ADM-021-03, 결정 12). 모르는 상태 코드 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-021-01·03 | LJS | AdminLostReportSearchCond | PageResponse<AdminLostReportSummary> |
 | GET | /admin/lost-reports/{lostTpofSn} | 관리자 실종제보 상세. 실종·만료는 본문·사진·만료 기준일, 찾았어요는 제목·상태·처리 시각만(결정 13). 조회수는 올리지 않는다. 없거나 정상 글이 아니면 404 LOST_REPORT_NOT_FOUND | ADM-021-02 | LJS | - | AdminLostReportResponse |
-| GET | /admin/care-matches | 관리자 펫돌봄 모집글 목록. 정상 게시글만(블라인드·삭제 글은 `/admin/posts`), 최신순 20건씩. 모르는 상태 코드 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-022-01 | LJS | AdminCareMatchSearchCond | PageResponse<AdminCareMatchSummary> |
+| GET | /admin/care-matches | 관리자 펫돌봄 모집글 목록. 정상 게시글만(블라인드·삭제 글은 `/admin/posts`), 최신순 20건씩. `?rcrtSttsCd=&mbrSn=`, 조건은 모두 선택이고 함께 걸린다. `mbrSn`은 그 회원이 보호자(모집글 작성자)이거나 매칭 상대인 모집글만(1:1 분쟁 문의 작성자의 매칭 찾기, 행 `mbrSn`이 같으면 보호자·다르면 돌보미). 채팅만 하고 매칭이 없으면 넣지 않고, 없는 회원·매칭 없는 회원은 빈 목록. 모르는 상태 코드·0 이하 회원 번호 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-022-01·ADM-042-08 | LJS | AdminCareMatchSearchCond | PageResponse<AdminCareMatchSummary> |
 | GET | /admin/care-matches/{petPrtcRcrtSn} | 관리자 펫돌봄 매칭 상세(분쟁 대응, 1:1 문의의 `?rcrtSn=`도 이 번호). 모집글 정보 + 매칭 목록(최신순, 매칭마다 합의 조건 버전·상태 이력·완료 요청 회차와 사진·보호자 확인 결과). 블라인드 글도 열고, 없거나 삭제 글이면 404 CARE_RECRUITMENT_NOT_FOUND. 채팅 메시지·채팅방 번호는 주지 않는다(ADM-022-03, 결정 14·26) | ADM-022-02·03 | LJS | - | AdminCareMatchResponse |
 | GET | /admin/care-matches/{petPrtcRcrtSn}/images/{atchFileSn} | 관리자 펫돌봄 완료 사진 이미지. 완료 사진은 도메인 API 전용 파일이라 공통 주소(`/files/{atchFileSn}`)로 열리지 않으므로 이 경로로 연다(상세 응답 `cmptnDmnds[].imgs[].atchFileSn`을 쓴다). 관리자만(일반 회원 403, 비로그인 401). 이 모집글 매칭의 완료 요청 회차 사진이 아니면 파일이 있어도 404 `FILE_NOT_FOUND`, 없거나 삭제된 모집글은 404 `CARE_RECRUITMENT_NOT_FOUND`. 응답은 이미지 바이트(`Cache-Control: no-cache`)이고 `ApiResponse`로 감싸지 않는다(문의 첨부 이미지와 같은 방식) | ADM-022-02 | KSJ | - | (이미지) |
 | GET | /admin/community/exposure/health-tips | 관리자 오늘의 건강팁 현황. 노출 자리 순서 최대 3건. 지정 글(정상 펫정보, 자리 1~3)은 그 자리에, 빈 자리는 자동 선정 글(지정 안 된 정상 펫정보 글 중 제목·본문에 건강 키워드가 든 글, 좋아요순·최신순)로 앞에서부터 채운다. 건강 키워드는 `KWRD_DICT` 뉴스 분류(AIMC0039)의 건강(CMUC0018) 행(SCR-ADM-050에서 편집). 일반 회원 403 ADMIN_ONLY | ADM-023-01·03 | LJS | - | List<AdminHealthTipResponse> |
@@ -81,12 +81,12 @@
 | DELETE | /admin/news/keywords/{kwrdDictSn} | 뉴스 분류 키워드 삭제(`DEL_YN='Y'`, 감사 로그). 다음 수집부터 쓰이지 않는다. 없거나 이미 삭제 404 NEWS_KEYWORD_NOT_FOUND | ADM-050-05 | LJS | - | - |
 | GET | /admin/comments | 관리자 댓글 목록. 최신순 20건씩, 삭제된 댓글도 원문 표시. `q`는 작성자 닉네임 부분 일치 | ADM-020-06 | LJS | AdminCommentSearchCond | PageResponse<AdminCommentSummary> |
 | POST | /admin/comments/{cmntSn}/deletion | 관리자 댓글 삭제. 사유는 감사 로그에 남긴다(`CMNT`에 사유 컬럼 없음). DELETE 본문 금지라 POST. 이미 삭제면 409 ALREADY_PROCESSED, 없는 댓글 404 COMMENT_NOT_FOUND | ADM-020-06 | LJS | AdminCommentDeleteRequest | - |
-| GET | /admin/reports | 관리자 신고 목록. 최신순 20건씩, 같은 대상 신고 수 포함. 코드가 틀리거나 기간이 뒤집히면 400 INVALID_INPUT_VALUE | ADM-030-01·02 | LJS | AdminReportSearchCond | PageResponse<AdminReportSummary> |
+| GET | /admin/reports | 관리자 신고 목록. 최신순 20건씩, 같은 대상 신고 수 포함(채팅 상대 신고는 같은 회원 기준). 코드가 틀리거나 기간이 뒤집히면 400 INVALID_INPUT_VALUE | ADM-030-01·02 | LJS | AdminReportSearchCond | PageResponse<AdminReportSummary> |
 | GET | /admin/reports/auto-blind | 자동 블라인드 글·자동 삭제 댓글. 대상별 1행, 대상의 최신 dclrSn으로 복구를 부른다 | ADM-030-07 | LJS | - | PageResponse<AdminReportAutoBlindSummary> |
 | GET | /admin/reports/{dclrSn} | 관리자 신고 상세(대상 내용, 같은 대상 신고, 처리 이력). 없으면 404 REPORT_NOT_FOUND | ADM-030-03 | LJS | - | AdminReportDetailResponse |
-| POST | /admin/reports/{dclrSn}/complete | 신고 처리 완료. 같은 대상의 접수 신고를 함께 처리하고 신고자마다 인앱 알림. 유지는 대상 변경 없음, 블라인드는 글 블라인드·댓글 삭제(이미 숨겨졌으면 신고만 처리), 작성자 정지는 회원 제재 규칙. 처리된 신고 409 ALREADY_PROCESSED, 정지할 수 없는 작성자 409 MEMBER_NOT_SUSPENDABLE | ADM-030-04·06 | LJS | AdminReportCompleteRequest | - |
+| POST | /admin/reports/{dclrSn}/complete | 신고 처리 완료. 같은 대상의 접수 신고를 함께 처리하고 신고자마다 인앱 알림. 채팅 상대 신고는 같은 회원의 접수 신고를 함께 처리하고, 조치는 유지·정지만(블라인드 400 INVALID_INPUT_VALUE), 정지는 신고된 상대 회원에게. 유지는 대상 변경 없음, 블라인드는 글 블라인드·댓글 삭제(이미 숨겨졌으면 신고만 처리), 작성자 정지는 회원 제재 규칙. 처리된 신고 409 ALREADY_PROCESSED, 정지할 수 없는 작성자 409 MEMBER_NOT_SUSPENDABLE | ADM-030-04·06 | LJS | AdminReportCompleteRequest | - |
 | POST | /admin/reports/{dclrSn}/reject | 신고 반려. 그 신고 1건만, 사유는 이력에 남기고 신고자에게 인앱 알림. 처리된 신고 409 ALREADY_PROCESSED | ADM-030-05·06 | LJS | AdminReportRejectRequest | - |
-| POST | /admin/reports/{dclrSn}/restore | 자동 블라인드 복구. 글은 정상, 댓글은 삭제 해제, 접수 신고는 반려·신고자 인앱 알림. 자동 대상이 아니면 409 ALREADY_PROCESSED | ADM-030-06·07 | LJS | AdminPostStatusChangeRequest | - |
+| POST | /admin/reports/{dclrSn}/restore | 자동 블라인드 복구. 글은 정상, 댓글은 삭제 해제, 접수 신고는 반려·신고자 인앱 알림. 자동 대상이 아니면 409 ALREADY_PROCESSED(채팅 상대 신고 포함, 자동 정지는 회원 정지 해제로 푼다) | ADM-030-06·07 | LJS | AdminPostStatusChangeRequest | - |
 
 ## 실시간 (채팅, 2026-10-22 제안)
 
@@ -327,6 +327,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | 필드 | 타입 | 필수 | 설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | rcrtSttsCd | String | N | 모집 상태 코드(PCAC0001 모집중·PCAC0002 매칭완료·PCAC0003 거래완료). 없으면 전체 | PET_PRTC_RCRT.RCRT_STTS_CD, ADM-022-01 |
+| mbrSn | Long | N | 회원 번호(1 이상). 그 회원이 보호자(모집글 작성자)이거나 매칭 상대인 모집글만. 없으면 전체 | PST.MBR_SN·OTO_CHAT_ROOM.CTPT_MBR_SN(PET_PRTC_MTCH), ADM-042-08 |
 
 ### AdminCareMatchSummary
 쓰는 API: GET /admin/care-matches
@@ -374,7 +375,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | --- | --- | --- | --- | --- |
 | status | String | N | 신고처리상태공통코드(CMUG05) | DCLR.DCLR_PRCS_STTS_CD, ADM-030-02 |
 | dclrRsnCd | String | N | 신고사유공통코드(CMUG04) | DCLR.DCLR_RSN_CD, ADM-030-02 |
-| targetType | String | N | POST, COMMENT | ADM-030-02 |
+| targetType | String | N | POST, COMMENT, MEMBER(채팅 상대) | ADM-030-02 |
 | autoBlindYn | Boolean | N | 자동 블라인드·자동 삭제 여부 | ADM-030-02 |
 | bgngYmd | LocalDate | N | 접수 시작일 | DCLR.REG_DT, ADM-030-02 |
 | endYmd | LocalDate | N | 접수 종료일 | DCLR.REG_DT, ADM-030-02 |
@@ -387,11 +388,13 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | dclrSn | Long | Y | | DCLR.DCLR_SN, ADM-030-01 |
 | pstSn | Long | N | 대상이 게시글일 때 | DCLR.PST_SN, ADM-030-01 |
 | cmntSn | Long | N | 대상이 댓글일 때 | DCLR.CMNT_SN, ADM-030-01 |
-| trgtCn | String | Y | 게시글 제목 또는 댓글 내용 | PST.PST_TTL, CMNT.CMNT_CN, ADM-030-01 |
+| otoChatRoomSn | Long | N | 대상이 채팅 상대일 때 그 채팅방 | DCLR.OTO_CHAT_ROOM_SN, 채팅 상대 신고 |
+| trgtMbrSn | Long | N | 대상이 채팅 상대일 때 그 회원 | DCLR.TRGT_MBR_SN, 채팅 상대 신고 |
+| trgtCn | String | Y | 게시글 제목 또는 댓글 내용, 채팅 상대면 그 방의 돌봄 글 제목 | PST.PST_TTL, CMNT.CMNT_CN, ADM-030-01 |
 | dclrRsnCd | String | Y | | DCLR.DCLR_RSN_CD, ADM-030-01 |
 | mbrSn | Long | Y | 신고자 | DCLR.MBR_SN, ADM-030-01 |
 | mbrNcnm | String | Y | 신고자 닉네임 | MBR.MBR_NCNM, ADM-030-01 |
-| dclrCnt | int | Y | 같은 대상 신고 수 | DCLR, ADM-030-01 |
+| dclrCnt | int | Y | 같은 대상 신고 수(채팅 상대는 같은 회원) | DCLR, ADM-030-01 |
 | dclrPrcsSttsCd | String | Y | | DCLR.DCLR_PRCS_STTS_CD, ADM-030-01 |
 | dclrActnCd | String | N | 신고조치공통코드(CMUG08) | DCLR.DCLR_ACTN_CD, ADM-030-04 |
 | regDt | LocalDateTime | Y | 접수일 | DCLR.REG_DT, ADM-030-01 |
@@ -432,8 +435,9 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | pstSttsCd | String | N | 대상이 게시글일 때 | PST.PST_STTS_CD, ADM-030-03 |
 | cmntCn | String | N | 대상이 댓글일 때 | CMNT.CMNT_CN, ADM-030-03 |
 | delYn | Boolean | N | 대상이 댓글일 때 | CMNT.DEL_YN, ADM-030-03 |
-| trgtMbrSn | Long | Y | 작성자 | PST.MBR_SN, CMNT.MBR_SN, ADM-030-03 |
+| trgtMbrSn | Long | Y | 작성자, 채팅 상대 신고면 신고된 회원 | PST.MBR_SN, CMNT.MBR_SN, DCLR.TRGT_MBR_SN, ADM-030-03 |
 | trgtMbrNcnm | String | Y | 작성자 닉네임 | MBR.MBR_NCNM, ADM-030-03 |
+| otoChatRoomSn | Long | N | 채팅 상대 신고의 채팅방. 채팅 원문은 주지 않는다 | DCLR.OTO_CHAT_ROOM_SN, 채팅 상대 신고 |
 | sameTargetReports | List<AdminReportSummary> | Y | 최신순 | DCLR, ADM-030-03 |
 | statusHistories | List<AdminReportStatusHistorySummary> | Y | 최신순 | DCLR_STTS_HSTRY, ADM-030-03 |
 
@@ -1093,8 +1097,9 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 쓰는 API: POST /reports
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| pstSn | Long | N | `pstSn`·`cmntSn` 중 하나만 필수 | DCLR.PST_SN, CMU-001-13 |
+| pstSn | Long | N | `pstSn`·`cmntSn`·`otoChatRoomSn` 중 하나만 필수 | DCLR.PST_SN, CMU-001-13 |
 | cmntSn | Long | N | 같은 회원의 같은 댓글 중복 신고 불가 | DCLR.CMNT_SN, CMU-001-13 |
+| otoChatRoomSn | Long | N | 채팅 상대 신고. 대상 회원은 서버가 방에서 정한다. 같은 회원의 같은 방 중복 신고 불가 | DCLR.OTO_CHAT_ROOM_SN, DCLR.TRGT_MBR_SN, 채팅 상대 신고 |
 | dclrRsnCd | String | Y | 공통코드 CMUG04(스팸·광고성/욕설·비방/음란물·유해콘텐츠/개인정보 노출/사기·허위 정보/기타) | DCLR.DCLR_RSN_CD, CMU-001-13 |
 | dclrDtlCn | String | N | 최대 500자. 사유가 기타(CMUC0014)면 필수 | DCLR.DCLR_DTL_CN, CMU-001-13 |
 

@@ -17,7 +17,6 @@ import com.nyangmeong.community.domain.ReportAction;
 import com.nyangmeong.community.domain.ReportReason;
 import com.nyangmeong.community.domain.ReportStatus;
 import com.nyangmeong.community.domain.ReportStatusHistory;
-import com.nyangmeong.community.domain.ReportTargetType;
 import com.nyangmeong.community.dto.AdminCommentDeleteRequest;
 import com.nyangmeong.community.dto.AdminPostStatusChangeRequest;
 import com.nyangmeong.community.dto.AdminReportAutoBlindSummary;
@@ -47,6 +46,7 @@ import lombok.RequiredArgsConstructor;
  * [관리자 신고 서비스]
  * - SCR-ADM-030 목록·상세·처리 완료·반려·자동 블라인드 복구
  * - 처리 완료·복구 : 같은 대상의 접수 신고 전체, 반려 : 신고 1건
+ * - 채팅 상대 신고 : 같은 대상은 같은 회원, 조치는 유지·정지만 (블라인드 400), 자동 블라인드 복구 대상 아님
  */
 @Service
 @RequiredArgsConstructor
@@ -91,10 +91,10 @@ public class AdminReportService {
         if (hasText(cond.getDclrRsnCd()) && !ReportReason.exists(cond.getDclrRsnCd())) {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
-        Boolean postTarget = cond.getTargetType() != null ? cond.getTargetType() == ReportTargetType.POST : null;
+        String targetType = cond.getTargetType() != null ? cond.getTargetType().name() : null;
 
         PageHelper.startPage(pq.pageOrDefault(), pq.sizeOrDefault());
-        List<AdminReportSummary> rows = reportMapper.selectAdminList(cond, postTarget, PostStatus.BLIND.getCode(),
+        List<AdminReportSummary> rows = reportMapper.selectAdminList(cond, targetType, PostStatus.BLIND.getCode(),
                 ReportService.AUTO_BLIND_RSN, ReportService.AUTO_DELETE_RSN);
         return PageResponse.of(new PageInfo<>(rows));
     }
@@ -118,10 +118,10 @@ public class AdminReportService {
         Report report = getOrThrow(dclrSn);
         Post post = report.getPstSn() != null ? getPost(report.getPstSn()) : null;
         Comment comment = report.getCmntSn() != null ? getComment(report.getCmntSn()) : null;
-        Long trgtMbrSn = post != null ? post.getMbrSn() : comment.getMbrSn();
+        Long trgtMbrSn = targetMbrSn(report, post, comment);
         return AdminReportDetailResponse.of(report, postMapper.selectMbrNcnm(report.getMbrSn()), post, comment,
-                postMapper.selectMbrNcnm(trgtMbrSn),
-                reportMapper.selectSameTargetList(report.getPstSn(), report.getCmntSn()),
+                trgtMbrSn, postMapper.selectMbrNcnm(trgtMbrSn),
+                reportMapper.selectSameTargetList(report.getPstSn(), report.getCmntSn(), report.getTrgtMbrSn()),
                 reportMapper.selectAdminStatusHistories(dclrSn));
     }
 
@@ -135,6 +135,10 @@ public class AdminReportService {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
         Report report = getReceived(dclrSn);
+        if (isMemberTarget(report) && ReportAction.BLIND.is(req.dclrActnCd())) {
+            /** 채팅 상대 신고는 숨길 글·댓글이 없음 */
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
         int prcsCnt = process(actorSn, selectReceived(report), ReportStatus.COMPLETED, req.dclrActnCd(),
                 req.prcsMemo(), COMPLETED_NOTI_CN);
         if (prcsCnt == 0) {
@@ -194,8 +198,9 @@ public class AdminReportService {
         if (ReportAction.BLIND.is(req.dclrActnCd())) {
             hideTarget(actorSn, report, hasText(req.prcsMemo()) ? req.prcsMemo() : DEFAULT_ACTION_RSN);
         } else if (ReportAction.SUSPEND.is(req.dclrActnCd())) {
-            Long trgtMbrSn = report.getPstSn() != null ? getPost(report.getPstSn()).getMbrSn()
-                    : getComment(report.getCmntSn()).getMbrSn();
+            Long trgtMbrSn = isMemberTarget(report) ? report.getTrgtMbrSn()
+                    : report.getPstSn() != null ? getPost(report.getPstSn()).getMbrSn()
+                            : getComment(report.getCmntSn()).getMbrSn();
             memberSuspensionService.suspend(actorSn, trgtMbrSn,
                     new AdminMemberSuspendRequest(req.suspnDayCnt(), req.suspnRsn()));
         }
@@ -243,8 +248,23 @@ public class AdminReportService {
     }
 
     private List<Report> selectReceived(Report report) {
+        if (isMemberTarget(report)) {
+            return reportMapper.selectMemberReportsByStatus(report.getTrgtMbrSn(), ReportStatus.RECEIVED.getCode());
+        }
         return reportMapper.selectReportsByStatus(report.getPstSn(), report.getCmntSn(),
                 ReportStatus.RECEIVED.getCode());
+    }
+
+    /** 채팅 상대 신고 여부 */
+    private boolean isMemberTarget(Report report) {
+        return report.getTrgtMbrSn() != null;
+    }
+
+    private Long targetMbrSn(Report report, Post post, Comment comment) {
+        if (isMemberTarget(report)) {
+            return report.getTrgtMbrSn();
+        }
+        return post != null ? post.getMbrSn() : comment.getMbrSn();
     }
 
     private Report getReceived(Long dclrSn) {

@@ -10,11 +10,38 @@
             <when test="pstSn != null">
                           AND PST_SN = #{pstSn}
             </when>
-            <otherwise>
+            <when test="cmntSn != null">
                           AND CMNT_SN = #{cmntSn}
+            </when>
+            <otherwise>
+                          AND 1 = 0
             </otherwise>
         </choose>
                        )
+    </select>
+
+    <select id="existsChatReport" resultType="boolean">
+        SELECT EXISTS (SELECT 1
+                         FROM DCLR
+                        WHERE MBR_SN = #{mbrSn}
+                          AND OTO_CHAT_ROOM_SN = #{otoChatRoomSn}
+                       )
+    </select>
+
+    <select id="countReportersOfMember" resultType="int">
+        /* 누적 판단용 채팅 상대 신고자 수 조회 : 같은 신고자의 다른 방 신고는 1명 */
+        SELECT COUNT(DISTINCT MBR_SN)
+          FROM DCLR
+         WHERE TRGT_MBR_SN = #{trgtMbrSn}
+           AND DCLR_PRCS_STTS_CD = #{status}
+    </select>
+
+    <select id="selectMemberReportsByStatus" resultMap="reportResultMap">
+        SELECT <include refid="reportColumns" />
+          FROM DCLR
+         WHERE TRGT_MBR_SN = #{trgtMbrSn}
+           AND DCLR_PRCS_STTS_CD = #{status}
+         ORDER BY DCLR_SN
     </select>
 
     <select id="countReports" resultType="int">
@@ -25,8 +52,11 @@
                 <when test="pstSn != null">
                     PST_SN = #{pstSn}
                 </when>
-                <otherwise>
+                <when test="cmntSn != null">
                     CMNT_SN = #{cmntSn}
+                </when>
+                <otherwise>
+                    1 = 0
                 </otherwise>
             </choose>
         </where>
@@ -41,8 +71,11 @@
             <when test="pstSn != null">
            AND PST_SN = #{pstSn}
             </when>
-            <otherwise>
+            <when test="cmntSn != null">
            AND CMNT_SN = #{cmntSn}
+            </when>
+            <otherwise>
+           AND 1 = 0
             </otherwise>
         </choose>
     </select>
@@ -53,6 +86,8 @@
              ( CMNT_SN
              , MBR_SN
              , PST_SN
+             , OTO_CHAT_ROOM_SN
+             , TRGT_MBR_SN
              , DCLR_RSN_CD
              , DCLR_PRCS_STTS_CD
              , DCLR_DTL_CN
@@ -62,6 +97,8 @@
              ( #{cmntSn}
              , #{mbrSn}
              , #{pstSn}
+             , #{otoChatRoomSn}
+             , #{trgtMbrSn}
              , #{dclrRsnCd}
              , #{dclrPrcsSttsCd}
              , #{dclrDtlCn}
@@ -93,6 +130,8 @@
         <result column="MBR_SN"            property="mbrSn" />
         <result column="PRCS_MBR_SN"       property="prcsMbrSn" />
         <result column="PST_SN"            property="pstSn" />
+        <result column="OTO_CHAT_ROOM_SN"  property="otoChatRoomSn" />
+        <result column="TRGT_MBR_SN"       property="trgtMbrSn" />
         <result column="DCLR_RSN_CD"       property="dclrRsnCd" />
         <result column="DCLR_PRCS_STTS_CD" property="dclrPrcsSttsCd" />
         <result column="DCLR_ACTN_CD"      property="dclrActnCd" />
@@ -106,6 +145,8 @@
         <id     column="DCLR_SN"           property="dclrSn" />
         <result column="PST_SN"            property="pstSn" />
         <result column="CMNT_SN"           property="cmntSn" />
+        <result column="OTO_CHAT_ROOM_SN"  property="otoChatRoomSn" />
+        <result column="TRGT_MBR_SN"       property="trgtMbrSn" />
         <result column="TRGT_CN"           property="trgtCn" />
         <result column="DCLR_RSN_CD"       property="dclrRsnCd" />
         <result column="MBR_SN"            property="mbrSn" />
@@ -144,6 +185,8 @@
              , MBR_SN
              , PRCS_MBR_SN
              , PST_SN
+             , OTO_CHAT_ROOM_SN
+             , TRGT_MBR_SN
              , DCLR_RSN_CD
              , DCLR_PRCS_STTS_CD
              , DCLR_ACTN_CD
@@ -157,14 +200,17 @@
         D.DCLR_SN
              , D.PST_SN
              , D.CMNT_SN
-             , COALESCE(P.PST_TTL, C.CMNT_CN) AS TRGT_CN
+             , D.OTO_CHAT_ROOM_SN
+             , D.TRGT_MBR_SN
+             , COALESCE(P.PST_TTL, C.CMNT_CN, RP.PST_TTL) AS TRGT_CN
              , D.DCLR_RSN_CD
              , D.MBR_SN
              , M.MBR_NCNM
              , (SELECT COUNT(*)
                   FROM DCLR S
                  WHERE S.PST_SN &lt;=&gt; D.PST_SN
-                   AND S.CMNT_SN &lt;=&gt; D.CMNT_SN) AS DCLR_CNT
+                   AND S.CMNT_SN &lt;=&gt; D.CMNT_SN
+                   AND S.TRGT_MBR_SN &lt;=&gt; D.TRGT_MBR_SN) AS DCLR_CNT
              , D.DCLR_PRCS_STTS_CD
              , D.DCLR_ACTN_CD
              , D.REG_DT
@@ -175,6 +221,10 @@
             ON P.PST_SN = D.PST_SN
           LEFT JOIN CMNT C
             ON C.CMNT_SN = D.CMNT_SN
+          LEFT JOIN OTO_CHAT_ROOM R
+            ON R.OTO_CHAT_ROOM_SN = D.OTO_CHAT_ROOM_SN
+          LEFT JOIN PST RP
+            ON RP.PST_SN = R.PST_SN
     </sql>
 
     <sql id="autoTargetCondition">
@@ -211,8 +261,11 @@
             <when test="pstSn != null">
            AND PST_SN = #{pstSn}
             </when>
-            <otherwise>
+            <when test="cmntSn != null">
            AND CMNT_SN = #{cmntSn}
+            </when>
+            <otherwise>
+           AND 1 = 0
             </otherwise>
         </choose>
          ORDER BY DCLR_SN
@@ -232,11 +285,14 @@
             <if test="cond.dclrRsnCd != null and cond.dclrRsnCd.trim() != ''">
                 AND D.DCLR_RSN_CD = #{cond.dclrRsnCd}
             </if>
-            <if test="postTarget != null and postTarget">
+            <if test="targetType == 'POST'">
                 AND D.PST_SN IS NOT NULL
             </if>
-            <if test="postTarget != null and !postTarget">
+            <if test="targetType == 'COMMENT'">
                 AND D.CMNT_SN IS NOT NULL
+            </if>
+            <if test="targetType == 'MEMBER'">
+                AND D.TRGT_MBR_SN IS NOT NULL
             </if>
             <if test="cond.autoBlindYn != null and cond.autoBlindYn">
                 AND <include refid="autoTargetCondition" />
@@ -267,8 +323,11 @@
                 <when test="pstSn != null">
                     D.PST_SN = #{pstSn}
                 </when>
-                <otherwise>
+                <when test="cmntSn != null">
                     D.CMNT_SN = #{cmntSn}
+                </when>
+                <otherwise>
+                    D.TRGT_MBR_SN = #{trgtMbrSn}
                 </otherwise>
             </choose>
         </where>

@@ -59,6 +59,7 @@ public class InspectionValueController {
     }
 
     @Operation(summary = "검사 수치 저장 (이미 등록된 항목 제외, 삭제된 같은 항목 복구)")
+    @AiTool(name = "draft_inspection_values", domain = "health", kind = AiToolKind.CARD)
     @PostMapping
     public ResponseEntity<ApiResponse<List<InspectionValueResponse>>> create(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @Valid @RequestBody InspectionValueCreateRequest req) {

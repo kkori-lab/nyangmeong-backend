@@ -46,7 +46,7 @@ import com.nyangmeong.health.service.RepeatPreventionService;
 
 /**
  * [검사 - 건강 도메인 AI 도구 목록]
- * - 실제 건강 컨트롤러의 @AiTool이 빠짐없이 실리는지 (READ 12 + CARD 7)
+ * - 실제 건강 컨트롤러의 @AiTool이 빠짐없이 실리는지 (READ 12 + CARD 9)
  * - 반려동물 1마리 일정 목록은 도구가 아님 : 회원 단위 list_my_care_schedules 가 대신 (MyCareScheduleAiToolCatalogTest)
  */
 @WebMvcTest(controllers = {AiToolCatalogController.class, CareScheduleController.class, CareItemController.class,
@@ -103,12 +103,13 @@ class HealthAiToolCatalogTest {
     }
 
     @Test
-    void 건강_READ_12개와_CARD_7개가_빠짐없이_실린다() throws Exception {
+    void 건강_READ_12개와_CARD_9개가_빠짐없이_실린다() throws Exception {
         givenCodes();
         mockMvc.perform(get(PATH))
-                .andExpect(jsonPath("$.data.tools.length()").value(19))
+                .andExpect(jsonPath("$.data.tools.length()").value(21))
                 .andExpect(jsonPath("$.data.tools[*].name", containsInAnyOrder("draft_care_completion", "draft_care_item",
-                        "draft_care_item_update", "draft_daily_health_record", "draft_observation_cycle",
+                        "draft_care_item_update", "draft_daily_health_record", "draft_inspection_values",
+                        "draft_observation_cycle", "draft_observation_item",
                         "draft_schedule", "draft_schedule_update",
                         "get_checkup", "get_health_indicators", "list_care_completions", "list_care_items",
                         "list_checkups", "list_daily_health_records",
@@ -145,5 +146,66 @@ class HealthAiToolCatalogTest {
                 .andExpect(jsonPath(t + ".params.size.max").value(50))
                 .andExpect(jsonPath(t + ".params.year.min").value(1900))
                 .andExpect(jsonPath(t + ".params.ckupTypeCd.group").value("HLTG01"));
+    }
+
+    @Test
+    void 검사_수치_저장_도구는_검진기록_번호와_행_목록이_필수고_행_칸_규칙이_실린다() throws Exception {
+        givenCodes();
+        String t = tool("draft_inspection_values");
+        String v = t + ".params.values.items";
+        mockMvc.perform(get(PATH))
+                .andExpect(jsonPath(t + ".kind").value("CARD"))
+                .andExpect(jsonPath(t + ".call.method").value("POST"))
+                .andExpect(jsonPath(t + ".call.path").value("/api/pets/{petSn}/inspection-values"))
+                .andExpect(jsonPath(t + ".params.ckupRcdSn.type").value("long"))
+                .andExpect(jsonPath(t + ".params.ckupRcdSn.required").value(true))
+                .andExpect(jsonPath(t + ".params.values.type").value("array"))
+                .andExpect(jsonPath(t + ".params.values.required").value(true))
+                .andExpect(jsonPath(t + ".params.values.minItems").value(1))
+                .andExpect(jsonPath(v + ".inspArtclCd.type").value("code"))
+                .andExpect(jsonPath(v + ".inspArtclCd.group").value("HLTG12"))
+                .andExpect(jsonPath(v + ".inspArtclCd.maxLength").value(8))
+                .andExpect(jsonPath(v + ".inspArtclCd.codes[0].cd").value("C0001"))
+                .andExpect(jsonPath(v + ".inspArtclCd.required").doesNotExist())
+                .andExpect(jsonPath(v + ".inspArtclDrctInptNm.maxLength").value(40))
+                .andExpect(jsonPath(v + ".rsltNvl.type").value("decimal"))
+                .andExpect(jsonPath(v + ".rsltNvl.required").value(true))
+                .andExpect(jsonPath(v + ".rsltNvl.min").value(0))
+                .andExpect(jsonPath(v + ".rsltNvl.precision").value(9))
+                .andExpect(jsonPath(v + ".rsltNvl.scale").value(2))
+                .andExpect(jsonPath(v + ".unitNm.required").value(true))
+                .andExpect(jsonPath(v + ".unitNm.maxLength").value(20))
+                .andExpect(jsonPath(v + ".refLlmtNvl.type").value("decimal"))
+                .andExpect(jsonPath(v + ".refLlmtNvl.min").value(0))
+                .andExpect(jsonPath(v + ".refLlmtNvl.scale").value(2))
+                .andExpect(jsonPath(v + ".refUplmtNvl.min").value(0))
+                .andExpect(jsonPath(v + ".refUplmtNvl.required").doesNotExist())
+                .andExpect(jsonPath(v + ".memoCn.maxLength").value(200));
+    }
+    @Test
+    void 관찰_항목_등록_도구는_multipart이고_부위_코드와_사진이_필수다() throws Exception {
+        givenCodes();
+        String t = tool("draft_observation_item");
+        mockMvc.perform(get(PATH))
+                .andExpect(jsonPath(t + ".kind").value("CARD"))
+                .andExpect(jsonPath(t + ".call.method").value("POST"))
+                .andExpect(jsonPath(t + ".call.path").value("/api/pets/{petSn}/observation-items"))
+                .andExpect(jsonPath(t + ".call.contentType").value("multipart/form-data"))
+                .andExpect(jsonPath(t + ".params.petSn.in").value("path"))
+                .andExpect(jsonPath(t + ".params.obsrvArtclNm.required").value(true))
+                .andExpect(jsonPath(t + ".params.obsrvArtclNm.maxLength").value(40))
+                .andExpect(jsonPath(t + ".params.obsrvRegnCd.type").value("code"))
+                .andExpect(jsonPath(t + ".params.obsrvRegnCd.group").value("HLTG16"))
+                .andExpect(jsonPath(t + ".params.obsrvRegnCd.required").value(true))
+                .andExpect(jsonPath(t + ".params.obsrvRegnCd.maxLength").value(8))
+                .andExpect(jsonPath(t + ".params.obsrvRegnCd.codes[0].cd").value("C0001"))
+                .andExpect(jsonPath(t + ".params.obsrvRegnDtlNm.maxLength").value(40))
+                .andExpect(jsonPath(t + ".params.file.type").value("file"))
+                .andExpect(jsonPath(t + ".params.file.required").value(true))
+                .andExpect(jsonPath(t + ".params.obsrvDt.type").value("datetime"))
+                .andExpect(jsonPath(t + ".params.obsrvDt.required").value(true))
+                .andExpect(jsonPath(t + ".params.obsrvSz.type").value("decimal"))
+                .andExpect(jsonPath(t + ".params.obsrvSz.scale").value(2))
+                .andExpect(jsonPath(t + ".params.memoCn.maxLength").value(200));
     }
 }

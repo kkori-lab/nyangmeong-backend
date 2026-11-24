@@ -167,14 +167,6 @@ public class CheckupService {
         CheckupResponse current = getOwn(petSn, ckupRcdSn);
         String actorId = String.valueOf(mbrSn);
 
-        Long targetPetSn = req.petSn() != null ? req.petSn() : petSn;
-        boolean isPetChanged = !targetPetSn.equals(petSn);
-        if (isPetChanged) {
-            petAuthorizer.checkCaregiver(mbrSn, targetPetSn);
-        }
-        LocalDate targetYmd = req.ckupYmd() != null ? req.ckupYmd() : current.getCkupYmd();
-        boolean isYmdChanged = req.ckupYmd() != null && !req.ckupYmd().equals(current.getCkupYmd());
-
         String ckupTypeCd = current.getCkupTypeCd();
         if (req.ckupTypeCd() != null) {
             checkType(req.ckupTypeCd());
@@ -189,16 +181,12 @@ public class CheckupService {
         record.setHsptlNm(hsptlNm);
         record.setCkupCn(req.ckupCn() != null ? emptyToNull(req.ckupCn()) : current.getCkupCn());
         record.setCkupMemoCn(req.ckupMemoCn() != null ? emptyToNull(req.ckupMemoCn()) : current.getCkupMemoCn());
-        /** 검진일·반려동물이 바뀌면 바뀐 쪽의 같은 날짜 병원 일정으로 다시 연결 (원래 일정은 남김) */
-        if (isPetChanged || isYmdChanged) {
-            record.setSchdlSn(findOrCreateSchedule(targetPetSn, targetYmd, ckupTypeCd, hsptlNm, actorId));
-        }
         checkupMapper.updateCheckup(record, actorId);
-        if (isPetChanged) {
-            checkupMapper.updateLinkedCareItemsPet(ckupRcdSn, targetPetSn, actorId);
-            checkupMapper.updateLinkedRepeatPreventionsPet(ckupRcdSn, targetPetSn, actorId);
+        /** 검진일·반려동물은 연결 일정 수정에서만 바꾸고, 병원명·검진유형이 바뀌면 연결 일정에도 반영 (※신규 정책) */
+        if (!hsptlNm.equals(current.getHsptlNm()) || !ckupTypeCd.equals(current.getCkupTypeCd())) {
+            careScheduleMapper.updateScheduleHospital(record.getSchdlSn(), hsptlNm, ckupTypeCd, actorId);
         }
-        return getOwn(targetPetSn, ckupRcdSn);
+        return getOwn(petSn, ckupRcdSn);
     }
 
     /**
@@ -279,13 +267,15 @@ public class CheckupService {
         record.setMdfrId(actorId);
         checkupMapper.insertCheckup(record);
         checkupMapper.insertStatusHistory(record.getCkupRcdSn(), mbrSn, null, CheckupStatus.COMPLETED.getCode());
+        /** 이미 있던 일정에 연결돼도 일정의 병원명·검진유형을 검진기록 값으로 맞춤 (※신규 정책) */
+        careScheduleMapper.updateScheduleHospital(schdlSn, hsptlNm, command.ckupTypeCd(), actorId);
         /** 검진기록 등록 포인트 : 기간·중복은 PointService 가 판단. 수정에서는 주지 않는다 (FN-MYP-020-08) */
         pointService.earnCheckupPoint(petSn, command.ckupYmd());
         return record.getCkupRcdSn();
     }
 
     /**
-     * [옮겨 연결하기] 대상 일정 검사 후 일정 날짜를 검진일로 옮긴다 (시각·병원명·검진유형 유지)
+     * [옮겨 연결하기] 대상 일정 검사 후 일정 날짜를 검진일로 옮긴다 (시각 유지)
      */
     private Long moveAndLinkSchedule(Long petSn, Long schdlSn, LocalDate ymd, String actorId) {
         Schedule schedule = movableSchedule(petSn, schdlSn, ymd);

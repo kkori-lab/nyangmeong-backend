@@ -88,15 +88,10 @@ public interface CheckupMapper {
     int deleteLinkedRepeatPreventions(@Param("ckupRcdSn") Long ckupRcdSn, @Param("actorId") String actorId);
 
     /**
-     * 검진기록의 케어 항목 반려동물 이동 (메인 표시 해제)
+     * 일정에 연결된 완료 검진기록 전부의 병원명·검진유형 변경 (※신규 정책)
      */
-    int updateLinkedCareItemsPet(@Param("ckupRcdSn") Long ckupRcdSn, @Param("petSn") Long petSn,
-            @Param("actorId") String actorId);
-
-    /**
-     * 검진기록의 반복 예방 관리 반려동물 이동
-     */
-    int updateLinkedRepeatPreventionsPet(@Param("ckupRcdSn") Long ckupRcdSn, @Param("petSn") Long petSn,
+    int updateHospitalBySchedule(@Param("schdlSn") Long schdlSn, @Param("hsptlNm") String hsptlNm,
+            @Param("ckupTypeCd") String ckupTypeCd, @Param("completedCd") String completedCd,
             @Param("actorId") String actorId);
 
     /**

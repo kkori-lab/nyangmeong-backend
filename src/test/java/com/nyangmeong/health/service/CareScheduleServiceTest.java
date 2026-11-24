@@ -35,6 +35,7 @@ import com.nyangmeong.health.dto.CareScheduleSearchCond;
 import com.nyangmeong.health.dto.CareScheduleSummary;
 import com.nyangmeong.health.dto.CareScheduleUpdateRequest;
 import com.nyangmeong.health.mapper.CareScheduleMapper;
+import com.nyangmeong.health.mapper.CheckupMapper;
 import com.nyangmeong.pet.domain.CareMission;
 import com.nyangmeong.pet.service.CareMissionService;
 
@@ -53,7 +54,10 @@ class CareScheduleServiceTest {
     private final CareScheduleMapper mapper = mock(CareScheduleMapper.class);
     private final PetAuthorizer petAuthorizer = mock(PetAuthorizer.class);
     private final CareMissionService careMissionService = mock(CareMissionService.class);
-    private final CareScheduleService service = new CareScheduleService(mapper, petAuthorizer, careMissionService);
+    private final CheckupMapper checkupMapper = mock(CheckupMapper.class);
+    private final CareScheduleService service = new CareScheduleService(mapper, checkupMapper, petAuthorizer,
+            careMissionService);
+    private static final String COMPLETED = CheckupStatus.COMPLETED.getCode();
 
     @BeforeEach
     void setUp() {
@@ -247,6 +251,57 @@ class CareScheduleServiceTest {
         verify(mapper).updateSchedule(any(Schedule.class), eq("1"));
         verify(mapper).updateLinkedCareItemsPet(SCHDL, OTHER_PET, "1");
         verify(mapper).updateLinkedRepeatPreventionsPet(SCHDL, OTHER_PET, "1");
+    }
+
+    private CareScheduleUpdateRequest hospitalUpdate(String ckupTypeCd, String hsptlNm) {
+        return new CareScheduleUpdateRequest(null, null, null, null, ckupTypeCd, hsptlNm, null, null, null);
+    }
+
+    @Test
+    void 병원명을_바꾸면_연결_검진기록_전부에_같은_값을_반영한다() {
+        when(mapper.selectSchedule(SCHDL)).thenReturn(saved(PET, ScheduleKind.HOSPITAL));
+
+        service.update(MBR, PET, SCHDL, hospitalUpdate(null, " 새병원 "));
+
+        verify(checkupMapper).updateHospitalBySchedule(SCHDL, "새병원", CHECKUP_TYPE, COMPLETED, "1");
+    }
+
+    @Test
+    void 검진유형을_바꾸면_연결_검진기록_전부에_같은_값을_반영한다() {
+        when(mapper.selectSchedule(SCHDL)).thenReturn(saved(PET, ScheduleKind.HOSPITAL));
+        when(mapper.existsChildCode(HealthCodeGroup.CHECKUP_TYPE.getCode(), "HLTC0002")).thenReturn(true);
+
+        service.update(MBR, PET, SCHDL, hospitalUpdate("HLTC0002", null));
+
+        verify(checkupMapper).updateHospitalBySchedule(SCHDL, "튼튼동물병원", "HLTC0002", COMPLETED, "1");
+    }
+
+    @Test
+    void 병원명_검진유형이_그대로면_검진기록을_건드리지_않는다() {
+        when(mapper.selectSchedule(SCHDL)).thenReturn(saved(PET, ScheduleKind.HOSPITAL));
+
+        service.update(MBR, PET, SCHDL, hospitalUpdate(CHECKUP_TYPE, "튼튼동물병원"));
+        service.update(MBR, PET, SCHDL, update(null, null, null));
+
+        verify(checkupMapper, never()).updateHospitalBySchedule(anyLong(), any(), any(), any(), any());
+    }
+
+    @Test
+    void 병원_일정을_다른_종류로_바꾸면_검진기록을_건드리지_않는다() {
+        when(mapper.selectSchedule(SCHDL)).thenReturn(saved(PET, ScheduleKind.HOSPITAL));
+
+        service.update(MBR, PET, SCHDL, update(null, ScheduleKind.GROOMING.getCode(), "미용"));
+
+        verify(mapper).updateSchedule(any(Schedule.class), eq("1"));
+        verify(checkupMapper, never()).updateHospitalBySchedule(anyLong(), any(), any(), any(), any());
+    }
+
+    @Test
+    void 일정_수정이_검사에서_막히면_검진기록을_건드리지_않는다() {
+        when(mapper.selectSchedule(SCHDL)).thenReturn(saved(PET, ScheduleKind.HOSPITAL));
+
+        assertInvalid(() -> service.update(MBR, PET, SCHDL, hospitalUpdate("HLTC9999", "새병원")));
+        verify(checkupMapper, never()).updateHospitalBySchedule(anyLong(), any(), any(), any(), any());
     }
 
     @Test

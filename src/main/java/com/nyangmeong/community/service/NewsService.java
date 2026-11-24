@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ import com.nyangmeong.community.dto.NewsSummary;
 import com.nyangmeong.community.mapper.NewsMapper;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
+import com.nyangmeong.global.external.GoogleNewsFeedClient;
 import com.nyangmeong.global.external.NewsFeedClient;
 import com.nyangmeong.global.external.NewsFeedItem;
 import com.nyangmeong.global.external.NewsFeedProperties;
@@ -87,6 +89,7 @@ public class NewsService {
      */
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public int collect(LocalDate today) {
+        cleanEscapedNews();
         Map<String, NewsFeedItem> items = new LinkedHashMap<>();
         for (NewsFeedItem item : newsFeedClient.fetchFeed(today.minusDays(1), today.plusDays(1))) {
             if (item.link().length() <= PATH_MAX_LENGTH) {
@@ -139,6 +142,42 @@ public class NewsService {
         log.info("뉴스 수집 : 피드 {}건 중 새로 저장 {}건, 중복 건너뜀 {}건, 주제 무관 건너뜀 {}건",
                 items.size(), created, duplicated, offTopic);
         return created;
+    }
+
+    /**
+     * 이미 저장된 수집 기사의 HTML 엔티티 정리 : 풀어서 달라진 행만 수정, 정리된 뒤에는 대상 0건
+     * - 실패는 로그만 남기고 수집은 계속
+     */
+    int cleanEscapedNews() {
+        List<News> rows;
+        try {
+            rows = newsMapper.selectEscapedNews();
+        } catch (RuntimeException e) {
+            log.warn("뉴스 수집 : 엔티티 정리 대상 조회 실패 {}", e.toString());
+            return 0;
+        }
+        int cleaned = 0;
+        for (News row : rows) {
+            News news = new News();
+            news.setNewsSn(row.getNewsSn());
+            news.setNewsTtl(GoogleNewsFeedClient.unescapeHtml(row.getNewsTtl()));
+            news.setNewsCn(GoogleNewsFeedClient.unescapeHtml(row.getNewsCn()));
+            news.setSrcPressNm(GoogleNewsFeedClient.unescapeHtml(row.getSrcPressNm()));
+            if (Objects.equals(news.getNewsTtl(), row.getNewsTtl())
+                    && Objects.equals(news.getNewsCn(), row.getNewsCn())
+                    && Objects.equals(news.getSrcPressNm(), row.getSrcPressNm())) {
+                continue;
+            }
+            try {
+                cleaned += newsMapper.updateUnescaped(news);
+            } catch (RuntimeException e) {
+                log.warn("뉴스 수집 : 엔티티 정리 실패 newsSn={} {}", row.getNewsSn(), e.toString());
+            }
+        }
+        if (cleaned > 0) {
+            log.info("뉴스 수집 : HTML 엔티티 정리 {}건", cleaned);
+        }
+        return cleaned;
     }
 
     /**

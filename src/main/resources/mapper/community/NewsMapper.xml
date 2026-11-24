@@ -318,6 +318,29 @@
            AND DEL_YN = 'N'
     </update>
 
+    <select id="selectEscapedNews" resultMap="newsResultMap">
+        /* HTML 엔티티가 든 수집 기사 조회 : 숨긴 기사 포함 */
+        SELECT N.NEWS_SN
+             , N.NEWS_TTL
+             , N.NEWS_CN
+             , N.SRC_PRESS_NM
+          FROM NEWS N
+         WHERE N.NEWS_SRC_CD = 'CMUC0022'
+           AND (   N.NEWS_TTL LIKE '%&amp;%;%'
+                OR N.NEWS_CN LIKE '%&amp;%;%'
+                OR N.SRC_PRESS_NM LIKE '%&amp;%;%')
+    </select>
+
+    <update id="updateUnescaped" parameterType="com.nyangmeong.community.domain.News">
+        /* 엔티티를 푼 제목·요약·언론사명으로 수정 */
+        UPDATE NEWS
+           SET NEWS_TTL = #{newsTtl}
+             , NEWS_CN = #{newsCn}
+             , SRC_PRESS_NM = #{srcPressNm}
+         WHERE NEWS_SN = #{newsSn}
+           AND NEWS_SRC_CD = 'CMUC0022'
+    </update>
+
     <insert id="insert" parameterType="com.nyangmeong.community.domain.News" useGeneratedKeys="true" keyProperty="newsSn">
         /* 수집한 뉴스 등록 : 원문 경로가 같은 기사는 건너뜀 */
         INSERT IGNORE INTO NEWS (NEWS_CLSF_CD, NEWS_SRC_CD, NEWS_TTL, NEWS_CN, SRC_PRESS_NM, ORGTXT_PATH, PBLCN_DT, THMB_URL_PATH)

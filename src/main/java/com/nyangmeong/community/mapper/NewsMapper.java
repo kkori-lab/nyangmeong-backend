@@ -49,6 +49,16 @@ public interface NewsMapper {
     List<News> selectRecentNews(@Param("since") LocalDateTime since);
 
     /**
+     * 제목·요약·언론사명에 HTML 엔티티가 든 수집 기사 조회 (숨긴 기사 포함)
+     */
+    List<News> selectEscapedNews();
+
+    /**
+     * 엔티티를 푼 제목·요약·언론사명으로 수정
+     */
+    int updateUnescaped(News news);
+
+    /**
      * 수집한 뉴스 등록 : 건너뛴 기사는 0
      */
     int insert(News news);

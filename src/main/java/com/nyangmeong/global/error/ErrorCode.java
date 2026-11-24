@@ -184,6 +184,7 @@ public enum ErrorCode {
     COMMENT_DEPTH_EXCEEDED(HttpStatus.BAD_REQUEST, "대댓글에는 답글을 달 수 없습니다."),
     REPORT_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 신고한 글입니다."),
     REPORT_COMMENT_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 신고한 댓글입니다."),
+    REPORT_CHAT_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 신고한 채팅 상대입니다."),
     REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "신고를 찾을 수 없습니다."),
     LOST_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "실종 제보를 찾을 수 없습니다."),
     LOST_REPORT_ALREADY_FOUND(HttpStatus.BAD_REQUEST, "이미 찾았어요 처리된 제보입니다."),

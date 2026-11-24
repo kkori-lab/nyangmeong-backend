@@ -195,6 +195,19 @@ class CheckupControllerTest {
 
     @Test
     @WithMockLoginMember
+    void 수정_요청에_반려동물과_검진일을_넣어도_무시하고_200() throws Exception {
+        when(checkupService.update(eq(1L), eq(10L), eq(500L), any())).thenReturn(response());
+
+        mockMvc.perform(patch("/api/pets/10/checkups/500").header(XHR, "XMLHttpRequest")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"petSn\":20,\"ckupYmd\":\"2026-12-01\",\"ckupMemoCn\":\"새 메모\"}"))
+                .andExpect(status().isOk());
+        verify(checkupService).update(eq(1L), eq(10L), eq(500L),
+                argThat(req -> "새 메모".equals(req.ckupMemoCn()) && req.hsptlNm() == null));
+    }
+
+    @Test
+    @WithMockLoginMember
     void 삭제는_200을_돌려준다() throws Exception {
         mockMvc.perform(delete("/api/pets/10/checkups/500").header(XHR, "XMLHttpRequest"))
                 .andExpect(status().isOk());

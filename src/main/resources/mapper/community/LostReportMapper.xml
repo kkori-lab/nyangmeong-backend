@@ -185,7 +185,8 @@
            AND (<include refid="regionName" /> LIKE CONCAT('%', #{keyword}, '%')
                 OR V.VRTY_NM LIKE CONCAT('%', #{keyword}, '%')
                 OR L.VRTY_DRCT_INPT_NM LIKE CONCAT('%', #{keyword}, '%')
-                OR L.CHRC_CN LIKE CONCAT('%', #{keyword}, '%'))
+                OR L.CHRC_CN LIKE CONCAT('%', #{keyword}, '%')
+                OR P.PST_TTL LIKE CONCAT('%', #{keyword}, '%'))
         </if>
          ORDER BY CASE WHEN L.LOST_TPOF_STTS_CD = #{foundCd} THEN 1
                        WHEN <include refid="expiredCond" /> THEN 2

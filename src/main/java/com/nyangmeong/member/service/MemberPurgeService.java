@@ -2,12 +2,14 @@ package com.nyangmeong.member.service;
 
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.nyangmeong.global.security.crypto.FieldCryptoService;
 import com.nyangmeong.global.security.domain.MemberStatus;
 import com.nyangmeong.global.setting.SystemSettingService;
+import com.nyangmeong.member.domain.MemberPurgedEvent;
 import com.nyangmeong.member.mapper.MemberMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import lombok.RequiredArgsConstructor;
  * [탈퇴 회원 파기 서비스]
  * - FN-ADM-013-02, FN-ACC-020-01, REQ-NFR-002
  * - MBR 행은 다른 테이블이 참조하고 거래·감사 이력이 영구 보관이라 지우지 않고 식별값만 없앤다. 상태는 탈퇴 그대로
+ * - 파기에 성공하면 같은 트랜잭션에서 MemberPurgedEvent 를 발행한다 (알림·메일이 아닌 도메인 이벤트라 EventPublisher 가 아님)
  */
 @Service
 @RequiredArgsConstructor
@@ -32,6 +35,7 @@ public class MemberPurgeService {
     private final MemberMapper memberMapper;
     private final SystemSettingService systemSettingService;
     private final FieldCryptoService fieldCryptoService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 파기 대상 회원 번호 조회 : 보관일수가 지났고 아직 파기하지 않은 탈퇴 회원
@@ -54,6 +58,7 @@ public class MemberPurgeService {
             return false;
         }
         memberMapper.deleteSnsLinks(mbrSn);
+        eventPublisher.publishEvent(new MemberPurgedEvent(mbrSn));
         return true;
     }
 

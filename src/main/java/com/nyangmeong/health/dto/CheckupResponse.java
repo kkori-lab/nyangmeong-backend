@@ -25,6 +25,8 @@ public class CheckupResponse {
     private String ckupTypeCd;
     /** 검진유형명 */
     private String ckupTypeCdNm;
+    /** 연결 일정 삭제 여부 */
+    private Boolean schdlDelYn;
     /** 검진내용 */
     private String ckupCn;
     /** 검진메모내용 */

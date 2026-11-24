@@ -30,6 +30,8 @@ import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.setting.SystemSetting;
 import com.nyangmeong.global.setting.SystemSettingService;
+import com.nyangmeong.member.service.MemberService;
+import com.nyangmeong.member.service.MemberSuspensionService;
 
 /**
  * [검사 - 게시글·댓글 신고 접수와 누적 처리]
@@ -47,7 +49,8 @@ class ReportServiceTest {
     private final CommentMapper commentMapper = mock(CommentMapper.class);
     private final SystemSettingService systemSettingService = mock(SystemSettingService.class);
     private final ReportService service = new ReportService(reportMapper, postMapper, commentMapper,
-            systemSettingService);
+            systemSettingService, mock(ChatRoomGuard.class), mock(MemberService.class),
+            mock(MemberSuspensionService.class));
 
     private void stubTargets() {
         when(systemSettingService.get()).thenReturn(new SystemSetting());

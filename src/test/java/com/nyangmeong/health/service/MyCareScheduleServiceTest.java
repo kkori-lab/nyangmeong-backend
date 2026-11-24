@@ -24,6 +24,7 @@ import com.nyangmeong.health.domain.CheckupStatus;
 import com.nyangmeong.health.dto.CareScheduleSummary;
 import com.nyangmeong.health.dto.MyCareScheduleSearchCond;
 import com.nyangmeong.health.mapper.CareScheduleMapper;
+import com.nyangmeong.health.mapper.CheckupMapper;
 import com.nyangmeong.pet.service.CareMissionService;
 
 /**
@@ -36,8 +37,8 @@ class MyCareScheduleServiceTest {
 
     private final CareScheduleMapper mapper = mock(CareScheduleMapper.class);
     private final PetAuthorizer petAuthorizer = mock(PetAuthorizer.class);
-    private final CareScheduleService service = new CareScheduleService(mapper, petAuthorizer,
-            mock(CareMissionService.class));
+    private final CareScheduleService service = new CareScheduleService(mapper, mock(CheckupMapper.class),
+            petAuthorizer, mock(CareMissionService.class));
 
     private static MyCareScheduleSearchCond cond(String petSns) {
         MyCareScheduleSearchCond cond = new MyCareScheduleSearchCond();

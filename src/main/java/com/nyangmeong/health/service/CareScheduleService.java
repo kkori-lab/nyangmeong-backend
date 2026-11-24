@@ -24,6 +24,7 @@ import com.nyangmeong.health.dto.CareScheduleUpdateRequest;
 import com.nyangmeong.health.dto.HospitalScheduleSummary;
 import com.nyangmeong.health.dto.MyCareScheduleSearchCond;
 import com.nyangmeong.health.mapper.CareScheduleMapper;
+import com.nyangmeong.health.mapper.CheckupMapper;
 import com.nyangmeong.pet.domain.CareMission;
 import com.nyangmeong.pet.service.CareMissionService;
 
@@ -43,6 +44,7 @@ public class CareScheduleService {
     private static final int MAX_PET_SNS = 50;
 
     private final CareScheduleMapper careScheduleMapper;
+    private final CheckupMapper checkupMapper;
     private final PetAuthorizer petAuthorizer;
     private final CareMissionService careMissionService;
 
@@ -132,6 +134,8 @@ public class CareScheduleService {
     public CareScheduleResponse update(Long mbrSn, Long petSn, Long schdlSn, CareScheduleUpdateRequest req) {
         petAuthorizer.checkCaregiver(mbrSn, petSn);
         Schedule schedule = getOwnSchedule(petSn, schdlSn);
+        String beforeHsptlNm = schedule.getHsptlNm();
+        String beforeCkupTypeCd = schedule.getCkupTypeCd();
 
         boolean isPetChanged = req.petSn() != null && !req.petSn().equals(petSn);
         if (isPetChanged) {
@@ -176,6 +180,13 @@ public class CareScheduleService {
         if (isPetChanged) {
             careScheduleMapper.updateLinkedCareItemsPet(schdlSn, req.petSn(), actorId);
             careScheduleMapper.updateLinkedRepeatPreventionsPet(schdlSn, req.petSn(), actorId);
+        }
+        /** 병원 일정의 병원명·검진유형이 바뀌면 연결 검진기록 전부에 반영, 병원 외 종류로 바뀌면 검진기록 유지 (※신규 정책) */
+        if (kind == ScheduleKind.HOSPITAL && schedule.getHsptlNm() != null
+                && (!schedule.getHsptlNm().equals(beforeHsptlNm)
+                        || !schedule.getCkupTypeCd().equals(beforeCkupTypeCd))) {
+            checkupMapper.updateHospitalBySchedule(schdlSn, schedule.getHsptlNm(), schedule.getCkupTypeCd(),
+                    CheckupStatus.COMPLETED.getCode(), actorId);
         }
         return CareScheduleResponse.from(schedule);
     }

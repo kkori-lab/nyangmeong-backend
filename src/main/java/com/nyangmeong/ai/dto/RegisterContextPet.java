@@ -5,7 +5,9 @@ import java.util.List;
 /**
  * [AI 등록 카드 컨텍스트 - 반려동물 1마리]
  * - petNm : 문장 속 이름으로 반려동물을 정한다 (FN-AIM-012-04)
+ * - petSeNm·vrtyNm : 같은 이름 반려동물을 종·품종으로 구별한다. 없으면 null (FN-AIM-012-04)
  * - careArtclNms : 같은 이름 케어 항목 안내 (FN-AIM-012-08)
  */
-public record RegisterContextPet(Long petSn, String petNm, List<String> careArtclNms) {
+public record RegisterContextPet(Long petSn, String petNm, String petSeNm, String vrtyNm,
+        List<String> careArtclNms) {
 }

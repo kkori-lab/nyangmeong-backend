@@ -57,12 +57,14 @@ class AiRegisterContextControllerTest {
     @WithMockLoginMember(id = 1L)
     void 반려동물과_케어_항목_이름을_배열로_준다() throws Exception {
         when(aiRegisterContextService.search(1L))
-                .thenReturn(List.of(new RegisterContextPet(10L, "콩이", List.of("심장사상충"))));
+                .thenReturn(List.of(new RegisterContextPet(10L, "콩이", "강아지", "말티즈", List.of("심장사상충"))));
 
         mockMvc.perform(get(PATH))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].petSn").value(10))
                 .andExpect(jsonPath("$.data[0].petNm").value("콩이"))
+                .andExpect(jsonPath("$.data[0].petSeNm").value("강아지"))
+                .andExpect(jsonPath("$.data[0].vrtyNm").value("말티즈"))
                 .andExpect(jsonPath("$.data[0].careArtclNms[0]").value("심장사상충"));
     }
 

@@ -1,6 +1,7 @@
 package com.nyangmeong.health.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.file.Path;
 
@@ -114,9 +115,29 @@ class CheckupMapperXmlTest {
     }
 
     @Test
-    void 반려동물_이동은_케어_항목의_반려동물만_바꾸고_폐지된_메인_컬럼을_쓰지_않는다() throws Exception {
-        assertThat(sql("update", "updateLinkedCareItemsPet")).contains("PET_SN = #{petSn}")
-                .doesNotContain("MAIN_");
+    void 검진기록에는_반려동물을_옮기는_SQL이_없다() throws Exception {
+        assertThatThrownBy(() -> sql("update", "updateLinkedCareItemsPet")).isInstanceOf(AssertionError.class);
+        assertThatThrownBy(() -> sql("update", "updateLinkedRepeatPreventionsPet"))
+                .isInstanceOf(AssertionError.class);
+    }
+
+    @Test
+    void 단건_조회는_연결_일정_삭제_여부를_준다() throws Exception {
+        assertThat(sql("select", "selectDetail"))
+                .contains("CASE WHEN S.DEL_YN = 'Y' THEN TRUE ELSE FALSE END AS SCHDL_DEL_YN");
+    }
+
+    @Test
+    void 일정에_맞춘_병원명_검진유형_변경은_일정의_완료_검진기록_전부만_바꾼다() throws Exception {
+        assertThat(sql("update", "updateHospitalBySchedule"))
+                .contains("UPDATE CKUP_RCD")
+                .contains("SET HSPTL_NM = #{hsptlNm}")
+                .contains("CKUP_TYPE_CD = #{ckupTypeCd}")
+                .contains("MDFR_ID = #{actorId}")
+                .contains("MDFCN_DT = NOW()")
+                .contains("WHERE SCHDL_SN = #{schdlSn}")
+                .contains("AND CKUP_RCD_STTS_CD = #{completedCd}")
+                .contains("AND DEL_YN = 'N'");
     }
 
     @Test

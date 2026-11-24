@@ -16,6 +16,7 @@
         <result column="MEMO_CN"            property="memoCn" />
         <result column="CLDR_BADGE_COLR_CD" property="cldrBadgeColrCd" />
         <result column="CKUP_RCD_CNT"       property="ckupRcdCnt" />
+        <result column="CKUP_RCD_SN"        property="ckupRcdSn" />
     </resultMap>
 
     <resultMap id="hospitalScheduleSummaryResultMap" type="com.nyangmeong.health.dto.HospitalScheduleSummary">
@@ -66,6 +67,11 @@
                   WHERE C.SCHDL_SN = S.SCHDL_SN
                     AND C.CKUP_RCD_STTS_CD = #{completedCd}
                     AND C.DEL_YN = 'N' ) AS CKUP_RCD_CNT
+             , ( SELECT CASE WHEN COUNT(*) = 1 THEN MAX(C.CKUP_RCD_SN) END
+                   FROM CKUP_RCD C
+                  WHERE C.SCHDL_SN = S.SCHDL_SN
+                    AND C.CKUP_RCD_STTS_CD = #{completedCd}
+                    AND C.DEL_YN = 'N' ) AS CKUP_RCD_SN
           FROM SCHDL S
           LEFT JOIN COM_CD K
             ON K.COM_CD = S.SCHDL_KND_CD
@@ -99,6 +105,7 @@
     <select id="selectListByPets" resultMap="careScheduleSummaryResultMap">
         /* 여러 반려동물 케어 일정 목록 조회 (건수 제한은 반려동물마다) */
         SELECT L.SCHDL_SN
+             , L.CKUP_RCD_SN
              , L.PET_SN
              , L.SCHDL_KND_CD
              , L.SCHDL_KND_CD_NM
@@ -130,6 +137,11 @@
                           WHERE C.SCHDL_SN = S.SCHDL_SN
                             AND C.CKUP_RCD_STTS_CD = #{completedCd}
                             AND C.DEL_YN = 'N' ) AS CKUP_RCD_CNT
+                     , ( SELECT CASE WHEN COUNT(*) = 1 THEN MAX(C.CKUP_RCD_SN) END
+                           FROM CKUP_RCD C
+                          WHERE C.SCHDL_SN = S.SCHDL_SN
+                            AND C.CKUP_RCD_STTS_CD = #{completedCd}
+                            AND C.DEL_YN = 'N' ) AS CKUP_RCD_SN
                      , ROW_NUMBER() OVER (PARTITION BY S.PET_SN
                                               ORDER BY DATE(S.SCHDL_DT)
                                                      , S.HR_INPT_YN DESC
@@ -282,6 +294,17 @@
              , MDFR_ID            = #{actorId}
              , MDFCN_DT           = NOW()
          WHERE SCHDL_SN = #{schedule.schdlSn}
+           AND DEL_YN = 'N'
+    </update>
+
+    <update id="updateScheduleHospital">
+        /* 검진기록 저장에 맞춰 연결 일정의 병원명·검진유형 변경 (※신규 정책) */
+        UPDATE SCHDL
+           SET HSPTL_NM     = #{hsptlNm}
+             , CKUP_TYPE_CD = #{ckupTypeCd}
+             , MDFR_ID      = #{actorId}
+             , MDFCN_DT     = NOW()
+         WHERE SCHDL_SN = #{schdlSn}
            AND DEL_YN = 'N'
     </update>
 

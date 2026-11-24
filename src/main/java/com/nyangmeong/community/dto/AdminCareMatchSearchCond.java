@@ -10,4 +10,6 @@ import lombok.Data;
 public class AdminCareMatchSearchCond {
     /** 모집상태공통코드 (PCAG01) */
     private String rcrtSttsCd;
+    /** 회원일련번호 : 보호자(모집글 작성자)이거나 매칭 상대인 모집글만 (FN-ADM-042-08) */
+    private Long mbrSn;
 }

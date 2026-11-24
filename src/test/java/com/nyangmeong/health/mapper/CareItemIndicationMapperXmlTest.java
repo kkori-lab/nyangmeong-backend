@@ -62,8 +62,7 @@ class CareItemIndicationMapperXmlTest {
     }
 
     @Test
-    void 반려동물을_옮기는_두_SQL은_표시여부를_비운다() throws Exception {
-        assertThat(sql("CheckupMapper.xml", "update", "updateLinkedCareItemsPet")).contains("INDCT_YN = NULL");
+    void 일정의_반려동물을_옮기는_SQL은_표시여부를_비운다() throws Exception {
         assertThat(sql("CareScheduleMapper.xml", "update", "updateLinkedCareItemsPet")).contains("INDCT_YN = NULL");
     }
 }

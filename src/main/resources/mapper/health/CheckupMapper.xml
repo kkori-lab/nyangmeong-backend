@@ -21,6 +21,7 @@
         <result column="HSPTL_NM"        property="hsptlNm" />
         <result column="CKUP_TYPE_CD"    property="ckupTypeCd" />
         <result column="CKUP_TYPE_CD_NM" property="ckupTypeCdNm" />
+        <result column="SCHDL_DEL_YN"    property="schdlDelYn" />
         <result column="CKUP_CN"         property="ckupCn" />
         <result column="CKUP_MEMO_CN"    property="ckupMemoCn" />
         <result column="RECPT_SN"        property="recptSn" />
@@ -66,6 +67,7 @@
              , C.HSPTL_NM
              , C.CKUP_TYPE_CD
              , T.COM_CD_NM AS CKUP_TYPE_CD_NM
+             , CASE WHEN S.DEL_YN = 'Y' THEN TRUE ELSE FALSE END AS SCHDL_DEL_YN
              , C.CKUP_CN
              , C.CKUP_MEMO_CN
              , C.RECPT_SN
@@ -246,28 +248,16 @@
            AND DEL_YN = 'N'
     </update>
 
-    <update id="updateLinkedCareItemsPet">
-        /* 검진기록의 케어 항목 반려동물 변경, 새 반려동물에서는 고른 적 없는 상태로 시작 (※신규 정책) */
-        UPDATE CARE_ARTCL
-           SET PET_SN        = #{petSn}
-             , INDCT_YN      = NULL
-             , MDFR_ID       = #{actorId}
-             , MDFCN_DT      = NOW()
-         WHERE PRSC_SN IN ( SELECT P.PRSC_SN
-                              FROM PRSC P
-                             WHERE P.CKUP_RCD_SN = #{ckupRcdSn} )
-            OR REPT_PRVNT_MNG_SN IN ( SELECT R.REPT_PRVNT_MNG_SN
-                                        FROM REPT_PRVNT_MNG R
-                                       WHERE R.CKUP_RCD_SN = #{ckupRcdSn} )
-    </update>
-
-    <update id="updateLinkedRepeatPreventionsPet">
-        /* 검진기록의 반복 예방 관리 반려동물 변경 */
-        UPDATE REPT_PRVNT_MNG
-           SET PET_SN   = #{petSn}
-             , MDFR_ID  = #{actorId}
-             , MDFCN_DT = NOW()
-         WHERE CKUP_RCD_SN = #{ckupRcdSn}
+    <update id="updateHospitalBySchedule">
+        /* 일정에 연결된 완료 검진기록 전부의 병원명·검진유형 변경 (※신규 정책) */
+        UPDATE CKUP_RCD
+           SET HSPTL_NM     = #{hsptlNm}
+             , CKUP_TYPE_CD = #{ckupTypeCd}
+             , MDFR_ID      = #{actorId}
+             , MDFCN_DT     = NOW()
+         WHERE SCHDL_SN = #{schdlSn}
+           AND CKUP_RCD_STTS_CD = #{completedCd}
+           AND DEL_YN = 'N'
     </update>
 
     <update id="deleteByPetSn">

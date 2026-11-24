@@ -50,6 +50,34 @@ class LostReportMapperSqlTest {
                 .getBoundSql(param).getSql().replaceAll("\\s+", " ").strip();
     }
 
+    private String listSql(String keyword) {
+        Map<String, Object> param = new HashMap<>();
+        param.put("mbrSn", 1L);
+        param.put("keyword", keyword);
+        param.put("pstSttsCd", "CMUC0003");
+        param.put("missingCd", MISSING);
+        param.put("foundCd", FOUND);
+        param.put("expiredCd", EXPIRED);
+        param.put("mineYn", false);
+        return configuration.getMappedStatement("com.nyangmeong.community.mapper.LostReportMapper.selectList")
+                .getBoundSql(param).getSql().replaceAll("\\s+", " ").strip();
+    }
+
+    @Test
+    void 검색어를_주면_제목도_찾는다() {
+        String where = listSql("보리").substring(listSql("보리").indexOf("WHERE"));
+
+        assertThat(where).contains("OR L.CHRC_CN LIKE CONCAT('%', ?, '%')")
+                .contains("OR P.PST_TTL LIKE CONCAT('%', ?, '%'))");
+    }
+
+    @Test
+    void 검색어가_없으면_제목_조건도_없다() {
+        String where = listSql(null).substring(listSql(null).indexOf("WHERE"));
+
+        assertThat(where).doesNotContain("P.PST_TTL LIKE");
+    }
+
     @Test
     void 전체는_상태_조건_없이_최신순() {
         assertThat(whereOf(null)).doesNotContain("LOST_TPOF_STTS_CD").contains("P.PST_STTS_CD = ?")

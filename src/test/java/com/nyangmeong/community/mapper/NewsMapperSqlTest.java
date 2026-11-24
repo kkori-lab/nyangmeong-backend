@@ -93,4 +93,24 @@ class NewsMapperSqlTest {
         assertThat(sql).contains("K.DEL_YN = 'N'");
         assertThat(sql).contains("ORDER BY K.SORT_SEQ ASC, K.KWRD_DICT_SN ASC");
     }
+
+    @Test
+    void 엔티티_정리_대상은_수집_기사_중_제목_요약_언론사에_엔티티가_든_행이고_숨긴_기사도_포함한다() {
+        String sql = configuration.getMappedStatement("com.nyangmeong.community.mapper.NewsMapper.selectEscapedNews")
+                .getBoundSql(new HashMap<>()).getSql().replaceAll("\\s+", " ");
+
+        assertThat(sql).contains("N.NEWS_SRC_CD = 'CMUC0022'");
+        assertThat(sql).contains("N.NEWS_TTL LIKE '%&%;%' OR N.NEWS_CN LIKE '%&%;%' OR N.SRC_PRESS_NM LIKE '%&%;%'");
+        assertThat(sql).doesNotContain("USE_YN");
+    }
+
+    @Test
+    void 엔티티_정리_수정은_수집_기사의_제목_요약_언론사만_바꾼다() {
+        Map<String, Object> param = new HashMap<>();
+        String sql = configuration.getMappedStatement("com.nyangmeong.community.mapper.NewsMapper.updateUnescaped")
+                .getBoundSql(param).getSql().replaceAll("\\s+", " ");
+
+        assertThat(sql).contains("SET NEWS_TTL = ? , NEWS_CN = ? , SRC_PRESS_NM = ?");
+        assertThat(sql).contains("WHERE NEWS_SN = ? AND NEWS_SRC_CD = 'CMUC0022'");
+    }
 }

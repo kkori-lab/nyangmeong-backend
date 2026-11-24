@@ -164,4 +164,41 @@ class GoogleNewsFeedClientTest {
         assertThat(GoogleNewsFeedClient.charsetOf("text/html; charset=nope", new byte[0]))
                 .isEqualTo(StandardCharsets.UTF_8);
     }
+
+    @Test
+    void RSS_제목과_언론사의_두_번_이스케이프된_엔티티를_푼다() {
+        String feed = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <rss version="2.0"><channel>
+                <item><title>반려견 &amp;#39;산책&amp;#39; 수칙 &amp;quot;필수&amp;quot; - 뉴스&amp;amp;펫</title>
+                <link>https://news.google.com/rss/articles/CBMiDDD</link>
+                <pubDate>Mon, 02 Nov 2026 01:01:33 GMT</pubDate>
+                <source url="https://pet.example.com">뉴스&amp;amp;펫</source></item>
+                </channel></rss>
+                """;
+
+        NewsFeedItem item = GoogleNewsFeedClient.parseFeed(feed).get(0);
+
+        assertThat(item.title()).isEqualTo("반려견 '산책' 수칙 \"필수\"");
+        assertThat(item.pressNm()).isEqualTo("뉴스&펫");
+    }
+
+    @Test
+    void og_description의_두_번_이스케이프된_엔티티를_푼다() {
+        String html = "<meta property=\"og:description\" content=\"고양이 &amp;#39;입양&amp;#39; &amp;amp;amp; &#39;보호&#39;\">";
+
+        NewsPreview preview = GoogleNewsFeedClient.parseMeta(html, URI.create("https://pet.example.com/a"));
+
+        assertThat(preview.description()).isEqualTo("고양이 '입양' & '보호'");
+    }
+
+    @Test
+    void 엔티티_풀기는_바뀌지_않을_때까지_최대_3번이고_null은_null() {
+        assertThat(GoogleNewsFeedClient.unescapeHtml("&#39;산책&#39;")).isEqualTo("'산책'");
+        assertThat(GoogleNewsFeedClient.unescapeHtml("&amp;#39;")).isEqualTo("'");
+        assertThat(GoogleNewsFeedClient.unescapeHtml("&apos;제2회 축제&amp;apos;")).isEqualTo("'제2회 축제'");
+        assertThat(GoogleNewsFeedClient.unescapeHtml("&amp;amp;amp;amp;")).isEqualTo("&amp;");
+        assertThat(GoogleNewsFeedClient.unescapeHtml("엔티티 없음 & 그대로")).isEqualTo("엔티티 없음 & 그대로");
+        assertThat(GoogleNewsFeedClient.unescapeHtml(null)).isNull();
+    }
 }

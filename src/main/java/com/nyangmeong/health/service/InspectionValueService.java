@@ -114,7 +114,10 @@ public class InspectionValueService {
     @Transactional
     public List<InspectionValueResponse> create(Long mbrSn, Long petSn, InspectionValueCreateRequest req) {
         checkupService.getCheckup(mbrSn, petSn, req.ckupRcdSn());
-        List<InspectionValue> values = req.values().stream().map(item -> toValue(req.ckupRcdSn(), item)).toList();
+        List<InspectionValue> values = new ArrayList<>();
+        for (int i = 0; i < req.values().size(); i++) {
+            values.add(toValue(req.ckupRcdSn(), req.values().get(i), "values[" + i + "]."));
+        }
         String actorId = String.valueOf(mbrSn);
 
         int sortSeq = inspectionValueMapper.selectMaxSortSeq(req.ckupRcdSn());
@@ -168,15 +171,16 @@ public class InspectionValueService {
     /**
      * 요청 1행 → 검사 수치
      * - 직접입력명이 있으면 코드는 비우거나 직접입력(HLTC0035)만, 없으면 12종 코드 필수
+     * - 거절하면 400 data에 행 칸 이름(예: values[0].inspArtclCd)
      */
-    private InspectionValue toValue(Long ckupRcdSn, InspectionValueItemRequest item) {
+    private InspectionValue toValue(Long ckupRcdSn, InspectionValueItemRequest item, String prefix) {
         String code = emptyToNull(item.inspArtclCd());
         String name = emptyToNull(item.inspArtclDrctInptNm());
         InspectionValue value = new InspectionValue();
         value.setCkupRcdSn(ckupRcdSn);
         if (name != null) {
             if (code != null && !InspectionArticle.DIRECT.is(code)) {
-                throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+                throw invalid(prefix + "inspArtclCd");
             }
             value.setInspArtclCd(InspectionArticle.DIRECT.getCode());
             value.setInspArtclDrctInptNm(name);
@@ -184,15 +188,22 @@ public class InspectionValueService {
             boolean known = code != null && Arrays.stream(InspectionArticle.values())
                     .anyMatch(article -> article != InspectionArticle.DIRECT && article.is(code));
             if (!known) {
-                throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+                throw invalid(prefix + "inspArtclCd");
             }
             value.setInspArtclCd(code);
             value.setInspArtclDrctInptNm("");
         }
-        checkRefPair(item.refLlmtNvl(), item.refUplmtNvl());
-        checkRefOrder(item.refLlmtNvl(), item.refUplmtNvl());
+        if ((item.refLlmtNvl() == null) != (item.refUplmtNvl() == null)) {
+            throw invalid(prefix + (item.refLlmtNvl() == null ? "refLlmtNvl" : "refUplmtNvl"));
+        }
+        if (item.refLlmtNvl() != null && item.refLlmtNvl().compareTo(item.refUplmtNvl()) > 0) {
+            throw invalid(prefix + "refLlmtNvl", prefix + "refUplmtNvl");
+        }
+        if (emptyToNull(item.unitNm()) == null) {
+            throw invalid(prefix + "unitNm");
+        }
         value.setRsltNvl(item.rsltNvl());
-        value.setUnitNm(requiredText(item.unitNm()));
+        value.setUnitNm(emptyToNull(item.unitNm()));
         value.setRefLlmtNvl(item.refLlmtNvl());
         value.setRefUplmtNvl(item.refUplmtNvl());
         value.setMemoCn(emptyToNull(item.memoCn()));
@@ -236,6 +247,10 @@ public class InspectionValueService {
             throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
         }
         return text;
+    }
+
+    private CustomException invalid(String... fields) {
+        return new CustomException(ErrorCode.INVALID_INPUT_VALUE, fields);
     }
 
     private String emptyToNull(String value) {

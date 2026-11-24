@@ -68,10 +68,10 @@ public interface CareRecruitmentMapper {
     List<CareRecruitmentShape> selectShapes(@Param("petPrtcRcrtSns") List<Long> petPrtcRcrtSns);
 
     /**
-     * 관리자 목록 조회 (게시글 상태 조건, 최신순)
+     * 관리자 목록 조회 (게시글 상태 조건, 회원 조건은 보호자 또는 매칭 상대, 최신순)
      */
     List<AdminCareMatchSummary> selectAdminList(@Param("rcrtSttsCd") String rcrtSttsCd,
-            @Param("pstSttsCd") String pstSttsCd);
+            @Param("pstSttsCd") String pstSttsCd, @Param("mbrSn") Long mbrSn);
 
     /**
      * 관리자 상세 조회 (삭제 글 제외, 매칭 목록은 채우지 않음)

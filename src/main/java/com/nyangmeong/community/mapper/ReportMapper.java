@@ -24,6 +24,21 @@ public interface ReportMapper {
     boolean existsReport(@Param("mbrSn") Long mbrSn, @Param("pstSn") Long pstSn, @Param("cmntSn") Long cmntSn);
 
     /**
+     * 같은 회원의 같은 채팅방 상대 신고 여부 조회
+     */
+    boolean existsChatReport(@Param("mbrSn") Long mbrSn, @Param("otoChatRoomSn") Long otoChatRoomSn);
+
+    /**
+     * 대상 회원의 상태별 신고자 수 조회 (같은 신고자는 1명)
+     */
+    int countReportersOfMember(@Param("trgtMbrSn") Long trgtMbrSn, @Param("status") String status);
+
+    /**
+     * 대상 회원의 상태별 신고 조회
+     */
+    List<Report> selectMemberReportsByStatus(@Param("trgtMbrSn") Long trgtMbrSn, @Param("status") String status);
+
+    /**
      * 대상별 신고 수 조회
      */
     int countReports(@Param("pstSn") Long pstSn, @Param("cmntSn") Long cmntSn);
@@ -59,13 +74,14 @@ public interface ReportMapper {
      * 관리자 신고 목록 조회
      */
     List<AdminReportSummary> selectAdminList(@Param("cond") AdminReportSearchCond cond,
-            @Param("postTarget") Boolean postTarget, @Param("blindCd") String blindCd,
+            @Param("targetType") String targetType, @Param("blindCd") String blindCd,
             @Param("autoBlindRsn") String autoBlindRsn, @Param("autoDeleteRsn") String autoDeleteRsn);
 
     /**
      * 같은 대상 신고 목록 조회
      */
-    List<AdminReportSummary> selectSameTargetList(@Param("pstSn") Long pstSn, @Param("cmntSn") Long cmntSn);
+    List<AdminReportSummary> selectSameTargetList(@Param("pstSn") Long pstSn, @Param("cmntSn") Long cmntSn,
+            @Param("trgtMbrSn") Long trgtMbrSn);
 
     /**
      * 자동 블라인드 대상 목록 조회

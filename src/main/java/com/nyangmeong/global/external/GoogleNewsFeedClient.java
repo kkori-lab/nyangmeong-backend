@@ -62,6 +62,7 @@ public class GoogleNewsFeedClient implements NewsFeedClient {
     private static final int ARTICLE_PAGE_MAX_BYTES = 512 * 1024;
     private static final int DESCRIPTION_MAX_LENGTH = 4000;
     private static final int IMAGE_URL_MAX_LENGTH = 500;
+    private static final int UNESCAPE_MAX_ROUNDS = 3;
     private static final Pattern DECODE_ID = Pattern.compile("data-n-a-id=\"([A-Za-z0-9_-]+)\"");
     private static final Pattern DECODE_TS = Pattern.compile("data-n-a-ts=\"(\\d+)\"");
     private static final Pattern DECODE_SG = Pattern.compile("data-n-a-sg=\"([A-Za-z0-9_-]+)\"");
@@ -224,9 +225,9 @@ public class GoogleNewsFeedClient implements NewsFeedClient {
         NodeList nodes = document.getElementsByTagName("item");
         for (int i = 0; i < nodes.getLength(); i++) {
             Element item = (Element) nodes.item(i);
-            String title = childText(item, "title");
+            String title = unescapeHtml(childText(item, "title"));
             String link = childText(item, "link");
-            String pressNm = childText(item, "source");
+            String pressNm = unescapeHtml(childText(item, "source"));
             LocalDateTime pblcnDt = parsePubDate(childText(item, "pubDate"));
             if (title == null || link == null || pblcnDt == null) {
                 continue;
@@ -326,8 +327,27 @@ public class GoogleNewsFeedClient implements NewsFeedClient {
         return matcher.group(1) != null ? matcher.group(1) : matcher.group(2);
     }
 
+    /**
+     * HTML 엔티티 풀기 : 두 번 이스케이프된 값(&amp;#39;)도 있어 바뀌지 않을 때까지 최대 3번
+     * - HtmlUtils 는 HTML 4 엔티티만 풀어 &apos; 는 따로 바꿈
+     */
+    public static String unescapeHtml(String value) {
+        if (value == null) {
+            return null;
+        }
+        String text = value;
+        for (int i = 0; i < UNESCAPE_MAX_ROUNDS; i++) {
+            String next = HtmlUtils.htmlUnescape(text).replace("&apos;", "'");
+            if (next.equals(text)) {
+                break;
+            }
+            text = next;
+        }
+        return text;
+    }
+
     private static String cleanText(String raw) {
-        String text = HtmlUtils.htmlUnescape(raw).replaceAll("\\s+", " ").trim();
+        String text = unescapeHtml(raw).replaceAll("\\s+", " ").trim();
         if (text.isEmpty()) {
             return null;
         }

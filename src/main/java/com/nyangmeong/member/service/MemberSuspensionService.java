@@ -91,6 +91,28 @@ public class MemberSuspensionService {
     }
 
     /**
+     * 처리자 없는 기간 정지 (채팅 상대 신고 누적)
+     * - 정상 일반 회원만, 정지할 수 없으면 예외 없이 false : 부르는 쪽 트랜잭션을 깨지 않게
+     * - 해제는 관리자 정지 해제(release)나 기간 만료 배치
+     */
+    @Transactional
+    public boolean suspendBySystem(Long mbrSn, int suspnDayCnt, String suspnRsn) {
+        Member member = memberMapper.selectBySn(mbrSn);
+        if (member == null || !MemberAuthority.USER.is(member.getMbrAuthrtCd())
+                || !MemberStatus.NORMAL.is(member.getMbrSttsCd())) {
+            return false;
+        }
+        if (memberMapper.updateSuspend(mbrSn, MemberStatus.SUSPENDED.getCode(), MemberStatus.NORMAL.getCode(),
+                calculateEndDt(suspnDayCnt), SYSTEM_ACTOR) != 1) {
+            return false;
+        }
+        memberMapper.insertStatusHistory(mbrSn, MemberStatus.NORMAL.getCode(), MemberStatus.SUSPENDED.getCode(),
+                suspnRsn);
+        loginSessionManager.revokeAll(mbrSn);
+        return true;
+    }
+
+    /**
      * 회원 정지 해제
      */
     @Transactional

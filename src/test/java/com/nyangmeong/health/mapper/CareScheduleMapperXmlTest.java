@@ -20,17 +20,21 @@ class CareScheduleMapperXmlTest {
     private static final Path XML = Path.of("src/main/resources/mapper/health/CareScheduleMapper.xml");
 
     private static String sql(String id) throws Exception {
+        return sql("select", id);
+    }
+
+    private static String sql(String tag, String id) throws Exception {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
         Element mapper = factory.newDocumentBuilder().parse(XML.toFile()).getDocumentElement();
-        NodeList selects = mapper.getElementsByTagName("select");
+        NodeList selects = mapper.getElementsByTagName(tag);
         for (int i = 0; i < selects.getLength(); i++) {
             Element select = (Element) selects.item(i);
             if (id.equals(select.getAttribute("id"))) {
                 return select.getTextContent().replaceAll("\\s+", " ");
             }
         }
-        throw new AssertionError("select 없음: " + id);
+        throw new AssertionError(tag + " 없음: " + id);
     }
 
     @Test
@@ -96,5 +100,28 @@ class CareScheduleMapperXmlTest {
     @Test
     void 연결_검진기록_수는_삭제된_검진기록을_세지_않는다() throws Exception {
         assertThat(sql("selectList")).contains("AND C.DEL_YN = 'N' ) AS CKUP_RCD_CNT");
+    }
+
+    @Test
+    void 두_목록은_연결_검진기록이_1건일_때만_그_번호를_준다() throws Exception {
+        String sub = "( SELECT CASE WHEN COUNT(*) = 1 THEN MAX(C.CKUP_RCD_SN) END FROM CKUP_RCD C"
+                + " WHERE C.SCHDL_SN = S.SCHDL_SN AND C.CKUP_RCD_STTS_CD = #{completedCd}"
+                + " AND C.DEL_YN = 'N' ) AS CKUP_RCD_SN";
+        assertThat(sql("selectList")).contains(sub);
+        assertThat(sql("selectListByPets")).contains(sub).contains("SELECT L.SCHDL_SN , L.CKUP_RCD_SN , L.PET_SN");
+    }
+
+    @Test
+    void 검진기록에_맞춘_일정_병원명_검진유형_변경은_삭제되지_않은_그_일정만_바꾼다() throws Exception {
+        assertThat(sql("update", "updateScheduleHospital"))
+                .contains("UPDATE SCHDL")
+                .contains("SET HSPTL_NM = #{hsptlNm}")
+                .contains("CKUP_TYPE_CD = #{ckupTypeCd}")
+                .contains("MDFR_ID = #{actorId}")
+                .contains("MDFCN_DT = NOW()")
+                .contains("WHERE SCHDL_SN = #{schdlSn}")
+                .contains("AND DEL_YN = 'N'")
+                .doesNotContain("PET_SN")
+                .doesNotContain("SCHDL_DT");
     }
 }

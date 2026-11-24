@@ -37,4 +37,6 @@ public class CareScheduleSummary {
     private String cldrBadgeColrCd;
     /** 연결 검진기록 수 */
     private Integer ckupRcdCnt;
+    /** 연결 검진기록일련번호 (1건일 때만, 0건·2건 이상이면 null) */
+    private Long ckupRcdSn;
 }
