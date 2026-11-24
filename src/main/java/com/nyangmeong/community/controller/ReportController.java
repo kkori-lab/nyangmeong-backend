@@ -20,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * [신고 컨트롤러]
- * - 게시글·댓글 신고, 펫이야기·실종센터·펫돌봄 공통
+ * - 게시글·댓글·채팅 상대 신고, 펫이야기·실종센터·펫돌봄·채팅 공통
  */
 @RestController
 @RequiredArgsConstructor
@@ -29,7 +29,7 @@ public class ReportController {
 
     private final ReportService reportService;
 
-    @Operation(summary = "게시글·댓글 신고")
+    @Operation(summary = "게시글·댓글·채팅 상대 신고")
     @PostMapping
     public ResponseEntity<ApiResponse<ReportResponse>> create(@AuthenticationPrincipal LoginMember me,
             @Valid @RequestBody ReportCreateRequest req) {
