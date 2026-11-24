@@ -268,7 +268,7 @@
 - 완료 조건: 답변하면 작성자에게 알림이 가고 상태가 답변 완료가 된다. 답변 삭제 API는 없다
 - 완료 조건 결과: 검증 `확인 못 함 있음`(2026-11-03, 1회차, 연결 남음만), 사람 확인 2026-11-03. `/api/admin/inquiries` 6개, DB 변경 없음. 추가-1 `MapperXmlRuleTest` 예외 1줄
 - 연결 끝(2026-11-24 프론트·ai develop에서 확인): FN-ADM-042-07 무료 재생성 (FN-MYP-010-23 계약 대기. 생성 흐름이 원본 사진을 Java에 남기지 않아 `finishErrorCheck(regenerate=true)`가 404 FILE_NOT_FOUND로 롤백된다. 복원만 실제 동작, LJS·ai)
-- 연결 남음: FN-ADM-042-08 (작성자 매칭 목록 API는 SCR-ADM-022, KSJ 협의. 프론트는 SCR-ADM-022로 넘김)
+- 연결 끝(2026-11-24): FN-ADM-042-08 백엔드 작성자 매칭 목록 `GET /api/admin/care-matches?mbrSn=` (아래 `SCR-ADM-042 1:1 문의 · 펫돌봄 분쟁 작성자 매칭 목록` 절, 프론트 연결은 그 절에 남음)
 
 ## SCR-ADM-070 아이템 — 끝
 - 기능: FN-ADM-070-01 아이템 목록 조회, FN-ADM-070-02 아이템 등록, FN-ADM-070-03 아이템 수정·판매 중지, FN-ADM-070-04 아이템 정렬
@@ -282,7 +282,7 @@
 
 ## SCR-ADM-090 알림 템플릿 — 끝
 - 기능: FN-ADM-090-01 템플릿 목록 조회, FN-ADM-090-02 템플릿 등록·수정, FN-ADM-090-03 기본 문구 사용
-- 기다리는 것: pet 연동 양육자 조회 (SJM). 그 전까지 `scheduler/CaregiverFake`가 빈 목록이라 케어 일정 알림이 실제로 나가지 않아 FN-ADM-090-03을 실제 앱에서 확인할 수 없다(테스트로만 확인)
+- 기다리는 것: 없음
 - 완료 조건: 수정한 템플릿이 다음 발송부터 쓰이고, 템플릿이 없으면 기본 문구로 보낸다
 - 결정: 템플릿 등록은 발송 코드가 템플릿을 읽는 케어 일정(AIMC0008)만, 다른 유형은 400 `NOTIFICATION_TEMPLATE_NOT_SUPPORTED`(기본 문구). 치환 변수는 `NotificationTemplateType`에 한 곳, 모르는 `{{…}}`는 400. `useYn`은 true/false(dto.md)
 - 완료 조건 결과: 검증 `확인 못 함 있음`(2026-11-03, 1회차 실패(FN-ADM-090-03 실제 확인 불가) 뒤 루프 버리고 기다리는 것 기록, 재검증 1회차, 연결 남음만), 사람 확인 2026-11-03
@@ -452,7 +452,6 @@
 - 완료 조건: `GET /api/admin/care-matches?page=&size=20&rcrtSttsCd=`(최신순, `{ content, page, size, totalElements, totalPages, hasNext }`, content 행 `{ petPrtcRcrtSn, pstSn, pstTtl, rcrtSttsCd, mbrSn, mbrNcnm, cstAmt, cstUnitCd, regDt }`, 상태는 PCAC0001 모집중·PCAC0002 매칭완료·PCAC0003 거래완료, 비용 단위 PCAC0004·PCAC0005), `GET /api/admin/care-matches/{petPrtcRcrtSn}`(목록 행 + `mtchs[]`, 매칭마다 `{ petPrtcMtchSn, ctptMbrSn, ctptNcnm, mtchDlngSttsCd, agreVerNo, agreDt, agreCn, sttsHstry[{ bfrSttsCd, aftrSttsCd, chgRsn, regDt }], cmplReqDt, cmplImgs[{ atchFileSn }], ownerCfmtnRsltCd, ownerCfmtnDt }`, 매칭이 없으면 빈 배열, 채팅 메시지 없음(결정 14·26))가 프론트 가짜와 같은 모양으로 동작한다. 가정 이름(`ctptNcnm`·`agreVerNo`·`agreDt`·`agreCn`·`cmplReqDt`·`cmplImgs`·`ownerCfmtnRsltCd`·`ownerCfmtnDt`)과 매칭 거래 상태 코드(가짜 `REQUESTED`·`MATCHED`·`DONE_REQ`·`COMPLETE`·`CANCELED`)·보호자 확인 결과 코드(가짜 `CONFIRMED`·`REJECTED`)를 정해 프론트에 알린다
 - 완료 조건 결과: 검증 `통과`(2026-11-03, 2회차는 추가-1 포함 재검증), 사람 확인 2026-11-03. 정한 것: 조건 버전·완료 요청은 목록 `cndVers`·`cmptnDmnds`(가짜의 한 건짜리 `agreVerNo·agreDt·agreCn`·`cmplReqDt·cmplImgs·ownerCfmtnRsltCd·ownerCfmtnDt`와 다름), 상대방 `ctptMbrSn`·`ctptNcnm`, 매칭 거래 상태 PCAG05(PCAC0012~0018), 보호자 확인 결과 PCAG06(PCAC0019·0020). 상세는 블라인드 글도 연다. 같이 처리: `save-check` 저장완료 409(`milestones/JAJ.md` SCR-HLT-002 절, 상태는 JAJ가 바꾼다). 추가-1: 시드 RGN 전북 시군구 13건·행정동 243건
 - 연결 끝(2026-11-24 프론트·ai develop에서 확인): FN-ADM-022-01·02 (프론트 연결 `features/adminCommunity/api.js` 펫돌봄 목록·매칭 상세 모달, 프론트 저장소에서 /start)
-- 연결 남음: FN-ADM-022-02 완료 사진 보기 (완료 사진 업로드가 아직 없어 저장 경로 미정, `/api/files/public/{atchFileSn}`은 `public/` 경로만 열어 지금 시드 사진은 404, KSJ와 정한다)
 
 ## SCR-ADM-023 노출 콘텐츠 · 프론트 연결 API 계약 — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-023-01·02·03·04·05·06
@@ -927,3 +926,10 @@
 - 기다리는 것: 없음
 - 완료 조건: 캐릭터 작업 시간 초과 조회, 자동 블라인드·자동 삭제 판별, 탈퇴 회원 보관 기간 조건이 로컬 MySQL 임시 스키마에서 경계 행을 기대대로 넣고 뺀다. 다시 돌릴 수 있는 SQL과 결과는 `docs/sql-check/20261120-sql-boundary.md`에 남긴다. Java 코드 변경 없음
 - 완료 조건 결과: 검증 `통과`(2026-11-20, 1회차. 앞선 기획은 결과를 기준 파일에만 남기게 해 검증 1회차 실패, 루프를 버리고 다시 기획), 사람 확인 2026-11-20(실행은 AI, 사람이 결과 확인). 세 조건 모두 기대대로, 틀린 동작 없음. 정한 것: DB에 붙는 자동 테스트 대신 다시 돌릴 SQL을 `docs/sql-check/`에 남긴다, 탈퇴 보관 일수는 서비스가 넘기는 `SYS_STNG` 기본 30(서비스 테스트의 45 아님), 같은 시각 경계는 연산자로 기록(자동 삭제 댓글 같은 초만 행으로 확인)
+
+## SCR-ADM-042 1:1 문의 · 펫돌봄 분쟁 작성자 매칭 목록 — 끝
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-042-08 펫돌봄 분쟁 연결·FN-ADM-022-01 펫돌봄 모집글 목록 (위 `## SCR-ADM-042 1:1 문의 — 끝` 절의 「연결 남음: FN-ADM-042-08」을 푼다)
+- 기다리는 것: 없음
+- 완료 조건: `GET /api/admin/care-matches?mbrSn=`이 그 회원이 보호자(모집글 작성자)이거나 매칭 상대(채팅방 `CTPT_MBR_SN`)인 모집글만 준다. `mbrSn`이 없으면 지금과 같다
+- 완료 조건 결과: 검증 `통과`(2026-11-24, 1회차), 사람 확인 2026-11-24. 정한 것: 정상 글만(블라인드 글은 넣지 않음), 응답에 역할 칸 없음(행 `mbrSn`으로 보호자·돌보미 구분), 채팅만 한 회원은 넣지 않음, 없는 회원은 빈 목록, 0 이하 400. DB 변경 없음
+- 연결 남음: FN-ADM-042-08 (프론트 연결 관리자 1:1 문의 상세 `features/adminInquiry` 「분쟁」 문의 작성자 옆 「펫돌봄 매칭 보기」 → `features/adminCommunity` 펫돌봄 목록 `?mbrSn=`·보호자/돌보미 표시, 프론트 저장소에서 /start)
