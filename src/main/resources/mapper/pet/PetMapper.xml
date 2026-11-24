@@ -314,6 +314,26 @@
          ORDER BY BRUP_REL_SN
     </select>
 
+    <select id="selectLinkedRelsByMember" resultMap="brupRelResultMap">
+        /* 회원의 연동 중 양육 관계 조회 (삭제되지 않은 반려동물만) */
+        SELECT R.BRUP_REL_SN
+             , R.PET_SN
+             , R.MBR_SN
+             , R.BRUP_ROLE_CD
+             , R.RPRS_PET_YN
+             , R.USE_YN
+             , R.REG_DT
+             , R.MDFCN_DT
+             , R.MDFR_ID
+          FROM BRUP_REL R
+          JOIN PET P
+            ON P.PET_SN = R.PET_SN
+           AND P.DEL_YN = 'N'
+         WHERE R.MBR_SN = #{mbrSn}
+           AND R.USE_YN = 'Y'
+         ORDER BY R.BRUP_REL_SN
+    </select>
+
     <select id="countLinkedCaregivers" resultType="int">
         /* 연동 중 공동양육자 수 조회 */
         SELECT COUNT(*)

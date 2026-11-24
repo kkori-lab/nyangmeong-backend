@@ -728,6 +728,76 @@ class PetServiceTest {
         verify(mapper, never()).updateRepresentativeOff(anyLong(), anyString());
     }
 
+    private BrupRel memberRel(Long brupRelSn, Long petSn, String roleCd) {
+        BrupRel rel = rel(roleCd, "N");
+        rel.setBrupRelSn(brupRelSn);
+        rel.setPetSn(petSn);
+        rel.setMbrSn(MBR);
+        return rel;
+    }
+
+    @Test
+    void 파기는_주양육_반려동물을_삭제하고_공동양육_연동은_그_연동만_해제한다() {
+        when(mapper.selectLinkedRelsByMember(MBR)).thenReturn(List.of(memberRel(10L, PET, PRIMARY),
+                memberRel(11L, 200L, PRIMARY), memberRel(12L, 300L, CO_PARENT)));
+        when(mapper.selectPet(200L)).thenAnswer(inv -> storedPet());
+        when(mapper.updatePetDelete(PET, "1")).thenReturn(1);
+        when(mapper.updatePetDelete(200L, "1")).thenReturn(1);
+        when(mapper.selectLinkedCoParentRels(anyLong(), eq(CO_PARENT)))
+                .thenReturn(List.of(target(60L, 7L, CO_PARENT)));
+        when(mapper.updateBrupRelUnlink(anyLong(), eq("1"))).thenReturn(1);
+
+        service.purgeMemberPets(MBR);
+
+        verify(authorizer, never()).checkPrimary(anyLong(), anyLong());
+        verify(mapper).updatePetDelete(PET, "1");
+        verify(mapper).updatePetDelete(200L, "1");
+        verify(mapper, never()).updatePetDelete(eq(300L), anyString());
+        verify(domainEvents).publishEvent(new PetDeletedEvent(PET));
+        verify(domainEvents).publishEvent(new PetDeletedEvent(200L));
+
+        ArgumentCaptor<BrupLinkSttsHstry> history = ArgumentCaptor.forClass(BrupLinkSttsHstry.class);
+        verify(mapper, times(3)).insertLinkHistory(history.capture());
+        BrupLinkSttsHstry mine = history.getAllValues().stream().filter(h -> Long.valueOf(12L).equals(h.getBrupRelSn()))
+                .findFirst().orElseThrow();
+        assertThat(mine.getMbrSn()).isEqualTo(MBR);
+        assertThat(mine.getLinkChgTypeCd()).isEqualTo("PETC0036");
+        verify(mapper).updateBrupRelUnlink(12L, "1");
+        /** 공동양육자 쪽 해제는 주양육자에게 알리지 않는다. 알림은 삭제된 반려동물 2마리의 공동양육자 몫뿐이다 */
+        ArgumentCaptor<NotificationEvent> event = ArgumentCaptor.forClass(NotificationEvent.class);
+        verify(events, times(2)).publish(event.capture());
+        assertThat(event.getAllValues()).extracting(NotificationEvent::mbrSn).containsOnly(7L);
+    }
+
+    @Test
+    void 파기_중_공동양육_연동이_이미_해제됐으면_이력을_남기지_않는다() {
+        when(mapper.selectLinkedRelsByMember(MBR)).thenReturn(List.of(memberRel(12L, 300L, CO_PARENT)));
+        when(mapper.updateBrupRelUnlink(12L, "1")).thenReturn(0);
+
+        service.purgeMemberPets(MBR);
+
+        verify(mapper, never()).insertLinkHistory(any());
+        verify(events, never()).publish(any(NotificationEvent.class));
+    }
+
+    @Test
+    void 파기할_연동이_없으면_아무것도_하지_않는다() {
+        when(mapper.selectLinkedRelsByMember(MBR)).thenReturn(List.of());
+
+        service.purgeMemberPets(MBR);
+
+        verify(mapper, never()).updatePetDelete(anyLong(), anyString());
+        verify(mapper, never()).updateBrupRelUnlink(anyLong(), anyString());
+    }
+
+    @Test
+    void 파기_중_한_마리가_실패하면_예외를_그대로_던져_전체가_롤백되게_한다() {
+        when(mapper.selectLinkedRelsByMember(MBR)).thenReturn(List.of(memberRel(10L, PET, PRIMARY)));
+        when(mapper.updatePetDelete(PET, "1")).thenReturn(0);
+
+        assertThatThrownBy(() -> service.purgeMemberPets(MBR)).isInstanceOf(CustomException.class);
+    }
+
     @Test
     void 삭제_중_연동이_동시에_해제되면_그_공동양육자의_이력과_알림을_남기지_않는다() {
         when(mapper.updatePetDelete(PET, "1")).thenReturn(1);
