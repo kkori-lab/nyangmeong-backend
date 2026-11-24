@@ -336,6 +336,15 @@
         <if test="rcrtSttsCd != null">
            AND R.RCRT_STTS_CD = #{rcrtSttsCd}
         </if>
+        <if test="mbrSn != null">
+           AND ( P.MBR_SN = #{mbrSn}
+                 OR EXISTS ( SELECT 1
+                               FROM PET_PRTC_MTCH T
+                               JOIN OTO_CHAT_ROOM C
+                                 ON C.OTO_CHAT_ROOM_SN = T.OTO_CHAT_ROOM_SN
+                              WHERE T.PET_PRTC_RCRT_SN = R.PET_PRTC_RCRT_SN
+                                AND C.CTPT_MBR_SN = #{mbrSn} ) )
+        </if>
          ORDER BY P.REG_DT DESC
                 , R.PET_PRTC_RCRT_SN DESC
     </select>

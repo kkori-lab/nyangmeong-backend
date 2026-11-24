@@ -41,9 +41,14 @@ class AdminCareMatchMapperSqlTest {
     }
 
     private String listSql(String rcrtSttsCd) {
+        return listSql(rcrtSttsCd, null);
+    }
+
+    private String listSql(String rcrtSttsCd, Long mbrSn) {
         Map<String, Object> param = new HashMap<>();
         param.put("rcrtSttsCd", rcrtSttsCd);
         param.put("pstSttsCd", "CMUC0003");
+        param.put("mbrSn", mbrSn);
         return sql("CareRecruitmentMapper.selectAdminList", param);
     }
 
@@ -62,6 +67,20 @@ class AdminCareMatchMapperSqlTest {
     @Test
     void 목록_상태_필터는_모집_상태_조건을_붙인다() {
         assertThat(listSql("PCAC0002")).contains("AND R.RCRT_STTS_CD = ?");
+    }
+
+    @Test
+    void 회원_조건이_없으면_회원_조건을_붙이지_않는다() {
+        assertThat(listSql(null)).doesNotContain("P.MBR_SN = ?").doesNotContain("CTPT_MBR_SN");
+    }
+
+    @Test
+    void 회원_조건은_보호자_또는_매칭_상대() {
+        assertThat(listSql("PCAC0002", 7L)).contains("AND R.RCRT_STTS_CD = ?")
+                .contains("AND ( P.MBR_SN = ? OR EXISTS ( SELECT 1 FROM PET_PRTC_MTCH T JOIN OTO_CHAT_ROOM C"
+                        + " ON C.OTO_CHAT_ROOM_SN = T.OTO_CHAT_ROOM_SN"
+                        + " WHERE T.PET_PRTC_RCRT_SN = R.PET_PRTC_RCRT_SN AND C.CTPT_MBR_SN = ? ) )")
+                .endsWith("ORDER BY P.REG_DT DESC , R.PET_PRTC_RCRT_SN DESC");
     }
 
     @Test

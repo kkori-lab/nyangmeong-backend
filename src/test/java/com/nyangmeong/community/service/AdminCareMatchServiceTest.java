@@ -94,7 +94,7 @@ class AdminCareMatchServiceTest {
 
         service.search(cond, new PageQuery(null, null, null));
 
-        verify(careRecruitmentMapper).selectAdminList("PCAC0002", NORMAL);
+        verify(careRecruitmentMapper).selectAdminList("PCAC0002", NORMAL, null);
     }
 
     @Test
@@ -104,7 +104,7 @@ class AdminCareMatchServiceTest {
 
         service.search(cond, new PageQuery(null, null, null));
 
-        verify(careRecruitmentMapper).selectAdminList(null, NORMAL);
+        verify(careRecruitmentMapper).selectAdminList(null, NORMAL, null);
     }
 
     @Test
@@ -113,7 +113,29 @@ class AdminCareMatchServiceTest {
         cond.setRcrtSttsCd("PCAC0012");
 
         assertError(() -> service.search(cond, new PageQuery(null, null, null)), ErrorCode.INVALID_INPUT_VALUE);
-        verify(careRecruitmentMapper, never()).selectAdminList(any(), any());
+        verify(careRecruitmentMapper, never()).selectAdminList(any(), any(), any());
+    }
+
+    @Test
+    void 회원_조건을_상태_조건과_함께_넘긴다() {
+        AdminCareMatchSearchCond cond = new AdminCareMatchSearchCond();
+        cond.setRcrtSttsCd("PCAC0002");
+        cond.setMbrSn(7L);
+
+        service.search(cond, new PageQuery(null, null, null));
+
+        verify(careRecruitmentMapper).selectAdminList("PCAC0002", NORMAL, 7L);
+    }
+
+    @Test
+    void 회원_번호가_0_이하면_400() {
+        for (long mbrSn : new long[] { 0L, -1L }) {
+            AdminCareMatchSearchCond cond = new AdminCareMatchSearchCond();
+            cond.setMbrSn(mbrSn);
+
+            assertError(() -> service.search(cond, new PageQuery(null, null, null)), ErrorCode.INVALID_INPUT_VALUE);
+        }
+        verify(careRecruitmentMapper, never()).selectAdminList(any(), any(), any());
     }
 
     @Test

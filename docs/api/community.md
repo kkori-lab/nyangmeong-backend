@@ -61,7 +61,7 @@
 | POST | /admin/posts/{pstSn}/restore | 블라인드 복구(상태 이력, 감사 로그). 신고 누적 자동 블라인드 포함. 블라인드 글이 아니면 409 ALREADY_PROCESSED, 없는 글 404 POST_NOT_FOUND | ADM-020-05 | LJS | AdminPostStatusChangeRequest | - |
 | GET | /admin/lost-reports | 관리자 실종제보 목록. 정상 게시글만(블라인드·삭제 글은 `/admin/posts`), 최신순 20건씩. 만료 기준 일시가 지난 실종 글은 만료(CMUC0008)로 내리고 필터도 같은 기준. 찾았어요 행은 `expryCrtrDt` null. 강제 만료·기간 조정 API는 없다(ADM-021-03, 결정 12). 모르는 상태 코드 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-021-01·03 | LJS | AdminLostReportSearchCond | PageResponse<AdminLostReportSummary> |
 | GET | /admin/lost-reports/{lostTpofSn} | 관리자 실종제보 상세. 실종·만료는 본문·사진·만료 기준일, 찾았어요는 제목·상태·처리 시각만(결정 13). 조회수는 올리지 않는다. 없거나 정상 글이 아니면 404 LOST_REPORT_NOT_FOUND | ADM-021-02 | LJS | - | AdminLostReportResponse |
-| GET | /admin/care-matches | 관리자 펫돌봄 모집글 목록. 정상 게시글만(블라인드·삭제 글은 `/admin/posts`), 최신순 20건씩. 모르는 상태 코드 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-022-01 | LJS | AdminCareMatchSearchCond | PageResponse<AdminCareMatchSummary> |
+| GET | /admin/care-matches | 관리자 펫돌봄 모집글 목록. 정상 게시글만(블라인드·삭제 글은 `/admin/posts`), 최신순 20건씩. `?rcrtSttsCd=&mbrSn=`, 조건은 모두 선택이고 함께 걸린다. `mbrSn`은 그 회원이 보호자(모집글 작성자)이거나 매칭 상대인 모집글만(1:1 분쟁 문의 작성자의 매칭 찾기, 행 `mbrSn`이 같으면 보호자·다르면 돌보미). 채팅만 하고 매칭이 없으면 넣지 않고, 없는 회원·매칭 없는 회원은 빈 목록. 모르는 상태 코드·0 이하 회원 번호 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-022-01·ADM-042-08 | LJS | AdminCareMatchSearchCond | PageResponse<AdminCareMatchSummary> |
 | GET | /admin/care-matches/{petPrtcRcrtSn} | 관리자 펫돌봄 매칭 상세(분쟁 대응, 1:1 문의의 `?rcrtSn=`도 이 번호). 모집글 정보 + 매칭 목록(최신순, 매칭마다 합의 조건 버전·상태 이력·완료 요청 회차와 사진·보호자 확인 결과). 블라인드 글도 열고, 없거나 삭제 글이면 404 CARE_RECRUITMENT_NOT_FOUND. 채팅 메시지·채팅방 번호는 주지 않는다(ADM-022-03, 결정 14·26) | ADM-022-02·03 | LJS | - | AdminCareMatchResponse |
 | GET | /admin/care-matches/{petPrtcRcrtSn}/images/{atchFileSn} | 관리자 펫돌봄 완료 사진 이미지. 완료 사진은 도메인 API 전용 파일이라 공통 주소(`/files/{atchFileSn}`)로 열리지 않으므로 이 경로로 연다(상세 응답 `cmptnDmnds[].imgs[].atchFileSn`을 쓴다). 관리자만(일반 회원 403, 비로그인 401). 이 모집글 매칭의 완료 요청 회차 사진이 아니면 파일이 있어도 404 `FILE_NOT_FOUND`, 없거나 삭제된 모집글은 404 `CARE_RECRUITMENT_NOT_FOUND`. 응답은 이미지 바이트(`Cache-Control: no-cache`)이고 `ApiResponse`로 감싸지 않는다(문의 첨부 이미지와 같은 방식) | ADM-022-02 | KSJ | - | (이미지) |
 | GET | /admin/community/exposure/health-tips | 관리자 오늘의 건강팁 현황. 노출 자리 순서 최대 3건. 지정 글(정상 펫정보, 자리 1~3)은 그 자리에, 빈 자리는 자동 선정 글(지정 안 된 정상 펫정보 글 중 제목·본문에 건강 키워드가 든 글, 좋아요순·최신순)로 앞에서부터 채운다. 건강 키워드는 `KWRD_DICT` 뉴스 분류(AIMC0039)의 건강(CMUC0018) 행(SCR-ADM-050에서 편집). 일반 회원 403 ADMIN_ONLY | ADM-023-01·03 | LJS | - | List<AdminHealthTipResponse> |
@@ -327,6 +327,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | 필드 | 타입 | 필수 | 설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | rcrtSttsCd | String | N | 모집 상태 코드(PCAC0001 모집중·PCAC0002 매칭완료·PCAC0003 거래완료). 없으면 전체 | PET_PRTC_RCRT.RCRT_STTS_CD, ADM-022-01 |
+| mbrSn | Long | N | 회원 번호(1 이상). 그 회원이 보호자(모집글 작성자)이거나 매칭 상대인 모집글만. 없으면 전체 | PST.MBR_SN·OTO_CHAT_ROOM.CTPT_MBR_SN(PET_PRTC_MTCH), ADM-042-08 |
 
 ### AdminCareMatchSummary
 쓰는 API: GET /admin/care-matches
