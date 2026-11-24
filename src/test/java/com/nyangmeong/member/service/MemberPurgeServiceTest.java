@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -15,11 +16,13 @@ import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 
 import com.nyangmeong.global.security.crypto.FieldCryptoService;
 import com.nyangmeong.global.security.domain.MemberStatus;
 import com.nyangmeong.global.setting.SystemSetting;
 import com.nyangmeong.global.setting.SystemSettingService;
+import com.nyangmeong.member.domain.MemberPurgedEvent;
 import com.nyangmeong.member.mapper.MemberMapper;
 
 /**
@@ -32,6 +35,7 @@ class MemberPurgeServiceTest {
 
     private MemberMapper memberMapper;
     private FieldCryptoService fieldCryptoService;
+    private ApplicationEventPublisher eventPublisher;
     private MemberPurgeService service;
 
     @BeforeEach
@@ -43,7 +47,8 @@ class MemberPurgeServiceTest {
         when(systemSettingService.get()).thenReturn(setting);
         when(setting.getWhdwlMbrKpngDayCnt()).thenReturn(30L);
         when(fieldCryptoService.encrypt(any())).thenReturn("암호문");
-        service = new MemberPurgeService(memberMapper, systemSettingService, fieldCryptoService);
+        eventPublisher = mock(ApplicationEventPublisher.class);
+        service = new MemberPurgeService(memberMapper, systemSettingService, fieldCryptoService, eventPublisher);
     }
 
     @Test
@@ -67,6 +72,16 @@ class MemberPurgeServiceTest {
     }
 
     @Test
+    void 파기에_성공하면_파기_이벤트를_한_번_발행한다() {
+        when(memberMapper.updatePurge(anyLong(), anyString(), anyInt(), anyString(), anyString(), anyString(),
+                anyString())).thenReturn(1);
+
+        service.purge(MBR_SN);
+
+        verify(eventPublisher, times(1)).publishEvent(new MemberPurgedEvent(MBR_SN));
+    }
+
+    @Test
     void 복구돼_바뀐_행이_없으면_건너뛴다() {
         when(memberMapper.updatePurge(anyLong(), anyString(), anyInt(), anyString(), anyString(), anyString(),
                 anyString())).thenReturn(0);
@@ -74,5 +89,6 @@ class MemberPurgeServiceTest {
         assertThat(service.purge(MBR_SN)).isFalse();
 
         verify(memberMapper, never()).deleteSnsLinks(eq(MBR_SN));
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 }
