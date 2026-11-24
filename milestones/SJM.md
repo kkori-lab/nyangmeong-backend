@@ -254,3 +254,8 @@
 
 - 마이페이지: 명세 116 = 마일스톤 70 + 제외 46
 - 연결 남음: FN-MYP-020-02 (프론트 연결 SCR-MYP-020 포인트 내역 월 선택 창 `src/features/point/history/PointHistory.jsx`, 프론트 저장소에서 /start)
+
+## SCR-MYP-002 반려동물 양육자 목록의 파기 회원 표시 — 끝
+
+- 기능: 명세 기능 ID 추가 없음. FN-MYP-002-04(프로필 상세의 양육자 목록)와 걸친다. KSJ 전달
+- 완료 조건: `GET /api/pets/{petSn}`의 `caregivers[].mbrNcnm`이 파기된 회원이면 「탈퇴한 회원」, 아니면 원래 닉네임이다. 관리자 쿼리(PixelCharacterMapper·ReceiptMapper·PointMapper)는 건드리지 않는다
