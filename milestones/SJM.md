@@ -265,3 +265,8 @@
 - 기능: 명세 기능 ID 추가 없음. 걸치는 기능 FN-MYP-002-07·08 (삭제·연동 해제 재사용), 요구사항 09-21 "주양육자 탈퇴 시 보류"를 팀 회의 결정으로 대신한다
 - 완료 조건: 파기 배치가 부를 `PetService` 공개 메서드가 회원 번호 하나로 그 회원이 주양육자인 반려동물을 `deletePet`과 같은 처리로 지우고, 공동양육자인 연동은 그 연동만 해제하며 이력을 남긴다
 - 연결 남음: 파기 배치 연결(YAY): MemberPurgeService.purge가 같은 트랜잭션에서 MemberPurgedEvent(mbrSn)을 발행하고 pet이 받아 purgeMemberPets를 호출하는 방식 제안. 이벤트가 생기면 리스너는 SJM이 붙임
+
+## SCR-MYP-002 반려동물 삭제 · 파기 회원 반려동물 일괄 삭제 이벤트 연결 — 끝
+
+- 기능: 명세 기능 ID 추가 없음. 걸치는 기능 FN-MYP-002-07·08, FN-ACC-020-14(YAY가 발행). 앞 마일스톤의 "연결 남음"(파기 배치 연결)을 끝낸다
+- 완료 조건: `MemberPurgedEvent(mbrSn)`가 발행되면 pet이 같은 트랜잭션에서 `PetService.purgeMemberPets(mbrSn)`을 부르고, 리스너 예외는 삼키지 않아 회원 파기까지 롤백된다
