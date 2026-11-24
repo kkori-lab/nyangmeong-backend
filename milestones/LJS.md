@@ -933,3 +933,10 @@
 - 완료 조건: `GET /api/admin/care-matches?mbrSn=`이 그 회원이 보호자(모집글 작성자)이거나 매칭 상대(채팅방 `CTPT_MBR_SN`)인 모집글만 준다. `mbrSn`이 없으면 지금과 같다
 - 완료 조건 결과: 검증 `통과`(2026-11-24, 1회차), 사람 확인 2026-11-24. 정한 것: 정상 글만(블라인드 글은 넣지 않음), 응답에 역할 칸 없음(행 `mbrSn`으로 보호자·돌보미 구분), 채팅만 한 회원은 넣지 않음, 없는 회원은 빈 목록, 0 이하 400. DB 변경 없음
 - 연결 남음: FN-ADM-042-08 (프론트 연결 관리자 1:1 문의 상세 `features/adminInquiry` 「분쟁」 문의 작성자 옆 「펫돌봄 매칭 보기」 → `features/adminCommunity` 펫돌봄 목록 `?mbrSn=`·보호자/돌보미 표시, 프론트 저장소에서 /start)
+
+## SCR-AIM-011 AI 대화창 (대화 요약 저장 내부 API) — 끝
+- 기능: 명세 기능 ID 없음. ai 세션 요청(2026-11-24, nyangmeong-ai-1a): 긴 대화의 앞부분 요약을 방마다 하나 저장하고 대화 상세에 실어 준다. 정본 초안 ai `docs/api/internal.md` "Python → Java"의 GET·PUT …/summary 행
+- 함께 만드는 것: 테이블 `AI_CNVRS_SMRY`(v0.15 변경 절), `AiConversationService`·`FieldCryptoService` 재사용
+- 기다리는 것: 없음(ai 저장소 Python 구현은 끝, 가짜 Java로 테스트 통과)
+- 완료 조건: `PUT /internal/ai/conversations/{aiCnvrsRoomSn}/summary`가 행이 없으면 넣고, 새 경계선이 더 클 때만 요약·경계선을 한 SQL 문으로 바꾸고 200. 남의·없는 방 404 `NOT_FOUND`. `GET …/{aiCnvrsRoomSn}`에 `smryCn`·`smryEndMsgSeq`(없으면 null). 방 삭제·회원 파기 때 요약 행도 지워짐
+- 연결 남음: 기능 ID 없음 (ai 저장소가 실제 Java PUT …/summary·GET 상세 요약 필드를 부르는 확인과 ai `docs/api/internal.md` 초안 행 확정, ai 세션)

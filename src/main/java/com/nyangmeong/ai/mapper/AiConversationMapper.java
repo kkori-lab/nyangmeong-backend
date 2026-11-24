@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 
 import com.nyangmeong.ai.domain.AiConversationMessage;
 import com.nyangmeong.ai.domain.AiConversationRoom;
+import com.nyangmeong.ai.domain.AiConversationSmry;
 import com.nyangmeong.ai.dto.AdminDailyAiChatSummary;
 
 /**
@@ -45,6 +46,26 @@ public interface AiConversationMapper {
      * 다음 메시지 순서 조회
      */
     int selectNextMsgSeq(Long aiCnvrsRoomSn);
+
+    /**
+     * 대화방의 마지막 메시지 순서 조회 (메시지 없으면 0)
+     */
+    int selectLastMsgSeq(Long aiCnvrsRoomSn);
+
+    /**
+     * 대화방 요약 조회
+     */
+    AiConversationSmry selectSmry(Long aiCnvrsRoomSn);
+
+    /**
+     * 대화방 요약이 없을 때만 등록 (있으면 그대로)
+     */
+    int insertSmryIfAbsent(AiConversationSmry smry);
+
+    /**
+     * 새 경계선이 저장된 경계선보다 클 때만 요약 수정
+     */
+    int updateSmryIfAfter(AiConversationSmry smry);
 
     /**
      * 대화방 등록
