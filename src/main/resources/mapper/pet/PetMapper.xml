@@ -232,7 +232,7 @@
         /* 반려동물 양육자 목록 조회 (주양육자 첫 줄, 공동양육자는 연동순) */
         SELECT R.BRUP_REL_SN
              , R.MBR_SN
-             , M.MBR_NCNM
+             , <include refid="com.nyangmeong.global.mapper.MemberDisplay.ncnm"><property name="alias" value="M" /></include> AS MBR_NCNM
              , R.BRUP_ROLE_CD
              , DATE(COALESCE(H.LINK_DT, R.REG_DT)) AS LINK_YMD
           FROM BRUP_REL R
