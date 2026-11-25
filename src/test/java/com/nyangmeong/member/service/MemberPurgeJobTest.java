@@ -3,7 +3,6 @@ package com.nyangmeong.member.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -52,12 +51,25 @@ class MemberPurgeJobTest {
     }
 
     @Test
-    void 한_건이_실패하면_예외로_끝낸다() {
-        when(memberPurgeService.searchTargets()).thenReturn(List.of(1L, 2L));
+    void 한_회원이_실패해도_다음_회원을_파기하고_끝에_실패로_남긴다() {
+        when(memberPurgeService.searchTargets()).thenReturn(List.of(1L, 2L, 3L));
         when(memberPurgeService.purge(1L)).thenThrow(new IllegalStateException("실패"));
+        when(memberPurgeService.purge(2L)).thenReturn(true);
+        when(memberPurgeService.purge(3L)).thenThrow(new IllegalStateException("실패"));
 
-        assertThatThrownBy(job::execute).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(job::execute).isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("성공 1건").hasMessageContaining("실패 2건")
+                .hasMessageContaining("1, 3");
 
-        verify(memberPurgeService, never()).purge(2L);
+        verify(memberPurgeService).purge(2L);
+    }
+
+    @Test
+    void 실패한_회원이_많으면_앞_20개만_적고_나머지는_건수로_적는다() {
+        List<Long> targets = java.util.stream.LongStream.rangeClosed(1, 25).boxed().toList();
+        when(memberPurgeService.searchTargets()).thenReturn(targets);
+        targets.forEach(mbrSn -> when(memberPurgeService.purge(mbrSn)).thenThrow(new IllegalStateException("실패")));
+
+        assertThatThrownBy(job::execute).hasMessageContaining("실패 25건").hasMessageContaining("외 5건");
     }
 }

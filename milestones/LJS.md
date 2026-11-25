@@ -268,7 +268,7 @@
 - 완료 조건: 답변하면 작성자에게 알림이 가고 상태가 답변 완료가 된다. 답변 삭제 API는 없다
 - 완료 조건 결과: 검증 `확인 못 함 있음`(2026-11-03, 1회차, 연결 남음만), 사람 확인 2026-11-03. `/api/admin/inquiries` 6개, DB 변경 없음. 추가-1 `MapperXmlRuleTest` 예외 1줄
 - 연결 끝(2026-11-24 프론트·ai develop에서 확인): FN-ADM-042-07 무료 재생성 (FN-MYP-010-23 계약 대기. 생성 흐름이 원본 사진을 Java에 남기지 않아 `finishErrorCheck(regenerate=true)`가 404 FILE_NOT_FOUND로 롤백된다. 복원만 실제 동작, LJS·ai)
-- 연결 남음: FN-ADM-042-08 (작성자 매칭 목록 API는 SCR-ADM-022, KSJ 협의. 프론트는 SCR-ADM-022로 넘김)
+- 연결 끝(2026-11-24): FN-ADM-042-08 백엔드 작성자 매칭 목록 `GET /api/admin/care-matches?mbrSn=` (아래 `SCR-ADM-042 1:1 문의 · 펫돌봄 분쟁 작성자 매칭 목록` 절, 프론트 연결은 그 절에 남음)
 
 ## SCR-ADM-070 아이템 — 끝
 - 기능: FN-ADM-070-01 아이템 목록 조회, FN-ADM-070-02 아이템 등록, FN-ADM-070-03 아이템 수정·판매 중지, FN-ADM-070-04 아이템 정렬
@@ -282,7 +282,7 @@
 
 ## SCR-ADM-090 알림 템플릿 — 끝
 - 기능: FN-ADM-090-01 템플릿 목록 조회, FN-ADM-090-02 템플릿 등록·수정, FN-ADM-090-03 기본 문구 사용
-- 기다리는 것: pet 연동 양육자 조회 (SJM). 그 전까지 `scheduler/CaregiverFake`가 빈 목록이라 케어 일정 알림이 실제로 나가지 않아 FN-ADM-090-03을 실제 앱에서 확인할 수 없다(테스트로만 확인)
+- 기다리는 것: 없음
 - 완료 조건: 수정한 템플릿이 다음 발송부터 쓰이고, 템플릿이 없으면 기본 문구로 보낸다
 - 결정: 템플릿 등록은 발송 코드가 템플릿을 읽는 케어 일정(AIMC0008)만, 다른 유형은 400 `NOTIFICATION_TEMPLATE_NOT_SUPPORTED`(기본 문구). 치환 변수는 `NotificationTemplateType`에 한 곳, 모르는 `{{…}}`는 400. `useYn`은 true/false(dto.md)
 - 완료 조건 결과: 검증 `확인 못 함 있음`(2026-11-03, 1회차 실패(FN-ADM-090-03 실제 확인 불가) 뒤 루프 버리고 기다리는 것 기록, 재검증 1회차, 연결 남음만), 사람 확인 2026-11-03
@@ -452,7 +452,6 @@
 - 완료 조건: `GET /api/admin/care-matches?page=&size=20&rcrtSttsCd=`(최신순, `{ content, page, size, totalElements, totalPages, hasNext }`, content 행 `{ petPrtcRcrtSn, pstSn, pstTtl, rcrtSttsCd, mbrSn, mbrNcnm, cstAmt, cstUnitCd, regDt }`, 상태는 PCAC0001 모집중·PCAC0002 매칭완료·PCAC0003 거래완료, 비용 단위 PCAC0004·PCAC0005), `GET /api/admin/care-matches/{petPrtcRcrtSn}`(목록 행 + `mtchs[]`, 매칭마다 `{ petPrtcMtchSn, ctptMbrSn, ctptNcnm, mtchDlngSttsCd, agreVerNo, agreDt, agreCn, sttsHstry[{ bfrSttsCd, aftrSttsCd, chgRsn, regDt }], cmplReqDt, cmplImgs[{ atchFileSn }], ownerCfmtnRsltCd, ownerCfmtnDt }`, 매칭이 없으면 빈 배열, 채팅 메시지 없음(결정 14·26))가 프론트 가짜와 같은 모양으로 동작한다. 가정 이름(`ctptNcnm`·`agreVerNo`·`agreDt`·`agreCn`·`cmplReqDt`·`cmplImgs`·`ownerCfmtnRsltCd`·`ownerCfmtnDt`)과 매칭 거래 상태 코드(가짜 `REQUESTED`·`MATCHED`·`DONE_REQ`·`COMPLETE`·`CANCELED`)·보호자 확인 결과 코드(가짜 `CONFIRMED`·`REJECTED`)를 정해 프론트에 알린다
 - 완료 조건 결과: 검증 `통과`(2026-11-03, 2회차는 추가-1 포함 재검증), 사람 확인 2026-11-03. 정한 것: 조건 버전·완료 요청은 목록 `cndVers`·`cmptnDmnds`(가짜의 한 건짜리 `agreVerNo·agreDt·agreCn`·`cmplReqDt·cmplImgs·ownerCfmtnRsltCd·ownerCfmtnDt`와 다름), 상대방 `ctptMbrSn`·`ctptNcnm`, 매칭 거래 상태 PCAG05(PCAC0012~0018), 보호자 확인 결과 PCAG06(PCAC0019·0020). 상세는 블라인드 글도 연다. 같이 처리: `save-check` 저장완료 409(`milestones/JAJ.md` SCR-HLT-002 절, 상태는 JAJ가 바꾼다). 추가-1: 시드 RGN 전북 시군구 13건·행정동 243건
 - 연결 끝(2026-11-24 프론트·ai develop에서 확인): FN-ADM-022-01·02 (프론트 연결 `features/adminCommunity/api.js` 펫돌봄 목록·매칭 상세 모달, 프론트 저장소에서 /start)
-- 연결 남음: FN-ADM-022-02 완료 사진 보기 (완료 사진 업로드가 아직 없어 저장 경로 미정, `/api/files/public/{atchFileSn}`은 `public/` 경로만 열어 지금 시드 사진은 404, KSJ와 정한다)
 
 ## SCR-ADM-023 노출 콘텐츠 · 프론트 연결 API 계약 — 끝
 - 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-023-01·02·03·04·05·06
@@ -927,3 +926,29 @@
 - 기다리는 것: 없음
 - 완료 조건: 캐릭터 작업 시간 초과 조회, 자동 블라인드·자동 삭제 판별, 탈퇴 회원 보관 기간 조건이 로컬 MySQL 임시 스키마에서 경계 행을 기대대로 넣고 뺀다. 다시 돌릴 수 있는 SQL과 결과는 `docs/sql-check/20261120-sql-boundary.md`에 남긴다. Java 코드 변경 없음
 - 완료 조건 결과: 검증 `통과`(2026-11-20, 1회차. 앞선 기획은 결과를 기준 파일에만 남기게 해 검증 1회차 실패, 루프를 버리고 다시 기획), 사람 확인 2026-11-20(실행은 AI, 사람이 결과 확인). 세 조건 모두 기대대로, 틀린 동작 없음. 정한 것: DB에 붙는 자동 테스트 대신 다시 돌릴 SQL을 `docs/sql-check/`에 남긴다, 탈퇴 보관 일수는 서비스가 넘기는 `SYS_STNG` 기본 30(서비스 테스트의 45 아님), 같은 시각 경계는 연산자로 기록(자동 삭제 댓글 같은 초만 행으로 확인)
+
+## SCR-ADM-042 1:1 문의 · 펫돌봄 분쟁 작성자 매칭 목록 — 끝
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-042-08 펫돌봄 분쟁 연결·FN-ADM-022-01 펫돌봄 모집글 목록 (위 `## SCR-ADM-042 1:1 문의 — 끝` 절의 「연결 남음: FN-ADM-042-08」을 푼다)
+- 기다리는 것: 없음
+- 완료 조건: `GET /api/admin/care-matches?mbrSn=`이 그 회원이 보호자(모집글 작성자)이거나 매칭 상대(채팅방 `CTPT_MBR_SN`)인 모집글만 준다. `mbrSn`이 없으면 지금과 같다
+- 완료 조건 결과: 검증 `통과`(2026-11-24, 1회차), 사람 확인 2026-11-24. 정한 것: 정상 글만(블라인드 글은 넣지 않음), 응답에 역할 칸 없음(행 `mbrSn`으로 보호자·돌보미 구분), 채팅만 한 회원은 넣지 않음, 없는 회원은 빈 목록, 0 이하 400. DB 변경 없음
+- 연결 남음: FN-ADM-042-08 (프론트 연결 관리자 1:1 문의 상세 `features/adminInquiry` 「분쟁」 문의 작성자 옆 「펫돌봄 매칭 보기」 → `features/adminCommunity` 펫돌봄 목록 `?mbrSn=`·보호자/돌보미 표시, 프론트 저장소에서 /start)
+
+## SCR-AIM-011 AI 대화창 (대화 요약 저장 내부 API) — 끝
+- 기능: 명세 기능 ID 없음. ai 세션 요청(2026-11-24, nyangmeong-ai-1a): 긴 대화의 앞부분 요약을 방마다 하나 저장하고 대화 상세에 실어 준다. 정본 초안 ai `docs/api/internal.md` "Python → Java"의 GET·PUT …/summary 행
+- 함께 만드는 것: 테이블 `AI_CNVRS_SMRY`(v0.15 변경 절), `AiConversationService`·`FieldCryptoService` 재사용
+- 기다리는 것: 없음(ai 저장소 Python 구현은 끝, 가짜 Java로 테스트 통과)
+- 완료 조건: `PUT /internal/ai/conversations/{aiCnvrsRoomSn}/summary`가 행이 없으면 넣고, 새 경계선이 더 클 때만 요약·경계선을 한 SQL 문으로 바꾸고 200. 남의·없는 방 404 `NOT_FOUND`. `GET …/{aiCnvrsRoomSn}`에 `smryCn`·`smryEndMsgSeq`(없으면 null). 방 삭제·회원 파기 때 요약 행도 지워짐
+- 연결 남음: 기능 ID 없음 (ai 저장소가 실제 Java PUT …/summary·GET 상세 요약 필드를 부르는 확인과 ai `docs/api/internal.md` 초안 행 확정, ai 세션)
+
+## SCR-AIM-012 AI 일정 생성 확인 · 대화창 수정·삭제 도구 — 끝
+- 기능: 명세 기능 ID 추가 없음(대조 수 그대로). ai 세션 요청(2026-11-25, ai-ce): ai tool-catalog.md 2-3절 "삭제는 navigate만"을 바꿔 회원 데이터 수정·삭제를 대화창 확인 카드로
+- 할 것: `@AiTool` 17개(모두 CARD, domain health·expense·place). 수정 6: `draft_daily_health_record_update`·`draft_checkup_update`·`draft_prescription_update`·`draft_etc_inspection_update`·`draft_inspection_value_update`(refRange 중첩 skip 허용)·`draft_observation_cycle_update`(multipart, clearFields skip 허용). 삭제 11: `delete_schedule`·`delete_care_item`·`cancel_care_completion`·`delete_daily_health_record`·`delete_checkup`·`delete_prescription`·`delete_etc_inspection`·`delete_observation_cycle`·`delete_repeat_prevention`·`delete_expense`·`delete_place_bookmark`. 이름은 ai `data/tool_prompts.yaml` 키와 짝이라 그대로
+- 함께 할 것: 일지·검진·처방·기타검사·검사 수치·관찰·반복 예방·지출·즐겨찾기 서비스 검사 400에 칸 이름 담기(ai tool-catalog.md 3-3절, PR #175 `CareScheduleService` 방식)
+- 붙이지 않는 것: 반려동물 삭제, 지출 전체 삭제, 공동양육 해제·초대 삭제, 회원정보·비밀번호·닉네임, 검사 수치 묶음 삭제, 검진 첨부, 커뮤니티 계열(다음 차수), 관리자·내부
+- 기다리는 것: 없음(ai 쪽은 스냅샷·가짜 도구 목록으로 구현 중)
+- 완료 조건: `GET /internal/ai/tools`에 17개가 CARD로 실리고, 경로 칸만 있는 삭제 도구도 정상으로 실린다. 위 서비스 검사 400에 칸 이름이 실린다
+- 완료 조건 결과: 검증 `통과`(2026-11-25, 1회차), 사람 확인 2026-11-25(Postman: `GET /internal/ai/tools` 71개·새 17개 CARD, 8080 재기동 뒤). 정한 것: 칸 제외 어노테이션 `@AiExclude`(지원 안 하는 칸이 있으면 도구 전체가 빠지던 것을 그 칸만 빼게, `refRange`·`clearFields`), 수정 DTO 코드 칸 `@AiCode` 4개, 400 칸 이름은 수정 경로만(삭제 경로는 서비스 400 없음, 처방 일괄 저장 행은 그대로). 기존 도구 목록 테스트 5개 기대값 변경(기획 승인)
+- 추가: 없음
+- 연결 남음: 대화창 수정·삭제 카드 (ai 세션 ai-ce에 PR 번호·`@AiExclude`·칸 이름 범위 알림, `data/tools.snapshot.json` 갱신은 ai 세션)
+- 연결 남음: 대화창 수정·삭제 카드 (프론트 연결 대화창 범용 확인 카드가 본문 없는 DELETE call을 실행하는지, 프론트 저장소에서 /start)

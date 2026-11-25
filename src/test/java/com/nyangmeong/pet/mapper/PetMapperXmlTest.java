@@ -83,4 +83,30 @@ class PetMapperXmlTest {
                 .contains("MDFCN_DT = NOW()")
                 .contains("WHERE BRUP_REL_SN = #{brupRelSn} AND USE_YN = 'Y'");
     }
+
+    @Test
+    void 양육자_목록은_파기_회원_닉네임을_공통_조각으로_내보낸다() throws Exception {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+        Element root = factory.newDocumentBuilder().parse(Path.of("src/main/resources/mapper/pet/PetMapper.xml").toFile())
+                .getDocumentElement();
+        NodeList selects = root.getElementsByTagName("select");
+        Element select = null;
+        for (int i = 0; i < selects.getLength(); i++) {
+            if ("selectCaregivers".equals(((Element) selects.item(i)).getAttribute("id"))) {
+                select = (Element) selects.item(i);
+            }
+        }
+        assertThat(select).isNotNull();
+
+        NodeList includes = select.getElementsByTagName("include");
+        assertThat(includes.getLength()).isEqualTo(1);
+        Element include = (Element) includes.item(0);
+        assertThat(include.getAttribute("refid")).isEqualTo("com.nyangmeong.global.mapper.MemberDisplay.ncnm");
+        Element property = (Element) include.getElementsByTagName("property").item(0);
+        assertThat(property.getAttribute("name")).isEqualTo("alias");
+        assertThat(property.getAttribute("value")).isEqualTo("M");
+
+        assertThat(sql("select", "selectCaregivers")).doesNotContain("M.MBR_NCNM").contains("AS MBR_NCNM");
+    }
 }

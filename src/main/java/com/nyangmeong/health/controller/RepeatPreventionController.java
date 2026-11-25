@@ -56,6 +56,7 @@ public class RepeatPreventionController {
     }
 
     @Operation(summary = "반복 예방 해지")
+    @AiTool(name = "delete_repeat_prevention", domain = "health", kind = AiToolKind.CARD)
     @DeleteMapping("/{reptPrvntMngSn}")
     public ResponseEntity<ApiResponse<Void>> delete(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long reptPrvntMngSn) {

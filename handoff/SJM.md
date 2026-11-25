@@ -1,9 +1,9 @@
 # SJM 핸드오프
 
 ## 지금 하는 것
-SCR-MYP-020 포인트 관리/케어미션 · 포인트 내역 월 목록 — 끝남 (승인 2026-11-23 11:51, 시작 2026-11-23 11:48). 검증 1회차 판정 `통과`, 사람 확인 완료
-- FN-MYP-020-02: `GET /api/point-ledgers/months`가 로그인 회원의 내역이 있는 연월만 `[{ "yearMonth": "yyyy-MM" }]`로 최신순·미래 달 제외로 돌려준다. `PointLedgerController.searchLedgerMonths` → `PointService.searchLedgerMonths` → `PointMapper.selectLedgerMonths`. 월 조회와 같은 회원·날짜(`REG_DT`)·`COM_CD` 조인 기준. `@AiTool`은 달지 않음. `docs/api/pet.md`에 행과 `PointLedgerMonthSummary` 절 반영
-- 공용 DB 쓰기 없음, 새 의존성 없음
+SCR-MYP-002 파기 회원 반려동물 일괄 삭제 이벤트 연결 — 끝남 (승인 2026-11-24 15:16, 시작 2026-11-24 15:30). 검증 1회차 판정 `통과`, 사람 확인 완료
+- `pet/service/MemberPurgedEventListener`(동기 `@EventListener`)가 `MemberPurgedEvent`를 받아 `PetService.purgeMemberPets`를 부른다. 예외를 삼키지 않아 회원 파기까지 롤백된다. 테스트 `MemberPurgedEventListenerTest` 3건. 새 의존성 없음
+- 확인 못 함(실제 파기): 보관 기간이 지난 회원이 공용 DB에 없어 `MemberPurgeJob` 실제 실행으로는 못 봄. 테스트로 판정
 
 ## 다음에 할 것
 - 관리자 케어미션 수정(FN-ADM-071-02): `cmpnPnt`는 출제 배점에 안 쓰이게 된다. 수정 화면·API에서 뺄지 정한다. 관리자 화면(CareMissionTable)에 아직 표시·수정됨, LJS 몫
@@ -17,3 +17,4 @@ SCR-MYP-020 포인트 관리/케어미션 · 포인트 내역 월 목록 — 끝
 - 화면 확인 필요(FN-MYP-002-08): 알림함 COM-004에 공동양육 연동 해제 알림(CO_PARENTING, 이동 경로 `/mypage/pets`)이 보이는지. 백엔드는 `PetService.java:273`에서 끝
 - 화면 확인 필요(FN-MYP-030-08): 알림 목록 COM-004에 가계부 한도 알림이 보이는지. 백엔드는 `ExpenseService.java:313·316` 발행으로 끝
 - 배포 후 케어미션 출제·정산 배치가 느리면 개선: 지금은 한 행씩 INSERT·UPDATE하고 전체가 한 트랜잭션이다(로컬 시드 약 960마리로 30분, 2026-10-27 확인). 여러 행을 한 번에 넣고 묶음마다 커밋하도록 `/start`로 기획. 배치는 prod에서만 켜지므로 그 전에는 하지 않는다
+- 확인 못 함(화면): 공용 DB에 파기된 회원이 양육자인 반려동물이 없어 `GET /api/pets/{petSn}`의 「탈퇴한 회원」 표시를 실제 응답으로 보지 못함. 테스트와 커뮤니티의 같은 조각으로 판정

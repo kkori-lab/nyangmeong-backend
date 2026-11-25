@@ -1,7 +1,7 @@
 -- =====================================================================
 -- 냥멍케어 기준 데이터 v0.15 (2026-11-20)  |  공통코드 + 케어미션 마스터
 -- 대상 DDL : 20261120_create_tables_v0.15.sql  (테이블 COM_CD, CARE_MSN, AI_ROUT_MPNG, KWRD_DICT)
--- 범위     : [1] 공통코드 그룹 79개 전체 (347개 코드)  [2] 케어미션 마스터 21건  [3] AI 라우팅 매핑 45건  [4] 키워드 사전 94건
+-- 범위     : [1] 공통코드 그룹 79개 전체 (348개 코드)  [2] 케어미션 마스터 21건  [3] AI 라우팅 매핑 45건  [4] 키워드 사전 94건
 -- 원천     : 기준 데이터 v0.14(db/archive/v0.14/) 본문(v0.14 변경 절의 기준 데이터 항목이 모두 들어 있다) 위에 아래 "v0.14 → v0.15 변경"을 더한 것
 --            새 코드는 기존 DB와 COM_CD_SN이 같도록 공용 DB에 실행한 순서대로 파일 끝에 둔다
 -- 채번 규칙: 그룹 = 도메인3자 + G + 2자리(ERD 그대로) / 코드 = 도메인3자 + C + 4자리
@@ -14,6 +14,9 @@
 -- =====================================================================
 -- v0.14 → v0.15 변경 (기존 DB에 실행할 SQL. 공용 DB에는 이 절의 SQL만 실행한다, docs/convention/shared-files.md)
 -- =====================================================================
+-- v0.15 (1) 연동변경유형 회원 파기 해제 코드 (2026-11-24, SJM, 근거: 팀 회의 결정 "탈퇴 회원 파기 시 반려동물 일괄 삭제"로 요구사항 09-21 "주양육자 탈퇴 시 보류" 대체, SCR-MYP-002). 공동양육자인 회원이 파기돼 연동이 해제될 때 BRUP_LINK_STTS_HSTRY.LINK_CHG_TYPE_CD에 쓴다
+--   SET NAMES utf8mb4;
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG07') p),'PETC0036','회원 파기 해제','공동양육자인 회원이 파기될 때 그 연동 자동 해제(MemberPurgeService 연결 후, 요구사항 09-21 대체)',50);
 SET NAMES utf8mb4;
 START TRANSACTION;
 
@@ -567,6 +570,8 @@ INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT
 -- ■ AIM 사전용도 — v0.14 추가: 금칙어·금칙어 예외 (v0.14 (25))
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='AIMG10') p),'AIMC0041','금칙어','커뮤니티·문의·채팅 입력 욕설 검사(global/validation/ProfanityFilter). 한 행이 한 단어',110);
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='AIMG10') p),'AIMC0042','금칙어 예외','금칙어를 포함하지만 일상어인 단어. 검사 전에 글에서 지운다',120);
+-- ■ PET 마이페이지(반려동물) — v0.15 추가: 연동변경유형 회원 파기 해제 (v0.15 (1))
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG07') p),'PETC0036','회원 파기 해제','공동양육자인 회원이 파기될 때 그 연동 자동 해제(MemberPurgeService 연결 후, 요구사항 09-21 대체)',50);
 
 -- =====================================================================
 -- [2] 케어미션 마스터 (CARE_MSN) — 20261027_02_update_care_msn_and_ckup_pnt 의 최종 상태
@@ -733,4 +738,4 @@ INSERT INTO `KWRD_DICT` (`DICT_USG_CD`,`KWRD_CLSF_NM`,`ARTCL_NM`,`KWRD_CN`,`SORT
   ('AIMC0042','금칙어 예외','일상어','시발점',10,'출발점을 뜻하는 말'),('AIMC0042','금칙어 예외','일상어','병신년',20,'간지 해 이름'),('AIMC0042','금칙어 예외','일상어','시바견',30,'견종'),('AIMC0042','금칙어 예외','일상어','시바이누',40,'견종');
 
 COMMIT;
--- 합계: 공통코드 그룹 79건 + 코드 347건 = 426건, 케어미션 21건, AI 라우팅 매핑 45건, 키워드 사전 94건
+-- 합계: 공통코드 그룹 79건 + 코드 348건 = 427건, 케어미션 21건, AI 라우팅 매핑 45건, 키워드 사전 94건

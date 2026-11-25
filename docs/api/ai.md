@@ -7,7 +7,7 @@
 - 경로는 `/api` 접두어가 없는 `/internal/ai/conversations`·`/internal/ai/settings`다(`/internal/auth/check`와 같다). nginx 밖에서만 부른다.
 - 회원은 쿠키로 판정한다(2026-10-27 ai 저장소 합의). Python은 React에서 받은 `Cookie` 헤더(`access_token`)를 그대로 실어 부르고, 요청에 `mbrSn`을 넣지 않는다. 회원 번호를 받으면 서버 간 키가 없는 상태에서 누구나 남의 대화를 읽고 지울 수 있다.
 - 인증 실패는 기존 필터와 같다: 세션 폐기 401 `UNAUTHORIZED`, 정지·탈퇴 403 `MEMBER_INACTIVE`(쿠키 삭제 `Set-Cookie`). Python은 이 본문을 그대로 React에 넘긴다.
-- 상태를 바꾸는 요청(POST·DELETE)은 `X-Requested-With: XMLHttpRequest` 헤더가 필요하다(`RequestedWithFilter`). Python은 React의 헤더를 같이 넘긴다.
+- 상태를 바꾸는 요청(POST·PUT·PATCH·DELETE)은 `X-Requested-With: XMLHttpRequest` 헤더가 필요하다(`RequestedWithFilter`). Python은 React의 헤더를 같이 넘긴다.
 - 제목·메시지 내용은 서버가 `app.crypto.aes-key-base64`로 암호화해 저장하고 응답에서 복호화한다. Python은 평문만 다룬다.
 - 남의 대화나 없는 번호는 같은 404 `NOT_FOUND`다. 없는 반려동물 `petSn`과 양육하지 않는 반려동물 `petSn`도 존재 여부를 알려 주지 않으려고 같은 404 `NOT_FOUND`다(생성·목록 조회 공통).
 - `roleCd`는 공통코드 AIMG06이다: `AIMC0024` 사용자, `AIMC0025` AI.
@@ -18,10 +18,11 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | POST | /internal/ai/conversations | 대화 생성(방과 첫 메시지를 한 트랜잭션으로 저장, 201) | AIM-011-07·11·14 | LJS | ConversationCreateRequest | ConversationSummary |
 | GET | /internal/ai/conversations?petSn= | 대화 목록(최신순). petSn을 주면 그 태그만(태그 없는 「전체」 대화 제외) | AIM-011-08·09 | LJS | - | List<ConversationSummary> |
-| GET | /internal/ai/conversations/{aiCnvrsRoomSn} | 대화 상세(메시지 `msgSeq` 오름차순) | AIM-011-10 | LJS | - | ConversationResponse |
+| GET | /internal/ai/conversations/{aiCnvrsRoomSn} | 대화 상세(메시지 `msgSeq` 오름차순, 저장된 요약과 요약 경계선 포함) | AIM-011-10 | LJS | - | ConversationResponse |
 | POST | /internal/ai/conversations/{aiCnvrsRoomSn}/messages | 메시지 추가(사용자·AI, 순서는 서버가 매김, 201) | AIM-011-10·14 | LJS | ConversationMessageCreateRequest | ConversationMessageResponse |
 | PATCH | /internal/ai/conversations/{aiCnvrsRoomSn} | 대화 제목 수정(첫 답변 요약 제목, Python이 1회 호출, 200) | AIM-011-11 | LJS | ConversationTitleUpdateRequest | ConversationSummary |
-| DELETE | /internal/ai/conversations/{aiCnvrsRoomSn} | 대화 삭제(물리 삭제, 메시지 CASCADE, 200) | AIM-011-13 | LJS | - | - |
+| PUT | /internal/ai/conversations/{aiCnvrsRoomSn}/summary | 대화 요약 저장(방마다 1행, `AI_CNVRS_SMRY`). 행이 없으면 등록, 있으면 새 `smryEndMsgSeq`가 저장된 값보다 클 때만 요약·경계선을 함께 바꾸고(비교와 쓰기는 한 UPDATE 문), 같거나 작으면 그대로. 응답 200 data 없음. 남의·없는 대화 404 `NOT_FOUND`, `smryEndMsgSeq`가 그 대화의 마지막 `msgSeq`(완료 여부 무관)보다 크면 400 `INVALID_INPUT_VALUE`. `X-Requested-With` 필요. 명세 기능 ID 없음(ai 세션 요청 2026-11-24) | - | LJS | ConversationSmrySaveRequest | - |
+| DELETE | /internal/ai/conversations/{aiCnvrsRoomSn} | 대화 삭제(물리 삭제, 메시지·요약 CASCADE, 200) | AIM-011-13 | LJS | - | - |
 | GET | /internal/ai/settings | AI 설정값(응답 토큰 상한·대화 턴 수). 설정 행이 없으면 기본 4500·6 | AIM-002-02·11 | LJS | - | AiSettingResponse |
 | GET | /internal/ai/register-context | 등록 카드 컨텍스트. 쿠키 회원이 양육하는 반려동물 전부(공동양육 포함)와 각자의 케어 항목 이름. 반려동물이 없으면 빈 배열. 반려동물 목록은 외부 AI에 보내지 않는다 | AIM-012-04·08 | LJS | - | List<RegisterContextPet> |
 | GET | /internal/ai/pets/{petSn}/health-report-input?baseYmd= | AI 건강분석 리포트의 분석 입력과 저장본. 쿠키 회원이 양육하는 반려동물만(남의 반려동물 403 `PET_ACCESS_DENIED`, 없는 반려동물 404 `PET_NOT_FOUND`). `baseYmd`(KST 오늘, 필수, 없거나 형식이 틀리면 400 `BAD_REQUEST`) 포함 14일 일상기록과 `baseYmd` 이전 가장 최근 완료(HLTC0006) 검진 1회의 참고 범위 밖 검사 수치. `rfrshPsblYn`은 저장본이 없거나 저장 기준일이 `baseYmd`와 다르거나 그날 새로고침 0회면 true, `autoRgnrPsblYn`은 저장본이 없거나 저장 기준일이 다르거나 그날 자동 재생성 5회 미만이면 true. 명세 밖 추가 요청(ai 저장소 `docs/api/healthreport.md`) | MAN-006 | LJS | - | HealthReportContextResponse |
@@ -68,6 +69,13 @@
 | --- | --- | --- | --- | --- |
 | cnvrsTtl | String | Y | 1~200자, 공백만 불가, 서버가 암호화 | AI_CNVRS_ROOM.CNVRS_TTL_ENC, AIM-011-11 |
 
+### ConversationSmrySaveRequest
+쓰는 API: PUT /internal/ai/conversations/{aiCnvrsRoomSn}/summary
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| smryCn | String | Y | 1~2,000자, 공백만 불가, 서버가 암호화 | AI_CNVRS_SMRY.SMRY_CN_ENC |
+| smryEndMsgSeq | Integer | Y | 1 이상, 요약에 넣은 마지막 메시지의 `msgSeq`. 그 대화의 마지막 `msgSeq`보다 크면 400 | AI_CNVRS_SMRY.SMRY_END_MSG_SEQ |
+
 ### ConversationSummary
 쓰는 API: POST·PATCH·GET /internal/ai/conversations
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
@@ -82,6 +90,8 @@
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | messages | List<ConversationMessageResponse> | Y | `msgSeq` 오름차순 | AI_CNVRS_MSG |
+| smryCn | String | N | 복호화한 요약. 요약이 없으면 null | AI_CNVRS_SMRY.SMRY_CN_ENC |
+| smryEndMsgSeq | Integer | N | 요약에 넣은 마지막 메시지의 `msgSeq`. 요약이 없으면 null | AI_CNVRS_SMRY.SMRY_END_MSG_SEQ |
 
 ### ConversationMessageResponse
 쓰는 API: GET 상세, POST .../messages
@@ -123,7 +133,7 @@
 쓰는 API: GET /internal/ai/tools
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| name | String | Y | Python 설명과 짝짓는 키(예: `draft_schedule`, `draft_care_item`, `list_my_care_schedules`). 건강 READ 13개: `list_my_care_schedules`(회원 단위, 1마리 주소 `/pets/{petSn}/care-schedules`는 도구가 아니다)·`list_care_items`·`list_care_completions`·`list_daily_health_records`·`list_checkups`·`get_checkup`·`list_prescriptions`·`list_inspection_values`·`list_etc_inspections`·`list_repeat_preventions`·`get_health_indicators`·`list_observation_items`·`list_observation_cycles`. 가계부 READ 6개: `list_expenses`·`get_expense_total`·`list_expense_months`·`get_expense_statistics`·`list_expense_pets`·`get_receipt`. 반려동물 READ 10개: `list_pets`·`get_pet`·`list_caregivers`·`list_sent_caregiver_invitations`(보낸 초대)·`list_daily_missions`·`get_points`·`list_point_ledgers`·`list_pixel_characters`·`get_pixel_character`·`list_shop_items`(보유 여부 `hldYn`, 보유 아이템 GET이 따로 없다). 커뮤니티 READ 8개: `list_posts`·`list_health_tips`·`get_popular_photo`·`get_post`·`list_comments`·`list_lost_reports`·`list_care_recruitments`·`list_news`. 플레이스 READ 2개: `list_places`·`list_place_bookmarks`. 고객센터 READ 1개: `list_faqs`. 건강 CARD 9개: `draft_schedule`·`draft_schedule_update`·`draft_care_item`·`draft_care_item_update`·`draft_care_completion`·`draft_daily_health_record`·`draft_observation_item`(multipart, 관찰 항목 + 1회차. 대화창 피부 사진 분석 결과를 지속 관찰에 남길 때도 쓴다, 부위 `obsrvRegnCd` HLTG16)·`draft_observation_cycle`(multipart)·`draft_inspection_values`(검사결과지 PDF 검사 수치 저장, `values[]` 줄 목록. 코드·직접입력명 중 하나 필수는 rules로 싣지 못해 서비스 400 `values[i].inspArtclCd`로 알린다). 반려동물 CARD 1개: `draft_pet_update`. 가계부 CARD 4개: `draft_expense`(실행 전 React가 같은 본문으로 `/duplicate-check`)·`draft_expense_update`·`draft_expense_limit`·`draft_receipt_save`. 알림·1:1 채팅은 도구가 아니다. 읽기 결과 자르기는 Java가 기존 `size`·페이지 상한 그대로, 그 밖은 Python 요약(tool-catalog.md 9절) | `@AiTool.name` |
+| name | String | Y | Python 설명과 짝짓는 키(예: `draft_schedule`, `draft_care_item`, `list_my_care_schedules`). 건강 READ 13개: `list_my_care_schedules`(회원 단위, 1마리 주소 `/pets/{petSn}/care-schedules`는 도구가 아니다)·`list_care_items`·`list_care_completions`·`list_daily_health_records`·`list_checkups`·`get_checkup`·`list_prescriptions`·`list_inspection_values`·`list_etc_inspections`·`list_repeat_preventions`·`get_health_indicators`·`list_observation_items`·`list_observation_cycles`. 가계부 READ 6개: `list_expenses`·`get_expense_total`·`list_expense_months`·`get_expense_statistics`·`list_expense_pets`·`get_receipt`. 반려동물 READ 10개: `list_pets`·`get_pet`·`list_caregivers`·`list_sent_caregiver_invitations`(보낸 초대)·`list_daily_missions`·`get_points`·`list_point_ledgers`·`list_pixel_characters`·`get_pixel_character`·`list_shop_items`(보유 여부 `hldYn`, 보유 아이템 GET이 따로 없다). 커뮤니티 READ 8개: `list_posts`·`list_health_tips`·`get_popular_photo`·`get_post`·`list_comments`·`list_lost_reports`·`list_care_recruitments`·`list_news`. 플레이스 READ 2개: `list_places`·`list_place_bookmarks`. 고객센터 READ 1개: `list_faqs`. 건강 CARD 24개: `draft_schedule`·`draft_schedule_update`·`draft_care_item`·`draft_care_item_update`·`draft_care_completion`·`draft_daily_health_record`·`draft_daily_health_record_update`·`draft_checkup_update`·`draft_prescription_update`·`draft_etc_inspection_update`·`draft_inspection_value_update`(참고범위 `refRange`는 싣지 않는다)·`draft_observation_cycle_update`(multipart, 비우기 `clearFields`는 싣지 않는다)·삭제 `delete_schedule`·`delete_care_item`·`cancel_care_completion`·`delete_daily_health_record`·`delete_checkup`·`delete_prescription`·`delete_etc_inspection`·`delete_observation_cycle`·`delete_repeat_prevention`(DELETE, 본문 없이 경로 칸만)·`draft_observation_item`(multipart, 관찰 항목 + 1회차. 대화창 피부 사진 분석 결과를 지속 관찰에 남길 때도 쓴다, 부위 `obsrvRegnCd` HLTG16)·`draft_observation_cycle`(multipart)·`draft_inspection_values`(검사결과지 PDF 검사 수치 저장, `values[]` 줄 목록. 코드·직접입력명 중 하나 필수는 rules로 싣지 못해 서비스 400 `values[i].inspArtclCd`로 알린다). 반려동물 CARD 1개: `draft_pet_update`. 가계부 CARD 5개: `draft_expense`(실행 전 React가 같은 본문으로 `/duplicate-check`)·`draft_expense_update`·`draft_expense_limit`·`draft_receipt_save`·`delete_expense`(한 건, 여러 건 삭제는 도구가 아니다). 플레이스 CARD 1개: `delete_place_bookmark`. 수정 도구의 서비스 검사 400은 `data[].field`에 칸 이름을 담는다. 도구 목록이 싣지 못하는 칸은 `@AiExclude`로 그 칸만 뺀다. 알림·1:1 채팅은 도구가 아니다. 읽기 결과 자르기는 Java가 기존 `size`·페이지 상한 그대로, 그 밖은 Python 요약(tool-catalog.md 9절) | `@AiTool.name` |
 | domain | String | Y | `health`·`expense`·`pet`·`community`·`place`·`support` | `@AiTool.domain` |
 | kind | String | Y | `READ`(Python이 바로 실행)·`CARD`(확인 카드) | `@AiTool.kind` |
 | call | Object | Y | `{method, path, contentType}`. path는 `{petSn}` 같은 경로 변수 그대로. `contentType`은 multipart 요청일 때만 `multipart/form-data`(그 밖은 키째 없다) | 컨트롤러 매핑 |
