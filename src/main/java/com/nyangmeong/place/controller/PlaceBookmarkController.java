@@ -56,6 +56,7 @@ public class PlaceBookmarkController {
     }
 
     @Operation(summary = "장소 즐겨찾기 해제")
+    @AiTool(name = "delete_place_bookmark", domain = "place", kind = AiToolKind.CARD)
     @DeleteMapping("/{plcBkmkSn}")
     public ResponseEntity<ApiResponse<Void>> delete(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long plcBkmkSn) {

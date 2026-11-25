@@ -169,10 +169,10 @@ public class CheckupService {
 
         String ckupTypeCd = current.getCkupTypeCd();
         if (req.ckupTypeCd() != null) {
-            checkType(req.ckupTypeCd());
+            checkType(req.ckupTypeCd(), "ckupTypeCd");
             ckupTypeCd = req.ckupTypeCd();
         }
-        String hsptlNm = req.hsptlNm() != null ? requiredText(req.hsptlNm()) : current.getHsptlNm();
+        String hsptlNm = req.hsptlNm() != null ? requiredText(req.hsptlNm(), "hsptlNm") : current.getHsptlNm();
 
         CheckupRecord record = new CheckupRecord();
         record.setCkupRcdSn(ckupRcdSn);
@@ -309,16 +309,19 @@ public class CheckupService {
         return schedule;
     }
 
-    private void checkType(String ckupTypeCd) {
+    /**
+     * 검진유형 코드 검사 : fields는 400 data에 담을 칸 이름(수정 경로만 준다)
+     */
+    private void checkType(String ckupTypeCd, String... fields) {
         if (!careScheduleMapper.existsChildCode(HealthCodeGroup.CHECKUP_TYPE.getCode(), ckupTypeCd)) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, fields);
         }
     }
 
-    private String requiredText(String value) {
+    private String requiredText(String value, String... fields) {
         String text = emptyToNull(value);
         if (text == null) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, fields);
         }
         return text;
     }

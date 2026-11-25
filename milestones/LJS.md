@@ -940,3 +940,15 @@
 - 기다리는 것: 없음(ai 저장소 Python 구현은 끝, 가짜 Java로 테스트 통과)
 - 완료 조건: `PUT /internal/ai/conversations/{aiCnvrsRoomSn}/summary`가 행이 없으면 넣고, 새 경계선이 더 클 때만 요약·경계선을 한 SQL 문으로 바꾸고 200. 남의·없는 방 404 `NOT_FOUND`. `GET …/{aiCnvrsRoomSn}`에 `smryCn`·`smryEndMsgSeq`(없으면 null). 방 삭제·회원 파기 때 요약 행도 지워짐
 - 연결 남음: 기능 ID 없음 (ai 저장소가 실제 Java PUT …/summary·GET 상세 요약 필드를 부르는 확인과 ai `docs/api/internal.md` 초안 행 확정, ai 세션)
+
+## SCR-AIM-012 AI 일정 생성 확인 · 대화창 수정·삭제 도구 — 끝
+- 기능: 명세 기능 ID 추가 없음(대조 수 그대로). ai 세션 요청(2026-11-25, ai-ce): ai tool-catalog.md 2-3절 "삭제는 navigate만"을 바꿔 회원 데이터 수정·삭제를 대화창 확인 카드로
+- 할 것: `@AiTool` 17개(모두 CARD, domain health·expense·place). 수정 6: `draft_daily_health_record_update`·`draft_checkup_update`·`draft_prescription_update`·`draft_etc_inspection_update`·`draft_inspection_value_update`(refRange 중첩 skip 허용)·`draft_observation_cycle_update`(multipart, clearFields skip 허용). 삭제 11: `delete_schedule`·`delete_care_item`·`cancel_care_completion`·`delete_daily_health_record`·`delete_checkup`·`delete_prescription`·`delete_etc_inspection`·`delete_observation_cycle`·`delete_repeat_prevention`·`delete_expense`·`delete_place_bookmark`. 이름은 ai `data/tool_prompts.yaml` 키와 짝이라 그대로
+- 함께 할 것: 일지·검진·처방·기타검사·검사 수치·관찰·반복 예방·지출·즐겨찾기 서비스 검사 400에 칸 이름 담기(ai tool-catalog.md 3-3절, PR #175 `CareScheduleService` 방식)
+- 붙이지 않는 것: 반려동물 삭제, 지출 전체 삭제, 공동양육 해제·초대 삭제, 회원정보·비밀번호·닉네임, 검사 수치 묶음 삭제, 검진 첨부, 커뮤니티 계열(다음 차수), 관리자·내부
+- 기다리는 것: 없음(ai 쪽은 스냅샷·가짜 도구 목록으로 구현 중)
+- 완료 조건: `GET /internal/ai/tools`에 17개가 CARD로 실리고, 경로 칸만 있는 삭제 도구도 정상으로 실린다. 위 서비스 검사 400에 칸 이름이 실린다
+- 완료 조건 결과: 검증 `통과`(2026-11-25, 1회차), 사람 확인 2026-11-25(Postman: `GET /internal/ai/tools` 71개·새 17개 CARD, 8080 재기동 뒤). 정한 것: 칸 제외 어노테이션 `@AiExclude`(지원 안 하는 칸이 있으면 도구 전체가 빠지던 것을 그 칸만 빼게, `refRange`·`clearFields`), 수정 DTO 코드 칸 `@AiCode` 4개, 400 칸 이름은 수정 경로만(삭제 경로는 서비스 400 없음, 처방 일괄 저장 행은 그대로). 기존 도구 목록 테스트 5개 기대값 변경(기획 승인)
+- 추가: 없음
+- 연결 남음: 대화창 수정·삭제 카드 (ai 세션 ai-ce에 PR 번호·`@AiExclude`·칸 이름 범위 알림, `data/tools.snapshot.json` 갱신은 ai 세션)
+- 연결 남음: 대화창 수정·삭제 카드 (프론트 연결 대화창 범용 확인 카드가 본문 없는 DELETE call을 실행하는지, 프론트 저장소에서 /start)

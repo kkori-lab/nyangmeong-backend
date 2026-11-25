@@ -70,6 +70,7 @@ public class DailyHealthRecordController {
     }
 
     @Operation(summary = "일상 건강기록 수정")
+    @AiTool(name = "draft_daily_health_record_update", domain = "health", kind = AiToolKind.CARD)
     @PatchMapping("/{dailyHlthRcdSn}")
     public ResponseEntity<ApiResponse<DailyHealthRecordResponse>> update(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long dailyHlthRcdSn,
@@ -79,6 +80,7 @@ public class DailyHealthRecordController {
     }
 
     @Operation(summary = "일상 건강기록 삭제")
+    @AiTool(name = "delete_daily_health_record", domain = "health", kind = AiToolKind.CARD)
     @DeleteMapping("/{dailyHlthRcdSn}")
     public ResponseEntity<ApiResponse<Void>> delete(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long dailyHlthRcdSn) {
