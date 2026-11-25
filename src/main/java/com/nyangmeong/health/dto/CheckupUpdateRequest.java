@@ -1,5 +1,7 @@
 package com.nyangmeong.health.dto;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import jakarta.validation.constraints.Size;
 
 /**
@@ -8,7 +10,7 @@ import jakarta.validation.constraints.Size;
  */
 public record CheckupUpdateRequest(
         @Size(max = 80) String hsptlNm,
-        String ckupTypeCd,
+        @AiCode("HLTG01") String ckupTypeCd,
         @Size(max = 500) String ckupCn,
         @Size(max = 200) String ckupMemoCn) {
 }

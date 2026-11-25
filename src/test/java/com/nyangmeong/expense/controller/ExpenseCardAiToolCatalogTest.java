@@ -78,10 +78,10 @@ class ExpenseCardAiToolCatalogTest {
     }
 
     @Test
-    void 가계부_쓰기_CARD_4개가_실린다() throws Exception {
+    void 가계부_쓰기_CARD_5개가_실린다() throws Exception {
         givenCodes();
         mockMvc.perform(get(PATH))
-                .andExpect(jsonPath("$.data.tools[?(@.kind == 'CARD')].name", containsInAnyOrder("draft_expense",
+                .andExpect(jsonPath("$.data.tools[?(@.kind == 'CARD')].name", containsInAnyOrder("delete_expense", "draft_expense",
                         "draft_expense_limit", "draft_expense_update", "draft_receipt_save")));
     }
 

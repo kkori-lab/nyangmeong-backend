@@ -120,6 +120,7 @@ public class ExpenseController {
     }
 
     @Operation(summary = "가계부 지출 한 건 삭제")
+    @AiTool(name = "delete_expense", domain = "expense", kind = AiToolKind.CARD)
     @DeleteMapping("/{expndSn}")
     public ResponseEntity<ApiResponse<Void>> delete(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long expndSn) {

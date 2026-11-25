@@ -3,6 +3,8 @@ package com.nyangmeong.health.dto;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Size;
 
@@ -13,5 +15,5 @@ import jakarta.validation.constraints.Size;
 public record DailyHealthRecordUpdateRequest(
         LocalDateTime rcdDt,
         @Digits(integer = 5, fraction = 2) BigDecimal rcdNvl,
-        @Size(max = 8) String crsdSttsCd) {
+        @Size(max = 8) @AiCode("HLTG10") String crsdSttsCd) {
 }

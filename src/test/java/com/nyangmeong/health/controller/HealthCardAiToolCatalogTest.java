@@ -78,10 +78,12 @@ class HealthCardAiToolCatalogTest {
     }
 
     @Test
-    void 건강_쓰기_CARD_8개가_실린다() throws Exception {
+    void 건강_쓰기_CARD_15개가_실린다() throws Exception {
         givenCodes();
         mockMvc.perform(get(PATH))
-                .andExpect(jsonPath("$.data.tools[?(@.kind == 'CARD')].name", containsInAnyOrder("draft_care_completion",
+                .andExpect(jsonPath("$.data.tools[?(@.kind == 'CARD')].name", containsInAnyOrder("cancel_care_completion",
+                        "delete_care_item", "delete_daily_health_record", "delete_observation_cycle", "delete_schedule",
+                        "draft_daily_health_record_update", "draft_observation_cycle_update", "draft_care_completion",
                         "draft_care_item", "draft_care_item_update", "draft_daily_health_record",
                         "draft_observation_cycle", "draft_observation_item", "draft_schedule", "draft_schedule_update")));
     }

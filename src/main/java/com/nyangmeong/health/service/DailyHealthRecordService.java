@@ -196,7 +196,7 @@ public class DailyHealthRecordService {
 
         if (indicator.isStool()) {
             if (req.rcdNvl() != null) {
-                throw invalid();
+                throw invalid("rcdNvl");
             }
             if (req.crsdSttsCd() != null) {
                 checkStoolStatus(req.crsdSttsCd());
@@ -204,7 +204,7 @@ public class DailyHealthRecordService {
             }
         } else {
             if (req.crsdSttsCd() != null) {
-                throw invalid();
+                throw invalid("crsdSttsCd");
             }
             if (req.rcdNvl() != null) {
                 checkNumber(mbrSn, petSn, indicator, req.rcdNvl());

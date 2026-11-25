@@ -89,6 +89,7 @@ public class CareItemController {
     }
 
     @Operation(summary = "케어 항목 삭제")
+    @AiTool(name = "delete_care_item", domain = "health", kind = AiToolKind.CARD)
     @DeleteMapping("/care-items/{careArtclSn}")
     public ResponseEntity<ApiResponse<Void>> delete(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long careArtclSn) {
@@ -118,6 +119,7 @@ public class CareItemController {
     }
 
     @Operation(summary = "그날 케어 완료 기록 취소(투약은 그날 체크 전부)")
+    @AiTool(name = "cancel_care_completion", domain = "health", kind = AiToolKind.CARD)
     @DeleteMapping("/care-completions/{careCmptnHstrySn}")
     public ResponseEntity<ApiResponse<Void>> cancel(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long careCmptnHstrySn) {

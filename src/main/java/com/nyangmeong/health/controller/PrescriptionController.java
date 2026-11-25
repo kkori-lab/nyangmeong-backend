@@ -59,6 +59,7 @@ public class PrescriptionController {
     }
 
     @Operation(summary = "처방약 수정")
+    @AiTool(name = "draft_prescription_update", domain = "health", kind = AiToolKind.CARD)
     @PatchMapping("/{prscSn}")
     public ResponseEntity<ApiResponse<PrescriptionResponse>> update(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long prscSn, @Valid @RequestBody PrescriptionUpdateRequest req) {
@@ -73,6 +74,7 @@ public class PrescriptionController {
     }
 
     @Operation(summary = "처방약 삭제")
+    @AiTool(name = "delete_prescription", domain = "health", kind = AiToolKind.CARD)
     @DeleteMapping("/{prscSn}")
     public ResponseEntity<ApiResponse<Void>> delete(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long prscSn) {

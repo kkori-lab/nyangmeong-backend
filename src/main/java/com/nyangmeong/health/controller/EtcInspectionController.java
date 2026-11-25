@@ -58,6 +58,7 @@ public class EtcInspectionController {
     }
 
     @Operation(summary = "기타검사 수정")
+    @AiTool(name = "draft_etc_inspection_update", domain = "health", kind = AiToolKind.CARD)
     @PatchMapping("/{etcInspSn}")
     public ResponseEntity<ApiResponse<EtcInspectionResponse>> update(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long etcInspSn,
@@ -66,6 +67,7 @@ public class EtcInspectionController {
     }
 
     @Operation(summary = "기타검사 삭제")
+    @AiTool(name = "delete_etc_inspection", domain = "health", kind = AiToolKind.CARD)
     @DeleteMapping("/{etcInspSn}")
     public ResponseEntity<ApiResponse<Void>> delete(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long etcInspSn) {

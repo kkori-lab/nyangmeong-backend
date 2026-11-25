@@ -37,7 +37,7 @@ import com.nyangmeong.place.service.PlaceService;
 
 /**
  * [검사 - 플레이스 도메인 AI 도구 목록]
- * - 실제 플레이스 컨트롤러의 @AiTool이 빠짐없이 실리는지 (READ 2)
+ * - 실제 플레이스 컨트롤러의 @AiTool이 빠짐없이 실리는지 (READ 2 + CARD 1)
  */
 @WebMvcTest(controllers = {AiToolCatalogController.class, PlaceController.class, PlaceBookmarkController.class})
 @Import({SecurityConfig.class, JwtTokenProvider.class, JwtProperties.class, TokenCookies.class,
@@ -72,14 +72,14 @@ class PlaceAiToolCatalogTest {
     }
 
     @Test
-    void 플레이스_READ_2개가_빠짐없이_실린다() throws Exception {
+    void 플레이스_READ_2개와_CARD_1개가_빠짐없이_실린다() throws Exception {
         givenCodes();
         mockMvc.perform(get(PATH))
-                .andExpect(jsonPath("$.data.tools.length()").value(2))
-                .andExpect(jsonPath("$.data.tools[*].name", containsInAnyOrder("list_place_bookmarks",
-                        "list_places")))
+                .andExpect(jsonPath("$.data.tools.length()").value(3))
+                .andExpect(jsonPath("$.data.tools[*].name", containsInAnyOrder("delete_place_bookmark",
+                        "list_place_bookmarks", "list_places")))
                 .andExpect(jsonPath("$.data.tools[?(@.kind == 'READ')].name", hasSize(2)))
-                .andExpect(jsonPath("$.data.tools[?(@.domain == 'place')].name", hasSize(2)));
+                .andExpect(jsonPath("$.data.tools[?(@.domain == 'place')].name", hasSize(3)));
     }
 
     @Test

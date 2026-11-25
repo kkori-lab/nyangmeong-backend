@@ -66,10 +66,10 @@ public class EtcInspectionService {
         petAuthorizer.checkCaregiver(mbrSn, petSn);
         EtcInspection inspection = getOwn(petSn, etcInspSn);
         if (req.inspNm() != null) {
-            inspection.setInspNm(requiredText(req.inspNm()));
+            inspection.setInspNm(requiredText(req.inspNm(), "inspNm"));
         }
         if (req.inspRsltCn() != null) {
-            inspection.setInspRsltCn(requiredText(req.inspRsltCn()));
+            inspection.setInspRsltCn(requiredText(req.inspRsltCn(), "inspRsltCn"));
         }
         if (req.memoCn() != null) {
             inspection.setMemoCn(emptyToNull(req.memoCn()));
@@ -99,10 +99,13 @@ public class EtcInspectionService {
         return inspection;
     }
 
-    private String requiredText(String value) {
+    /**
+     * 빈 값 불가 칸 : fields는 400 data에 담을 칸 이름(수정 경로만 준다)
+     */
+    private String requiredText(String value, String... fields) {
         String text = emptyToNull(value);
         if (text == null) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, fields);
         }
         return text;
     }

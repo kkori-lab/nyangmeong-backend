@@ -65,6 +65,7 @@ import tools.jackson.databind.json.JsonMapper;
  * - 본문 칸 : @RequestBody record, multipart @ModelAttribute record(MultipartFile -> file)
  * - List<record> 칸 -> array + items(같은 칸 모양)
  * - 지원하지 않는 칸(값 목록·중첩 객체 등)이 있는 도구는 빼고 WARN 로그
+ * - @AiExclude 칸은 싣지 않음(도구는 그대로)
  */
 @Slf4j
 @Service
@@ -215,7 +216,7 @@ public class AiToolCatalogService {
      */
     private String addModelAttribute(Class<?> condType, Map<String, Param> params, Set<String> pathNames) {
         for (Field field : queryFieldsOf(condType)) {
-            if (pathNames.contains(field.getName())) {
+            if (pathNames.contains(field.getName()) || field.isAnnotationPresent(AiExclude.class)) {
                 continue;
             }
             String skipReason = put(params, field.getName(), toParam(QUERY, field.getType(), field, false));
@@ -271,6 +272,9 @@ public class AiToolCatalogService {
             return "요청 본문이 record가 아님: " + bodyType.getSimpleName();
         }
         for (Field field : queryFieldsOf(bodyType)) {
+            if (field.isAnnotationPresent(AiExclude.class)) {
+                continue;
+            }
             if (pathNames.contains(field.getName())) {
                 log.info("[AiTool] 경로 변수와 같은 본문 칸 뺌 body={} field={}", bodyType.getSimpleName(),
                         field.getName());

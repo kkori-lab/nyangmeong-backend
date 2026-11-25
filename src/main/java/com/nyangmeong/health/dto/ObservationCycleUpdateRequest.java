@@ -6,6 +6,9 @@ import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import com.nyangmeong.global.aitool.AiCode;
+import com.nyangmeong.global.aitool.AiExclude;
+
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Pattern;
@@ -20,9 +23,9 @@ public record ObservationCycleUpdateRequest(
         MultipartFile file,
         LocalDateTime obsrvDt,
         @Digits(integer = 5, fraction = 2) BigDecimal obsrvSz,
-        @Size(max = 8) String obsrvChgCd,
+        @Size(max = 8) @AiCode("HLTG17") String obsrvChgCd,
         @Size(max = 200) String memoCn,
-        List<@Pattern(regexp = CLEAR_SIZE + "|" + CLEAR_CHANGE + "|" + CLEAR_MEMO) String> clearFields) {
+        @AiExclude List<@Pattern(regexp = CLEAR_SIZE + "|" + CLEAR_CHANGE + "|" + CLEAR_MEMO) String> clearFields) {
 
     public static final String CLEAR_SIZE = "obsrvSz";
     public static final String CLEAR_CHANGE = "obsrvChgCd";

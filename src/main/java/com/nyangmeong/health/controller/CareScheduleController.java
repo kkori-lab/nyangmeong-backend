@@ -70,6 +70,7 @@ public class CareScheduleController {
     }
 
     @Operation(summary = "일정 삭제")
+    @AiTool(name = "delete_schedule", domain = "health", kind = AiToolKind.CARD)
     @DeleteMapping("/{schdlSn}")
     public ResponseEntity<ApiResponse<Void>> delete(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long schdlSn) {
