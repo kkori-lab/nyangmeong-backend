@@ -78,6 +78,11 @@ public interface PetMapper {
     List<BrupRel> selectLinkedCoParentRels(@Param("petSn") Long petSn, @Param("coParentRoleCd") String coParentRoleCd);
 
     /**
+     * 회원의 연동 중 양육 관계 조회 (삭제되지 않은 반려동물만)
+     */
+    List<BrupRel> selectLinkedRelsByMember(@Param("mbrSn") Long mbrSn);
+
+    /**
      * 반려동물의 연동 중 공동양육자 수
      */
     int countLinkedCaregivers(@Param("petSn") Long petSn, @Param("coParentRoleCd") String coParentRoleCd);

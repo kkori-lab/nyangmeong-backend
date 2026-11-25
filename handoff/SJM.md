@@ -1,9 +1,9 @@
 # SJM 핸드오프
 
 ## 지금 하는 것
-SCR-MYP-002 반려동물 양육자 목록의 파기 회원 표시 — 끝남 (승인 2026-11-24 14:32, 시작 2026-11-24 14:31). 검증 1회차 판정 `통과`, 사람 확인 완료
-- FN-MYP-002-04 걸침: `PetMapper.xml` `selectCaregivers`가 닉네임을 `MemberDisplay.ncnm`(alias M)으로 내보내 파기된 회원은 「탈퇴한 회원」. `PetMapperXmlTest`에 검사 추가. 관리자 쿼리는 그대로
-- 공용 DB 쓰기 없음, 새 의존성 없음
+SCR-MYP-002 파기 회원 반려동물 일괄 삭제 이벤트 연결 — 끝남 (승인 2026-11-24 15:16, 시작 2026-11-24 15:30). 검증 1회차 판정 `통과`, 사람 확인 완료
+- `pet/service/MemberPurgedEventListener`(동기 `@EventListener`)가 `MemberPurgedEvent`를 받아 `PetService.purgeMemberPets`를 부른다. 예외를 삼키지 않아 회원 파기까지 롤백된다. 테스트 `MemberPurgedEventListenerTest` 3건. 새 의존성 없음
+- 확인 못 함(실제 파기): 보관 기간이 지난 회원이 공용 DB에 없어 `MemberPurgeJob` 실제 실행으로는 못 봄. 테스트로 판정
 
 ## 다음에 할 것
 - 관리자 케어미션 수정(FN-ADM-071-02): `cmpnPnt`는 출제 배점에 안 쓰이게 된다. 수정 화면·API에서 뺄지 정한다. 관리자 화면(CareMissionTable)에 아직 표시·수정됨, LJS 몫

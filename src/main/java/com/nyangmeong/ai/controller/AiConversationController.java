@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -19,6 +20,7 @@ import com.nyangmeong.ai.dto.ConversationCreateRequest;
 import com.nyangmeong.ai.dto.ConversationMessageCreateRequest;
 import com.nyangmeong.ai.dto.ConversationMessageResponse;
 import com.nyangmeong.ai.dto.ConversationResponse;
+import com.nyangmeong.ai.dto.ConversationSmrySaveRequest;
 import com.nyangmeong.ai.dto.ConversationSummary;
 import com.nyangmeong.ai.dto.ConversationTitleUpdateRequest;
 import com.nyangmeong.ai.service.AiConversationService;
@@ -77,6 +79,14 @@ public class AiConversationController {
             @Valid @RequestBody ConversationMessageCreateRequest req) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created(aiConversationService.createMessage(me.id(), aiCnvrsRoomSn, req)));
+    }
+
+    @Operation(summary = "AI 대화 요약 저장")
+    @PutMapping("/{aiCnvrsRoomSn}/summary")
+    public ResponseEntity<ApiResponse<Void>> saveSummary(@AuthenticationPrincipal LoginMember me,
+            @PathVariable Long aiCnvrsRoomSn, @Valid @RequestBody ConversationSmrySaveRequest req) {
+        aiConversationService.saveSummary(me.id(), aiCnvrsRoomSn, req);
+        return ResponseEntity.ok(ApiResponse.success());
     }
 
     @Operation(summary = "AI 대화 삭제")

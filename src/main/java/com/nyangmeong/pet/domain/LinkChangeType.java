@@ -8,7 +8,8 @@ public enum LinkChangeType {
     INVITATION_ACCEPTED("PETC0024"),
     SELF_UNLINKED("PETC0025"),
     FORCED_UNLINKED("PETC0026"),
-    PET_DELETED("PETC0027");
+    PET_DELETED("PETC0027"),
+    MEMBER_PURGED("PETC0036");
 
     private final String code;
 

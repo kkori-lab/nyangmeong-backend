@@ -306,6 +306,38 @@ public class PetService {
     @Transactional
     public void deletePet(Long mbrSn, Long petSn) {
         petAuthorizer.checkPrimary(mbrSn, petSn);
+        deletePetCascade(mbrSn, petSn);
+    }
+
+    /**
+     * 파기된 회원의 반려동물 일괄 처리 (파기 배치가 부른다, 권한 검사 없음)
+     * - 주양육자인 연동 : 반려동물 삭제와 같은 처리(deletePetCascade)
+     * - 공동양육자인 연동 : 그 연동만 해제하고 이력(PETC0036)을 남긴다. 주양육자에게 알리지 않는다
+     * - 한 건이라도 실패하면 전체 롤백, 호출하는 쪽이 다음 주기에 다시 시도한다
+     */
+    @Transactional
+    public void purgeMemberPets(Long mbrSn) {
+        String actorId = String.valueOf(mbrSn);
+        for (BrupRel rel : petMapper.selectLinkedRelsByMember(mbrSn)) {
+            if (BrupRole.PRIMARY.is(rel.getBrupRoleCd())) {
+                deletePetCascade(mbrSn, rel.getPetSn());
+                continue;
+            }
+            if (petMapper.updateBrupRelUnlink(rel.getBrupRelSn(), actorId) == 0) {
+                continue;
+            }
+            BrupLinkSttsHstry history = new BrupLinkSttsHstry();
+            history.setBrupRelSn(rel.getBrupRelSn());
+            history.setMbrSn(mbrSn);
+            history.setLinkChgTypeCd(LinkChangeType.MEMBER_PURGED.getCode());
+            petMapper.insertLinkHistory(history);
+        }
+    }
+
+    /**
+     * 반려동물 삭제 본문 (deletePet 과 purgeMemberPets 가 같이 쓴다, 권한 검사는 부르는 쪽 몫)
+     */
+    private void deletePetCascade(Long mbrSn, Long petSn) {
         Pet pet = loadPet(petSn);
         BrupRel own = petMapper.selectBrupRel(mbrSn, petSn);
         String actorId = String.valueOf(mbrSn);

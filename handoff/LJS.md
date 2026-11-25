@@ -2,11 +2,12 @@
 
 ## 지금 하는 것
 
-SCR-ADM-042 1:1 문의 · 펫돌봄 분쟁 작성자 매칭 목록 — 끝 (2026-11-24). `GET /api/admin/care-matches?mbrSn=`로 그 회원이 보호자(작성자)이거나 매칭 상대인 모집글만, 정상 글만, 0 이하 400, DB 변경 없음. 계약 `docs/api/community.md`. 검증 `통과`(1회차), 사람 확인 2026-11-24, 시작 2026-11-24 14:22
+SCR-AIM-011 AI 대화창 (대화 요약 저장 내부 API) — 끝 (2026-11-24). `PUT /internal/ai/conversations/{aiCnvrsRoomSn}/summary`(방마다 1행, 경계선이 클 때만 갱신, 마지막 msgSeq 초과 400)와 상세 `smryCn`·`smryEndMsgSeq`, 테이블 `AI_CNVRS_SMRY`(v0.15 (2), 공용 DB 적용됨, 방 삭제 CASCADE). 계약 `docs/api/ai.md`. 검증 `통과`(3회차, 1·2회차는 DB 미적용으로 화면 확인 못 함), 사람 확인 2026-11-24, 시작 2026-11-24 22:37
 
 ## 다음에 할 것
 
-- 채팅 상대 회원 신고 관리자 화면(KSJ 요청, 2026-11-24): 프론트 연결 관리자 신고 화면 ① 대상 종류 「회원」 필터·표시(`targetType=MEMBER`) ② 회원 신고 상세에서 「블라인드」 선택지 숨김 ③ 회원 신고 상세에 대상 회원·채팅방(`otoChatRoomSn`, 목록 대상 내용은 그 방의 돌봄 글 제목) 표시, LJS 프론트 저장소에서 /start. 백엔드(`ReportMapper.xml` 대상 3분기, `AdminReportService` 회원 정지·블라인드 400·복구 409, `MemberSuspensionService.suspendBySystem`, DCLR v0.15 변경 절)는 KSJ가 고친다. 2026-11-24 origin/KSJ에 아직 없음, KSJ 백엔드 병합 뒤 연결
+- SCR-AIM-011 대화 요약 연결 남음: ai 세션(nyangmeong-ai-1a)에 커밋 해시·칸 이름(요청 그대로)·요청과 다른 점(마지막 msgSeq 초과 400, SQL 두 문장) 알리고, Python이 실제 Java를 부르는 확인과 ai `docs/api/internal.md` 초안 행 확정(ai 세션). PR 본문에 "DB 변경 있음 v0.15 (2), 공용 DB에는 PR 전에 실행함"
+- 채팅 상대 회원 신고 관리자 화면(KSJ 요청, 2026-11-24): 프론트 연결 관리자 신고 화면 ① 대상 종류 「회원」 필터·표시(`targetType=MEMBER`) ② 회원 신고 상세에서 「블라인드」 선택지 숨김 ③ 회원 신고 상세에 대상 회원·채팅방(`otoChatRoomSn`, 목록 대상 내용은 그 방의 돌봄 글 제목) 표시, LJS 프론트 저장소에서 /start. 백엔드(`ReportMapper.xml` 대상 3분기, `AdminReportService` 회원 정지·블라인드 400·복구 409, `MemberSuspensionService.suspendBySystem`, DCLR v0.15 변경 절)는 KSJ가 고친다. KSJ 백엔드는 develop에 병합됨(1b477ce, 2026-11-24 확인), 연결 가능
 - SCR-AIM-013 피부 분석 지속 관찰 카드 연결 남음: 걸치는 기능 FN-HLT-002-20~25·32 (ai 저장소 `data/tools.snapshot.json` 갱신, 피부 분석 뒤 새 항목은 `draft_observation_item`·관찰 중인 같은 항목은 `list_observation_items` 뒤 `draft_observation_cycle` 확인 카드, 판정 사진 1024px JPEG을 `file`로, 분석 결과는 `memoCn` 200자 글, 부위 HLTG16은 회원이 고름. 안구 분석(ai #108)도 같은 카드로 저장하고, 부위는 얼굴 HLTC0044, `obsrvRegnDtlNm`에 "왼쪽 눈"/"오른쪽 눈"을 적는다. 눈 코드는 불편이 생기면 그때 추가한다(사람 2026-11-24). ai-23, ai 세션)
 - SCR-AIM-013 검사 수치 카드 연결 남음: 프론트 연결 대화창 PDF 첨부 허용(`ChatInput.jsx`)·`POST /ai/conversations/{aiCnvrsRoomSn}/checkup-card` 연결, LJS 프론트 저장소에서 /start. ai 쪽은 끝(ai #104·#105, 2026-11-24 확인). 프론트 PR #501(develop 대상) 올라감, 2026-11-24 병합 전. 병합되면 이 줄을 지운다
 - 작업 트리(사람): 작업 전부터 있던 `src/main/resources/logback-spring.xml` 변경(`jdbc.resultsettable` 로거 삭제, root에 `ROLLING_FILE`)은 `git stash`에 보관(2026-11-23 "LJS: 기획 밖 logback-spring.xml 변경 보관…"). 쓰려면 `git stash pop` 후 따로 커밋

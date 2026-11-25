@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -123,7 +124,7 @@ class AiConversationControllerTest {
     @WithMockLoginMember(id = 1L)
     void 상세는_메시지를_함께_준다() throws Exception {
         when(aiConversationService.getConversation(1L, 7L)).thenReturn(new ConversationResponse(7L, null, "제목", AT,
-                List.of(new ConversationMessageResponse(10L, "AIMC0024", "첫 질문", 1, true, AT))));
+                List.of(new ConversationMessageResponse(10L, "AIMC0024", "첫 질문", 1, true, AT)), null, null));
 
         mockMvc.perform(get(PATH + "/7")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.messages[0].cnvrsCn").value("첫 질문"))
@@ -220,5 +221,74 @@ class AiConversationControllerTest {
                 7L);
 
         mockMvc.perform(delete(PATH + "/7").header("X-Requested-With", AJAX)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockLoginMember(id = 1L)
+    void 상세는_저장된_요약과_경계선을_준다() throws Exception {
+        when(aiConversationService.getConversation(1L, 7L))
+                .thenReturn(new ConversationResponse(7L, null, "제목", AT, List.of(), "앞부분 요약", 12));
+
+        mockMvc.perform(get(PATH + "/7")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.smryCn").value("앞부분 요약"))
+                .andExpect(jsonPath("$.data.smryEndMsgSeq").value(12));
+    }
+
+    @Test
+    @WithMockLoginMember(id = 1L)
+    void 요약을_저장하면_200이고_인증된_회원으로_저장한다() throws Exception {
+        mockMvc.perform(put(PATH + "/7/summary").header("X-Requested-With", AJAX)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"smryCn\":\"앞부분 요약\",\"smryEndMsgSeq\":12}"))
+                .andExpect(status().isOk());
+
+        verify(aiConversationService).saveSummary(eq(1L), eq(7L), any());
+    }
+
+    @Test
+    @WithMockLoginMember(id = 1L)
+    void 남의_대화_요약_저장은_404다() throws Exception {
+        org.mockito.Mockito.doThrow(new CustomException(ErrorCode.NOT_FOUND)).when(aiConversationService)
+                .saveSummary(eq(1L), eq(7L), any());
+
+        mockMvc.perform(put(PATH + "/7/summary").header("X-Requested-With", AJAX)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"smryCn\":\"앞부분 요약\",\"smryEndMsgSeq\":12}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockLoginMember(id = 1L)
+    void 요약이_비었거나_2000자를_넘거나_경계선이_없거나_1보다_작으면_400이고_저장하지_않는다() throws Exception {
+        for (String body : List.of("{\"smryCn\":\"\",\"smryEndMsgSeq\":12}", "{\"smryCn\":\"   \",\"smryEndMsgSeq\":12}",
+                "{\"smryCn\":\"" + "가".repeat(2001) + "\",\"smryEndMsgSeq\":12}", "{\"smryCn\":\"요약\"}",
+                "{\"smryCn\":\"요약\",\"smryEndMsgSeq\":0}")) {
+            mockMvc.perform(put(PATH + "/7/summary").header("X-Requested-With", AJAX)
+                    .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isBadRequest());
+        }
+        verify(aiConversationService, never()).saveSummary(any(), any(), any());
+    }
+
+    @Test
+    @WithMockLoginMember(id = 1L)
+    void 요약_2000자는_저장한다() throws Exception {
+        mockMvc.perform(put(PATH + "/7/summary").header("X-Requested-With", AJAX)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"smryCn\":\"" + "가".repeat(2000) + "\",\"smryEndMsgSeq\":12}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockLoginMember(id = 1L)
+    void X_Requested_With_없이_요약을_저장하면_막고_저장하지_않는다() throws Exception {
+        mockMvc.perform(put(PATH + "/7/summary").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"smryCn\":\"요약\",\"smryEndMsgSeq\":12}"))
+                .andExpect(status().is4xxClientError());
+        verify(aiConversationService, never()).saveSummary(any(), any(), any());
+    }
+
+    @Test
+    void 쿠키가_없으면_요약_저장도_401이다() throws Exception {
+        mockMvc.perform(put(PATH + "/7/summary").header("X-Requested-With", AJAX)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"smryCn\":\"요약\",\"smryEndMsgSeq\":12}"))
+                .andExpect(status().isUnauthorized());
     }
 }
