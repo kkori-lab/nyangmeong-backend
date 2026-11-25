@@ -375,4 +375,98 @@ class DailyHealthRecordServiceTest {
             assertThat(e.getFields()).containsExactly(fields);
         });
     }
+
+    // ===== 일괄 등록 (※신규 정책) =====
+
+    private static DailyHealthRecordCreateRequest number(String indicator, String value) {
+        return new DailyHealthRecordCreateRequest(indicator, AT, new BigDecimal(value), null);
+    }
+
+    private static void assertInvalidWithoutField(Runnable action) {
+        assertThatThrownBy(action::run).isInstanceOfSatisfying(CustomException.class, e -> {
+            assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
+            assertThat(e.getFields()).isEmpty();
+        });
+    }
+
+    @Test
+    void 일괄_등록_2건은_건마다_저장하고_케어미션에_반영한다() {
+        List<DailyHealthRecordResponse> responses = service.createAll(MBR, PET,
+                List.of(number(WEIGHT, "4.6"), new DailyHealthRecordCreateRequest(STOOL, AT, null, NORMAL)));
+
+        assertThat(responses).hasSize(2);
+        verify(petAuthorizer, times(1)).checkCaregiver(MBR, PET);
+        verify(mapper, times(2)).insertRecord(any());
+        verify(careMissionService).reflect(PET, CareMission.WEIGHT_RECORD, MBR);
+        verify(careMissionService).reflect(PET, CareMission.STOOL_RECORD, MBR);
+    }
+
+    @Test
+    void 일괄_등록_5건은_다섯_지표를_모두_저장하고_미션도_5번_반영한다() {
+        List<DailyHealthRecordResponse> responses = service.createAll(MBR, PET,
+                List.of(number(WEIGHT, "4.6"), number(MEAL, "80"), number(WATER, "300"),
+                        new DailyHealthRecordCreateRequest(STOOL, AT, null, NORMAL), number(WALK, "30")));
+
+        assertThat(responses).hasSize(5);
+        verify(petAuthorizer, times(1)).checkCaregiver(MBR, PET);
+        verify(mapper, times(5)).insertRecord(any());
+        verify(careMissionService).reflect(PET, CareMission.WEIGHT_RECORD, MBR);
+        verify(careMissionService).reflect(PET, CareMission.MEAL_RECORD, MBR);
+        verify(careMissionService).reflect(PET, CareMission.WATER_RECORD, MBR);
+        verify(careMissionService).reflect(PET, CareMission.STOOL_RECORD, MBR);
+        verify(careMissionService).reflect(PET, CareMission.WALK_RECORD, MBR);
+    }
+
+    @Test
+    void 일괄_등록에서_한_건이_틀리면_아무것도_저장하지_않고_칸에_번호를_붙인다() {
+        assertFields(() -> service.createAll(MBR, PET,
+                List.of(number(WEIGHT, "4.6"), number(WALK, "121"))), "values[1].rcdNvl");
+        assertFields(() -> service.createAll(MBR, PET,
+                List.of(new DailyHealthRecordCreateRequest(STOOL, AT, null, "HLTC9999"), number(WEIGHT, "4.6"))),
+                "values[0].crsdSttsCd");
+        assertFields(() -> service.createAll(MBR, PET,
+                List.of(number(WEIGHT, "4.6"), new DailyHealthRecordCreateRequest(MEAL,
+                        LocalDateTime.now(ZoneId.of("Asia/Seoul")).plusHours(1), new BigDecimal("80"), null))),
+                "values[1].rcdDt");
+
+        verify(mapper, never()).insertRecord(any());
+        verify(careMissionService, never()).reflect(anyLong(), any(), anyLong());
+        verify(petService, never()).syncWeight(anyLong(), any(), anyLong());
+    }
+
+    @Test
+    void 일괄_등록의_음수량_상한은_요청_전_프로필_체중으로_검사한다() {
+        // 프로필 5kg → 음수량 상한 500ml. 같은 요청의 체중 10kg은 반영하지 않음
+        assertFields(() -> service.createAll(MBR, PET,
+                List.of(number(WEIGHT, "10"), number(WATER, "600"))), "values[1].rcdNvl");
+        verify(mapper, never()).insertRecord(any());
+    }
+
+    @Test
+    void 일괄_등록에서_같은_지표가_두_번이면_칸_이름_없이_400이다() {
+        assertInvalidWithoutField(() -> service.createAll(MBR, PET,
+                List.of(number(WEIGHT, "4.6"), number(WEIGHT, "4.7"))));
+        verify(mapper, never()).insertRecord(any());
+    }
+
+    @Test
+    void 일괄_등록은_0건이나_6건_이상이면_칸_이름_없이_400이다() {
+        assertInvalidWithoutField(() -> service.createAll(MBR, PET, List.of()));
+        assertInvalidWithoutField(() -> service.createAll(MBR, PET, null));
+        assertInvalidWithoutField(() -> service.createAll(MBR, PET,
+                List.of(number(WEIGHT, "4.6"), number(MEAL, "80"), number(WATER, "300"),
+                        new DailyHealthRecordCreateRequest(STOOL, AT, null, NORMAL), number(WALK, "30"),
+                        number(WALK, "20"))));
+        verify(mapper, never()).insertRecord(any());
+    }
+
+    @Test
+    void 일괄_등록은_남의_반려동물이면_단건과_같은_오류로_거절한다() {
+        doThrow(new CustomException(ErrorCode.FORBIDDEN)).when(petAuthorizer).checkCaregiver(MBR, OTHER_PET);
+
+        assertThatThrownBy(() -> service.createAll(MBR, OTHER_PET, List.of(number(WEIGHT, "4.6"))))
+                .isInstanceOfSatisfying(CustomException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN));
+        verify(mapper, never()).insertRecord(any());
+    }
 }

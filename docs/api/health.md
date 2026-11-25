@@ -31,6 +31,7 @@
 | POST | /pets/{petSn}/checkup-attachments | 첨부 등록(multipart, 유형·영상 종류·촬영 부위) | HLT-005-01 | JAJ | CheckupAttachmentCreateRequest | CheckupAttachmentResponse |
 | POST | /pets/{petSn}/checkups | 검진기록 직접 등록(같은 날짜 병원 일정 자동 연결·없으면 생성, 가까운 일정 옮겨 연결 선택) | HLT-002-26~29·31·46 | JAJ | CheckupCreateRequest | CheckupResponse |
 | POST | /pets/{petSn}/daily-health-records | 오늘 기록 추가(식사량·음수량·산책·체중·배변상태). 체중은 0 초과 200 이하(※신규 정책). 산책은 0 초과 120 이하(※신규 정책). 음수량은 1회 프로필 체중(kg)×100 이하, 식사량은 1회 프로필 체중(kg)×50 이하(※신규 정책). 기록 시각은 지금(Asia/Seoul)+5분까지, 넘으면 400 `rcdDt`(※신규 정책: 지난 일만 기록, 예정은 캘린더) | HLT-002-11 | JAJ | DailyHealthRecordCreateRequest | DailyHealthRecordResponse |
+| POST | /pets/{petSn}/daily-health-records/bulk | 오늘 기록 일괄 추가(1~5건, 같은 `dailyRcdIdctCd`는 한 번만, 201 배열). 건마다 단건 추가와 같은 검사, 오류 칸은 `values[번호].칸`(예: `values[1].rcdNvl`). 건수·중복 오류는 칸 이름 없이 메시지만. 하나라도 틀리면 전부 저장 안 함. 음수량·식사량 상한은 요청 전 프로필 체중 기준(같은 요청의 체중은 반영 안 함). 케어미션은 건마다 반영(※신규 정책) | HLT-002-11 | JAJ | DailyHealthRecordBulkCreateRequest | List<DailyHealthRecordResponse> |
 | POST | /pets/{petSn}/etc-inspections | 기타검사 입력(검사명·결과 500자·메모 200자) | HLT-005-11~14 | JAJ | EtcInspectionCreateRequest | EtcInspectionResponse |
 | POST | /pets/{petSn}/inspection-values | 검사 수치 여러 행 저장(혈액검사 고정, 이미 등록된 항목 제외, 삭제된 같은 항목은 복구) | HLT-007-02~05 | JAJ | InspectionValueCreateRequest | List<InspectionValueResponse> |
 | POST | /pets/{petSn}/observation-cycles | 관찰 회차 추가(multipart 사진, 종료 항목 불가) | HLT-002-20~25·32 | JAJ | ObservationCycleCreateRequest | ObservationCycleResponse |
@@ -339,8 +340,14 @@
 | ckupCn | String | N | 최대 500자 | CKUP_RCD.CKUP_CN, HLT-005-01 |
 | ckupMemoCn | String | N | 최대 200자 | CKUP_RCD.CKUP_MEMO_CN, HLT-005-01 |
 
+### DailyHealthRecordBulkCreateRequest
+쓰는 API: POST /pets/{petSn}/daily-health-records/bulk
+| 필드 | 타입 | 필수 | 검증·설명 | 근거 |
+| --- | --- | --- | --- | --- |
+| values | List<DailyHealthRecordCreateRequest> | Y | 1~5건, 같은 `dailyRcdIdctCd`는 한 번만(틀리면 칸 이름 없는 400, 서비스 검사). 건마다 DailyHealthRecordCreateRequest와 같은 검증(※신규 정책) | HLT-002-11 |
+
 ### DailyHealthRecordCreateRequest
-쓰는 API: POST /pets/{petSn}/daily-health-records
+쓰는 API: POST /pets/{petSn}/daily-health-records; POST /pets/{petSn}/daily-health-records/bulk (DailyHealthRecordBulkCreateRequest.values의 요소)
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | dailyRcdIdctCd | String | Y | HLTG09 공통코드(체중·식사량·음수량·배변상태·산책) | DAILY_HLTH_RCD.DAILY_RCD_IDCT_CD, HLT-002-11 |
@@ -349,7 +356,7 @@
 | crsdSttsCd | String | N | HLTG10 공통코드(정상·딱딱함·무름·설사·변비). 배변상태면 필수 | DAILY_HLTH_RCD.CRSD_STTS_CD, HLT-002-11 |
 
 ### DailyHealthRecordResponse
-쓰는 API: PATCH /pets/{petSn}/daily-health-records/{dailyHlthRcdSn}; POST /pets/{petSn}/daily-health-records (DailyHealthRecordSummary와 같은 모양)
+쓰는 API: PATCH /pets/{petSn}/daily-health-records/{dailyHlthRcdSn}; POST /pets/{petSn}/daily-health-records; POST /pets/{petSn}/daily-health-records/bulk (bulk는 List) (DailyHealthRecordSummary와 같은 모양)
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | dailyHlthRcdSn | Long | Y | | DAILY_HLTH_RCD.DAILY_HLTH_RCD_SN |
