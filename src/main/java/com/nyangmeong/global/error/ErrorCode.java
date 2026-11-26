@@ -194,6 +194,7 @@ public enum ErrorCode {
     LOST_REPORT_NOT_EDITABLE(HttpStatus.BAD_REQUEST, "게시 중인 실종 제보만 수정할 수 있습니다."),
     LOST_REPORT_NOT_RENEWABLE(HttpStatus.BAD_REQUEST, "게시 종료 7일 전부터 종료 전까지 한 번만 연장할 수 있습니다."),
     LOST_REPORT_CLOSED(HttpStatus.BAD_REQUEST, "찾았어요 처리된 제보에는 댓글을 달 수 없습니다."),
+    LOST_REPORT_LIKE_CLOSED(HttpStatus.BAD_REQUEST, "찾았어요 처리됐거나 게시가 끝난 제보에는 좋아요를 누를 수 없어요."),
     NEWS_NOT_FOUND(HttpStatus.NOT_FOUND, "뉴스를 찾을 수 없습니다."),
     NEWS_KEYWORD_NOT_FOUND(HttpStatus.NOT_FOUND, "분류 키워드를 찾을 수 없습니다."),
     DUPLICATE_NEWS_KEYWORD(HttpStatus.CONFLICT, "이 카테고리에 이미 있는 키워드입니다."),

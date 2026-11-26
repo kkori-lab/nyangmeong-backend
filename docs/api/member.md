@@ -32,7 +32,7 @@
 | GET | /members/me/tutorial | 메인 서비스 튜토리얼 봤음 여부 조회. `false`면 프론트가 튜토리얼 모달을 띄운다. 신규 가입 회원은 `false`, 이 컬럼을 추가하기 전에 가입한 회원은 `true`. 비로그인 401 | MAN-012 | LJS | - | MemberTutorialResponse |
 | PUT | /members/me/tutorial | 메인 서비스 튜토리얼 봤음 저장. 본문 없음. 모달이 닫힐 때마다 부르며 이미 봤어도 200과 같은 응답(멱등). 응답은 조회와 같다. 비로그인 401 | MAN-012 | LJS | - | MemberTutorialResponse |
 | PATCH | /members/me | 회원정보 수정. 휴대전화(저장 시 중복 재검사)·프로필 사진 | MYP-040-02·05·08·11 | SJM | MemberUpdateRequest | MemberResponse |
-| PATCH | /members/me/nickname | 닉네임 설정 확정(로그인 회원 또는 가입 직후 받은 `ncnm_setup` 쿠키, 둘 다 없으면 401), 설정 완료 여부 반영 | ACC-001-26 | YAY | MemberNicknameUpdateRequest | MemberResponse |
+| PATCH | /members/me/nickname | 닉네임 설정 확정(가입 직후 받은 `ncnm_setup` 쿠키가 있으면 로그인 회원보다 먼저 쓰고, 없으면 로그인 회원, 둘 다 없으면 401), 설정 완료 여부 반영. 성공하면 `ncnm_setup` 쿠키를 지운다(로그인 성공 때도 지운다) | ACC-001-26 | YAY | MemberNicknameUpdateRequest | MemberResponse |
 | PATCH | /members/me/password | 로그인 상태에서 비밀번호 변경. 현재 비밀번호를 같은 요청에서 다시 검사(틀리면 400 CURRENT_PASSWORD_MISMATCH), `pswd`와 `pswdCnfrm` 불일치 400 PASSWORD_MISMATCH, 새 비밀번호가 현재 비밀번호와 같으면 400 PASSWORD_SAME_AS_CURRENT, SNS 회원 400 SNS_ONLY_MEMBER. 성공하면 모든 기기의 로그인을 끝내고 요청한 기기에는 새 로그인 쿠키를 다시 준다 *통합 때 추가* | MYP-040-06 | YAY | PasswordChangeRequest | - |
 | GET | /admin/members | 관리자 회원 목록. 최신 가입순 20건씩, 정상·정지·탈퇴 전부. `q`에 @가 있으면 이메일 완전 일치, 없으면 닉네임 부분 일치. 시작일이 종료일보다 늦으면 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-010-01·02·03·04 | LJS | AdminMemberSearchCond | PageResponse<AdminMemberSummary> |
 | GET | /admin/members/suspensions | 지금 정지 중인 회원 목록. 최근 정지순 20건씩. 일반 회원 403 ADMIN_ONLY | ADM-012 | LJS | AdminSuspensionSearchCond | PageResponse<AdminSuspensionSummary> |
