@@ -75,6 +75,11 @@ public interface ChatRoomMapper {
             @Param("ptcpSttsCd") String ptcpSttsCd);
 
     /**
+     * 보이는 시작 메시지를 지금 방의 마지막 메시지 순서로 (나간 사람 화면 리셋, 읽음 위치도 같이 올림)
+     */
+    int updateVisibleStart(@Param("otoChatRoomSn") Long otoChatRoomSn, @Param("mbrSn") Long mbrSn);
+
+    /**
      * 참여 중인 회원 번호 목록
      */
     List<Long> selectParticipantMbrSns(@Param("otoChatRoomSn") Long otoChatRoomSn,
@@ -118,5 +123,6 @@ public interface ChatRoomMapper {
     /**
      * 방의 메시지에 붙은 사진인지 여부
      */
-    boolean existsPhoto(@Param("otoChatRoomSn") Long otoChatRoomSn, @Param("atchFileSn") Long atchFileSn);
+    boolean existsPhoto(@Param("otoChatRoomSn") Long otoChatRoomSn, @Param("mbrSn") Long mbrSn,
+            @Param("atchFileSn") Long atchFileSn);
 }

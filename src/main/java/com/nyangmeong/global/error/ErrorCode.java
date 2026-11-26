@@ -224,6 +224,7 @@ public enum ErrorCode {
     CARE_MATCH_ALREADY_MATCHED(HttpStatus.CONFLICT, "이미 다른 분과 매칭된 모집글입니다."),
     CARE_MATCH_INVALID_STATE(HttpStatus.CONFLICT, "현재 매칭 단계에서는 할 수 없는 요청입니다."),
     CHAT_LEAVE_IN_DEAL(HttpStatus.CONFLICT, "거래가 진행 중이라 나갈 수 없어요. 거래 취소를 먼저 요청해 주세요."),
+    CARE_MATCH_COUNTERPART_LEFT(HttpStatus.CONFLICT, "상대가 나간 방에서는 매칭을 요청할 수 없어요. 메시지를 보내 대화를 다시 시작해 주세요."),
     CARE_DEAL_CANCEL_REJECTED(HttpStatus.CONFLICT, "상대가 거절한 거래 취소는 이 거래에서 다시 요청할 수 없어요."),
 
     /** ai */

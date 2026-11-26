@@ -15,6 +15,7 @@ public class ChatParticipant {
     private Long mbrSn;
     private String ptcpSttsCd;
     private Integer lastPrslMsgSeq;
+    private Integer vsblBgngMsgSeq;
     private LocalDateTime regDt;
     private LocalDateTime mdfcnDt;
 }
