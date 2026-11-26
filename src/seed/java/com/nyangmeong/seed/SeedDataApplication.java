@@ -64,6 +64,7 @@ public final class SeedDataApplication {
         System.out.println("[시드] 넣기 대상: " + options.target().label() + " " + settings.describeDatabase());
         // 비밀번호 확인은 DB에 붙기 전에 끝낸다
         settings.requiredSeedPassword();
+        settings.requiredFixedAccounts();
         checkTarget(options, settings, "넣으려면");
 
         try (Connection conn = DriverManager.getConnection(settings.jdbcUrl(), settings.username(), settings.password())) {

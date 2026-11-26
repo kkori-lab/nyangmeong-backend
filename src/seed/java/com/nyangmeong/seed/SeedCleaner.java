@@ -22,7 +22,8 @@ import com.nyangmeong.seed.core.SeedWarnings;
 /**
  * [업무 데이터 골라 비우기]
  * - DB를 다시 만들지 않고 SeedTables 목록대로 지운다. 호출한 쪽의 트랜잭션 안에서 실행
- * - 남기는 회원 : 시드가 만들지 않은 회원(팀원 테스트 계정), 관리자, 남기는 테이블(관리자 기록 등)이 가리키는 회원
+ * - 남기는 회원 : 시드가 만들지 않은 회원(팀원 테스트 계정), 관리자, 남기는 테이블(관리자 기록 등)이 가리키는 회원,
+ *   SeedTables.KEPT_MEMBERS(시드가 만들었지만 사람이 남기기로 한 계정)
  * - 남기는 첨부파일 : 남기는 테이블·남긴 회원·남긴 공지 본문이 가리키는 파일. 지운 행의 서버 파일은 그대로 둔다
  * - 남긴 회원의 보유 포인트는 원장을 지우므로 0으로 맞춘다
  * - 장소는 옛 시드가 만든 가짜(이름이 'n호점'으로 끝나거나 카카오 장소 ID가 fake-로 시작)만 지운다. 장소를 가리키는 즐겨찾기는 이미 비운다
@@ -88,6 +89,7 @@ public final class SeedCleaner {
                 SELECT m.MBR_SN FROM MBR m
                   JOIN COM_CD c ON c.COM_CD = m.MBR_AUTHRT_CD
                  WHERE m.RGTR_ID <> 'SEED' OR c.COM_CD_NM = '관리자'"""));
+        kept.addAll(longs("SELECT MBR_SN FROM MBR WHERE MBR_SN IN (" + list(SeedTables.KEPT_MEMBERS) + ")"));
         for (Schema.ForeignKey fk : schema.foreignKeys()) {
             if (fk.refTable().equals("MBR") && SeedTables.KEPT.contains(fk.table())) {
                 kept.addAll(longs("SELECT DISTINCT " + fk.column() + " FROM " + fk.table() + " WHERE " + fk.column() + " IS NOT NULL"));

@@ -28,6 +28,9 @@ public final class SeedTables {
     public static final List<String> PARTLY_KEPT = List.of("MBR", "SNS_ACNT_LINK", "MBR_TRMS_AGRE", "MBR_STTS_HSTRY",
             "NTC_MTTR", "FAQ", "ATCH_FILE", "PLC");
 
+    /** 시드가 만들었지만 계정을 남길 회원(사람 2026-11-26 "0133 계정까지 유지"). 활동 데이터는 다른 남긴 회원처럼 비운다 */
+    public static final List<Long> KEPT_MEMBERS = List.of(133L);
+
     /** 사람이 쓴 공지 중 검증용이 아닌 것(사람 2026-11-26) */
     public static final List<Long> KEPT_NOTICES = List.of(42L);
 

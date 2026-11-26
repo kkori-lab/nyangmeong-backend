@@ -76,4 +76,39 @@ class SeedSettingsTest {
         assertThat(local.database()).isEqualTo("copy_db");
         assertThat(local.jdbcUrl()).startsWith("jdbc:mysql://localhost:3306/copy_db?");
     }
+
+    @Test
+    void 꼭_있어야_하는_계정_키가_없으면_멈춘다() throws IOException {
+        Files.writeString(dir.resolve("application.properties"), SHARED);
+        Files.writeString(dir.resolve("application-local.properties"), "app.seed.password=from-local\n");
+
+        SeedSettings settings = SeedSettings.load(dir, Target.SHARED, null);
+
+        assertThatThrownBy(settings::requiredFixedAccounts).isInstanceOf(SeedException.class)
+                .hasMessageContaining("app.seed.fixed-accounts");
+    }
+
+    @Test
+    void 꼭_있어야_하는_계정은_비밀번호도_있어야_한다() throws IOException {
+        Files.writeString(dir.resolve("application.properties"), SHARED);
+        Files.writeString(dir.resolve("application-local.properties"), "app.seed.fixed-accounts=a@example.com\n");
+
+        SeedSettings settings = SeedSettings.load(dir, Target.SHARED, null);
+
+        assertThatThrownBy(settings::requiredFixedAccounts).isInstanceOf(SeedException.class)
+                .hasMessageContaining("app.seed.fixed-password");
+    }
+
+    @Test
+    void 꼭_있어야_하는_계정은_쉼표로_나눠_읽는다() throws IOException {
+        Files.writeString(dir.resolve("application.properties"), SHARED);
+        Files.writeString(dir.resolve("application-local.properties"), """
+                app.seed.fixed-accounts= a@example.com , b@example.com
+                app.seed.fixed-password=fixed
+                """);
+
+        SeedSettings settings = SeedSettings.load(dir, Target.SHARED, null);
+
+        assertThat(settings.requiredFixedAccounts()).containsExactly("a@example.com", "b@example.com");
+    }
 }

@@ -18,9 +18,12 @@ import com.nyangmeong.seed.SeedOptions.Target;
  * - 시드 계정 비밀번호(app.seed.password)는 대상과 상관없이 git 제외 application-local.properties에서만 읽는다
  */
 public record SeedSettings(String jdbcUrl, String username, String password, String host, String database,
-        String aesKeyBase64, String hmacKeyBase64, String seedPassword) {
+        String aesKeyBase64, String hmacKeyBase64, String seedPassword, String fixedAccounts, String fixedPassword) {
 
     public static final String SEED_PASSWORD_KEY = "app.seed.password";
+    /** 꼭 있어야 하고 비밀번호를 따로 맞출 계정 메일(쉼표로 구분). 공개 저장소라 메일·비밀번호 모두 application-local.properties에만 둔다 */
+    public static final String FIXED_ACCOUNTS_KEY = "app.seed.fixed-accounts";
+    public static final String FIXED_PASSWORD_KEY = "app.seed.fixed-password";
 
     private static final Path RESOURCES = Path.of("src", "main", "resources");
     private static final Pattern MYSQL_URL = Pattern.compile("jdbc:(?:log4jdbc:)?mysql://([^:/?]+)(?::\\d+)?/([^?]+).*");
@@ -53,7 +56,7 @@ public record SeedSettings(String jdbcUrl, String username, String password, Str
         return new SeedSettings(jdbcUrl, required(props, "spring.datasource.username"),
                 props.getProperty("spring.datasource.password", ""), m.group(1), database,
                 required(props, "app.crypto.aes-key-base64"), required(props, "app.crypto.hmac-key-base64"),
-                local.getProperty(SEED_PASSWORD_KEY));
+                local.getProperty(SEED_PASSWORD_KEY), local.getProperty(FIXED_ACCOUNTS_KEY), local.getProperty(FIXED_PASSWORD_KEY));
     }
 
     /**
@@ -65,6 +68,21 @@ public record SeedSettings(String jdbcUrl, String username, String password, Str
                     + " 값이 없습니다. src/main/resources/application-local.properties(git 제외)에 넣어 주세요");
         }
         return seedPassword.trim();
+    }
+
+    /**
+     * 꼭 있어야 하는 계정 메일. 키가 없거나 비밀번호가 비어 있으면 DB에 붙기 전에 멈춘다
+     */
+    public java.util.List<String> requiredFixedAccounts() {
+        java.util.List<String> emails = fixedAccounts == null ? java.util.List.of()
+                : java.util.Arrays.stream(fixedAccounts.split(",")).map(String::trim).filter(e -> !e.isEmpty()).toList();
+        if (emails.isEmpty()) {
+            throw new SeedException(FIXED_ACCOUNTS_KEY + " 값이 없습니다. src/main/resources/application-local.properties(git 제외)에 넣어 주세요");
+        }
+        if (fixedPassword == null || fixedPassword.isBlank()) {
+            throw new SeedException(FIXED_PASSWORD_KEY + " 값이 없습니다. src/main/resources/application-local.properties(git 제외)에 넣어 주세요");
+        }
+        return emails;
     }
 
     public boolean isLocalHost() {

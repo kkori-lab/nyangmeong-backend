@@ -33,9 +33,11 @@ public final class Seed {
     private final String passwordHash;
     private final RowStore store;
     private final Masters masters;
+    private final java.util.List<String> fixedAccounts;
+    private final String fixedPasswordHash;
 
     private Seed(Random random, Codes codes, FieldCryptoService crypto, String password, RowStore store,
-            Masters masters) {
+            Masters masters, java.util.List<String> fixedAccounts, String fixedPassword) {
         this.random = random;
         this.today = LocalDate.now();
         this.now = today.atTime(LocalTime.now().withNano(0));
@@ -45,6 +47,8 @@ public final class Seed {
         this.passwordHash = new BCryptPasswordEncoder().encode(password);
         this.store = store;
         this.masters = masters;
+        this.fixedAccounts = fixedAccounts;
+        this.fixedPasswordHash = new BCryptPasswordEncoder().encode(fixedPassword);
     }
 
     public static Seed create(Connection conn, Schema schema, long randomSeed, SeedSettings settings) throws SQLException {
@@ -54,7 +58,7 @@ public final class Seed {
         FieldCryptoService crypto = new FieldCryptoService(props);
         crypto.initializeKeys();
         return new Seed(new Random(randomSeed), Codes.load(conn), crypto, settings.requiredSeedPassword(),
-                RowStore.load(conn, schema), Masters.load(conn));
+                RowStore.load(conn, schema), Masters.load(conn), settings.requiredFixedAccounts(), settings.fixedPassword().trim());
     }
 
     public RowStore store() {
@@ -63,6 +67,15 @@ public final class Seed {
 
     public Codes codes() {
         return codes;
+    }
+
+    /** 꼭 있어야 하고 비밀번호를 app.seed.fixed-password로 맞출 계정 메일 */
+    public java.util.List<String> fixedAccounts() {
+        return fixedAccounts;
+    }
+
+    public String fixedPasswordHash() {
+        return fixedPasswordHash;
     }
 
     public Masters masters() {

@@ -22,6 +22,7 @@ import com.nyangmeong.seed.core.World.Activity;
  * - 주인공(회원 1) : 계정은 그대로 두고 닉네임을 바꾸고 비밀번호를 app.seed.password로 맞춘다
  * - 남긴 엑스트라 : 계정을 건드리지 않는다
  * - 새 엑스트라 : MBR·MBR_STTS_HSTRY·MBR_TRMS_AGRE. 메일은 보내지지 않는 example.com, 이메일 알림은 끈다
+ * - 꼭 있어야 하는 계정(app.seed.fixed-accounts) : 남긴 회원 중에 없으면 멈추고, 있으면 비밀번호를 app.seed.fixed-password로 맞춘다
  */
 public class MemberSeeder implements Seeder {
 
@@ -59,6 +60,8 @@ public class MemberSeeder implements Seeder {
                 crypto.decrypt(persona.emailEnc()), persona.joinedAt(), People.PERSONA.activity(), People.SGG,
                 People.PERSONA.emdNm(), null));
 
+        fixedAccounts(s, m, crypto);
+
         for (People.PersonPlan plan : People.EXTRAS) {
             if (plan.keptSn() != null) {
                 if (!m.hasMember(plan.keptSn())) {
@@ -82,6 +85,17 @@ public class MemberSeeder implements Seeder {
                 throw new SeedException("엑스트라 닉네임 '" + plan.nickname() + "'을 이미 다른 회원이 씁니다");
             }
             newMember(s, c, crypto, w, plan);
+        }
+    }
+
+    private void fixedAccounts(Seed s, Masters m, FieldCryptoService crypto) {
+        for (String email : s.fixedAccounts()) {
+            String normalized = crypto.normalizeEmail(email);
+            Masters.KeptMember member = m.members().stream()
+                    .filter(k -> normalized.equals(crypto.normalizeEmail(crypto.decrypt(k.emailEnc())))).findFirst()
+                    .orElseThrow(() -> new SeedException("꼭 있어야 하는 계정 " + email + "이 MBR에 없습니다. seedClean이 남기는 회원인지 확인해 주세요"));
+            s.store().update("MBR", member.sn(), Map.of("PSWD_HASH", s.fixedPasswordHash()));
+            System.out.println("[시드] 꼭 있어야 하는 계정 " + member.sn() + "번의 비밀번호를 app.seed.fixed-password로 맞춥니다");
         }
     }
 
