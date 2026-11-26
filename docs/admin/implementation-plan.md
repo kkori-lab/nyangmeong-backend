@@ -115,7 +115,7 @@ AI 대화 설정(턴 수, 토큰 상한)은 SCR-ADM-110 운영 설정에 들어�
 | 화면 ID | 화면 | 주요 기능 | API 경로 | 테이블 | 도메인 담당(협의) | 결정 |
 |---|---|---|---|---|---|---|
 | ~~SCR-ADM-100~~ | 공통코드 | 만들지 않는다(2026-11-01). 코드 변경은 드물어 `db/` 기준 파일의 SQL로 처리한다 | 없음 | COM_CD | LJS | REQ-ADM-010, 28 |
-| SCR-ADM-101 | 품종·지역 | 품종 관리, 지역 조회 | `/api/admin/breeds`, `/api/admin/regions` | VRTY, RGN | KSJ(품종), LJS(지역) | |
+| SCR-ADM-101 | 품종 | 품종 관리. 관리자 지역 조회는 만들지 않았다(2026-11-25 확인, 지역은 공용 `GET /api/regions`만) | `/api/admin/breeds` | VRTY | KSJ | |
 
 ### 시스템 (`global`, 계정은 `member`)
 
