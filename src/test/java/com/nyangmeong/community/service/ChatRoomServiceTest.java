@@ -429,7 +429,7 @@ class ChatRoomServiceTest {
     @Test
     void 방에_붙지_않은_사진은_볼_수_없다() {
         when(chatRoomMapper.selectDetail(ROOM)).thenReturn(roomDetail());
-        when(chatRoomMapper.existsPhoto(ROOM, 600L)).thenReturn(false);
+        when(chatRoomMapper.existsPhoto(ROOM, SITTER, 600L)).thenReturn(false);
 
         assertError(() -> service.getImage(SITTER, ROOM, 600L), ErrorCode.FILE_NOT_FOUND);
         assertError(() -> service.getImage(99L, ROOM, 600L), ErrorCode.CHAT_ROOM_ACCESS_DENIED);
@@ -439,7 +439,7 @@ class ChatRoomServiceTest {
     @Test
     void 방에_붙은_사진은_참여자에게_준다() {
         when(chatRoomMapper.selectDetail(ROOM)).thenReturn(roomDetail());
-        when(chatRoomMapper.existsPhoto(ROOM, 600L)).thenReturn(true);
+        when(chatRoomMapper.existsPhoto(ROOM, SITTER, 600L)).thenReturn(true);
         StoredFile file = new StoredFile(new byte[] { 1 }, "image/jpeg", "a.jpg");
         when(fileStore.load(600L)).thenReturn(file);
 

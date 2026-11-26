@@ -18,6 +18,7 @@ import com.nyangmeong.community.domain.CareRecruitment;
 import com.nyangmeong.community.domain.CareRecruitmentDetail;
 import com.nyangmeong.community.domain.CareRecruitmentStatus;
 import com.nyangmeong.community.domain.CareRecruitmentStatusHistory;
+import com.nyangmeong.community.domain.ChatParticipant;
 import com.nyangmeong.community.domain.ChatParticipantStatus;
 import com.nyangmeong.community.domain.ChatRoomDetail;
 import com.nyangmeong.community.domain.ChatRoomStatus;
@@ -93,6 +94,7 @@ public class CareMatchService {
 
     /**
      * 매칭 요청 (보호자, 취소된 매칭은 같은 행으로 다시 요청)
+     * - 상대(지원자)가 나간 방이면 409. 메시지를 보내 상대가 돌아온 뒤 요청할 수 있다
      */
     @Transactional
     public CareMatchResponse request(Long mbrSn, CareMatchCreateRequest req) {
@@ -111,6 +113,10 @@ public class CareMatchService {
                 throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
             }
             return response(replay);
+        }
+        ChatParticipant counterpart = chatRoomMapper.selectParticipant(room.getOtoChatRoomSn(), room.getCtptMbrSn());
+        if (counterpart != null && ChatParticipantStatus.LEFT.is(counterpart.getPtcpSttsCd())) {
+            throw new CustomException(ErrorCode.CARE_MATCH_COUNTERPART_LEFT);
         }
 
         CareRecruitmentDetail post = careRecruitmentMapper.selectDetailByPstSn(room.getPstSn(),

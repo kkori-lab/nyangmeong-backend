@@ -1,7 +1,7 @@
 -- =====================================================================
 -- 냥멍케어 MySQL DDL v0.15  |  MySQL 8.0.16+ / InnoDB / utf8mb4_0900_ai_ci
 -- 대상: DBeaver (전체 선택 후 스크립트 실행 Alt+X, 또는 스키마 우클릭 → Tools → Execute script)
--- 원천: DDL v0.14(db/archive/v0.14/) 본문(v0.14 변경 절 (1)~(26) 중 DDL 항목이 모두 들어 있다) 위에 아래 "v0.14 → v0.15 변경"을 더한 것 (97 테이블 / 1027 컬럼 / 관계 FK 163 / 공통코드 FK 121)
+-- 원천: DDL v0.14(db/archive/v0.14/) 본문(v0.14 변경 절 (1)~(26) 중 DDL 항목이 모두 들어 있다) 위에 아래 "v0.14 → v0.15 변경"을 더한 것 (97 테이블 / 1028 컬럼 / 관계 FK 163 / 공통코드 FK 121)
 --       UK·INDEX·CHECK·생성열·공통코드 FK 는 v0.8 그대로 유지
 -- 구성: [1] DROP  [2] CREATE(PK·UK·INDEX·CHECK·생성열)  [3] 관계 FK  [4] 공통코드 FK
 -- 주의: 전체 DROP 후 재생성합니다. 기존 데이터가 있으면 먼저 백업하세요. 공용 DB에는 실행하지 않습니다.
@@ -21,6 +21,9 @@
 --   SET NAMES utf8mb4;
 --   CREATE TABLE `AI_CNVRS_SMRY` ( `AI_CNVRS_SMRY_SN` bigint NOT NULL AUTO_INCREMENT COMMENT 'AI대화요약일련번호', `AI_CNVRS_ROOM_SN` bigint NOT NULL COMMENT 'AI대화방일련번호', `SMRY_CN_ENC` text NOT NULL COMMENT '요약내용암호문', `SMRY_END_MSG_SEQ` decimal(10,0) NOT NULL COMMENT '요약끝메시지순서', `REG_DT` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시', `MDFCN_DT` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시', PRIMARY KEY (`AI_CNVRS_SMRY_SN`), UNIQUE KEY `UK_AI_CNVRS_SMRY_1` (`AI_CNVRS_ROOM_SN`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='AI대화요약';
 --   ALTER TABLE `AI_CNVRS_SMRY` ADD CONSTRAINT `FK_AI_CNVRS_SMRY_AI_CNVRS_ROOM` FOREIGN KEY (`AI_CNVRS_ROOM_SN`) REFERENCES `AI_CNVRS_ROOM` (`AI_CNVRS_ROOM_SN`) ON DELETE CASCADE ON UPDATE RESTRICT;
+-- v0.15 (3) 채팅 나간 사람 화면 리셋 (2026-11-26, KSJ, 근거: 마일스톤 KSJ SCR-CMU-005 나간 사람 화면 리셋과 상대 나감 표시, 사람 결정 2026-11-26, 기능 ID 없음 docs/api/issues.md). 나갈 때 그 방의 마지막 MSG_SEQ를 넣고, 이 회원에게는 이 값보다 큰 메시지만 보인다. 기존 행은 0(전부 보임)
+--   SET NAMES utf8mb4;
+--   ALTER TABLE `CHAT_PRTPNT` ADD COLUMN `VSBL_BGNG_MSG_SEQ` decimal(10,0) NOT NULL DEFAULT '0' COMMENT '보이는시작메시지순서' AFTER `LAST_PRSL_MSG_SEQ`;
 -- =====================================================================
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -1187,6 +1190,7 @@ CREATE TABLE `CHAT_PRTPNT` (
   `MBR_SN` bigint NOT NULL COMMENT '회원일련번호',
   `PTCP_STTS_CD` char(8) NOT NULL COMMENT '참여상태공통코드(CHTG02)',
   `LAST_PRSL_MSG_SEQ` decimal(10,0) NOT NULL DEFAULT '0' COMMENT '최종열람메시지순서',
+  `VSBL_BGNG_MSG_SEQ` decimal(10,0) NOT NULL DEFAULT '0' COMMENT '보이는시작메시지순서',
   `LAST_PRSL_DT` datetime NULL COMMENT '최종읽음일시',
   `REG_DT` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '등록일시',
   `MDFCN_DT` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
