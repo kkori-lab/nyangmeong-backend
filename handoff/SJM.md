@@ -1,9 +1,14 @@
 # SJM 핸드오프
 
 ## 지금 하는 것
-SCR-MYP-002 파기 회원 반려동물 일괄 삭제 이벤트 연결 — 끝남 (승인 2026-11-24 15:16, 시작 2026-11-24 15:30). 검증 1회차 판정 `통과`, 사람 확인 완료
-- `pet/service/MemberPurgedEventListener`(동기 `@EventListener`)가 `MemberPurgedEvent`를 받아 `PetService.purgeMemberPets`를 부른다. 예외를 삼키지 않아 회원 파기까지 롤백된다. 테스트 `MemberPurgedEventListenerTest` 3건. 새 의존성 없음
-- 확인 못 함(실제 파기): 보관 기간이 지난 회원이 공용 DB에 없어 `MemberPurgeJob` 실제 실행으로는 못 봄. 테스트로 판정
+SCR-MYP-003 강아지 털색 검증에서 얼룩(PETC0011) 빼기 (FN-MYP-003-03) — 끝 (승인 2026-11-26 11:34, 시작 2026-11-26, 검증 통과·사람 확인 2026-11-26)
+- 바꿀 파일: `pet/domain/PetColor.java` — `RETIRED`(PETC0011) 집합을 두고 `fits()`가 종과 관계없이 거절. 상수는 `DOG_ONLY`에서 옮겨 남기고 지우지 않음. 조회·표시는 `fits()`를 안 거쳐 그대로
+- 바꿀 파일: `src/test/.../PetServiceTest.java` — 강아지·고양이 등록, 수정에서 PETC0011 거절, 다른 털색 통과 테스트. 기존 `DOG_ONLY_COLOR` 상수는 PETC0010(블랙탄)으로 바꿈
+- 거절 응답은 지금과 같은 `INVALID_INPUT_VALUE`(필드 `colrCd`). DB·공통코드는 안 건드림
+- 완료 조건: 명령: `./gradlew build -q` 종료 코드 0. 화면: PETC0011로 강아지·고양이 등록·수정 400, 기존 PETC0011 반려동물 조회 이름 "얼룩", 다른 털색 등록·수정 정상
+- 주의: `updatePet`도 `checkPet`을 거치므로 PETC0011로 저장된 반려동물(3건)은 털색을 바꾸지 않고 다른 항목만 고쳐도 400이 난다. 털색을 다른 색으로 바꾸면 통과
+새 의존성: 없음
+- 사람 결정 2026-11-26: API 직접 확인 생략(단위 테스트로 대체). `PetServiceTest`가 등록·수정 거절과 다른 털색 통과를 덮고, 공통코드 PETC0011이 이미 `USE_YN='N'`이라 위험이 낮다. 검증 에이전트 권한은 주지 않음. 검증 1회차 `실패`는 이 확인 못 함 때문이다(빌드 종료 코드 0, 코드 결함 없음)
 
 ## 다음에 할 것
 - 관리자 케어미션 수정(FN-ADM-071-02): `cmpnPnt`는 출제 배점에 안 쓰이게 된다. 수정 화면·API에서 뺄지 정한다. 관리자 화면(CareMissionTable)에 아직 표시·수정됨, LJS 몫
