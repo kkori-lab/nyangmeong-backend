@@ -113,6 +113,13 @@ final class People {
             new PersonPlan("t211", 211L, null, null, 0, Activity.NONE, "송천1동",
                     List.of(new PetPlan("mimi", "미미", false, "터키시 앙고라", null, false, 3 * 12, 3.7, 3.7, null, true, "흰색", null, null, null, 0))));
 
+    /** 새 회원 계획 전부(기존 엑스트라 + 새 엑스트라 55명) */
+    static List<PersonPlan> everyExtra() {
+        List<PersonPlan> all = new java.util.ArrayList<>(EXTRAS);
+        all.addAll(ExtraPeople.PLANS);
+        return all;
+    }
+
     private People() {
     }
 }

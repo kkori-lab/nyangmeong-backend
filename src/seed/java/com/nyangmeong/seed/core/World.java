@@ -16,7 +16,16 @@ public final class World {
 
     /** 활동량 : 글·댓글·기록을 얼마나 남기는지 */
     public enum Activity {
-        HEAVY, NORMAL, LIGHT, NONE
+        HEAVY, NORMAL, LIGHT, NONE,
+        /** 눈팅 : 로그인과 좋아요만 하고 글은 쓰지 않는다 */
+        LURKER,
+        /** 휴면 : 마지막 활동(inactiveFrom) 뒤로 기록이 없다 */
+        DORMANT;
+
+        /** 글·기록을 적게 남기는 활동량 */
+        public boolean light() {
+            return this == LIGHT || this == LURKER || this == DORMANT;
+        }
     }
 
     /**
@@ -25,10 +34,11 @@ public final class World {
      * @param emdNm    사는 읍면동
      */
     /**
-     * @param leftAt 탈퇴한 회원이면 탈퇴일시(그 뒤의 활동은 만들지 않는다)
+     * @param leftAt       탈퇴한 회원이면 탈퇴일시(그 뒤의 활동은 만들지 않는다)
+     * @param inactiveFrom 휴면·정지 회원이면 활동이 끝난 일시(그 뒤의 글·댓글·기록은 만들지 않는다). 아니면 null
      */
     public record Member(long sn, String key, String nickname, String email, LocalDateTime joinedAt, Activity activity,
-            String sggNm, String emdNm, LocalDateTime leftAt) {
+            String sggNm, String emdNm, LocalDateTime leftAt, LocalDateTime inactiveFrom) {
 
         public boolean withdrawn() {
             return leftAt != null;
@@ -70,6 +80,8 @@ public final class World {
     public final Map<Long, Boolean> observing = new HashMap<>();
     /** 주인공이 보낸 대기 중인 공동양육 초대(알림이 쓴다) */
     public Invitation pendingInvitation;
+    /** 남긴 관리자(신고·문의 처리자, MemberSeeder가 정한다). 없으면 null */
+    public Long adminSn;
 
     public Member member(String key) {
         return members.stream().filter(m -> m.key().equals(key)).findFirst()

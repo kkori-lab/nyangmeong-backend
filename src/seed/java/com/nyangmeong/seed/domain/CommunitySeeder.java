@@ -28,17 +28,17 @@ public class CommunitySeeder implements Seeder {
     private static final String CHAT_PATH = "/chat?otoChatRoomSn=%d";
 
     /** 댓글 : key가 단 글, reply는 앞 댓글 번호(0부터, 없으면 -1), minutes는 글 올린 뒤 몇 분 */
-    private record C(String key, String text, int reply, int minutes) {
+    record C(String key, String text, int reply, int minutes) {
     }
 
-    private record P(String key, String bbs, int daysAgo, int hour, String title, String content, int likes, List<C> comments) {
+    record P(String key, String bbs, int daysAgo, int hour, String title, String content, int likes, List<C> comments) {
     }
 
-    private static C c(String key, String text, int minutes) {
+    static C c(String key, String text, int minutes) {
         return new C(key, text, -1, minutes);
     }
 
-    private static C r(String key, String text, int reply, int minutes) {
+    static C r(String key, String text, int reply, int minutes) {
         return new C(key, text, reply, minutes);
     }
 
@@ -138,6 +138,14 @@ public class CommunitySeeder implements Seeder {
         lateComments();
         personaRecruit();
         cheeseRecruit();
+        for (P p : ExtraPosts.POSTS) {
+            general(p);
+        }
+    }
+
+    /** 휴면·정지·탈퇴한 뒤의 시각인지 */
+    private static boolean ended(World.Member m, LocalDateTime at) {
+        return m.inactiveFrom() != null && at.isAfter(m.inactiveFrom()) || m.withdrawn() && !at.isBefore(m.leftAt());
     }
 
     private World.Member member(String key) {
@@ -159,10 +167,31 @@ public class CommunitySeeder implements Seeder {
         if (at.isAfter(s.now())) {
             at = s.now().minusMinutes(s.between(30, 120));
         }
-        Row post = post(author, p.bbs(), p.title(), p.content(), at, views(at));
+        if (ended(author, at)) {
+            SeedWarnings.add("글쓴이 " + p.key() + "의 활동이 끝난 뒤라 글 '" + p.title() + "'을 건너뜀");
+            return null;
+        }
+        Row post = post(author, p.bbs(), p.title(), p.content(), at, scaled(views(at), author));
         comments(post, author, p.comments(), at);
-        likes(post, author, p.likes(), at);
+        likes(post, author, scaled(p.likes(), author), at);
         return post;
+    }
+
+    /**
+     * 조회수·좋아요는 글쓴이 활동량에 비례한다(자주 쓰는 회원의 글이 더 많이 읽힌다)
+     * - 주인공 글은 시연 대본대로 정해 둔 값을 그대로 쓴다
+     */
+    private static int scaled(int value, World.Member author) {
+        if (author.persona()) {
+            return value;
+        }
+        double factor = switch (author.activity()) {
+        case HEAVY -> 1.4;
+        case NORMAL -> 1.0;
+        case LIGHT -> 0.7;
+        default -> 0.6;
+        };
+        return (int) Math.round(value * factor);
     }
 
     private Row post(World.Member author, String bbs, String title, String content, LocalDateTime at, int views) {
@@ -187,7 +216,7 @@ public class CommunitySeeder implements Seeder {
             World.Member writer = member(cm.key());
             LocalDateTime at = postedAt.plusMinutes(cm.minutes());
             Row parent = cm.reply() >= 0 && cm.reply() < made.size() ? made.get(cm.reply()) : null;
-            if (writer == null || at.isBefore(writer.joinedAt()) || at.isAfter(s.now()) || cm.reply() >= 0 && parent == null) {
+            if (writer == null || at.isBefore(writer.joinedAt()) || at.isAfter(s.now()) || ended(writer, at) || cm.reply() >= 0 && parent == null) {
                 made.add(null);
                 continue;
             }
@@ -195,7 +224,7 @@ public class CommunitySeeder implements Seeder {
                     .set("RPLY_TRGT_CMNT_SN", parent == null ? null : parent.sn()).set("PST_SN", post.sn())
                     .set("MBR_SN", writer.sn()).set("CMNT_CN", cm.text()).set("REG_DT", at));
             made.add(comment);
-            if (writer.sn() != author.sn()) {
+            if (writer.sn() != author.sn() && author.inactiveFrom() == null && !author.withdrawn()) {
                 w.alarms.add(new World.Alarm(author.sn(), "커뮤니티", "내 글에 댓글이 달렸어요", writer.nickname() + ": " + cm.text(),
                         String.format(POST_PATH, post.sn()), at));
             }
@@ -205,7 +234,7 @@ public class CommunitySeeder implements Seeder {
     private void likes(Row post, World.Member author, int count, LocalDateTime postedAt) {
         List<World.Member> others = w.writers().stream().filter(m -> m.sn() != author.sn()).toList();
         int n = 0;
-        for (World.Member m : s.sample(others, others.size())) {
+        for (World.Member m : likers(others)) {
             if (n >= count) {
                 break;
             }
@@ -213,11 +242,32 @@ public class CommunitySeeder implements Seeder {
             if (from.isAfter(s.now().minusMinutes(5))) {
                 continue;
             }
-            LocalDateTime at = s.soonAfter(from, 60 * 24 * 3);
+            LocalDateTime end = m.withdrawn() ? m.leftAt() : m.inactiveFrom();
+            if (end != null && !from.isBefore(end.minusMinutes(5))) {
+                continue;
+            }
+            LocalDateTime soon = s.soonAfter(from, 60 * 24 * 3);
+            LocalDateTime at = end != null && soon.isAfter(end) ? end.minusMinutes(1) : soon;
             s.store().add("PST_RCMDTN", r -> r.set("PST_SN", post.sn()).set("MBR_SN", m.sn()).set("REG_DT", at));
             n++;
         }
         post.set("RCMDTN_CNT", n);
+    }
+
+    /**
+     * 좋아요를 누를 순서 : 눈팅 회원은 글을 안 쓰는 대신 좋아요를 자주 누르므로 절반 확률로 먼저 고른다
+     */
+    private List<World.Member> likers(List<World.Member> others) {
+        List<World.Member> lurkers = new ArrayList<>(
+                s.sample(others.stream().filter(m -> m.activity() == World.Activity.LURKER).toList(), others.size()));
+        List<World.Member> rest = new ArrayList<>(
+                s.sample(others.stream().filter(m -> m.activity() != World.Activity.LURKER).toList(), others.size()));
+        List<World.Member> ordered = new ArrayList<>();
+        while (!lurkers.isEmpty() || !rest.isEmpty()) {
+            boolean lurker = !lurkers.isEmpty() && (rest.isEmpty() || s.chance(0.5));
+            ordered.add(lurker ? lurkers.remove(0) : rest.remove(0));
+        }
+        return ordered;
     }
 
     /** 최근 가입했거나 탈퇴한 테스트 계정의 댓글 : 가입 뒤 몇 분에 어느 글(제목)에 달았는지 */
