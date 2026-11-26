@@ -24,6 +24,7 @@ import com.nyangmeong.seed.domain.MemberSeeder;
 import com.nyangmeong.seed.domain.NotificationSeeder;
 import com.nyangmeong.seed.domain.PetSeeder;
 import com.nyangmeong.seed.domain.PlaceSeeder;
+import com.nyangmeong.seed.domain.ReportSeeder;
 import com.nyangmeong.seed.domain.SupportSeeder;
 
 /**
@@ -75,7 +76,7 @@ public final class SeedDataApplication {
             Seed seed = Seed.create(conn, schema, RANDOM_SEED, settings);
             World world = new World();
             List<Seeder> seeders = List.of(new MemberSeeder(), new PetSeeder(), new HealthSeeder(), new ExpenseSeeder(),
-                    new PlaceSeeder(), new CommunitySeeder(), new SupportSeeder(), new NotificationSeeder(),
+                    new PlaceSeeder(), new CommunitySeeder(), new ReportSeeder(), new SupportSeeder(), new NotificationSeeder(),
                     new CareMissionSeeder());
             for (Seeder seeder : seeders) {
                 seeder.run(seed, world);

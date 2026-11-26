@@ -35,7 +35,8 @@ public class PlaceSeeder implements Seeder {
                             () -> SeedWarnings.add("주인공 즐겨찾기 장소 '" + name + "'이 PLC에 없음"));
         }
         for (World.Member m : w.members) {
-            if (m.persona() || m.activity() == Activity.NONE || m.activity() == Activity.LIGHT && s.chance(0.5)) {
+            if (m.persona() || m.activity() == Activity.NONE || m.withdrawn() || m.inactiveFrom() != null
+                    || m.activity() == Activity.LIGHT && s.chance(0.5)) {
                 continue;
             }
             LocalDateTime from = m.joinedAt().isAfter(s.now().minusDays(60)) ? m.joinedAt() : s.now().minusDays(60);

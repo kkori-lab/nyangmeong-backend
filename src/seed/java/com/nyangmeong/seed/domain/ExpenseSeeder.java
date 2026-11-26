@@ -19,6 +19,8 @@ public class ExpenseSeeder implements Seeder {
 
     private Codes c;
     private Seed s;
+    /** 휴면·정지 회원은 이 날 전(며칠 전)까지만 지출을 넣는다. 0이면 오늘까지 */
+    private int floorAgo;
 
     @Override
     public void run(Seed seed, World w) {
@@ -27,6 +29,7 @@ public class ExpenseSeeder implements Seeder {
         for (World.Visit v : w.visits) {
             spend(v.ownerSn(), v.petSn(), "병원", v.amount(), v.hospital(), v.type() + " 진료비", v.date());
         }
+        floorAgo = 0;
         persona(w);
         for (World.Pet pet : w.pets) {
             World.Member owner = w.member(pet.ownerSn());
@@ -64,19 +67,21 @@ public class ExpenseSeeder implements Seeder {
     }
 
     private void extra(World.Pet pet, World.Member owner) {
-        if (owner.activity() == Activity.NONE) {
+        floorAgo = owner.inactiveFrom() == null ? 0
+                : (int) java.time.temporal.ChronoUnit.DAYS.between(owner.inactiveFrom().toLocalDate(), s.today());
+        if (owner.activity() == Activity.NONE || owner.withdrawn()) {
             return;
         }
         long since = java.time.temporal.ChronoUnit.DAYS.between(pet.registeredAt().toLocalDate(), s.today());
-        int firstAgo = (int) Math.max(0, Math.min(since, 60));
+        int firstAgo = (int) Math.max(floorAgo, Math.min(since, floorAgo + 60));
         int price = pet.dog() ? s.between(3, 7) * 10_000 : s.between(3, 6) * 10_000;
         every(owner.sn(), pet.sn(), "사료", price, s.pick("쿠팡", "스마트스토어", "펫마트 전주점"), pet.dog() ? "강아지 사료" : "고양이 사료",
                 firstAgo, 30);
         if (!pet.dog()) {
-            every(owner.sn(), pet.sn(), "용품", 16_900, "쿠팡", "고양이 모래", Math.max(0, firstAgo - 2), 30);
+            every(owner.sn(), pet.sn(), "용품", 16_900, "쿠팡", "고양이 모래", Math.max(floorAgo, firstAgo - 2), 30);
         }
-        if (owner.activity() != Activity.LIGHT) {
-            for (int ago = firstAgo - 3; ago > 0; ago -= s.between(10, 20)) {
+        if (!owner.activity().light()) {
+            for (int ago = firstAgo - 3; ago > floorAgo; ago -= s.between(10, 20)) {
                 spend(owner.sn(), pet.sn(), "간식", s.between(5, 13) * 1000, s.pick("쿠팡", "펫마트 전주점"), pet.dog() ? "강아지 간식" : "츄르",
                         s.today().minusDays(ago));
             }
@@ -88,7 +93,7 @@ public class ExpenseSeeder implements Seeder {
      */
     private void every(long mbrSn, Long petSn, String category, int amount, String place, String detail, int firstAgo,
             int everyDays) {
-        for (int ago = firstAgo; ago >= 0; ago -= everyDays) {
+        for (int ago = firstAgo; ago >= floorAgo; ago -= everyDays) {
             spend(mbrSn, petSn, category, amount, place, detail, s.today().minusDays(ago));
         }
     }

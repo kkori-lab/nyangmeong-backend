@@ -34,6 +34,10 @@ public class MemberSeeder implements Seeder {
         Codes c = s.codes();
         Masters m = s.masters();
         FieldCryptoService crypto = s.crypto();
+        Masters.KeptMember admin = m.members().stream()
+                .filter(k -> "관리자".equals(c.name("USRG02", k.authorityCd())) && "정상".equals(c.name("USRG01", k.statusCd())))
+                .findFirst().orElse(null);
+        w.adminSn = admin == null ? null : admin.sn();
         Set<String> nicknames = new HashSet<>();
         m.members().forEach(k -> nicknames.add(k.nickname()));
 
@@ -58,11 +62,11 @@ public class MemberSeeder implements Seeder {
         s.store().update("MBR", persona.sn(), personaUpdate);
         w.members.add(new World.Member(persona.sn(), People.PERSONA.key(), People.PERSONA.nickname(),
                 crypto.decrypt(persona.emailEnc()), persona.joinedAt(), People.PERSONA.activity(), People.SGG,
-                People.PERSONA.emdNm(), null));
+                People.PERSONA.emdNm(), null, null));
 
         fixedAccounts(s, m, crypto);
 
-        for (People.PersonPlan plan : People.EXTRAS) {
+        for (People.PersonPlan plan : People.everyExtra()) {
             if (plan.keptSn() != null) {
                 if (!m.hasMember(plan.keptSn())) {
                     SeedWarnings.add("남긴 회원 " + plan.keptSn() + "번이 없어 엑스트라 " + plan.key() + "를 건너뜀");
@@ -78,7 +82,7 @@ public class MemberSeeder implements Seeder {
                 // 탈퇴한 테스트 계정은 탈퇴 전에 남긴 것(반려동물 등록·댓글)만 만든다
                 LocalDateTime leftAt = withdrawn ? (kept.withdrawnAt() == null ? kept.joinedAt().plusMinutes(5) : kept.withdrawnAt()) : null;
                 w.members.add(new World.Member(kept.sn(), plan.key(), kept.nickname(), crypto.decrypt(kept.emailEnc()),
-                        kept.joinedAt(), withdrawn ? Activity.NONE : plan.activity(), People.SGG, plan.emdNm(), leftAt));
+                        kept.joinedAt(), withdrawn ? Activity.NONE : plan.activity(), People.SGG, plan.emdNm(), leftAt, null));
                 continue;
             }
             if (!nicknames.add(plan.nickname())) {
@@ -100,28 +104,60 @@ public class MemberSeeder implements Seeder {
     }
 
     private void newMember(Seed s, Codes c, FieldCryptoService crypto, World w, People.PersonPlan plan) {
+        ExtraPeople.Meta meta = ExtraPeople.META.get(plan.key());
+        ExtraPeople.Status status = meta == null ? ExtraPeople.Status.NORMAL : meta.status();
         String email = plan.emailLocal() + EMAIL_DOMAIN;
         LocalDateTime joinedAt = s.today().minusDays(plan.joinedDays()).atTime(s.between(9, 23), s.between(0, 59));
-        LocalDateTime lastLogin = switch (plan.activity()) {
+        // 휴면 시작·정지·탈퇴한 시각(그 뒤로 이 회원의 활동은 없다)
+        LocalDateTime changedAt = meta == null ? null : s.now().minusDays(meta.daysAgo()).minusMinutes(s.between(0, 300));
+        boolean suspended = status == ExtraPeople.Status.SUSPENDED || status == ExtraPeople.Status.BANNED;
+        boolean withdrawn = status == ExtraPeople.Status.WITHDRAWN;
+        LocalDateTime leftAt = withdrawn ? changedAt : null;
+        LocalDateTime inactiveFrom = changedAt != null && !withdrawn ? changedAt : null;
+        LocalDateTime lastLogin = changedAt != null ? changedAt.minusMinutes(s.between(5, 600)) : switch (plan.activity()) {
         case HEAVY -> s.now().minusHours(s.between(1, 20));
         case NORMAL -> s.now().minusDays(s.between(1, 3));
+        case LURKER -> s.now().minusHours(s.between(2, 40));
         default -> s.now().minusDays(s.between(2, 9));
         };
-        Row row = s.store().add("MBR", r -> r.set("MBR_STTS_CD", c.of("USRG01", "정상"))
-                .set("MBR_AUTHRT_CD", c.of("USRG02", "일반회원")).set("JOIN_PATH_CD", c.of("USRG03", "이메일"))
-                .set("ACNT_EML_ENC", crypto.encrypt(crypto.normalizeEmail(email))).set("ACNT_EML_HMAC", crypto.emailHmac(email))
-                .set("PSWD_HASH", s.passwordHash()).set("MBR_NCNM", plan.nickname()).yn("NCNM_STNG_CMPTN_YN", true)
-                .yn("TUTRL_VIEW_YN", true).yn("EML_NOTI_RCPTN_YN", false).set("LAST_LGN_DT", lastLogin)
-                .set("REG_DT", joinedAt));
+        String statusName = withdrawn ? "탈퇴" : suspended ? "정지" : "정상";
+        // 기간 정지 : 정지한 날 + 7일 0시(영구 정지는 비워 둔다)
+        LocalDateTime suspendEnd = status == ExtraPeople.Status.SUSPENDED ? changedAt.toLocalDate().plusDays(7).atStartOfDay() : null;
+        Row row = s.store().add("MBR", r -> {
+            r.set("MBR_STTS_CD", c.of("USRG01", statusName)).set("MBR_AUTHRT_CD", c.of("USRG02", "일반회원"))
+                    .set("JOIN_PATH_CD", c.of("USRG03", "이메일")).set("ACNT_EML_ENC", crypto.encrypt(crypto.normalizeEmail(email)))
+                    .set("ACNT_EML_HMAC", crypto.emailHmac(email)).set("PSWD_HASH", s.passwordHash()).set("MBR_NCNM", plan.nickname())
+                    .yn("NCNM_STNG_CMPTN_YN", true).yn("TUTRL_VIEW_YN", true).yn("EML_NOTI_RCPTN_YN", false)
+                    .set("LAST_LGN_DT", lastLogin).set("REG_DT", joinedAt);
+            if (suspendEnd != null) {
+                r.set("SUSPN_END_DT", suspendEnd);
+            }
+            if (leftAt != null) {
+                r.set("WHDWL_DT", leftAt);
+            }
+        });
         s.store().add("MBR_STTS_HSTRY", r -> r.set("MBR_SN", row.sn()).set("AFTR_STTS_CD", c.of("USRG01", "정상"))
                 .set("CHG_RSN", "회원가입").set("REG_DT", joinedAt));
+        if (suspended) {
+            s.store().add("MBR_STTS_HSTRY", r -> {
+                r.set("MBR_SN", row.sn()).set("BFR_STTS_CD", c.of("USRG01", "정상")).set("AFTR_STTS_CD", c.of("USRG01", "정지"))
+                        .set("CHG_RSN", meta.reason()).set("REG_DT", changedAt);
+                if (w.adminSn != null) {
+                    r.set("PRCS_MBR_SN", w.adminSn);
+                }
+            });
+        }
+        if (withdrawn) {
+            s.store().add("MBR_STTS_HSTRY", r -> r.set("MBR_SN", row.sn()).set("BFR_STTS_CD", c.of("USRG01", "정상"))
+                    .set("AFTR_STTS_CD", c.of("USRG01", "탈퇴")).set("CHG_RSN", "회원 탈퇴").set("REG_DT", changedAt));
+        }
         for (Masters.Terms terms : s.masters().terms()) {
             boolean agreed = terms.essential() || s.chance(0.35);
             s.store().add("MBR_TRMS_AGRE", r -> r.set("MBR_SN", row.sn()).set("TRMS_SN", terms.sn()).set("AGRE_DT", joinedAt)
                     .yn("AGRE_YN", agreed).set("REG_DT", joinedAt).by(row.sn()));
         }
         w.members.add(new World.Member(row.sn(), plan.key(), plan.nickname(), email, joinedAt, plan.activity(), People.SGG,
-                plan.emdNm(), null));
+                plan.emdNm(), leftAt, inactiveFrom));
     }
 
     static boolean writes(World.Member m) {

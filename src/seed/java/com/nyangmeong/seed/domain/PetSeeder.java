@@ -31,7 +31,7 @@ public class PetSeeder implements Seeder {
         c = s.codes();
         List<People.PersonPlan> plans = new ArrayList<>();
         plans.add(People.PERSONA);
-        plans.addAll(People.EXTRAS);
+        plans.addAll(People.everyExtra());
         for (People.PersonPlan plan : plans) {
             World.Member owner = w.members.stream().filter(m -> m.key().equals(plan.key())).findFirst().orElse(null);
             if (owner == null) {

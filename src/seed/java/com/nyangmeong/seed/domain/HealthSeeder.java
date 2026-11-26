@@ -56,6 +56,8 @@ public class HealthSeeder implements Seeder {
     private Codes c;
     private Seed s;
     private World w;
+    /** 휴면·정지 회원의 기록이 끝난 날(없으면 오늘까지) */
+    private LocalDate endDay;
 
     @Override
     public void run(Seed seed, World world) {
@@ -79,8 +81,12 @@ public class HealthSeeder implements Seeder {
             if (owner.withdrawn()) {
                 continue;
             }
+            endDay = owner.inactiveFrom() == null ? null : owner.inactiveFrom().toLocalDate();
             extraDaily(pet, owner.activity());
-            extraCare(pet, owner);
+            if (endDay == null) {
+                extraCare(pet, owner);
+            }
+            endDay = null;
         }
     }
 
@@ -100,9 +106,10 @@ public class HealthSeeder implements Seeder {
      */
     private void dailyRange(World.Pet pet, int days, double diligent, int mealLow, int mealHigh, int waterLow, int waterHigh,
             int[] walk, int walks, double stoolNormal, double weightStart, double weightNow) {
-        LocalDate from = later(s.today().minusDays(days), pet.registeredAt().toLocalDate());
-        long span = Math.max(1, java.time.temporal.ChronoUnit.DAYS.between(from, s.today()));
-        for (LocalDate d = from; !d.isAfter(s.today()); d = d.plusDays(1)) {
+        LocalDate end = endDay == null ? s.today() : endDay;
+        LocalDate from = later(end.minusDays(days), pet.registeredAt().toLocalDate());
+        long span = Math.max(1, java.time.temporal.ChronoUnit.DAYS.between(from, end));
+        for (LocalDate d = from; !d.isAfter(end); d = d.plusDays(1)) {
             long i = java.time.temporal.ChronoUnit.DAYS.between(from, d);
             boolean today = d.equals(s.today());
             if (i % 4 == 0 || today && diligent >= 1.0) {
@@ -397,12 +404,12 @@ public class HealthSeeder implements Seeder {
     private void extraCare(World.Pet pet, World.Member owner) {
         Map<String, Double> chosen = pet.dog() ? Map.of("양치", 0.3, "빗질", 0.5, "놀이", 0.6, "귀 청소", 0.6, "발톱 관리", 0.7)
                 : Map.of("화장실 청소", 0.8, "빗질", 0.5, "놀이", 0.6);
-        double scale = owner.activity() == Activity.LIGHT ? 0.6 : 1.0;
+        double scale = owner.activity().light() ? 0.6 : 1.0;
         Map<String, Double> scaled = new java.util.HashMap<>();
         chosen.forEach((k, v) -> scaled.put(k, v * scale));
         careList(pet, owner.sn(), scaled, 60);
         long daysSince = java.time.temporal.ChronoUnit.DAYS.between(pet.registeredAt().toLocalDate(), s.today());
-        if (daysSince >= 40 && owner.activity() != Activity.LIGHT) {
+        if (daysSince >= 40 && !owner.activity().light()) {
             int ago = s.between(10, (int) daysSince - 5);
             checkup(pet, ago, s.pick("10:30", "15:00", "17:30"), "예방접종", pet.dog() ? "덕진24시동물병원" : "온누리동물병원",
                     pet.dog() ? 45_000 : 40_000, pet.dog() ? "종합백신 추가접종. 특이 반응 없음." : "고양이 종합백신 추가접종. 특이 반응 없음.", null);
@@ -461,7 +468,7 @@ public class HealthSeeder implements Seeder {
     }
 
     private People.PetPlan plan(World.Pet pet) {
-        return People.EXTRAS.stream().flatMap(p -> p.pets().stream()).filter(p -> p.key().equals(pet.key())).findFirst()
+        return People.everyExtra().stream().flatMap(p -> p.pets().stream()).filter(p -> p.key().equals(pet.key())).findFirst()
                 .orElseThrow();
     }
 
