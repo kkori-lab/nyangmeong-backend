@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.nyangmeong.community.domain.BoardType;
+import com.nyangmeong.community.domain.LostReportStatus;
 import com.nyangmeong.community.domain.Post;
 import com.nyangmeong.community.domain.PostImage;
 import com.nyangmeong.community.domain.PostStatus;
@@ -269,6 +270,10 @@ public class PostService {
     @Transactional
     public PostLikeResponse like(Long mbrSn, Long pstSn) {
         getNormalOrThrow(pstSn);
+        /** 찾았어요·게시 종료된 실종 글은 좋아요를 새로 받지 않는다 (취소는 허용, 사람 요청 2026-11-26) */
+        if (postMapper.existsClosedLostReport(pstSn, LostReportStatus.MISSING.getCode())) {
+            throw new CustomException(ErrorCode.LOST_REPORT_LIKE_CLOSED);
+        }
         int changed = postMapper.updateLikeOn(pstSn, mbrSn);
         if (changed == 0) {
             changed = postMapper.insertLikeIgnore(pstSn, mbrSn);

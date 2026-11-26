@@ -301,7 +301,7 @@
              , #{wtnsPlcLat}
              , #{wtnsPlcLot}
              , #{lastWtnsDt}
-             , DATE_ADD(NOW(), INTERVAL 30 DAY)
+             , #{expryCrtrDt}
              , #{wtnsPlcNm}
              , #{prvcRlsAgreYn}
              , #{vrtySn}
@@ -362,7 +362,7 @@
     <!-- 연장하면 종료 7일 전 창에서 벗어나 같은 요청이 두 번 반영되지 않음 -->
     <update id="updateRenewed">
         UPDATE LOST_TPOF
-           SET EXPRY_CRTR_DT = DATE_ADD(EXPRY_CRTR_DT, INTERVAL 30 DAY)
+           SET EXPRY_CRTR_DT = DATE_ADD(EXPRY_CRTR_DT, INTERVAL #{days} DAY)
              , PSTG_PRD_UPDT_NMTM = PSTG_PRD_UPDT_NMTM + 1
              , MDFCN_DT = NOW()
          WHERE LOST_TPOF_SN = #{lostTpofSn}
