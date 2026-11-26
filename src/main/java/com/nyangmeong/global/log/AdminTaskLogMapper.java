@@ -1,12 +1,14 @@
 package com.nyangmeong.global.log;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * [관리자 작업 로그 Mapper]
- * - 추가만 있고 수정·삭제 쿼리는 두지 않음 (FN-ADM-114-04)
+ * - 수정 쿼리는 두지 않음. 삭제는 보관 일수가 지난 로그를 지우는 배치용만 (FN-ADM-114-04)
  */
 @Mapper
 public interface AdminTaskLogMapper {
@@ -35,4 +37,9 @@ public interface AdminTaskLogMapper {
      * 관리자 닉네임 조회
      */
     String selectNcnm(Long mbrSn);
+
+    /**
+     * 기준 시각보다 앞선 관리자 작업 로그 삭제
+     */
+    int deleteBefore(@Param("cutoff") LocalDateTime cutoff);
 }

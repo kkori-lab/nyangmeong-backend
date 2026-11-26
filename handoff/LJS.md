@@ -2,10 +2,17 @@
 
 ## 지금 하는 것
 
-SCR-AIM-012 AI 일정 생성 확인 · 대화창 수정·삭제 도구 — 끝 (2026-11-25). `@AiTool` 17개(수정 6 PATCH·삭제 11 DELETE, 모두 CARD), 칸 제외 `@AiExclude`(`refRange`·`clearFields`), 수정 DTO `@AiCode` 4개, 수정 경로 서비스 400 칸 이름(검진·처방·기타검사·검사 수치·일지). 계약 `docs/api/ai.md`. 검증 `통과`(1회차), 사람 확인 2026-11-25, 시작 2026-11-25 11:34
+SCR-ADM-114 감사 로그 · 30일 보관 후 삭제 — 끝 (2026-11-26). 감사 로그 정리 배치 `AuditLogPurgeJob`(SYSC0034, 매일 03:30)이 오늘(KST)−30일 00:00보다 앞선 `MNGR_TASK_LOG`를 지운다(보관 일수 코드 상수 30, 관리자 삭제 API는 없음). 공통코드 v0.15 (2)는 공용 DB에 실행함. 검증 `통과`(2회차), 사람 확인 2026-11-26, 시작 2026-11-26 14:41
 
 ## 다음에 할 것
 
+- 사람(DMS, SCR-ADM-114): 관리자 기능명세서 FN-ADM-114-04 설명을 "관리자는 고치거나 지울 수 없고, 30일이 지난 로그는 배치가 매일 지운다"로. 요구사항정의서에 감사 로그 보관 문구가 있으면 같이
+- 선택: `docs/api/global.md` 배치 목록 행의 "배치 6종" 문구가 실제(14종)와 다르다
+- SCR-SEED 2차(엑스트라·관리자) 시작: `/start SCR-SEED`. 새 회원으로 엑스트라 50명 이상을 실제 사용자처럼(`People.EXTRAS`에 추가, 글·댓글은 사람 말투), 관리자 화면용 신고·자동 블라인드·자동 삭제(사유는 `ReportService.AUTO_BLIND_RSN`·`AUTO_DELETE_RSN` 상수)·정지·탈퇴·답변 대기 문의·대시보드 통계
+- 사람(공용 DB 적용, 발표 2026-12-08의 3~4일 전): README "시연용 시드 데이터" 11단계대로. 먼저 팀에 알린다(테스트 계정 201~216의 반려동물·글이 새 데이터로 바뀌고 가짜 장소 512곳이 지워진다), 공용 DB 전체 mysqldump 백업
+- 정하기(사람): 남긴 테스트 계정 닉네임(냥멍44975548·bbbbbbbbbb·냥멍TEST·dev60 등)이 주인공 알림·댓글에 보인다. 시연 전에 바꿀지
+- 도메인별 시드 확인 요청(PR에서): member YAY, pet·expense SJM, health JAJ, community·support KSJ
+- 정리(사람): 로컬 확인용 DB `nyangmeong_demo_seed`·`nyangmeong_seedcheck`와 로컬에 받은 공용 DB 덤프(암호문 있음)를 지운다
 - SCR-AIM-012 대화창 수정·삭제 도구 연결 남음: ai 세션(ai-ce)에 PR 번호·`@AiExclude`로 `refRange`·`clearFields`만 빠짐(도구는 실림)·400 칸 이름은 수정 경로만(삭제는 서비스 400 없음) 알림, `data/tools.snapshot.json` 갱신은 ai 세션. 프론트 연결 대화창 범용 확인 카드의 DELETE·본문 없는 call 실행 (프론트 저장소에서 /start, 프론트 `milestones/LJS.md`에 `대화창 수정·삭제 카드 실행 — 대기` 절 넣음)
 - 선택: 도구 목록이 `@DecimalMin`을 싣지 않아 `draft_inspection_value_update.rsltNvl`에 `min: 0`이 없다(등록 도구에는 있음). 요청 검증 400은 그대로라 동작 영향 없음
 - SCR-AIM-011 대화 요약 연결 남음: ai 세션(nyangmeong-ai-1a)에 커밋 해시·칸 이름(요청 그대로)·요청과 다른 점(마지막 msgSeq 초과 400, SQL 두 문장) 알리고, Python이 실제 Java를 부르는 확인과 ai `docs/api/internal.md` 초안 행 확정(ai 세션). PR 본문에 "DB 변경 있음 v0.15 (2), 공용 DB에는 PR 전에 실행함"
@@ -42,7 +49,6 @@ SCR-AIM-012 AI 일정 생성 확인 · 대화창 수정·삭제 도구 — 끝 (
 - 공통코드 화면(SCR-ADM-100) 제외 후속(사람, 2026-11-01 결정: 코드 변경이 드물어 만들지 않고 SQL로 처리): 요구사항정의서 REQ-ADM-010, 관리자 기능명세서·화면설계서 SCR-ADM-100, IA 구조도(DMS)를 고치고 프론트 사이드바 메뉴를 뺀다. `docs/admin/implementation-plan.md`는 반영함. 다시 만들게 되면: 공통코드 enum 44개 중 값마다 로직이 갈리는 enum은 추가해도 쓸 수 없고, `InspectionArticle` 등 허용 목록 enum은 DB 검사로 바꿔야 추가한 코드를 쓸 수 있다
 - 관리자 다음 마일스톤 전 확인(사람): 구현 계획 6절 확인 항목(인기 포토 제외·RSS 피드·알림 기본값 저장 위치, 기준정보 28번). REQ-ADM-014~022 요구사항정의서 반영은 별도 에이전트가 맡는다(2026-10-30 사람). 다른 담당 도메인 화면은 계획 2절 "협의" 표대로 먼저 이야기한다. 감사 로그가 필요한 관리자 기능은 `AdminTaskLogService.record`를 `@Transactional` 안에서 부른다
 - SCR-AIM-002 연결 남음: FN-AIM-002-02·11 (Python AI 서버가 `GET /internal/ai/settings`를 붙인다, ai 세션). PR을 올리면 ai 세션에 PR 번호와 계약(경로·응답 `AiSettingResponse`)을 알린다(ai 저장소 `docs/api/internal.md`와 같은 때 병합) 2026-11-24 ai develop `get_ai_settings()`는 아직 고정값
-- 시드 사진(파일 저장): 공용 DB(`pawever`)는 옛 시드라 사진 경로가 날짜 폴더여서 `/api/files/{번호}`로 404다. 다음에 공용 시드를 넣을 때 반영. 기존 `uploads/` 파일은 새 루트로 옮기거나 `seedFiles` 다시
 - 운영(사람): 서버에 저장 폴더와 쓰기 권한, nginx `client_max_body_size` 10m 이상. SJM에게 알린다: 캐릭터 결과·착용 이미지는 로그인 회원 누구나(`FileCategory` SHARED), 착용 시트는 도메인 API 전용이다. 공동양육자에게만 보이게 하려면 `FileCategory`를 OWNER로 바꾸고 캐릭터 이미지 API로 준다
 - 프론트 저장소: 같은 이름 스크립트에 같은 macOS 수정(`$( )` 안 `case (패턴)`, `sed -E`, `sed -i` 대신 임시 파일·`mv`, `{…;}`, 한글 앞 `cut -c` 대신 `sed`)을 적용하고, 커밋 전인 `verify-loop.sh` `scripts` 보호·verify·end 스킬 수정과 함께 프론트 PR
 - 하네스 아직 못 돌려 본 것: `pr-prep.sh --allow-dirty`(다음 PR 때), 검증 3회 실패 넘기기(다음 화면 작업) / 정하기: 프론트 `start` 스킬에도 `docs/api`(백엔드 저장소) 기준 줄을 넣을지
