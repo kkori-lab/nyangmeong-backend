@@ -66,9 +66,10 @@ public interface LostReportMapper {
             @Param("foundCd") String foundCd);
 
     /**
-     * 게시 기간 30일 연장 (실종 상태, 종료 7일 전부터 종료 전까지만)
+     * 게시 기간 연장 : 기존 종료일 + days 일 (실종 상태, 종료 7일 전부터 종료 전까지만)
      */
-    int updateRenewed(@Param("lostTpofSn") Long lostTpofSn, @Param("missingCd") String missingCd);
+    int updateRenewed(@Param("lostTpofSn") Long lostTpofSn, @Param("missingCd") String missingCd,
+            @Param("days") int days);
 
     /**
      * 만료 사전 알림 대상 제보 번호 (정상 게시글의 실종 제보 중 종료일이 오늘부터 days 일 뒤인 것)

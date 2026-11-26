@@ -106,6 +106,11 @@ public interface PostMapper {
     int selectRcmdtnCnt(Long pstSn);
 
     /**
+     * 좋아요를 받을 수 없는 실종 글인지 (실종센터 글이면서 찾았어요이거나 게시 종료일이 지남)
+     */
+    boolean existsClosedLostReport(@Param("pstSn") Long pstSn, @Param("missingCd") String missingCd);
+
+    /**
      * 사용 중인 이미지 조회
      */
     List<PostImage> selectImages(Long pstSn);
