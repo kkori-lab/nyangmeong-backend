@@ -21,13 +21,13 @@ import com.nyangmeong.seed.core.World.Activity;
  * [회원]
  * - 주인공(회원 1) : 계정은 그대로 두고 닉네임을 바꾸고 비밀번호를 app.seed.password로 맞춘다
  * - 남긴 엑스트라 : 계정을 건드리지 않는다
- * - 새 엑스트라 : MBR·MBR_STTS_HSTRY·MBR_TRMS_AGRE. 메일은 보내지지 않는 example.com, 이메일 알림은 끈다
+ * - 새 엑스트라 : MBR·MBR_STTS_HSTRY·MBR_TRMS_AGRE. 메일은 주인공과 같은 nyangmeong.dev, 이메일 알림은 끈다
  * - 꼭 있어야 하는 계정(app.seed.fixed-accounts) : 남긴 회원 중에 없으면 멈추고, 있으면 비밀번호를 app.seed.fixed-password로 맞춘다
  */
 public class MemberSeeder implements Seeder {
 
-    /** 새 회원 메일 도메인(RFC 2606 예약 도메인이라 실제로 보내지지 않는다) */
-    static final String EMAIL_DOMAIN = "@example.com";
+    /** 새 회원 메일 도메인(주인공 tester@nyangmeong.dev와 같은 시드 전용 도메인, 사람 2026-11-26) */
+    static final String EMAIL_DOMAIN = "@nyangmeong.dev";
 
     @Override
     public void run(Seed s, World w) {

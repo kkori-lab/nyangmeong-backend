@@ -34,7 +34,7 @@ final class People {
 
     static final String SGG = "전주시";
 
-    static final PersonPlan PERSONA = new PersonPlan("persona", 1L, "콩보리두부네", null, 0, Activity.HEAVY, "덕진동",
+    static final PersonPlan PERSONA = new PersonPlan("persona", 1L, "콩이네", null, 0, Activity.HEAVY, "덕진동",
             List.of(new PetPlan("kong", "콩이", true, "말티즈", null, true, 11 * 12 + 2, 3.5, 3.4, null, true, "흰색",
                     "겁이 많지만 안기는 걸 제일 좋아해요. 산책은 짧게 자주 가요.", null, "슬개골 탈구 2기(왼쪽 뒷다리)", 150),
                     new PetPlan("bori", "보리", true, "웰시 코기", null, false, 3 * 12 + 4, 14.2, 13.3, 12.5, true, "황색",
@@ -44,22 +44,22 @@ final class People {
                             150)));
 
     static final List<PersonPlan> EXTRAS = List.of(
-            new PersonPlan("boriDad", null, "보리아빠", "boridad.jeonju", 205, Activity.NORMAL, "덕진동", List.of()),
-            new PersonPlan("dubuAunt", null, "두부이모", "hotteok.cat", 27, Activity.LIGHT, "서신동",
+            new PersonPlan("boriDad", null, "보리아빠", "boridad", 205, Activity.NORMAL, "덕진동", List.of()),
+            new PersonPlan("dubuAunt", null, "두부이모", "dubu", 27, Activity.LIGHT, "서신동",
                     List.of(new PetPlan("hotteok", "호떡", false, "코리안 숏헤어", null, false, 2 * 12 + 3, 3.8, 3.9, null, true,
                             "치즈", "장난감 쥐를 물어 오는 게 취미예요.", null, null, 26))),
-            new PersonPlan("cheese", null, "치즈냥집사", "cheese.mango", 165, Activity.HEAVY, "금암동",
+            new PersonPlan("cheese", null, "치즈집사", "cheese", 165, Activity.HEAVY, "금암동",
                     List.of(new PetPlan("cheeseCat", "치즈", false, "코리안 숏헤어", null, true, 4 * 12 + 6, 5.9, 5.6, 5.2, true,
                             "치즈", "밥 시간 10분 전부터 울어요.", null, null, 160),
                             new PetPlan("mango", "망고", false, "노르웨이 숲", null, false, 3 * 12, 4.7, 4.8, null, true, "삼색",
                                     "털이 많이 빠져서 빗질을 매일 해요.", null, null, 160))),
-            new PersonPlan("songcheon", null, "송천동산책왕", "danchu.shiba", 190, Activity.HEAVY, "송천1동",
+            new PersonPlan("songcheon", null, "단추아빠", "danchu", 190, Activity.HEAVY, "송천1동",
                     List.of(new PetPlan("danchu", "단추", true, "시바견", null, true, 5 * 12 + 2, 9.8, 9.6, null, true, "황색",
                             "산책 중에 멈춰서 안 움직이는 시바 특유의 고집이 있어요.", null, null, 185))),
-            new PersonPlan("inhuPom", null, "인후동포메맘", "somi.pom", 115, Activity.NORMAL, "인후1동",
+            new PersonPlan("inhuPom", null, "솜이맘", "somi", 115, Activity.NORMAL, "인후1동",
                     List.of(new PetPlan("somi", "솜이", true, "포메라니안", null, false, 9 * 12 + 5, 2.7, 2.6, null, true, "크림",
                             "나이가 들어서 잠이 많아졌어요. 계단은 안아서 올라가요.", null, "기관지 협착(기침이 잦아요)", 110))),
-            new PersonPlan("seosin", null, "서신동냥이네", "gureum.ragdoll", 75, Activity.LIGHT, "서신동",
+            new PersonPlan("seosin", null, "구름이네", "gureum", 75, Activity.LIGHT, "서신동",
                     List.of(new PetPlan("gureum", "구름", false, "랙돌", null, true, 14, 4.1, 4.6, null, false, "포인트",
                             "아직 아기라 밤마다 우다다를 해요.", null, null, 70))),
             new PersonPlan("shy", 6L, null, null, 0, Activity.NORMAL, "진북동",
