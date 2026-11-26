@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 /**
  * [가입 직후 닉네임 설정 쿠키]
  * - 로그인 권한 없이 방금 만든 본인 회원의 닉네임 설정만 허용 : 값은 회원번호.만료시각.서명
+ * - 닉네임 설정을 마치거나 로그인하면 delete 로 지운다
  * - 저장소 없이 서명으로 검증, 위조·만료면 null
  */
 @Component
@@ -44,12 +45,23 @@ public class NicknameSetupTokenManager {
     public ResponseCookie issue(Long mbrSn) {
         long expiresAt = Instant.now().plus(Duration.ofMinutes(validMinutes)).getEpochSecond();
         String payload = mbrSn + "." + expiresAt;
-        return ResponseCookie.from(COOKIE_NAME, payload + "." + sign(payload))
+        return build(payload + "." + sign(payload), Duration.ofMinutes(validMinutes));
+    }
+
+    /**
+     * 닉네임 설정 쿠키 삭제 : 설정을 마쳤거나 로그인했으면 지운다 (남아 있으면 로그인 쿠키보다 먼저 쓰이지 않아도 30분간 다른 회원으로 쓰일 수 있다)
+     */
+    public ResponseCookie delete() {
+        return build("", Duration.ZERO);
+    }
+
+    private ResponseCookie build(String value, Duration maxAge) {
+        return ResponseCookie.from(COOKIE_NAME, value)
                 .httpOnly(true)
                 .secure(secure)
                 .sameSite("Lax")
                 .path(COOKIE_PATH)
-                .maxAge(Duration.ofMinutes(validMinutes))
+                .maxAge(maxAge)
                 .build();
     }
 

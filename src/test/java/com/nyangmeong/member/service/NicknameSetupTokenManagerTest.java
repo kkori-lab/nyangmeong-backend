@@ -57,6 +57,17 @@ class NicknameSetupTokenManagerTest {
     }
 
     @Test
+    void 삭제_쿠키는_같은_이름과_경로로_바로_만료된다() {
+        ResponseCookie cookie = manager.delete();
+
+        assertThat(cookie.getName()).isEqualTo(NicknameSetupTokenManager.COOKIE_NAME);
+        assertThat(cookie.getValue()).isEmpty();
+        assertThat(cookie.getPath()).isEqualTo("/api/members");
+        assertThat(cookie.getMaxAge().isZero()).isTrue();
+        assertThat(cookie.isHttpOnly()).isTrue();
+    }
+
+    @Test
     void 회원번호를_바꾸면_서명이_맞지_않아_인정하지_않는다() {
         String[] parts = manager.issue(11L).getValue().split("\\.");
 
