@@ -22,6 +22,7 @@ import com.nyangmeong.auth.service.LoginService;
 import com.nyangmeong.auth.service.SnsLoginService;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.session.LoginSessionManager;
+import com.nyangmeong.member.service.NicknameSetupTokenManager;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,6 +34,7 @@ import lombok.RequiredArgsConstructor;
  * [이메일·SNS 로그인 컨트롤러]
  * - GET /api/auth/login-attempt-limits, POST /api/auth/captchas, POST /api/auth/login, POST /api/auth/sns-login
  * - 로그인 실패는 4xx 이고 data 에 실패 횟수·보안코드 요구 상태가 실린다
+ * - 로그인에 성공하면 남아 있던 가입 직후 닉네임 설정 쿠키를 지운다 (그 뒤 닉네임 수정이 로그인한 회원에게만 적용되도록)
  */
 @RestController
 @RequiredArgsConstructor
@@ -42,6 +44,7 @@ public class AuthLoginController {
     private final LoginService loginService;
     private final SnsLoginService snsLoginService;
     private final LoginSessionManager loginSessionManager;
+    private final NicknameSetupTokenManager nicknameSetupTokenManager;
 
     @Operation(summary = "아이디 기준 로그인 실패 횟수·보안코드 요구 상태")
     @GetMapping("/login-attempt-limits")
@@ -66,6 +69,7 @@ public class AuthLoginController {
                     .<ApiResponse<?>>body(ApiResponse.errorWithData(result.error(), request.getRequestURI(), result.limits()));
         }
         loginSessionManager.issue(result.mbrSn(), response);
+        response.addHeader(HttpHeaders.SET_COOKIE, nicknameSetupTokenManager.delete().toString());
         return ResponseEntity.ok(ApiResponse.success(result.response()));
     }
 
@@ -76,6 +80,7 @@ public class AuthLoginController {
         SnsLoginResult result = snsLoginService.login(req, origin);
         if (result.loginMbrSn() != null) {
             loginSessionManager.issue(result.loginMbrSn(), response);
+            response.addHeader(HttpHeaders.SET_COOKIE, nicknameSetupTokenManager.delete().toString());
         }
         return ResponseEntity.ok(ApiResponse.success(result.response()));
     }

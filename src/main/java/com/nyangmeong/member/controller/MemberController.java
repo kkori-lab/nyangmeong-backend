@@ -111,7 +111,7 @@ public class MemberController {
     @GetMapping("/nickname-availability")
     public ResponseEntity<ApiResponse<MemberNicknameAvailabilityResponse>> getNicknameAvailability(
             @AuthenticationPrincipal LoginMember me, HttpServletRequest request, @Valid MemberNicknameQuery query) {
-        Long actorSn = me != null ? me.id() : nicknameSetupTokenManager.resolve(request);
+        Long actorSn = nicknameTargetMbrSn(me, request);
         return ResponseEntity.ok(ApiResponse.success(memberService.getNicknameAvailability(query.mbrNcnm(), actorSn)));
     }
 
@@ -183,10 +183,22 @@ public class MemberController {
     @PatchMapping("/me/nickname")
     public ResponseEntity<ApiResponse<MemberResponse>> updateNickname(@AuthenticationPrincipal LoginMember me,
             HttpServletRequest request, @Valid @RequestBody MemberNicknameUpdateRequest req) {
-        Long mbrSn = me != null ? me.id() : nicknameSetupTokenManager.resolve(request);
+        Long mbrSn = nicknameTargetMbrSn(me, request);
         if (mbrSn == null) {
             throw new CustomException(ErrorCode.UNAUTHORIZED);
         }
-        return ResponseEntity.ok(ApiResponse.success(memberService.updateNickname(mbrSn, req)));
+        MemberResponse response = memberService.updateNickname(mbrSn, req);
+        /** 다 쓴 가입 쿠키는 지운다 : 남겨 두면 30분 안에 마이페이지 닉네임 수정이 이 회원에게 적용된다 */
+        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, nicknameSetupTokenManager.delete().toString())
+                .body(ApiResponse.success(response));
+    }
+
+    /**
+     * 닉네임을 바꿀 회원 : 가입 직후 쿠키가 먼저, 없으면 로그인 회원
+     * - 다른 계정으로 로그인한 브라우저에서 가입해도 새 회원의 닉네임이 저장되어야 한다
+     */
+    private Long nicknameTargetMbrSn(LoginMember me, HttpServletRequest request) {
+        Long setupMbrSn = nicknameSetupTokenManager.resolve(request);
+        return setupMbrSn != null ? setupMbrSn : me != null ? me.id() : null;
     }
 }
