@@ -22,4 +22,6 @@ public class ChatRoomDetail extends ChatRoom {
     private String rcrtSttsCd;
     private Long petPrtcMtchSn;
     private String mtchDlngSttsCd;
+    private String ownerPtcpSttsCd;
+    private String applicantPtcpSttsCd;
 }

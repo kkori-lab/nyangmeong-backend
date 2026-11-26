@@ -321,7 +321,7 @@ class ChatMessageServiceTest {
             row.setMsgCn("ENC:글" + sn);
             rows.add(row);
         }
-        when(chatMessageMapper.selectList(ROOM, 41L, 3)).thenReturn(rows);
+        when(chatMessageMapper.selectList(ROOM, OWNER, 41L, 3)).thenReturn(rows);
         ChatMessagePhoto photo = new ChatMessagePhoto();
         photo.setChatMsgSn(40L);
         photo.setAtchFileSn(600L);
@@ -341,7 +341,7 @@ class ChatMessageServiceTest {
     @Test
     void 조회_크기는_오십을_넘기지_않고_참여자만_읽는다() {
         service.search(OWNER, ROOM, null, 500);
-        verify(chatMessageMapper).selectList(ROOM, null, 51);
+        verify(chatMessageMapper).selectList(ROOM, OWNER, null, 51);
 
         assertError(() -> service.search(99L, ROOM, null, null), ErrorCode.CHAT_ROOM_ACCESS_DENIED);
     }

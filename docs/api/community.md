@@ -10,10 +10,10 @@
 | GET | /care-recruitments | 펫돌봄 모집 목록(상태·지역·기간·동물 구분·크기 필터, 10건) | CMU-004-01·02 | KSJ | - | Page<CareRecruitmentSummary> |
 | GET | /care-recruitments/minimum-wage | 최저시급 조회(로그인 회원, 관리자 설정의 현재 값을 매번 읽는다. 등록·수정 화면의 시급 안내) | CMU-004-08 | KSJ | - | MinimumWageResponse |
 | GET | /care-recruitments/{petPrtcRcrtSn} | 펫돌봄 모집 상세(상세 주소·정확 좌표 제외, 내 채팅 여부·매칭 돌보미 포함) | CMU-004-04·05 | KSJ | - | CareRecruitmentResponse |
-| GET | /chat-rooms | 내 채팅 목록(`?tab=&unreadOnly=&pstSn=`. `tab`은 ALL(기본)·MINE(내 글)·APPLIED(지원한 글), 마지막 대화 최신순, 나간 방 제외. 내 글의 방은 사람이 보낸 메시지가 있는 방만) | CMU-005-02, COM-009 | KSJ | - | List<ChatRoomSummary> |
+| GET | /chat-rooms | 내 채팅 목록(`?tab=&unreadOnly=&pstSn=`. `tab`은 ALL(기본)·MINE(내 글)·APPLIED(지원한 글), 마지막 대화 최신순, 나간 방 제외. 내 글의 방은 사람이 보낸 메시지가 있는 방만. 미리보기·안 읽음 수는 내가 나가기 전 메시지를 빼고 센다) | CMU-005-02, COM-009 | KSJ | - | List<ChatRoomSummary> |
 | GET | /chat-rooms/unread-count | 읽지 않은 메시지 총수(채팅 메뉴·헤더 배지) | CMU-005-03, COM-009 | KSJ | - | ChatUnreadCountResponse |
 | GET | /chat-rooms/{otoChatRoomSn} | 채팅방 상단 게시글 카드·매칭 진행 상태·내 역할 조회(참여자만) | CMU-005-01·11, COM-009 | KSJ | - | ChatRoomResponse |
-| GET | /chat-rooms/{otoChatRoomSn}/messages | 대화 메시지 조회(커서 방식, 최신순). `?beforeChatMsgSn=&size=30` — 처음은 `beforeChatMsgSn` 없이, 위로 스크롤하면 받은 것 중 가장 오래된 `chatMsgSn`을 넘긴다. `size` 최대 50 | CMU-005-04, COM-009 | KSJ | - | ChatMessageSliceResponse |
+| GET | /chat-rooms/{otoChatRoomSn}/messages | 대화 메시지 조회(커서 방식, 최신순). `?beforeChatMsgSn=&size=30` — 처음은 `beforeChatMsgSn` 없이, 위로 스크롤하면 받은 것 중 가장 오래된 `chatMsgSn`을 넘긴다. `size` 최대 50. 내가 나갔다가 복귀한 방은 나가기 전 메시지를 주지 않는다(상대에게는 그대로) | CMU-005-04, COM-009 | KSJ | - | ChatMessageSliceResponse |
 | GET | /community-ai-commentaries | 오늘의 이야기 조회(`?cmtryCrtrYmd=`) | CMU-001-05 | KSJ | - | CommunityAiCommentaryResponse |
 | GET | /lost-reports | 실종 제보 목록(상태·지역·동물 구분·최종 목격 기간·키워드(제목·지역명·품종·특징), 12건), `mineYn=true`면 내 글만(만료 글 포함) | CMU-002-01~04 | KSJ | - | Page<LostReportSummary> |
 | GET | /lost-reports/{lostTpofSn} | 실종 제보 상세(목격 장소 좌표, 찾았어요 후 비공개 처리) | CMU-002-05·06 | KSJ | - | LostReportResponse |
@@ -24,7 +24,7 @@
 | GET | /posts/popular-photo | 인기 포토(7일 → 30일 → 전체 순 대체) | CMU-001-06 | KSJ | - | PostResponse |
 | GET | /posts/{pstSn} | 게시글 상세(조회수 동일 사용자 1일 1회 증가) | CMU-001-10 | KSJ | - | PostResponse |
 | GET | /posts/{pstSn}/comments | 댓글·대댓글 목록(삭제 댓글 대체 문구) | CMU-001-11, CMU-002-07 | KSJ | - | List<CommentSummary> |
-| POST | /care-matches | 매칭 요청(채팅방 기준, 보호자만. 요청 시점의 모집글 조건을 복사해 조건 버전을 만든다. 요청 취소된 매칭은 같은 행으로 다시 요청해 조건 버전이 늘어난다) | CMU-005-06 | KSJ | CareMatchCreateRequest | CareMatchResponse |
+| POST | /care-matches | 매칭 요청(채팅방 기준, 보호자만. 요청 시점의 모집글 조건을 복사해 조건 버전을 만든다. 요청 취소된 매칭은 같은 행으로 다시 요청해 조건 버전이 늘어난다). 상대(지원자)가 나간 방이면 409 `CARE_MATCH_COUNTERPART_LEFT`(메시지를 보내 상대가 돌아오면 요청할 수 있다) | CMU-005-06 | KSJ | CareMatchCreateRequest | CareMatchResponse |
 | POST | /care-matches/{petPrtcMtchSn}/accept | 매칭 수락(제공자만, 게시글당 1명 확정, 모집글이 매칭완료로 바뀌고 같은 글의 다른 방은 모집 종료 안내를 받고 읽기 전용(CHTC0002)이 됨) | CMU-005-07 | KSJ | - | - |
 | POST | /care-matches/{petPrtcMtchSn}/cancel | 수락 전 매칭 요청 취소(보호자만, 사유 필수) | CMU-005-06 | KSJ | CareMatchCancelRequest | - |
 | POST | /care-matches/{petPrtcMtchSn}/cancel-request | 거래 취소 요청(매칭 완료·확인 대기·수령 대기에서 두 당사자 누구나, 사유 필수, 요청중인 건이 있으면 409 `CARE_MATCH_INVALID_STATE`. 이번 거래에서 내 요청이 거절된 적이 있으면 409 `CARE_DEAL_CANCEL_REJECTED`(상대는 요청할 수 있음). 요청중인 동안 완료 요청·완료 확인·수령 확인은 409. 201) | CMU-005-06 | KSJ | CareDealCancelRequest | CareCancelDemandItem |
@@ -36,9 +36,9 @@
 | POST | /care-matches/{petPrtcMtchSn}/confirm-receipt | 제공자 비용 수령 확인(양측 충족 시 거래 완료) | CMU-005-10 | KSJ | CareMatchReceiptConfirmRequest | - |
 | POST | /care-recruitments | 펫돌봄 모집 등록(multipart/form-data. 반려동물·돌봄 형태·일정·비용 최저시급 검증·장소·사진·동의). 금칙어가 있으면 400 `PROFANITY_DETECTED`(걸린 칸 pstTtl·pstCn만 `data[].field`) | CMU-004-06~11·13 | KSJ | CareRecruitmentCreateRequest | CareRecruitmentResponse |
 | POST | /chat-rooms | 게시글·보호자·지원자 조합 채팅방 생성 또는 기존 방 반환(새 방 201, 기존 방 200) | CMU-004-05, CMU-005-01 | KSJ | ChatRoomCreateRequest | ChatRoomResponse |
-| POST | /chat-rooms/{otoChatRoomSn}/leave | 채팅방 나가기(내 목록에서만 숨기고 기록 유지, 수락 대기 매칭은 요청 취소로 바뀐다). 매칭 완료·확인 대기·수령 대기에는 나갈 수 없다(409 `CHAT_LEAVE_IN_DEAL`, 거래 취소 요청이 동의돼 매칭이 끝난 뒤에 나갈 수 있다). 이미 나갔으면 200 | CMU-005-11 | KSJ | - | - |
+| POST | /chat-rooms/{otoChatRoomSn}/leave | 채팅방 나가기(기록은 지우지 않고 내 화면만 리셋, 수락 대기 매칭은 요청 취소로 바뀐다). 나간 시점까지의 메시지(나가며 남긴 취소·나감 안내 포함)는 복귀해도 나에게 보이지 않고 이후 메시지만 보인다. 거래 완료 방도 같다. 상대가 메시지를 보내면 내 목록에 다시 나온다. 목록 [편집] 삭제도 이 API다. 매칭 완료·확인 대기·수령 대기에는 나갈 수 없다(409 `CHAT_LEAVE_IN_DEAL`, 거래 취소 요청이 동의돼 매칭이 끝난 뒤에 나갈 수 있다). 이미 나갔으면 200 | CMU-005-11 | KSJ | - | - |
 | POST | /chat-rooms/{otoChatRoomSn}/messages | 메시지 전송(텍스트·사진·주소 공유, multipart/form-data, 멱등 요청 ID). 처음은 201, 같은 `idmptDmndId` 재전송은 200과 같은 응답. 방이 읽기 전용(CHTC0002)이거나 매칭이 무응답 종료(PCAC0018)면 409 `CHAT_ROOM_CLOSED`(이미 저장된 `idmptDmndId` 재전송은 200). 저장 뒤 참여자에게 실시간으로 보낸다(아래 "실시간"). 금칙어가 있으면 400 `PROFANITY_DETECTED`(걸린 칸 텍스트 메시지 msgCn만 `data[].field`) | CMU-004-05, CMU-005-04·05, COM-009 | KSJ | ChatMessageCreateRequest | ChatMessageResponse |
-| GET | /chat-rooms/{otoChatRoomSn}/images/{atchFileSn} | 채팅 사진 보기(참여자만, 그 방 메시지에 붙은 사진만) | CMU-005-05 | KSJ | - | 이미지 바이너리 |
+| GET | /chat-rooms/{otoChatRoomSn}/images/{atchFileSn} | 채팅 사진 보기(참여자만, 그 방 메시지에 붙은 사진만. 내가 나가기 전 메시지의 사진은 404 `FILE_NOT_FOUND`) | CMU-005-05 | KSJ | - | 이미지 바이너리 |
 | POST | /chat-rooms/{otoChatRoomSn}/read | 활성 대화창에 표시된 메시지까지 읽음 처리 | CMU-005-03, COM-009 | KSJ | ChatRoomReadRequest | - |
 | POST | /lost-reports | 실종 제보 등록(게시글+제보, 게시 종료일 = 등록 시각 + 운영 설정 게시 기간(`LOST_TPOF_EXPRY_CRTR_DAY_CNT`, 기본 30일), 품종 마스터/직접입력, 목격 좌표, 개인정보 동의). 금칙어가 있으면 400 `PROFANITY_DETECTED`(걸린 칸 pstTtl·pstCn·chrcCn만 `data[].field`) | CMU-002-10·13 | KSJ | LostReportCreateRequest | LostReportResponse |
 | POST | /lost-reports/{lostTpofSn}/found | 찾았어요 전환(완료 안내 댓글 자동 생성) | CMU-002-09 | KSJ | - | - |
@@ -843,6 +843,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | myRole | String | Y | 이 방에서 내 역할. `GUARDIAN`(게시글 작성자) 또는 `SITTER`(지원자). 실행 버튼 결정 | CMU-005-11 |
 | petPrtcMtchSn | Long | N | 이 방의 매칭. 요청 전이면 null | PET_PRTC_MTCH.PET_PRTC_MTCH_SN, CMU-005-11 |
 | mtchDlngSttsCd | String | N | 매칭 진행 상태. 공통코드 PCAG05 | PET_PRTC_MTCH.MTCH_DLNG_STTS_CD, CMU-005-11 |
+| ctptLeft | boolean | Y | 상대가 이 방을 나갔으면 true(상대가 메시지를 보내거나 같은 글로 다시 대화하면 false). 방 안 「상대가 나간 방이에요」 안내와 매칭 요청 버튼 막기에 쓴다 | CHAT_PRTPNT.PTCP_STTS_CD, 나간 사람 화면 리셋(2026-11-26) |
 | created | boolean | Y | 이번 요청으로 방을 새로 만들었는지. `POST /chat-rooms`는 새 방 201, 기존 방 200 | OTO_CHAT_ROOM, CMU-004-05 |
 | cnclDmnd | CareCancelDemandItem | N | 이 매칭의 가장 최근 거래 취소 요청. `GET /chat-rooms/{sn}`에서만 채운다(`POST /chat-rooms`는 null). 매칭이 확정 상태면 동의 외의 요청(요청중·거절·철회), 요청 취소 상태면 동의된 요청만 보이고, 그 밖에는 null | MTCH_CNCL_DMND, CMU-005-06 |
 
@@ -860,9 +861,10 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | myRole | String | Y | 내 역할 `GUARDIAN`·`SITTER`(닉네임 옆 「돌보미/보호자」 표시는 상대 역할이므로 반대로 그린다) | CMU-005-02 |
 | mtchDlngSttsCd | String | N | 거래 상태 배지. 매칭 전이면 null. 공통코드 PCAG05 | PET_PRTC_MTCH.MTCH_DLNG_STTS_CD, CMU-005-02 |
 | lastMsgTypeCd | String | N | 마지막 메시지 유형. 없으면 null. 공통코드 CHTG03 | CHAT_MSG.MSG_TYPE_CD |
-| lastMsgCn | String | N | 초안 그대로. 1행 말줄임. 사진은 「사진을 보냈어요.」, 주소는 「주소를 공유했어요.」 | CHAT_MSG.MSG_CN_ENC (복호화) |
+| lastMsgCn | String | N | 초안 그대로. 1행 말줄임. 사진은 「사진을 보냈어요.」, 주소는 「주소를 공유했어요.」. 내가 나가기 전 메시지는 쓰지 않는다(없으면 null) | CHAT_MSG.MSG_CN_ENC (복호화) |
 | lastMsgDt | LocalDateTime | N | 초안 그대로 | CMU-005-02 |
-| unreadCnt | Integer | Y | 초안 그대로 | CHAT_PRTPNT.LAST_PRSL_MSG_SEQ, CHAT_MSG.MSG_SEQ |
+| unreadCnt | Integer | Y | 초안 그대로. 나갈 때 읽음 위치가 그때의 마지막 메시지로 올라가 나가기 전 메시지는 세지 않는다 | CHAT_PRTPNT.LAST_PRSL_MSG_SEQ, CHAT_MSG.MSG_SEQ |
+| ctptLeft | boolean | Y | 상대가 이 방을 나갔으면 true. 목록 「상대방 나감」 배지 | CHAT_PRTPNT.PTCP_STTS_CD, 나간 사람 화면 리셋(2026-11-26) |
 
 ### ChatUnreadCountResponse
 쓰는 API: GET /chat-rooms/unread-count

@@ -36,9 +36,9 @@ public interface ChatMessageMapper {
     int insertPhoto(ChatMessagePhoto photo);
 
     /**
-     * 메시지 조회 (최신순, 암호문 그대로)
+     * 메시지 조회 (최신순, 암호문 그대로, 그 회원의 보이는 시작 메시지 뒤만)
      */
-    List<ChatMessageSummary> selectList(@Param("otoChatRoomSn") Long otoChatRoomSn,
+    List<ChatMessageSummary> selectList(@Param("otoChatRoomSn") Long otoChatRoomSn, @Param("mbrSn") Long mbrSn,
             @Param("beforeChatMsgSn") Long beforeChatMsgSn, @Param("limit") int limit);
 
     /**

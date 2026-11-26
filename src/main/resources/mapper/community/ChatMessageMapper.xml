@@ -100,6 +100,10 @@
              , M.REG_DT
           FROM CHAT_MSG M
          WHERE M.OTO_CHAT_ROOM_SN = #{otoChatRoomSn}
+           AND M.MSG_SEQ <![CDATA[>]]> COALESCE(( SELECT ME.VSBL_BGNG_MSG_SEQ
+                                                    FROM CHAT_PRTPNT ME
+                                                   WHERE ME.OTO_CHAT_ROOM_SN = #{otoChatRoomSn}
+                                                     AND ME.MBR_SN = #{mbrSn} ), 0)
         <if test="beforeChatMsgSn != null">
            AND M.CHAT_MSG_SN <![CDATA[<]]> #{beforeChatMsgSn}
         </if>

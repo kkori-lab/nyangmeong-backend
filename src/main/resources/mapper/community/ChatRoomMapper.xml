@@ -24,6 +24,8 @@
         <result column="RCRT_STTS_CD"           property="rcrtSttsCd" />
         <result column="PET_PRTC_MTCH_SN"       property="petPrtcMtchSn" />
         <result column="MTCH_DLNG_STTS_CD"      property="mtchDlngSttsCd" />
+        <result column="OWNER_PTCP_STTS_CD"     property="ownerPtcpSttsCd" />
+        <result column="APPLICANT_PTCP_STTS_CD" property="applicantPtcpSttsCd" />
     </resultMap>
 
     <resultMap id="chatParticipantResultMap" type="com.nyangmeong.community.domain.ChatParticipant">
@@ -32,6 +34,7 @@
         <result column="MBR_SN"              property="mbrSn" />
         <result column="PTCP_STTS_CD"        property="ptcpSttsCd" />
         <result column="LAST_PRSL_MSG_SEQ"   property="lastPrslMsgSeq" />
+        <result column="VSBL_BGNG_MSG_SEQ"   property="vsblBgngMsgSeq" />
         <result column="REG_DT"              property="regDt" />
         <result column="MDFCN_DT"            property="mdfcnDt" />
     </resultMap>
@@ -50,6 +53,7 @@
         <result column="LAST_MSG_CN_ENC"        property="lastMsgCn" />
         <result column="LAST_MSG_DT"            property="lastMsgDt" />
         <result column="UNREAD_CNT"             property="unreadCnt" />
+        <result column="CTPT_LEFT"              property="ctptLeft" />
     </resultMap>
 
     <select id="selectByPstSnAndCtptMbrSn" resultMap="chatRoomResultMap">
@@ -96,6 +100,8 @@
              , R.RCRT_STTS_CD
              , T.PET_PRTC_MTCH_SN
              , T.MTCH_DLNG_STTS_CD
+             , OP.PTCP_STTS_CD AS OWNER_PTCP_STTS_CD
+             , AP.PTCP_STTS_CD AS APPLICANT_PTCP_STTS_CD
           FROM OTO_CHAT_ROOM C
           JOIN PST P
             ON P.PST_SN = C.PST_SN
@@ -107,6 +113,12 @@
             ON A.MBR_SN = C.CTPT_MBR_SN
           LEFT JOIN PET_PRTC_MTCH T
             ON T.OTO_CHAT_ROOM_SN = C.OTO_CHAT_ROOM_SN
+          LEFT JOIN CHAT_PRTPNT OP
+            ON OP.OTO_CHAT_ROOM_SN = C.OTO_CHAT_ROOM_SN
+           AND OP.MBR_SN = P.MBR_SN
+          LEFT JOIN CHAT_PRTPNT AP
+            ON AP.OTO_CHAT_ROOM_SN = C.OTO_CHAT_ROOM_SN
+           AND AP.MBR_SN = C.CTPT_MBR_SN
          WHERE C.OTO_CHAT_ROOM_SN = #{otoChatRoomSn}
     </sql>
 
@@ -205,6 +217,7 @@
              , T.MBR_SN
              , T.PTCP_STTS_CD
              , T.LAST_PRSL_MSG_SEQ
+             , T.VSBL_BGNG_MSG_SEQ
              , T.REG_DT
              , T.MDFCN_DT
           FROM CHAT_PRTPNT T
@@ -215,6 +228,20 @@
     <update id="updateParticipantStatus">
         UPDATE CHAT_PRTPNT
            SET PTCP_STTS_CD = #{ptcpSttsCd}
+             , MDFCN_DT = NOW()
+         WHERE OTO_CHAT_ROOM_SN = #{otoChatRoomSn}
+           AND MBR_SN = #{mbrSn}
+    </update>
+
+    <!-- 나간 사람 화면 리셋 : 지금 방의 마지막 메시지까지 이 회원에게 숨기고 읽음으로 둔다 -->
+    <update id="updateVisibleStart">
+        UPDATE CHAT_PRTPNT
+           SET VSBL_BGNG_MSG_SEQ = ( SELECT COALESCE(MAX(M.MSG_SEQ), 0)
+                                       FROM CHAT_MSG M
+                                      WHERE M.OTO_CHAT_ROOM_SN = #{otoChatRoomSn} )
+             , LAST_PRSL_MSG_SEQ = GREATEST(LAST_PRSL_MSG_SEQ, ( SELECT COALESCE(MAX(M2.MSG_SEQ), 0)
+                                                                  FROM CHAT_MSG M2
+                                                                 WHERE M2.OTO_CHAT_ROOM_SN = #{otoChatRoomSn} ))
              , MDFCN_DT = NOW()
          WHERE OTO_CHAT_ROOM_SN = #{otoChatRoomSn}
            AND MBR_SN = #{mbrSn}
@@ -271,6 +298,7 @@
                     AND UM.MSG_SEQ <![CDATA[>]]> ME.LAST_PRSL_MSG_SEQ
                     AND UM.MBR_SN IS NOT NULL
                     AND UM.MBR_SN <![CDATA[<>]]> #{mbrSn} ) AS UNREAD_CNT
+             , CASE WHEN CP.PTCP_STTS_CD IS NOT NULL AND CP.PTCP_STTS_CD <![CDATA[<>]]> #{joinedCd} THEN 1 ELSE 0 END AS CTPT_LEFT
           FROM OTO_CHAT_ROOM C
           JOIN CHAT_PRTPNT ME
             ON ME.OTO_CHAT_ROOM_SN = C.OTO_CHAT_ROOM_SN
@@ -284,11 +312,15 @@
             ON A.MBR_SN = C.CTPT_MBR_SN
           LEFT JOIN PET_PRTC_MTCH T
             ON T.OTO_CHAT_ROOM_SN = C.OTO_CHAT_ROOM_SN
+          LEFT JOIN CHAT_PRTPNT CP
+            ON CP.OTO_CHAT_ROOM_SN = C.OTO_CHAT_ROOM_SN
+           AND CP.MBR_SN = CASE WHEN P.MBR_SN = #{mbrSn} THEN C.CTPT_MBR_SN ELSE P.MBR_SN END
           LEFT JOIN CHAT_MSG LM
             ON LM.OTO_CHAT_ROOM_SN = C.OTO_CHAT_ROOM_SN
            AND LM.MSG_SEQ = ( SELECT MAX(M2.MSG_SEQ)
                                 FROM CHAT_MSG M2
-                               WHERE M2.OTO_CHAT_ROOM_SN = C.OTO_CHAT_ROOM_SN )
+                               WHERE M2.OTO_CHAT_ROOM_SN = C.OTO_CHAT_ROOM_SN
+                                 AND M2.MSG_SEQ <![CDATA[>]]> ME.VSBL_BGNG_MSG_SEQ )
          WHERE 1 = 1
            AND ( C.CTPT_MBR_SN = #{mbrSn}
               OR EXISTS ( SELECT 1
@@ -347,7 +379,11 @@
                           FROM CHAT_MSG_PHOTO PH
                           JOIN CHAT_MSG M
                             ON M.CHAT_MSG_SN = PH.CHAT_MSG_SN
+                          JOIN CHAT_PRTPNT ME
+                            ON ME.OTO_CHAT_ROOM_SN = M.OTO_CHAT_ROOM_SN
+                           AND ME.MBR_SN = #{mbrSn}
                          WHERE M.OTO_CHAT_ROOM_SN = #{otoChatRoomSn}
+                           AND M.MSG_SEQ <![CDATA[>]]> ME.VSBL_BGNG_MSG_SEQ
                            AND PH.ATCH_FILE_SN = #{atchFileSn} )
     </select>
 </mapper>

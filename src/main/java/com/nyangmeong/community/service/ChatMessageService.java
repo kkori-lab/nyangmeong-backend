@@ -66,14 +66,15 @@ public class ChatMessageService {
     private final ProfanityFilter profanityFilter;
 
     /**
-     * 메시지 조회 (커서, 최신순)
+     * 메시지 조회 (커서, 최신순, 내가 나가기 전 메시지는 빼고)
      */
     @Transactional(readOnly = true)
     public ChatMessageSliceResponse search(Long mbrSn, Long otoChatRoomSn, Long beforeChatMsgSn, Integer size) {
         chatRoomGuard.getRoom(mbrSn, otoChatRoomSn);
         int limit = size == null ? DEFAULT_SIZE : Math.min(Math.max(size, 1), MAX_SIZE);
 
-        List<ChatMessageSummary> rows = chatMessageMapper.selectList(otoChatRoomSn, beforeChatMsgSn, limit + 1);
+        List<ChatMessageSummary> rows = chatMessageMapper.selectList(otoChatRoomSn, mbrSn, beforeChatMsgSn,
+                limit + 1);
         boolean hasNext = rows.size() > limit;
         List<ChatMessageSummary> content = hasNext ? rows.subList(0, limit) : rows;
 
