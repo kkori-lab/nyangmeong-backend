@@ -72,7 +72,8 @@ class PetServiceTest {
     private static final String MALE = "PETC0003";
     private static final String WHITE = "PETC0006";
     private static final String DIRECT_COLOR = "PETC0017";
-    private static final String DOG_ONLY_COLOR = "PETC0011";
+    private static final String DOG_ONLY_COLOR = "PETC0010";
+    private static final String RETIRED_COLOR = "PETC0011";
     private static final String CAT_ONLY_COLOR = "PETC0014";
     private static final String PRIMARY = "PETC0018";
     private static final String CO_PARENT = "PETC0019";
@@ -97,7 +98,7 @@ class PetServiceTest {
         when(settingService.get()).thenReturn(setting);
         when(codes.search("PETG01")).thenReturn(codeList(DOG, CAT));
         when(codes.search("PETG02")).thenReturn(codeList(MALE, "PETC0004"));
-        when(codes.search("PETG03")).thenReturn(codeList(WHITE, DIRECT_COLOR, DOG_ONLY_COLOR, CAT_ONLY_COLOR));
+        when(codes.search("PETG03")).thenReturn(codeList(WHITE, DIRECT_COLOR, DOG_ONLY_COLOR, CAT_ONLY_COLOR, RETIRED_COLOR));
         when(mapper.existsVrty(15L, DOG)).thenReturn(true);
         when(mapper.selectVrtyNm(15L)).thenReturn("푸들");
         doAnswer(inv -> {
@@ -381,6 +382,20 @@ class PetServiceTest {
     void 고양이에_강아지_전용_털색을_보내면_400() {
         assertCode(() -> service.createPet(MBR, colorCreate(CAT, DOG_ONLY_COLOR)), ErrorCode.INVALID_INPUT_VALUE);
         verify(mapper, never()).insertPet(any());
+    }
+
+    @Test
+    void 강아지와_고양이_모두_저장_중지된_얼룩_털색은_400() {
+        assertCode(() -> service.createPet(MBR, colorCreate(DOG, RETIRED_COLOR)), ErrorCode.INVALID_INPUT_VALUE);
+        assertCode(() -> service.createPet(MBR, colorCreate(CAT, RETIRED_COLOR)), ErrorCode.INVALID_INPUT_VALUE);
+        verify(mapper, never()).insertPet(any());
+    }
+
+    @Test
+    void 수정에서_얼룩_털색을_보내면_400() {
+        assertCode(() -> service.updatePet(MBR, PET, colorUpdate(null, RETIRED_COLOR)),
+                ErrorCode.INVALID_INPUT_VALUE);
+        verify(mapper, never()).updatePet(any(), anyString());
     }
 
     @Test

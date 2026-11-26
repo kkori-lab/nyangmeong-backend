@@ -10,9 +10,12 @@ import java.util.Set;
 public enum PetColor {
     DIRECT_INPUT("PETC0017");
 
-    /** 강아지 전용: 블랙탄·얼룩·브린들·황색·파티·세이블·멀 */
+    /** 강아지 전용: 블랙탄·브린들·황색·파티·세이블·멀 */
     private static final Set<String> DOG_ONLY = Set.of(
-            "PETC0010", "PETC0011", "PETC0012", "PETC0028", "PETC0029", "PETC0030", "PETC0031");
+            "PETC0010", "PETC0012", "PETC0028", "PETC0029", "PETC0030", "PETC0031");
+
+    /** 저장 중지: 얼룩(PETC0011). 기존 데이터 조회·표시는 되지만 등록·수정에는 어느 종도 쓸 수 없다 */
+    private static final Set<String> RETIRED = Set.of("PETC0011");
 
     /** 고양이 전용: 고등어·치즈·턱시도·젖소·카오스·포인트 */
     private static final Set<String> CAT_ONLY = Set.of(
@@ -36,6 +39,9 @@ public enum PetColor {
      * 털색 코드가 반려동물 구분에 맞는지 본다.
      */
     public static boolean fits(String petSeCd, String colrCd) {
+        if (RETIRED.contains(colrCd)) {
+            return false;
+        }
         if (PetSe.DOG.is(petSeCd)) {
             return !CAT_ONLY.contains(colrCd);
         }
