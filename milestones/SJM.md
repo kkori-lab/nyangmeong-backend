@@ -231,7 +231,7 @@
 - 연결 남음: FN-MYP-003-05 (프론트 연결 SCR-MYP-003 등록·수정 모달 인식칩 입력 12·15자리 안내·검증, 수정 때 바꾸지 않은 값은 보내지 않기, 프론트 저장소에서 /start)
 - 연결 남음: AI 저장소 `data/tool_prompts.yaml`의 `chip_no` 설명과 `data/tools.snapshot.json`의 `chipNo.pattern` 갱신 (담당 확인)
 
-## SCR-MYP-003 반려동물 등록/수정 · 강아지 털색 검증에서 얼룩 코드 빼기 — 진행
+## SCR-MYP-003 반려동물 등록/수정 · 강아지 털색 검증에서 얼룩 코드 빼기 — 끝
 
 - 기능: 명세 기능 ID 추가 없음, FN-MYP-003-03에 걸침 (`PetColor.java`의 `DOG_ONLY`에 남은 얼룩 `PETC0011`)
 - 기다리는 것: 프론트 작업(강아지 털색 목록에서 얼룩 제외, 끝)
