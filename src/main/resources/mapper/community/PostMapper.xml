@@ -270,6 +270,15 @@
          WHERE PST_SN = #{pstSn}
     </select>
 
+    <!-- 찾았어요(실종 아님)이거나 게시 종료일이 지난 실종 글 : 실종센터 글이 아니면 행이 없어 false -->
+    <select id="existsClosedLostReport" resultType="boolean">
+        SELECT EXISTS ( SELECT 1
+                          FROM LOST_TPOF L
+                         WHERE L.PST_SN = #{pstSn}
+                           AND ( L.LOST_TPOF_STTS_CD <![CDATA[<>]]> #{missingCd}
+                              OR L.EXPRY_CRTR_DT <![CDATA[<]]> NOW() ) )
+    </select>
+
     <select id="selectImages" parameterType="long" resultMap="postImageResultMap">
         SELECT PST_IMG_SN
              , PST_SN
