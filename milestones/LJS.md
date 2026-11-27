@@ -815,11 +815,14 @@
 - 완료 조건: `./gradlew build -q` 종료 코드 0(코드 변경 없음)
 - 연결 남음: 없음(기능 ID 추가 없음) (프론트 연결 `docs/ai-coverage.md` 1마리 일정 목록 GET을 `EXCLUDES` 뺌으로, 프론트 저장소에서 /start)
 
-## SCR-AIM-012 AI 일정 생성 확인 · 가계부 중복 확인·영수증 저장 전 확인·영수증 직접 입력 검진 등록 도구 — 대기
+## SCR-AIM-012 AI 일정 생성 확인 · 가계부 중복 확인·영수증 저장 전 확인·영수증 직접 입력 검진 등록 도구 — 끝
 - 기능: 명세 기능 ID 추가 없음(사이트 기능 전체 표 3번 "아직 정하지 않음" 7개를 모두 붙이기로 함, 사람 2026-11-27 "3번도 전부 하자"), 걸치는 기능 FN-AIM-012-05·06·07·13
 - 기다리는 것: 없음(Python 설명이 없는 도구는 싣지 않아 지금 동작은 그대로. 설명·tool_eval은 ai 세션)
 - 할 것: `@AiTool` 3개(domain expense). `POST /api/expenses/duplicate-check`(ExpenseController), `POST /api/receipts/{recptSn}/save-check`·`POST /api/receipts/{recptSn}/checkups`(ReceiptSaveController). 두 확인은 저장하지 않는 검사라 READ로 둘지 기획 때 정한다. 가계부 담당 SJM에게 알린다
 - 완료 조건: `GET /internal/ai/tools`에 세 도구가 칸과 함께 실린다, 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-27, 1회차, 도구 122개), 사람 확인 2026-11-27(테스트 3개 통과). 정한 것: 두 확인은 저장하지 않아 READ(`check_expense_duplicates`·`check_receipt_save`), 직접 입력 검진은 CARD `draft_receipt_checkup`(`ReceiptCheckupCreateRequest`에 `@AiGenerated`·`@AiCode("HLTG01")`), `docs/api/ai.md`의 "영수증 직접 입력 검진기록은 도구가 아니다" 문구 삭제, 기존 테스트 2개 기대값 변경(ExpenseAiToolCatalogTest 9→10·READ 6→7, ExpenseCardAiToolCatalogTest CARD 5→6)
+- 추가: 없음
+- 연결 남음: FN-AIM-012-05·13 (ai 저장소 `tool_prompts.yaml` 세 도구 설명·확인 말·스냅샷·`tool_eval`, ai 세션)
 
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
