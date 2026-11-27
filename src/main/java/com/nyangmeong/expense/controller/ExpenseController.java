@@ -66,6 +66,7 @@ public class ExpenseController {
     }
 
     @Operation(summary = "가계부 지출 저장 전 중복 확인")
+    @AiTool(name = "check_expense_duplicates", domain = "expense", kind = AiToolKind.READ)
     @PostMapping("/duplicate-check")
     public ResponseEntity<ApiResponse<List<ExpenseSummary>>> searchDuplicates(
             @AuthenticationPrincipal LoginMember me, @Valid @RequestBody ExpenseCreateRequest req) {
