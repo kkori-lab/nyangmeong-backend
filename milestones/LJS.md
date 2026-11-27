@@ -770,6 +770,16 @@
 - 연결 남음: FN-AIM-012-05·06·07·13 (ai 저장소 `tool_prompts.yaml` `draft_place_bookmark` 설명·확인 말·스냅샷·`tool_eval`, ai 세션)
 - 연결 남음: FN-AIM-012-05·06·07·13 (프론트 연결 대화창 확인 카드로 `draft_place_bookmark` 실행 확인, 프론트 저장소에서 /start)
 
+## SCR-AIM-012 AI 일정 생성 확인 · 회원 닉네임·회원정보 수정 카드 — 끝
+- 기능: 명세 기능 ID 추가 없음(사이트 기능 전체 표 프론트 `docs/ai-coverage.md` member 쓰기 카드 후보 2개, 사람 2026-11-27), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 할 것: `@AiTool` CARD 2개(domain member). `draft_member_nickname_update`(닉네임 변경, 본문 `mbrNcnm`)·`draft_member_profile_update`(프로필 사진 변경 multipart, `mblTelno`는 `@AiExclude`)
+- 기다리는 것: 없음(Python 설명이 없는 도구는 싣지 않아 지금 동작은 그대로). member 담당 YAY, 회원정보 수정 담당 SJM에게 알린다
+- 완료 조건: `GET /internal/ai/tools`에 두 CARD가 칸과 함께 실린다(`mblTelno` 없음), 사진·기본 이미지 동시 400에 칸 이름, 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-27, 1회차), 사람 확인 2026-11-27(테스트 2개 통과, 도구 115개). 정한 것: 휴대전화번호 `mblTelno`는 `@AiExclude`(외부 AI에 보내지 않음, 기획 추천 그대로), 사진·되돌리기 동시 400은 코드 `BAD_REQUEST` 그대로 칸 이름만 추가, 기존 테스트 기대값 변경 없음. 계약은 `docs/api/ai.md`·`docs/api/member.md`
+- 추가: 없음
+- 연결 남음: FN-AIM-012-05·06·07·13 (ai 저장소 `tool_prompts.yaml` 두 도구 설명·확인 말·스냅샷·`tool_eval`, ai 세션)
+- 연결 남음: FN-AIM-012-05·06·07·13 (프론트 연결 대화창 확인 카드로 두 도구 실행, 프로필 사진은 사진 선택, 프론트 저장소에서 /start)
+
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
 - FN-COM-002-11: 채팅 안 읽은 수 API는 KSJ(채팅, 마일스톤 담당 표 COM-009)
