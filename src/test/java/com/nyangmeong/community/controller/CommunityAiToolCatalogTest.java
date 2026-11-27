@@ -40,7 +40,7 @@ import com.nyangmeong.community.service.PostService;
 
 /**
  * [검사 - 커뮤니티 도메인 AI 도구 목록]
- * - 실제 커뮤니티 컨트롤러의 @AiTool이 빠짐없이 실리는지 (READ 8)
+ * - 실제 커뮤니티 컨트롤러의 @AiTool이 빠짐없이 실리는지 (READ 12)
  */
 @WebMvcTest(controllers = {AiToolCatalogController.class, PostController.class, CommentController.class,
         LostReportController.class, CareRecruitmentController.class, NewsController.class})
@@ -82,15 +82,15 @@ class CommunityAiToolCatalogTest {
     }
 
     @Test
-    void 커뮤니티_READ_8개가_빠짐없이_실린다() throws Exception {
+    void 커뮤니티_READ_12개가_빠짐없이_실린다() throws Exception {
         givenCodes();
         mockMvc.perform(get(PATH))
-                .andExpect(jsonPath("$.data.tools.length()").value(8))
-                .andExpect(jsonPath("$.data.tools[*].name", containsInAnyOrder("get_popular_photo", "get_post",
-                        "list_care_recruitments", "list_comments", "list_health_tips", "list_lost_reports",
+                .andExpect(jsonPath("$.data.tools.length()").value(12))
+                .andExpect(jsonPath("$.data.tools[*].name", containsInAnyOrder("get_care_recruitment", "get_lost_report",
+                        "get_minimum_wage", "get_news", "get_popular_photo", "get_post", "list_care_recruitments", "list_comments", "list_health_tips", "list_lost_reports",
                         "list_news", "list_posts")))
-                .andExpect(jsonPath("$.data.tools[?(@.kind == 'READ')].name", hasSize(8)))
-                .andExpect(jsonPath("$.data.tools[?(@.domain == 'community')].name", hasSize(8)));
+                .andExpect(jsonPath("$.data.tools[?(@.kind == 'READ')].name", hasSize(12)))
+                .andExpect(jsonPath("$.data.tools[?(@.domain == 'community')].name", hasSize(12)));
     }
 
     @Test
