@@ -748,6 +748,17 @@
 - 연결 남음: FN-AIM-012-05·06·07·13 (ai 저장소 `tool_prompts.yaml` 6개 설명·확인 말·스냅샷·`tool_eval`, ai 세션)
 - 연결 남음: FN-AIM-012-05·06·07·13 (프론트 연결 대화창 확인 카드로 새 6개 실행 확인(본문 없는 POST·DELETE 포함), 프론트 저장소에서 /start)
 
+## SCR-AIM-012 AI 일정 생성 확인 · 반려동물 쓰기 카드 — 끝
+- 기능: 명세 기능 ID 추가 없음(사이트 기능 전체 표 프론트 `docs/ai-coverage.md` pet 쓰기 카드 후보 12개 중 8개, 사람 2026-11-27 "다른 도메인 쓰기 카드 해도 괜찮아"), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 할 것: `@AiTool` CARD 8개(domain pet). `draft_pet`(반려동물 등록)·`set_representative_pet`(대표 지정, 본문 없는 POST)·`draft_caregiver_invitation`(초대 발송)·`accept_caregiver_invitation`(수락, `petSns` 목록)·`reject_caregiver_invitation`·`cancel_caregiver_invitation`(본문 없는 POST)·`draft_equipped_items`(착용 저장 PUT)·`draft_item_purchase`(구매, `idmptDmndId` `@AiGenerated`)
+- 붙이지 않는 것: 반려동물 삭제·공동양육 해제·취소한 초대 삭제(앞 차수에서 뺌), 메인 바로가기 저장(본문이 최상위 배열이라 도구 목록이 싣지 못함)
+- 기다리는 것: 없음(Python 설명이 없는 도구는 Python이 싣지 않으므로 먼저 붙여도 지금 동작은 그대로. 설명·tool_eval은 ai 세션). pet 담당 SJM에게 알린다(DTO 표시·서비스 400 칸 이름만, 동작 변화 없음)
+- 완료 조건: `GET /internal/ai/tools`에 새 CARD 8개가 칸·필수·코드·규칙과 함께 실리고, 초대 수락 서비스 검사 400이 `data: [{field: "petSns"}]`를 담는다. 기존 도구 정의는 그대로, 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-27, 잠금 해제 뒤 1회차. 앞선 1회차는 기존 `PetCardAiToolCatalogTest`를 덮어써 실패, 사람이 잠금 해제 후 되돌리고 새 테스트는 `PetWriteCardAiToolCatalogTest`로), 사람 확인 2026-11-27(`GET /internal/ai/tools` 112개·새 8개 칸·코드·규칙, 수락 400 `data[0].field`=petSns). 정한 것: 번호 목록 칸 `List<Long>`·`List<Integer>`는 `array`+`itemType`(문자열 값 목록은 코드 값 모양을 정하기 전이라 여전히 뺀다), 기존 테스트 1개 도구 수 기대값 변경(PetAiToolCatalogTest 14→22). 계약은 `docs/api/ai.md`
+- 추가: 추가-1 도구 목록 번호 목록 칸 지원(`Param.itemType`, 사람 2026-11-27 B안)
+- 연결 남음: FN-AIM-012-05·06·07·13 (ai 저장소 `tool_prompts.yaml` 8개 설명·확인 말·스냅샷·`tool_eval`, 새 칸 모양 `array`+`itemType` 처리, ai 세션)
+- 연결 남음: FN-AIM-012-05·06·07·13 (프론트 연결 대화창 확인 카드로 새 8개 실행 확인(본문 없는 POST·번호 목록 칸 포함), 프론트 저장소에서 /start)
+
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
 - FN-COM-002-11: 채팅 안 읽은 수 API는 KSJ(채팅, 마일스톤 담당 표 COM-009)

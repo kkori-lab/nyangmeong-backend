@@ -22,19 +22,20 @@ public record AiToolResponse(String name, String domain, AiToolKind kind, Call c
      * 칸
      * - items : type이 array일 때 한 줄의 칸들, minItems : 최소 줄 수
      * - generated : 실행하는 쪽이 만드는 값(예: uuid)
+     * - itemType : type이 array이고 한 줄이 값 하나(번호 목록)일 때 그 값의 타입(long·int)
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Param(@JsonProperty("in") String location, String type, String group, Boolean required,
             Integer minLength, Integer maxLength, Long min, Long max, Boolean positive, String pattern,
             Integer precision, Integer scale, List<Code> codes, Integer minItems, String generated,
-            Map<String, Param> items) {
+            Map<String, Param> items, String itemType) {
 
         /**
          * 코드 값을 뺀 칸
          */
         public Param withoutCodes() {
             return new Param(location, type, group, required, minLength, maxLength, min, max, positive, pattern,
-                    precision, scale, null, minItems, generated, items);
+                    precision, scale, null, minItems, generated, items, itemType);
         }
 
         /**
@@ -42,7 +43,7 @@ public record AiToolResponse(String name, String domain, AiToolKind kind, Call c
          */
         public Param withCodes(List<Code> codes) {
             return new Param(location, type, group, required, minLength, maxLength, min, max, positive, pattern,
-                    precision, scale, codes, minItems, generated, items);
+                    precision, scale, codes, minItems, generated, items, itemType);
         }
 
         /**
@@ -50,7 +51,7 @@ public record AiToolResponse(String name, String domain, AiToolKind kind, Call c
          */
         public Param withItems(Map<String, Param> items) {
             return new Param(location, type, group, required, minLength, maxLength, min, max, positive, pattern,
-                    precision, scale, codes, minItems, generated, items);
+                    precision, scale, codes, minItems, generated, items, itemType);
         }
     }
 

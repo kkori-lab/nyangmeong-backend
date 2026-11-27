@@ -2,12 +2,13 @@
 
 ## 지금 하는 것
 
-SCR-AIM-012 AI 일정 생성 확인 · 건강 등록·종료 카드 — 끝 (2026-11-27). health 카드 후보 중 6개(`draft_checkup`·`draft_prescription`·`draft_etc_inspection`·`draft_repeat_prevention`·`end_observation_item`·`cancel_last_dose`)에 `@AiTool`, 등록 400에 칸 이름, 도구 98→104. 검증 `통과`(1회차), 사람 확인 2026-11-27, 시작 2026-11-27 09:38
+SCR-AIM-012 AI 일정 생성 확인 · 반려동물 쓰기 카드 — 끝 (2026-11-27). pet 카드 8개(`draft_pet`·`set_representative_pet`·`draft_caregiver_invitation`·`accept_caregiver_invitation`·`reject_caregiver_invitation`·`cancel_caregiver_invitation`·`draft_equipped_items`·`draft_item_purchase`)에 `@AiTool`, 도구 목록이 번호 목록 칸을 `array`+`itemType`으로 싣게(추가-1), 초대 수락 400에 `petSns`, 도구 104→112. 검증 `통과`, 사람 확인 2026-11-27, 시작 2026-11-27 10:16
 
 ## 다음에 할 것
 
+- SCR-AIM-012 반려동물 쓰기 카드 연결 남음(ai 세션): 8개 이름·칸(`docs/api/ai.md` 반려동물 CARD 9개 줄)과 새 칸 모양(번호 목록 `type: array`+`itemType: long`, `items` 없음)을 알리고 `tool_prompts.yaml` 설명·확인 말·스냅샷·`tool_eval`. 프론트 연결은 프론트 `milestones/LJS.md` `반려동물 쓰기 카드 실행 확인 — 대기` 절(프론트 저장소에서 /start). SJM에게 `PetCreateRequest` 표시·초대 수락 400 칸 이름만 바뀌었다고 알린다
 - SCR-AIM-011·012 도구 연결 남음(ai 세션): SCR-AIM-012 건강 등록·종료 카드 6개(`docs/api/ai.md` 건강 CARD 30개 줄, 2026-11-27)와 SCR-AIM-011 새 도구 27개 이름·칸(`docs/api/ai.md` AiToolResponse `name`)을 알리고, 도메인 거르기 순서대로 `tool_prompts.yaml` 설명·`tools.snapshot.json`·`tool_eval`. 설명이 없으면 Python이 싣지 않아 지금 동작은 그대로. 프론트 `docs/ai-coverage.md`는 프론트 세션이 `node scripts/ai-coverage.mjs`로 다시 만든다
-- AI 매니저 대응 범위 다음(사람 결정 2026-11-26·27): 도메인별 쓰기 카드 후보를 도메인마다 /start(health는 2026-11-27 6개 끝, 나머지 health 후보 8개는 뺌. JAJ에게 표시·400 칸 이름만 바뀌었다고 알린다. 프론트 `milestones/LJS.md`에 `건강 등록·종료 카드 실행 확인 — 대기` 절 넣음. 서비스 400 칸 이름 포함, 남의 도메인은 담당과 먼저). 알림 설정 저장 카드는 도구 목록 enum·값 목록 지원(ai와 칸 모양 합의) 뒤. 멀티모달 GET(사진·파일 응답 7개)은 관찰 사진부터, 도구 목록 응답 종류 칸과 ai image 블록을 ai와 정한 뒤. 채팅 읽기·`GET /members/me`는 일부러 뺌(상대 회원 글·복호화 개인정보). 표의 뺌(인증·탈퇴·비밀번호·이메일 변경·채팅 쓰기·신고·차단·좋아요·커뮤니티 글·댓글 쓰기·펫돌봄 거래 단계)에는 붙이지 않는다
+- AI 매니저 대응 범위 다음(사람 결정 2026-11-26·27): 도메인별 쓰기 카드 후보를 도메인마다 /start(pet은 2026-11-27 8개 끝·메인 바로가기 저장은 최상위 배열이라 뺌, health는 2026-11-27 6개 끝, 나머지 health 후보 8개는 뺌. JAJ에게 표시·400 칸 이름만 바뀌었다고 알린다. 프론트 `milestones/LJS.md`에 `건강 등록·종료 카드 실행 확인 — 대기` 절 넣음. 서비스 400 칸 이름 포함, 남의 도메인은 담당과 먼저). 알림 설정 저장 카드는 도구 목록 enum·값 목록 지원(ai와 칸 모양 합의) 뒤. 멀티모달 GET(사진·파일 응답 7개)은 관찰 사진부터, 도구 목록 응답 종류 칸과 ai image 블록을 ai와 정한 뒤. 채팅 읽기·`GET /members/me`는 일부러 뺌(상대 회원 글·복호화 개인정보). 표의 뺌(인증·탈퇴·비밀번호·이메일 변경·채팅 쓰기·신고·차단·좋아요·커뮤니티 글·댓글 쓰기·펫돌봄 거래 단계)에는 붙이지 않는다
 - 사람(DMS, SCR-ADM-114): 관리자 기능명세서 FN-ADM-114-04 설명을 "관리자는 고치거나 지울 수 없고, 30일이 지난 로그는 배치가 매일 지운다"로. 요구사항정의서에 감사 로그 보관 문구가 있으면 같이
 - 선택: `docs/api/global.md` 배치 목록 행의 "배치 6종" 문구가 실제(14종)와 다르다
 - 사람(공용 DB 적용, 발표 2026-12-08의 3~4일 전): README "시연용 시드 데이터" 11단계대로. 먼저 팀에 알린다(테스트 계정 201~216의 반려동물·글이 새 데이터로 바뀌고 가짜 장소 512곳이 지워진다), 공용 DB 전체 mysqldump 백업

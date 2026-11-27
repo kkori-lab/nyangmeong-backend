@@ -66,6 +66,7 @@ public class PetController {
     }
 
     @Operation(summary = "반려동물 등록")
+    @AiTool(name = "draft_pet", domain = "pet", kind = AiToolKind.CARD)
     @PostMapping
     public ResponseEntity<ApiResponse<PetResponse>> createPet(@AuthenticationPrincipal LoginMember me,
             @Valid @RequestBody PetCreateRequest req) {
@@ -90,6 +91,7 @@ public class PetController {
     }
 
     @Operation(summary = "대표 반려동물 지정")
+    @AiTool(name = "set_representative_pet", domain = "pet", kind = AiToolKind.CARD)
     @PostMapping("/{petSn}/representative")
     public ResponseEntity<ApiResponse<Void>> designateRepresentative(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn) {

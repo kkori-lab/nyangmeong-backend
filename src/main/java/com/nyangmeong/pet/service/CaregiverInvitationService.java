@@ -201,7 +201,7 @@ public class CaregiverInvitationService {
 
         List<Long> acceptedPetSns = req.petSns().stream().distinct().toList();
         if (!invitationMapper.selectTargetPetSns(jntBrupInvtnSn).containsAll(acceptedPetSns)) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "petSns");
         }
         /** 한도는 응답 기록·연동보다 먼저 : 넘으면 아무것도 바꾸지 않는다. 같은 회원의 동시 등록·수락은 회원 행 잠금으로 줄 세운다 */
         petMapper.lockMemberForPetLimit(mbrSn);
