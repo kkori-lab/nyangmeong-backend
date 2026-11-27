@@ -808,11 +808,12 @@
 - 추가: 없음
 - 연결 남음: FN-AIM-012-05·06·07·13 (ai 저장소 `tool_prompts.yaml` `mark_service_tutorial_viewed` 설명·확인 말·스냅샷·`tool_eval`, ai 세션)
 
-## SCR-AIM-012 AI 일정 생성 확인 · 케어 캘린더 일정 목록 읽기 도구 — 대기
+## SCR-AIM-012 AI 일정 생성 확인 · 케어 캘린더 일정 목록 읽기 도구 — 끝
 - 기능: 명세 기능 ID 추가 없음(사이트 기능 전체 표 3번 "아직 정하지 않음" 7개를 모두 붙이기로 함, 사람 2026-11-27 "3번도 전부 하자"), 걸치는 기능 FN-AIM-012-05·06·07·13
 - 기다리는 것: 없음(Python 설명이 없는 도구는 싣지 않아 지금 동작은 그대로. 설명·tool_eval은 ai 세션)
-- 할 것: `@AiTool` READ 1개(domain health). `GET /api/pets/{petSn}/care-schedules`(CareScheduleController). 기존 `MyCareScheduleController` 읽기 도구와 겹치는지 기획 때 확인. health 담당 JAJ에게 알린다
-- 완료 조건: `GET /internal/ai/tools`에 READ가 칸과 함께 실린다, 기동 로그에 `[AiTool] 제외`가 없다
+- 할 것: 붙이지 않음(2026-11-27 기획 승인). `GET /api/pets/{petSn}/care-schedules`는 `list_my_care_schedules`(`GET /api/care-schedules`, `petSns=1`로 한 마리도 읽음)와 조건·정렬·응답이 같다. `docs/api/health.md`·`docs/api/ai.md`의 "1마리 주소는 AI 도구가 아니다(2026-11-11)" 그대로. 코드 변경 없음, JAJ에게 알릴 것 없음
+- 완료 조건: `./gradlew build -q` 종료 코드 0(코드 변경 없음)
+- 연결 남음: 없음(기능 ID 추가 없음) (프론트 연결 `docs/ai-coverage.md` 1마리 일정 목록 GET을 `EXCLUDES` 뺌으로, 프론트 저장소에서 /start)
 
 ## SCR-AIM-012 AI 일정 생성 확인 · 가계부 중복 확인·영수증 저장 전 확인·영수증 직접 입력 검진 등록 도구 — 대기
 - 기능: 명세 기능 ID 추가 없음(사이트 기능 전체 표 3번 "아직 정하지 않음" 7개를 모두 붙이기로 함, 사람 2026-11-27 "3번도 전부 하자"), 걸치는 기능 FN-AIM-012-05·06·07·13

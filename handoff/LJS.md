@@ -2,11 +2,12 @@
 
 ## 지금 하는 것
 
-SCR-AIM-012 AI 일정 생성 확인 · 튜토리얼 봤음 저장 카드 — 끝 (2026-11-27). `@AiTool` CARD `mark_service_tutorial_viewed`(PUT `/api/members/me/tutorial`, 본문·칸 없음). 도구 119개. 검증 `통과`(1회차), 사람 확인 2026-11-27, 시작 2026-11-27 12:37
+SCR-AIM-012 AI 일정 생성 확인 · 케어 캘린더 일정 목록 읽기 도구 — 끝 (2026-11-27). `GET /api/pets/{petSn}/care-schedules`는 `list_my_care_schedules`와 같아 `@AiTool`을 붙이지 않음(코드 변경 없음). 검증 `통과`(1회차), 사람 확인 2026-11-27, 시작 2026-11-27 13:47
 
 ## 다음에 할 것
 
-- AI 도구 남은 후보 붙이기(사람 2026-11-27 "3번도 전부 하자"): 마일스톤 대기 절 2개(health 케어 캘린더 목록 1·expense 확인·등록 3), 도메인마다 /start. pet 삭제 3개·member 튜토리얼 1개는 2026-11-27 끝
+- SCR-AIM-012 케어 캘린더 1마리 일정 목록 연결 남음 (프론트 연결 `scripts/ai-coverage.mjs` `EXCLUDES`에 GET `/api/pets/{}/care-schedules` 뺌 규칙, 프론트 `milestones/LJS.md` `케어 캘린더 1마리 일정 목록을 AI 도구 뺌 규칙에 넣기 — 대기` 절, 프론트 저장소에서 /start)
+- AI 도구 남은 후보 붙이기(사람 2026-11-27 "3번도 전부 하자"): 마일스톤 대기 절 1개(expense 확인·등록 3), /start. pet 삭제 3개·member 튜토리얼 1개는 2026-11-27 끝, health 케어 캘린더 1마리 목록은 `list_my_care_schedules`와 같아 붙이지 않음(2026-11-27)
 - SCR-AIM-012 회원·플레이스 쓰기 카드 연결 남음: FN-AIM-012-05·06·07·13 (ai 세션 `tool_prompts.yaml` `draft_member_nickname_update`·`draft_member_profile_update`·`mark_service_tutorial_viewed`(2026-11-27)·`draft_place_bookmark` 설명·확인 말·스냅샷·`tool_eval`, 회원정보 수정은 휴대전화번호를 싣지 않음. 프론트 연결은 프론트 `milestones/LJS.md` `회원 닉네임·회원정보 수정 카드 실행 확인 — 대기`·`플레이스 즐겨찾기 저장 카드 실행 확인 — 대기` 절, 프론트 저장소에서 /start). YAY(닉네임·튜토리얼 저장·place 컨트롤러 표시만)·SJM(`PATCH /members/me` 사진·되돌리기 동시 400에 `data[].field` 추가)에게 알린다
 - SCR-AIM-012 반려동물 쓰기 카드 연결 남음(ai 세션): 8개와 삭제 3개(`delete_pet`·`unlink_caregiver`·`delete_caregiver_invitation`, 2026-11-27, 확인 말에 삭제 결과 경고: 캐릭터·건강기록까지 지워짐) 이름·칸(`docs/api/ai.md` 반려동물 CARD 12개 줄)과 새 칸 모양(번호 목록 `type: array`+`itemType: long`, `items` 없음)을 알리고 `tool_prompts.yaml` 설명·확인 말·스냅샷·`tool_eval`. 프론트 연결은 프론트 `milestones/LJS.md` `반려동물 쓰기 카드 실행 확인 — 대기`·`반려동물 삭제·연동 해제·초대 삭제 카드 실행 확인 — 대기` 절(프론트 저장소에서 /start). SJM에게 `PetCreateRequest` 표시·초대 수락 400 칸 이름, 삭제 3개 컨트롤러 표시만 바뀌었다고 알린다
 - SCR-AIM-011·012 도구 연결 남음(ai 세션): 도구 목록 소수 최소·최대값(2026-11-27, `@DecimalMin`·`@DecimalMax` → `min`·`max`, `structureVersion` 바뀜, `draft_inspection_value_update`·`draft_pet`·`draft_pet_update`·`list_places`)도 `tools.snapshot.json`에 반영. SCR-AIM-012 건강 등록·종료 카드 6개(`docs/api/ai.md` 건강 CARD 30개 줄, 2026-11-27)와 SCR-AIM-011 새 도구 27개 이름·칸(`docs/api/ai.md` AiToolResponse `name`)을 알리고, 도메인 거르기 순서대로 `tool_prompts.yaml` 설명·`tools.snapshot.json`·`tool_eval`. 설명이 없으면 Python이 싣지 않아 지금 동작은 그대로. 프론트 `docs/ai-coverage.md`는 프론트 세션이 `node scripts/ai-coverage.mjs`로 다시 만든다
