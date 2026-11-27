@@ -40,6 +40,7 @@ public class ReceiptSaveController {
     private final ReceiptSaveService receiptSaveService;
 
     @Operation(summary = "영수증 저장 전 확인(가계부 중복·가까운 예정 일정)")
+    @AiTool(name = "check_receipt_save", domain = "expense", kind = AiToolKind.READ)
     @PostMapping("/{recptSn}/save-check")
     public ResponseEntity<ApiResponse<ReceiptSaveCheckResponse>> check(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long recptSn, @Valid @RequestBody ReceiptSaveCheckRequest req) {
@@ -59,6 +60,7 @@ public class ReceiptSaveController {
     }
 
     @Operation(summary = "영수증 인식 실패 뒤 [직접 입력] 검진기록 등록(영수증 저장완료·연결, 가계부 없음)")
+    @AiTool(name = "draft_receipt_checkup", domain = "expense", kind = AiToolKind.CARD)
     @PostMapping("/{recptSn}/checkups")
     public ResponseEntity<ApiResponse<CheckupResponse>> createDirectCheckup(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long recptSn, @RequestParam Long petSn,

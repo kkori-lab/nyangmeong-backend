@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.file.StoredFile;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.response.PageQuery;
@@ -42,13 +44,15 @@ public class InquiryController {
     private final InquiryService inquiryService;
 
     @Operation(summary = "내 1:1 문의 목록")
+    @AiTool(name = "list_inquiries", domain = "support", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<InquirySummary>>> search(@AuthenticationPrincipal LoginMember me,
-            InquirySearchCond cond, PageQuery pq) {
+            @ModelAttribute InquirySearchCond cond, PageQuery pq) {
         return ResponseEntity.ok(ApiResponse.success(inquiryService.search(me.id(), cond, pq)));
     }
 
     @Operation(summary = "내 1:1 문의 상세")
+    @AiTool(name = "get_inquiry", domain = "support", kind = AiToolKind.READ)
     @GetMapping("/{otoInqrySn}")
     public ResponseEntity<ApiResponse<InquiryResponse>> getInquiry(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long otoInqrySn) {

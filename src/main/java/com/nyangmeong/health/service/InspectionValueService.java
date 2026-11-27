@@ -152,12 +152,12 @@ public class InspectionValueService {
             value.setRsltNvl(req.rsltNvl());
         }
         if (req.unitNm() != null) {
-            value.setUnitNm(requiredText(req.unitNm()));
+            value.setUnitNm(requiredText(req.unitNm(), "unitNm"));
         }
         RefRange refRange = req.refRange();
         if (refRange != null) {
-            checkRefPair(refRange.refLlmtNvl(), refRange.refUplmtNvl());
-            checkRefOrder(refRange.refLlmtNvl(), refRange.refUplmtNvl());
+            checkRefPair(refRange.refLlmtNvl(), refRange.refUplmtNvl(), "refRange");
+            checkRefOrder(refRange.refLlmtNvl(), refRange.refUplmtNvl(), "refRange");
             value.setRefLlmtNvl(refRange.refLlmtNvl());
             value.setRefUplmtNvl(refRange.refUplmtNvl());
         }
@@ -229,22 +229,25 @@ public class InspectionValueService {
     /**
      * 참고범위 짝 검증 : 하한·상한은 함께 있거나 둘 다 없음 (CK_INSP_NVL_REF_PAIR)
      */
-    private void checkRefPair(BigDecimal llmt, BigDecimal uplmt) {
+    private void checkRefPair(BigDecimal llmt, BigDecimal uplmt, String... fields) {
         if ((llmt == null) != (uplmt == null)) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw invalid(fields);
         }
     }
 
-    private void checkRefOrder(BigDecimal llmt, BigDecimal uplmt) {
+    private void checkRefOrder(BigDecimal llmt, BigDecimal uplmt, String... fields) {
         if (llmt != null && uplmt != null && llmt.compareTo(uplmt) > 0) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw invalid(fields);
         }
     }
 
-    private String requiredText(String value) {
+    /**
+     * 빈 값 불가 칸 : fields는 400 data에 담을 칸 이름
+     */
+    private String requiredText(String value, String... fields) {
         String text = emptyToNull(value);
         if (text == null) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw invalid(fields);
         }
         return text;
     }

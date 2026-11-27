@@ -39,7 +39,7 @@ import com.nyangmeong.expense.service.ReceiptService;
 
 /**
  * [검사 - 가계부 도메인 AI 도구 목록]
- * - 실제 가계부 컨트롤러의 @AiTool이 빠짐없이 실리는지 (READ 6)
+ * - 실제 가계부 컨트롤러의 @AiTool이 빠짐없이 실리는지 (READ 6 + CARD 3)
  */
 @WebMvcTest(controllers = {AiToolCatalogController.class, ExpenseController.class, ReceiptController.class})
 @Import({SecurityConfig.class, JwtTokenProvider.class, JwtProperties.class, TokenCookies.class,
@@ -78,16 +78,17 @@ class ExpenseAiToolCatalogTest {
     }
 
     @Test
-    void 가계부_READ_6개가_빠짐없이_실린다() throws Exception {
+    void 가계부_READ_7개가_빠짐없이_실린다() throws Exception {
         givenCodes();
         mockMvc.perform(get(PATH))
-                .andExpect(jsonPath("$.data.tools.length()").value(8))
-                .andExpect(jsonPath("$.data.tools[*].name", containsInAnyOrder("draft_expense", "draft_expense_update",
+                .andExpect(jsonPath("$.data.tools.length()").value(12))
+                .andExpect(jsonPath("$.data.tools[*].name", containsInAnyOrder("check_expense_duplicates", "delete_expense", "delete_expenses",
+                        "delete_expenses_by_condition", "draft_expense", "draft_expense_update",
                         "get_expense_statistics",
                         "get_expense_total", "get_receipt", "list_expense_months", "list_expense_pets",
                         "list_expenses")))
-                .andExpect(jsonPath("$.data.tools[?(@.kind == 'READ')].name", hasSize(6)))
-                .andExpect(jsonPath("$.data.tools[?(@.domain == 'expense')].name", hasSize(8)));
+                .andExpect(jsonPath("$.data.tools[?(@.kind == 'READ')].name", hasSize(7)))
+                .andExpect(jsonPath("$.data.tools[?(@.domain == 'expense')].name", hasSize(12)));
     }
 
     @Test

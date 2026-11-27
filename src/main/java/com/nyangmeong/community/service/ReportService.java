@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.nyangmeong.community.domain.ChatRoomDetail;
 import com.nyangmeong.community.domain.Comment;
+import com.nyangmeong.community.domain.Post;
 import com.nyangmeong.community.domain.PostStatus;
 import com.nyangmeong.community.domain.PostStatusHistory;
 import com.nyangmeong.community.domain.Report;
@@ -69,12 +70,9 @@ public class ReportService {
             return createChatReport(mbrSn, req);
         }
         boolean isPost = req.pstSn() != null;
-        if (isPost) {
-            if (postMapper.selectPost(req.pstSn(), PostStatus.NORMAL.getCode()) == null) {
-                throw new CustomException(ErrorCode.POST_NOT_FOUND);
-            }
-        } else if (commentMapper.selectComment(req.cmntSn()) == null) {
-            throw new CustomException(ErrorCode.COMMENT_NOT_FOUND);
+        /** 자기 글·댓글은 신고할 수 없다 : 화면은 버튼을 숨기지만 API 직접 호출도 막는다 (사람 요청 2026-11-25) */
+        if (mbrSn.equals(findWriterMbrSn(isPost, req))) {
+            throw new CustomException(ErrorCode.REPORT_SELF_NOT_ALLOWED);
         }
         ErrorCode duplicate = isPost ? ErrorCode.REPORT_ALREADY_EXISTS : ErrorCode.REPORT_COMMENT_ALREADY_EXISTS;
         if (reportMapper.existsReport(mbrSn, req.pstSn(), req.cmntSn())) {
@@ -102,6 +100,24 @@ public class ReportService {
 
         applyAccumulation(isPost, req, report.getDclrSn());
         return ReportResponse.from(report);
+    }
+
+    /**
+     * 신고 대상 글·댓글의 작성자 회원 번호 (정상 글·있는 댓글만, 아니면 404)
+     */
+    private Long findWriterMbrSn(boolean isPost, ReportCreateRequest req) {
+        if (isPost) {
+            Post post = postMapper.selectPost(req.pstSn(), PostStatus.NORMAL.getCode());
+            if (post == null) {
+                throw new CustomException(ErrorCode.POST_NOT_FOUND);
+            }
+            return post.getMbrSn();
+        }
+        Comment comment = commentMapper.selectComment(req.cmntSn());
+        if (comment == null) {
+            throw new CustomException(ErrorCode.COMMENT_NOT_FOUND);
+        }
+        return comment.getMbrSn();
     }
 
     /**

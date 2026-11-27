@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.member.dto.TermsResponse;
 import com.nyangmeong.member.dto.TermsSummary;
@@ -28,12 +30,14 @@ public class TermsController {
     private final TermsService termsService;
 
     @Operation(summary = "사용 중인 약관 목록")
+    @AiTool(name = "list_terms", domain = "member", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<List<TermsSummary>>> search() {
         return ResponseEntity.ok(ApiResponse.success(termsService.search()));
     }
 
     @Operation(summary = "약관 전문 조회")
+    @AiTool(name = "get_terms", domain = "member", kind = AiToolKind.READ)
     @GetMapping("/{trmsSn}")
     public ResponseEntity<ApiResponse<TermsResponse>> getTerms(@PathVariable Long trmsSn) {
         return ResponseEntity.ok(ApiResponse.success(termsService.getTerms(trmsSn)));

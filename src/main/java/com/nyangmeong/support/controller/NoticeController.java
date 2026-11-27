@@ -2,10 +2,13 @@ package com.nyangmeong.support.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.response.PageResponse;
@@ -29,12 +32,15 @@ public class NoticeController {
     private final NoticeService noticeService;
 
     @Operation(summary = "공지사항 목록 (상단 고정 우선, latestYn=true 면 최신순)")
+    @AiTool(name = "list_notices", domain = "support", kind = AiToolKind.READ)
     @GetMapping
-    public ResponseEntity<ApiResponse<PageResponse<NoticeSummary>>> search(NoticeSearchCond cond, PageQuery pq) {
+    public ResponseEntity<ApiResponse<PageResponse<NoticeSummary>>> search(
+            @ModelAttribute NoticeSearchCond cond, PageQuery pq) {
         return ResponseEntity.ok(ApiResponse.success(noticeService.search(cond, pq)));
     }
 
     @Operation(summary = "공지사항 상세")
+    @AiTool(name = "get_notice", domain = "support", kind = AiToolKind.READ)
     @GetMapping("/{ntcMttrSn}")
     public ResponseEntity<ApiResponse<NoticeResponse>> getNotice(@PathVariable Long ntcMttrSn) {
         return ResponseEntity.ok(ApiResponse.success(noticeService.getNotice(ntcMttrSn)));

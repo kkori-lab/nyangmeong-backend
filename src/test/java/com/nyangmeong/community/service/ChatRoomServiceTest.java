@@ -35,6 +35,7 @@ import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.file.StoredFile;
 import com.nyangmeong.global.security.crypto.FieldCryptoService;
+import com.nyangmeong.notification.service.NotificationService;
 
 /**
  * [검사 - 펫돌봄 채팅하기]
@@ -57,7 +58,7 @@ class ChatRoomServiceTest {
     private final FileStore fileStore = mock(FileStore.class);
     private final ChatRoomService service = new ChatRoomService(chatRoomMapper, careRecruitmentMapper,
             new ChatRoomGuard(chatRoomMapper), careMatchService, chatMessageService, chatRealtimePublisher, fieldCryptoService,
-            fileStore);
+            fileStore, mock(NotificationService.class));
 
     private CareRecruitmentDetail recruitment(String sttsCd) {
         CareRecruitmentDetail detail = new CareRecruitmentDetail();
@@ -429,7 +430,7 @@ class ChatRoomServiceTest {
     @Test
     void 방에_붙지_않은_사진은_볼_수_없다() {
         when(chatRoomMapper.selectDetail(ROOM)).thenReturn(roomDetail());
-        when(chatRoomMapper.existsPhoto(ROOM, 600L)).thenReturn(false);
+        when(chatRoomMapper.existsPhoto(ROOM, SITTER, 600L)).thenReturn(false);
 
         assertError(() -> service.getImage(SITTER, ROOM, 600L), ErrorCode.FILE_NOT_FOUND);
         assertError(() -> service.getImage(99L, ROOM, 600L), ErrorCode.CHAT_ROOM_ACCESS_DENIED);
@@ -439,7 +440,7 @@ class ChatRoomServiceTest {
     @Test
     void 방에_붙은_사진은_참여자에게_준다() {
         when(chatRoomMapper.selectDetail(ROOM)).thenReturn(roomDetail());
-        when(chatRoomMapper.existsPhoto(ROOM, 600L)).thenReturn(true);
+        when(chatRoomMapper.existsPhoto(ROOM, SITTER, 600L)).thenReturn(true);
         StoredFile file = new StoredFile(new byte[] { 1 }, "image/jpeg", "a.jpg");
         when(fileStore.load(600L)).thenReturn(file);
 

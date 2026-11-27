@@ -119,4 +119,10 @@
           FROM MBR
          WHERE MBR_SN = #{mbrSn}
     </select>
+
+    <delete id="deleteBefore">
+        /* 보관 일수가 지난 관리자 작업 로그 삭제 (감사 로그 정리 배치) */
+        DELETE FROM MNGR_TASK_LOG
+         WHERE REG_DT &lt; #{cutoff}
+    </delete>
 </mapper>

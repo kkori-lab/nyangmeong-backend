@@ -3,9 +3,12 @@ package com.nyangmeong.health.service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,6 +57,9 @@ public class DailyHealthRecordService {
 
     private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
 
+    /** 일괄 등록 최대 건수 (※신규 정책) */
+    private static final int MAX_BULK_SIZE = 5;
+
     private static final Map<DailyRecordIndicator, CareMission> MISSIONS = new EnumMap<>(DailyRecordIndicator.class);
 
     static {
@@ -91,12 +97,63 @@ public class DailyHealthRecordService {
     @Transactional
     public DailyHealthRecordResponse create(Long mbrSn, Long petSn, DailyHealthRecordCreateRequest req) {
         petAuthorizer.checkCaregiver(mbrSn, petSn);
+        DailyRecordIndicator indicator = checkCreate(mbrSn, petSn, req);
+        return insert(mbrSn, petSn, indicator, req);
+    }
+
+    /**
+     * 일상 건강기록 일괄 등록
+     * - 1~5건, 같은 지표는 한 번만 : 틀리면 칸 이름 없는 400 (※신규 정책)
+     * - 건마다 단건 등록과 같은 검사, 오류 칸은 values[번호].칸 : 전부 검사한 뒤 저장해 하나라도 틀리면 아무것도 저장하지 않음 (※신규 정책)
+     * - 음수량·식사량 상한은 요청 전 프로필 체중 기준 : 같은 요청의 체중 기록은 반영하지 않음 (※신규 정책)
+     */
+    @Transactional
+    public List<DailyHealthRecordResponse> createAll(Long mbrSn, Long petSn,
+            List<DailyHealthRecordCreateRequest> values) {
+        petAuthorizer.checkCaregiver(mbrSn, petSn);
+        if (values == null || values.isEmpty() || values.size() > MAX_BULK_SIZE) {
+            throw invalid();
+        }
+        Set<String> codes = new HashSet<>();
+        for (DailyHealthRecordCreateRequest req : values) {
+            if (!codes.add(req.dailyRcdIdctCd())) {
+                throw invalid();
+            }
+        }
+
+        List<DailyRecordIndicator> indicators = new ArrayList<>();
+        for (int i = 0; i < values.size(); i++) {
+            try {
+                indicators.add(checkCreate(mbrSn, petSn, values.get(i)));
+            } catch (CustomException e) {
+                throw withIndex(e, i);
+            }
+        }
+
+        List<DailyHealthRecordResponse> responses = new ArrayList<>();
+        for (int i = 0; i < values.size(); i++) {
+            responses.add(insert(mbrSn, petSn, indicators.get(i), values.get(i)));
+        }
+        return responses;
+    }
+
+    /**
+     * 등록 요청 검사 : 지표·값·기록 시각
+     */
+    private DailyRecordIndicator checkCreate(Long mbrSn, Long petSn, DailyHealthRecordCreateRequest req) {
         DailyRecordIndicator indicator = DailyRecordIndicator.of(req.dailyRcdIdctCd())
                 .orElseThrow(() -> invalid("dailyRcdIdctCd"));
         checkValue(mbrSn, petSn, indicator, req.rcdNvl(), req.crsdSttsCd());
         checkRecordTime(req.rcdDt());
-        String actorId = String.valueOf(mbrSn);
+        return indicator;
+    }
 
+    /**
+     * 검사를 마친 등록 요청 저장 : 케어미션 반영, 체중 동기화
+     */
+    private DailyHealthRecordResponse insert(Long mbrSn, Long petSn, DailyRecordIndicator indicator,
+            DailyHealthRecordCreateRequest req) {
+        String actorId = String.valueOf(mbrSn);
         DailyHealthRecord record = new DailyHealthRecord();
         record.setPetSn(petSn);
         record.setDailyRcdIdctCd(indicator.getCode());
@@ -113,6 +170,19 @@ public class DailyHealthRecordService {
     }
 
     /**
+     * 건 검사 오류의 칸 이름 앞에 values[번호]. 를 붙임 (칸이 없는 오류는 그대로)
+     */
+    private CustomException withIndex(CustomException e, int index) {
+        if (e.getFields().isEmpty()) {
+            return e;
+        }
+        String[] fields = e.getFields().stream()
+                .map(field -> "values[" + index + "]." + field)
+                .toArray(String[]::new);
+        return new CustomException(e.getErrorCode(), fields);
+    }
+
+    /**
      * 일상 건강기록 수정
      * - 보낸 값만 수정, 지표와 맞지 않는 필드는 400
      */
@@ -126,7 +196,7 @@ public class DailyHealthRecordService {
 
         if (indicator.isStool()) {
             if (req.rcdNvl() != null) {
-                throw invalid();
+                throw invalid("rcdNvl");
             }
             if (req.crsdSttsCd() != null) {
                 checkStoolStatus(req.crsdSttsCd());
@@ -134,7 +204,7 @@ public class DailyHealthRecordService {
             }
         } else {
             if (req.crsdSttsCd() != null) {
-                throw invalid();
+                throw invalid("crsdSttsCd");
             }
             if (req.rcdNvl() != null) {
                 checkNumber(mbrSn, petSn, indicator, req.rcdNvl());

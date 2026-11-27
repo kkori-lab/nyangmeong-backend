@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.nyangmeong.community.dto.CommunityAiCommentaryResponse;
 import com.nyangmeong.community.service.CommunityAiCommentaryService;
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,6 +29,7 @@ public class CommunityAiCommentaryController {
     private final CommunityAiCommentaryService commentaryService;
 
     @Operation(summary = "오늘의 이야기")
+    @AiTool(name = "get_today_story", domain = "community", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<CommunityAiCommentaryResponse>> getCommentary(
             @RequestParam(required = false) LocalDate cmtryCrtrYmd) {

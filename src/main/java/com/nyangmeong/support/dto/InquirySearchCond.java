@@ -1,5 +1,7 @@
 package com.nyangmeong.support.dto;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import lombok.Data;
 
 /**
@@ -8,5 +10,6 @@ import lombok.Data;
  */
 @Data
 public class InquirySearchCond {
+    @AiCode("CSCG03")
     private String inqryPrcsSttsCd;
 }

@@ -1,5 +1,8 @@
 package com.nyangmeong.global.log;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -21,6 +24,7 @@ import tools.jackson.databind.ObjectMapper;
  * [관리자 작업 로그 기록·조회]
  * - 관리자 작업과 같은 트랜잭션에서 남김 -> 작업이 롤백되면 로그도 없음
  * - 전후 값을 아는 service가 직접 호출 (AOP 대신 명시 호출)
+ * - 관리자는 고치거나 지울 수 없고, 보관 일수가 지난 로그는 감사 로그 정리 배치(AuditLogPurgeJob)가 지운다 (FN-ADM-114-04)
  */
 @Service
 @RequiredArgsConstructor
@@ -28,6 +32,9 @@ public class AdminTaskLogService {
 
     private static final int SUMMARY_MAX_LENGTH = 500;
     private static final int IP_MAX_LENGTH = 45;
+    /** 감사 로그 보관 일수 (FN-ADM-114-04, 사람 2026-11-26 : 영구 보관에서 30일로). 운영 설정 아닌 코드 상수 */
+    static final int KEEP_DAYS = 30;
+    private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
 
     private final AdminTaskLogMapper adminTaskLogMapper;
     private final ObjectMapper objectMapper;
@@ -82,6 +89,27 @@ public class AdminTaskLogService {
         }
         return AdminTaskLogDetailResponse.from(log, adminTaskLogMapper.selectNcnm(log.getMbrSn()),
                 parse(log.getChgBfrCn()), parse(log.getChgAftrCn()));
+    }
+
+    /**
+     * 보관 일수가 지난 관리자 작업 로그 삭제
+     * - 반환 : 지운 행 수
+     */
+    @Transactional
+    public int purgeExpired() {
+        return purgeExpired(LocalDate.now(ZONE));
+    }
+
+    @Transactional
+    int purgeExpired(LocalDate today) {
+        return adminTaskLogMapper.deleteBefore(cutoff(today));
+    }
+
+    /**
+     * 삭제 기준 시각 : 오늘(KST)에서 보관 일수를 뺀 날의 00:00. 이 시각보다 앞선 로그를 지운다
+     */
+    static LocalDateTime cutoff(LocalDate today) {
+        return today.minusDays(KEEP_DAYS).atStartOfDay();
     }
 
     private JsonNode parse(String json) {

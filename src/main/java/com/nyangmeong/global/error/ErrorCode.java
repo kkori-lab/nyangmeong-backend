@@ -185,6 +185,7 @@ public enum ErrorCode {
     REPORT_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 신고한 글입니다."),
     REPORT_COMMENT_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 신고한 댓글입니다."),
     REPORT_CHAT_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 신고한 채팅 상대입니다."),
+    REPORT_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "내가 쓴 글이나 댓글은 신고할 수 없어요."),
     REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "신고를 찾을 수 없습니다."),
     LOST_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "실종 제보를 찾을 수 없습니다."),
     LOST_REPORT_ALREADY_FOUND(HttpStatus.BAD_REQUEST, "이미 찾았어요 처리된 제보입니다."),
@@ -193,6 +194,7 @@ public enum ErrorCode {
     LOST_REPORT_NOT_EDITABLE(HttpStatus.BAD_REQUEST, "게시 중인 실종 제보만 수정할 수 있습니다."),
     LOST_REPORT_NOT_RENEWABLE(HttpStatus.BAD_REQUEST, "게시 종료 7일 전부터 종료 전까지 한 번만 연장할 수 있습니다."),
     LOST_REPORT_CLOSED(HttpStatus.BAD_REQUEST, "찾았어요 처리된 제보에는 댓글을 달 수 없습니다."),
+    LOST_REPORT_LIKE_CLOSED(HttpStatus.BAD_REQUEST, "찾았어요 처리됐거나 게시가 끝난 제보에는 좋아요를 누를 수 없어요."),
     NEWS_NOT_FOUND(HttpStatus.NOT_FOUND, "뉴스를 찾을 수 없습니다."),
     NEWS_KEYWORD_NOT_FOUND(HttpStatus.NOT_FOUND, "분류 키워드를 찾을 수 없습니다."),
     DUPLICATE_NEWS_KEYWORD(HttpStatus.CONFLICT, "이 카테고리에 이미 있는 키워드입니다."),
@@ -222,6 +224,7 @@ public enum ErrorCode {
     CARE_MATCH_ALREADY_MATCHED(HttpStatus.CONFLICT, "이미 다른 분과 매칭된 모집글입니다."),
     CARE_MATCH_INVALID_STATE(HttpStatus.CONFLICT, "현재 매칭 단계에서는 할 수 없는 요청입니다."),
     CHAT_LEAVE_IN_DEAL(HttpStatus.CONFLICT, "거래가 진행 중이라 나갈 수 없어요. 거래 취소를 먼저 요청해 주세요."),
+    CARE_MATCH_COUNTERPART_LEFT(HttpStatus.CONFLICT, "상대가 나간 방에서는 매칭을 요청할 수 없어요. 메시지를 보내 대화를 다시 시작해 주세요."),
     CARE_DEAL_CANCEL_REJECTED(HttpStatus.CONFLICT, "상대가 거절한 거래 취소는 이 거래에서 다시 요청할 수 없어요."),
 
     /** ai */

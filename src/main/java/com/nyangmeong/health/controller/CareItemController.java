@@ -65,6 +65,7 @@ public class CareItemController {
     }
 
     @Operation(summary = "케어리스트 오늘 케어미션 진행")
+    @AiTool(name = "get_care_mission_progress", domain = "health", kind = AiToolKind.READ)
     @GetMapping("/care-items/mission-progress")
     public ResponseEntity<ApiResponse<CareMissionProgressResponse>> searchMissionProgress(
             @AuthenticationPrincipal LoginMember me, @PathVariable Long petSn) {
@@ -89,6 +90,7 @@ public class CareItemController {
     }
 
     @Operation(summary = "케어 항목 삭제")
+    @AiTool(name = "delete_care_item", domain = "health", kind = AiToolKind.CARD)
     @DeleteMapping("/care-items/{careArtclSn}")
     public ResponseEntity<ApiResponse<Void>> delete(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long careArtclSn) {
@@ -118,6 +120,7 @@ public class CareItemController {
     }
 
     @Operation(summary = "그날 케어 완료 기록 취소(투약은 그날 체크 전부)")
+    @AiTool(name = "cancel_care_completion", domain = "health", kind = AiToolKind.CARD)
     @DeleteMapping("/care-completions/{careCmptnHstrySn}")
     public ResponseEntity<ApiResponse<Void>> cancel(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long careCmptnHstrySn) {
@@ -126,6 +129,7 @@ public class CareItemController {
     }
 
     @Operation(summary = "투약 오늘 마지막 1회 취소")
+    @AiTool(name = "cancel_last_dose", domain = "health", kind = AiToolKind.CARD)
     @DeleteMapping("/care-items/{careArtclSn}/today-completion/last")
     public ResponseEntity<ApiResponse<Void>> cancelLastToday(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long careArtclSn) {

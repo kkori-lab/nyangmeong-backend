@@ -66,6 +66,7 @@ public class ExpenseController {
     }
 
     @Operation(summary = "가계부 지출 저장 전 중복 확인")
+    @AiTool(name = "check_expense_duplicates", domain = "expense", kind = AiToolKind.READ)
     @PostMapping("/duplicate-check")
     public ResponseEntity<ApiResponse<List<ExpenseSummary>>> searchDuplicates(
             @AuthenticationPrincipal LoginMember me, @Valid @RequestBody ExpenseCreateRequest req) {
@@ -120,6 +121,7 @@ public class ExpenseController {
     }
 
     @Operation(summary = "가계부 지출 한 건 삭제")
+    @AiTool(name = "delete_expense", domain = "expense", kind = AiToolKind.CARD)
     @DeleteMapping("/{expndSn}")
     public ResponseEntity<ApiResponse<Void>> delete(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long expndSn) {
@@ -128,6 +130,7 @@ public class ExpenseController {
     }
 
     @Operation(summary = "가계부 지출 여러 건 삭제(개별 선택)")
+    @AiTool(name = "delete_expenses", domain = "expense", kind = AiToolKind.CARD)
     @DeleteMapping
     public ResponseEntity<ApiResponse<Void>> deleteAll(@AuthenticationPrincipal LoginMember me,
             @RequestParam("expndSn") List<Long> expndSns) {
@@ -136,6 +139,7 @@ public class ExpenseController {
     }
 
     @Operation(summary = "가계부 지출 조건 전체 삭제(조회 결과 전체 선택)")
+    @AiTool(name = "delete_expenses_by_condition", domain = "expense", kind = AiToolKind.CARD)
     @PostMapping("/bulk-delete")
     public ResponseEntity<ApiResponse<Void>> bulkDelete(@AuthenticationPrincipal LoginMember me,
             @Valid @RequestBody ExpenseBulkDeleteRequest req) {

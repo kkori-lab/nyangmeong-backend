@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
 import com.nyangmeong.health.dto.HealthDashboardWidgetResponse;
@@ -30,6 +32,7 @@ public class HealthDashboardWidgetController {
     private final HealthDashboardWidgetService healthDashboardWidgetService;
 
     @Operation(summary = "건강기록 대시보드 고른 항목 조회")
+    @AiTool(name = "get_health_dashboard_widgets", domain = "health", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<HealthDashboardWidgetResponse>> get(@AuthenticationPrincipal LoginMember me) {
         return ResponseEntity.ok(ApiResponse.success(healthDashboardWidgetService.get(me.id())));

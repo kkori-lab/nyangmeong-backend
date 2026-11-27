@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.response.ApiResponse;
@@ -111,7 +113,7 @@ public class MemberController {
     @GetMapping("/nickname-availability")
     public ResponseEntity<ApiResponse<MemberNicknameAvailabilityResponse>> getNicknameAvailability(
             @AuthenticationPrincipal LoginMember me, HttpServletRequest request, @Valid MemberNicknameQuery query) {
-        Long actorSn = me != null ? me.id() : nicknameSetupTokenManager.resolve(request);
+        Long actorSn = nicknameTargetMbrSn(me, request);
         return ResponseEntity.ok(ApiResponse.success(memberService.getNicknameAvailability(query.mbrNcnm(), actorSn)));
     }
 
@@ -160,6 +162,7 @@ public class MemberController {
     }
 
     @Operation(summary = "회원정보 수정(휴대전화번호·프로필 사진)")
+    @AiTool(name = "draft_member_profile_update", domain = "member", kind = AiToolKind.CARD)
     @PatchMapping(value = "/me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<MemberResponse>> updateMe(@AuthenticationPrincipal LoginMember me,
             @ModelAttribute MemberUpdateRequest req) {
@@ -167,12 +170,14 @@ public class MemberController {
     }
 
     @Operation(summary = "서비스 튜토리얼 봤음 여부 조회")
+    @AiTool(name = "get_service_tutorial", domain = "member", kind = AiToolKind.READ)
     @GetMapping("/me/tutorial")
     public ResponseEntity<ApiResponse<MemberTutorialResponse>> getTutorial(@AuthenticationPrincipal LoginMember me) {
         return ResponseEntity.ok(ApiResponse.success(memberService.getTutorial(me.id())));
     }
 
     @Operation(summary = "서비스 튜토리얼 봤음 저장")
+    @AiTool(name = "mark_service_tutorial_viewed", domain = "member", kind = AiToolKind.CARD)
     @PutMapping("/me/tutorial")
     public ResponseEntity<ApiResponse<MemberTutorialResponse>> markTutorialViewed(
             @AuthenticationPrincipal LoginMember me) {
@@ -180,13 +185,26 @@ public class MemberController {
     }
 
     @Operation(summary = "닉네임 설정 완료")
+    @AiTool(name = "draft_member_nickname_update", domain = "member", kind = AiToolKind.CARD)
     @PatchMapping("/me/nickname")
     public ResponseEntity<ApiResponse<MemberResponse>> updateNickname(@AuthenticationPrincipal LoginMember me,
             HttpServletRequest request, @Valid @RequestBody MemberNicknameUpdateRequest req) {
-        Long mbrSn = me != null ? me.id() : nicknameSetupTokenManager.resolve(request);
+        Long mbrSn = nicknameTargetMbrSn(me, request);
         if (mbrSn == null) {
             throw new CustomException(ErrorCode.UNAUTHORIZED);
         }
-        return ResponseEntity.ok(ApiResponse.success(memberService.updateNickname(mbrSn, req)));
+        MemberResponse response = memberService.updateNickname(mbrSn, req);
+        /** 다 쓴 가입 쿠키는 지운다 : 남겨 두면 30분 안에 마이페이지 닉네임 수정이 이 회원에게 적용된다 */
+        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, nicknameSetupTokenManager.delete().toString())
+                .body(ApiResponse.success(response));
+    }
+
+    /**
+     * 닉네임을 바꿀 회원 : 가입 직후 쿠키가 먼저, 없으면 로그인 회원
+     * - 다른 계정으로 로그인한 브라우저에서 가입해도 새 회원의 닉네임이 저장되어야 한다
+     */
+    private Long nicknameTargetMbrSn(LoginMember me, HttpServletRequest request) {
+        Long setupMbrSn = nicknameSetupTokenManager.resolve(request);
+        return setupMbrSn != null ? setupMbrSn : me != null ? me.id() : null;
     }
 }

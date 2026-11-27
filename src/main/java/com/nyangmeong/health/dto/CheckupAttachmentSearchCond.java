@@ -1,5 +1,7 @@
 package com.nyangmeong.health.dto;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import lombok.Data;
 
 /**
@@ -12,5 +14,6 @@ public class CheckupAttachmentSearchCond {
     /** 검진기록일련번호 */
     private Long ckupRcdSn;
     /** 첨부유형공통코드(HLTG20) */
+    @AiCode("HLTG20")
     private String atchTypeCd;
 }

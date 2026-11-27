@@ -44,6 +44,8 @@ import com.nyangmeong.global.code.CommonCodeService;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.security.crypto.TokenHashUtil;
 
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -63,8 +65,11 @@ import tools.jackson.databind.json.JsonMapper;
  * - @AiTool 컨트롤러 메서드의 매핑·인자·요청 DTO 검증 어노테이션 -> 도구 목록
  * - 쿼리 칸 : @RequestParam, @ModelAttribute 검색 조건 필드, PageQuery(page·size)
  * - 본문 칸 : @RequestBody record, multipart @ModelAttribute record(MultipartFile -> file)
- * - List<record> 칸 -> array + items(같은 칸 모양)
- * - 지원하지 않는 칸(값 목록·중첩 객체 등)이 있는 도구는 빼고 WARN 로그
+ * - List<record> 칸 -> array + items(같은 칸 모양), List<Long>·List<Integer> 칸 -> array + itemType
+ * - @RequestParam List<Long>·List<Integer> -> 쿼리 array + itemType(같은 이름을 되풀이해 보냄)
+ * - Java enum 칸 -> string + values, List<enum> 칸 -> array + itemType string + values
+ * - 지원하지 않는 칸(List<String> 등 값 목록·중첩 객체 등)이 있는 도구는 빼고 WARN 로그
+ * - @AiExclude 칸은 싣지 않음(도구는 그대로)
  */
 @Slf4j
 @Service
@@ -191,6 +196,9 @@ public class AiToolCatalogService {
             String name = nameOf(requestParam.name(), parameter);
             boolean required = requestParam.required()
                     && ValueConstants.DEFAULT_NONE.equals(requestParam.defaultValue());
+            if (parameter.getParameterType() == List.class) {
+                return put(params, name, toQueryListParam(parameter, required));
+            }
             return put(params, name, toParam(QUERY, parameter.getParameterType(), annotated(parameter), required));
         }
         if (parameter.hasParameterAnnotation(RequestBody.class)) {
@@ -215,7 +223,7 @@ public class AiToolCatalogService {
      */
     private String addModelAttribute(Class<?> condType, Map<String, Param> params, Set<String> pathNames) {
         for (Field field : queryFieldsOf(condType)) {
-            if (pathNames.contains(field.getName())) {
+            if (pathNames.contains(field.getName()) || field.isAnnotationPresent(AiExclude.class)) {
                 continue;
             }
             String skipReason = put(params, field.getName(), toParam(QUERY, field.getType(), field, false));
@@ -254,12 +262,12 @@ public class AiToolCatalogService {
      */
     private String addPageQuery(Map<String, Param> params) {
         String skipReason = put(params, "page", new ParamDraft(new Param(QUERY, "int", null, null, null, null,
-                (long) PageQuery.DEFAULT_PAGE, null, null, null, null, null, null, null, null, null), null));
+                (long) PageQuery.DEFAULT_PAGE, null, null, null, null, null, null, null, null, null, null, null), null));
         if (skipReason != null) {
             return skipReason;
         }
         return put(params, "size", new ParamDraft(new Param(QUERY, "int", null, null, null, null, 1L,
-                (long) PageQuery.MAX_SIZE, null, null, null, null, null, null, null, null), null));
+                (long) PageQuery.MAX_SIZE, null, null, null, null, null, null, null, null, null, null), null));
     }
 
     /**
@@ -271,6 +279,9 @@ public class AiToolCatalogService {
             return "요청 본문이 record가 아님: " + bodyType.getSimpleName();
         }
         for (Field field : queryFieldsOf(bodyType)) {
+            if (field.isAnnotationPresent(AiExclude.class)) {
+                continue;
+            }
             if (pathNames.contains(field.getName())) {
                 log.info("[AiTool] 경로 변수와 같은 본문 칸 뺌 body={} field={}", bodyType.getSimpleName(),
                         field.getName());
@@ -320,14 +331,17 @@ public class AiToolCatalogService {
             return toParam(location, field.getType(), field, false);
         }
         Class<?> itemType = listItemTypeOf(field.getGenericType());
-        if (itemType == null || !itemType.isRecord()) {
+        String scalarItemType = scalarItemTypeOf(itemType);
+        if (itemType == null || (!itemType.isRecord() && scalarItemType == null)) {
             return ParamDraft.skip("타입 미지원: " + field.getGenericType().getTypeName());
         }
         Map<String, Param> items = new LinkedHashMap<>();
-        for (Field itemField : queryFieldsOf(itemType)) {
-            String skipReason = put(items, itemField.getName(), toFieldParam(null, itemField));
-            if (skipReason != null) {
-                return ParamDraft.skip("[]." + skipReason);
+        if (scalarItemType == null) {
+            for (Field itemField : queryFieldsOf(itemType)) {
+                String skipReason = put(items, itemField.getName(), toFieldParam(null, itemField));
+                if (skipReason != null) {
+                    return ParamDraft.skip("[]." + skipReason);
+                }
             }
         }
         NotEmpty notEmpty = field.getAnnotation(NotEmpty.class);
@@ -338,8 +352,41 @@ public class AiToolCatalogService {
             minItems = minItems == null ? size.min() : Math.max(minItems, size.min());
         }
         return new ParamDraft(new Param(location, ARRAY, null, isRequired ? Boolean.TRUE : null, null, null, null,
-                null, null, null, null, null, null, minItems, null, items.isEmpty() ? null : items),
-                null);
+                null, null, null, null, null, null, minItems, null, items.isEmpty() ? null : items, scalarItemType,
+                itemType.isEnum() ? enumValuesOf(itemType) : null), null);
+    }
+
+    /**
+     * 쿼리 번호 목록 -> array + itemType : 실행하는 쪽이 같은 이름을 되풀이해 보냄(?expndSn=1&expndSn=2)
+     * - List<Long>·List<Integer>만, 필수면 1개 이상
+     */
+    private ParamDraft toQueryListParam(MethodParameter parameter, boolean isRequired) {
+        Class<?> itemType = listItemTypeOf(parameter.getGenericParameterType());
+        if (itemType != Long.class && itemType != Integer.class) {
+            return ParamDraft.skip("타입 미지원: " + parameter.getGenericParameterType().getTypeName());
+        }
+        return new ParamDraft(new Param(QUERY, ARRAY, null, isRequired ? Boolean.TRUE : null, null, null, null,
+                null, null, null, null, null, null, isRequired ? Integer.valueOf(1) : null, null, null,
+                scalarItemTypeOf(itemType), null), null);
+    }
+
+    /**
+     * 값 하나짜리 줄 타입 : 번호 목록(Long·Integer)과 enum 목록(string + values)만, List<String>은 고를 값을 모르니 뺀다
+     */
+    private static String scalarItemTypeOf(Class<?> itemType) {
+        if (itemType == null) {
+            return null;
+        }
+        if (itemType.isEnum()) {
+            return "string";
+        }
+        if (itemType == Long.class) {
+            return "long";
+        }
+        if (itemType == Integer.class) {
+            return "int";
+        }
+        return null;
     }
 
     private static Class<?> listItemTypeOf(Type genericType) {
@@ -383,17 +430,52 @@ public class AiToolCatalogService {
                 isRequired ? Boolean.TRUE : null,
                 size != null && size.min() > 0 ? size.min() : null,
                 size != null && size.max() != Integer.MAX_VALUE ? size.max() : null,
-                min != null ? min.value() : null,
-                max != null ? max.value() : null,
+                min != null ? Long.valueOf(min.value()) : decimalBound(element.getAnnotation(DecimalMin.class)),
+                max != null ? Long.valueOf(max.value()) : decimalBound(element.getAnnotation(DecimalMax.class)),
                 element.isAnnotationPresent(Positive.class) ? Boolean.TRUE : null,
                 pattern != null ? pattern.regexp() : type == YearMonth.class ? YEAR_MONTH_PATTERN : null,
                 digits != null ? digits.integer() + digits.fraction() : null,
                 digits != null ? digits.fraction() : null,
-                null, null, generated != null ? generated.value() : null, null), null);
+                null, null, generated != null ? generated.value() : null, null, null,
+                type.isEnum() ? enumValuesOf(type) : null), null);
+    }
+
+    /**
+     * enum 상수 이름 목록(선언 순서) : 요청 본문 JSON 값과 같음
+     */
+    private static List<String> enumValuesOf(Class<?> enumType) {
+        Object[] constants = enumType.getEnumConstants();
+        List<String> values = new ArrayList<>(constants.length);
+        for (Object constant : constants) {
+            values.add(((Enum<?>) constant).name());
+        }
+        return List.copyOf(values);
+    }
+
+    /**
+     * @DecimalMin 경계값 : 경계를 포함하고 값이 정수일 때만(min은 Long), 아니면 싣지 않음
+     */
+    private static Long decimalBound(DecimalMin bound) {
+        return bound != null && bound.inclusive() ? integerOf(bound.value()) : null;
+    }
+
+    /**
+     * @DecimalMax 경계값 : 경계를 포함하고 값이 정수일 때만(max는 Long), 아니면 싣지 않음
+     */
+    private static Long decimalBound(DecimalMax bound) {
+        return bound != null && bound.inclusive() ? integerOf(bound.value()) : null;
+    }
+
+    private static Long integerOf(String value) {
+        try {
+            return new BigDecimal(value).longValueExact();
+        } catch (ArithmeticException | NumberFormatException e) {
+            return null;
+        }
     }
 
     private static String typeNameOf(Class<?> type) {
-        if (type == String.class || type == YearMonth.class) {
+        if (type == String.class || type == YearMonth.class || type.isEnum()) {
             return "string";
         }
         if (type == Long.class || type == long.class) {

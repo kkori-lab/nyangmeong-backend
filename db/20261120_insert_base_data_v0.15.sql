@@ -17,6 +17,9 @@
 -- v0.15 (1) 연동변경유형 회원 파기 해제 코드 (2026-11-24, SJM, 근거: 팀 회의 결정 "탈퇴 회원 파기 시 반려동물 일괄 삭제"로 요구사항 09-21 "주양육자 탈퇴 시 보류" 대체, SCR-MYP-002). 공동양육자인 회원이 파기돼 연동이 해제될 때 BRUP_LINK_STTS_HSTRY.LINK_CHG_TYPE_CD에 쓴다
 --   SET NAMES utf8mb4;
 --   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG07') p),'PETC0036','회원 파기 해제','공동양육자인 회원이 파기될 때 그 연동 자동 해제(MemberPurgeService 연결 후, 요구사항 09-21 대체)',50);
+-- v0.15 (2) 배치구분 감사 로그 정리 코드 (2026-11-26, LJS, 근거: 사람 결정 2026-11-26 "감사 로그 30일 보관 후 삭제", FN-ADM-114-04 영구 보관 → 30일). 감사 로그 정리 배치(AuditLogPurgeJob) 실행 이력의 BTCH_EXCN_HSTRY.BTCH_SE_CD에 쓴다
+--   SET NAMES utf8mb4;
+--   INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0034','감사 로그 정리','global/AuditLogPurgeJob, 30일 지난 MNGR_TASK_LOG 삭제(FN-ADM-114-04)',120);
 SET NAMES utf8mb4;
 START TRANSACTION;
 
@@ -572,6 +575,8 @@ INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='AIMG10') p),'AIMC0042','금칙어 예외','금칙어를 포함하지만 일상어인 단어. 검사 전에 글에서 지운다',120);
 -- ■ PET 마이페이지(반려동물) — v0.15 추가: 연동변경유형 회원 파기 해제 (v0.15 (1))
 INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='PETG07') p),'PETC0036','회원 파기 해제','공동양육자인 회원이 파기될 때 그 연동 자동 해제(MemberPurgeService 연결 후, 요구사항 09-21 대체)',50);
+-- ■ SYS 배치구분 — v0.15 추가: 감사 로그 정리 (v0.15 (2))
+INSERT INTO `COM_CD` (`COM_CD_PRNT_SN`,`COM_CD`,`COM_CD_NM`,`COM_CD_EXPLN`,`SORT_SEQ`) VALUES ((SELECT p.`COM_CD_SN` FROM (SELECT `COM_CD_SN` FROM `COM_CD` WHERE `COM_CD`='SYSG02') p),'SYSC0034','감사 로그 정리','global/AuditLogPurgeJob, 30일 지난 MNGR_TASK_LOG 삭제(FN-ADM-114-04)',120);
 
 -- =====================================================================
 -- [2] 케어미션 마스터 (CARE_MSN) — 20261027_02_update_care_msn_and_ckup_pnt 의 최종 상태

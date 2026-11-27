@@ -19,6 +19,7 @@ import com.nyangmeong.global.aitool.AiTool;
 import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
+import com.nyangmeong.health.dto.DailyHealthRecordBulkCreateRequest;
 import com.nyangmeong.health.dto.DailyHealthRecordCreateRequest;
 import com.nyangmeong.health.dto.DailyHealthRecordResponse;
 import com.nyangmeong.health.dto.DailyHealthRecordSearchCond;
@@ -32,7 +33,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * [일상 건강기록 컨트롤러]
- * - SCR-HLT-002 일상 건강기록 목록·등록·수정·삭제 (docs/api/health.md)
+ * - SCR-HLT-002 일상 건강기록 목록·등록·일괄 등록·수정·삭제 (docs/api/health.md)
  */
 @RestController
 @RequiredArgsConstructor
@@ -59,7 +60,17 @@ public class DailyHealthRecordController {
                 .body(ApiResponse.created(dailyHealthRecordService.create(me.id(), petSn, req)));
     }
 
+    @Operation(summary = "일상 건강기록 일괄 등록", description = "1~5건, 같은 종류는 한 번만. 하나라도 틀리면 전부 저장하지 않는다. 오류 칸은 values[번호].칸")
+    @PostMapping("/bulk")
+    public ResponseEntity<ApiResponse<List<DailyHealthRecordResponse>>> createAll(
+            @AuthenticationPrincipal LoginMember me, @PathVariable Long petSn,
+            @Valid @RequestBody DailyHealthRecordBulkCreateRequest req) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.created(dailyHealthRecordService.createAll(me.id(), petSn, req.values())));
+    }
+
     @Operation(summary = "일상 건강기록 수정")
+    @AiTool(name = "draft_daily_health_record_update", domain = "health", kind = AiToolKind.CARD)
     @PatchMapping("/{dailyHlthRcdSn}")
     public ResponseEntity<ApiResponse<DailyHealthRecordResponse>> update(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long dailyHlthRcdSn,
@@ -69,6 +80,7 @@ public class DailyHealthRecordController {
     }
 
     @Operation(summary = "일상 건강기록 삭제")
+    @AiTool(name = "delete_daily_health_record", domain = "health", kind = AiToolKind.CARD)
     @DeleteMapping("/{dailyHlthRcdSn}")
     public ResponseEntity<ApiResponse<Void>> delete(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long dailyHlthRcdSn) {

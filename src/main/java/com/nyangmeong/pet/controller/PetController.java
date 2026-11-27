@@ -51,6 +51,7 @@ public class PetController {
     }
 
     @Operation(summary = "내 반려동물 한도 (운영 설정 최대 수와 남은 자리)")
+    @AiTool(name = "get_pet_limit", domain = "pet", kind = AiToolKind.READ)
     @GetMapping("/limit")
     public ResponseEntity<ApiResponse<PetLimitResponse>> getPetLimit(@AuthenticationPrincipal LoginMember me) {
         return ResponseEntity.ok(ApiResponse.success(petService.getPetLimit(me.id())));
@@ -65,6 +66,7 @@ public class PetController {
     }
 
     @Operation(summary = "반려동물 등록")
+    @AiTool(name = "draft_pet", domain = "pet", kind = AiToolKind.CARD)
     @PostMapping
     public ResponseEntity<ApiResponse<PetResponse>> createPet(@AuthenticationPrincipal LoginMember me,
             @Valid @RequestBody PetCreateRequest req) {
@@ -81,6 +83,7 @@ public class PetController {
     }
 
     @Operation(summary = "반려동물 삭제")
+    @AiTool(name = "delete_pet", domain = "pet", kind = AiToolKind.CARD)
     @DeleteMapping("/{petSn}")
     public ResponseEntity<ApiResponse<Void>> deletePet(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn) {
@@ -89,6 +92,7 @@ public class PetController {
     }
 
     @Operation(summary = "대표 반려동물 지정")
+    @AiTool(name = "set_representative_pet", domain = "pet", kind = AiToolKind.CARD)
     @PostMapping("/{petSn}/representative")
     public ResponseEntity<ApiResponse<Void>> designateRepresentative(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn) {
@@ -105,6 +109,7 @@ public class PetController {
     }
 
     @Operation(summary = "공동양육 연동 해제")
+    @AiTool(name = "unlink_caregiver", domain = "pet", kind = AiToolKind.CARD)
     @DeleteMapping("/{petSn}/caregivers/{brupRelSn}")
     public ResponseEntity<ApiResponse<Void>> unlinkCaregiver(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long brupRelSn) {

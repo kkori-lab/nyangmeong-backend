@@ -739,6 +739,106 @@
 - 완료 조건 결과: 검증 `통과`(2026-11-24, 1회차), 사람 확인 2026-11-24. 기존 테스트 `HealthAiToolCatalogTest` CARD 8→9·전체 20→21 기대값 변경(사람 승인). 저장 동작·DTO 모양·DB 변경 없음
 - 연결 남음: 걸치는 기능 FN-HLT-002-20~25·32 (ai 저장소 스냅샷 갱신·피부 분석 뒤 `draft_observation_item`·`draft_observation_cycle` 확인 카드, ai-23, ai 세션)
 
+## SCR-AIM-012 AI 일정 생성 확인 · 건강 등록·종료 카드 — 끝
+- 기능: 명세 기능 ID 추가 없음(사이트 기능 전체 표 프론트 `docs/ai-coverage.md` health 쓰기 카드 후보 중 6개, 사람 2026-11-27 "다른 도메인 쓰기 카드 해도 괜찮아"), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 기다리는 것: 없음(Python 설명이 없는 도구는 Python이 싣지 않으므로 먼저 붙여도 지금 동작은 그대로. 설명·tool_eval은 ai 세션). health 담당 JAJ에게 알린다(DTO 표시·서비스 400 칸 이름만, 동작 변화 없음)
+- 완료 조건: `GET /internal/ai/tools`에 새 CARD 6개(검진기록 직접 등록·처방약 추가·기타검사 입력·반복 예방 등록·관찰 종료·투약 오늘 마지막 1회 취소)가 칸·필수·코드·규칙과 함께 실리고, 등록 경로 서비스 검사 400이 `data: [{field, message}]`에 칸 이름을 담는다. 기존 도구 정의는 그대로, 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-27, 1회차), 사람 확인 2026-11-27(`GET /internal/ai/tools` 200·도구 104개, 새 6개 칸·코드·규칙, 등록 400 `data[0].field`). 정한 것: 검진기록 등록 400 칸 이름은 직접 등록만(영수증 저장은 `pets[i]…`라 비움), 기존 테스트 2개 도구 수 기대값 변경(HealthAiToolCatalogTest 38→44·HealthCardAiToolCatalogTest CARD 15→17). 계약은 `docs/api/ai.md`
+- 추가: 없음
+- 연결 남음: FN-AIM-012-05·06·07·13 (ai 저장소 `tool_prompts.yaml` 6개 설명·확인 말·스냅샷·`tool_eval`, ai 세션)
+- 연결 남음: FN-AIM-012-05·06·07·13 (프론트 연결 대화창 확인 카드로 새 6개 실행 확인(본문 없는 POST·DELETE 포함), 프론트 저장소에서 /start)
+
+## SCR-AIM-012 AI 일정 생성 확인 · 반려동물 쓰기 카드 — 끝
+- 기능: 명세 기능 ID 추가 없음(사이트 기능 전체 표 프론트 `docs/ai-coverage.md` pet 쓰기 카드 후보 12개 중 8개, 사람 2026-11-27 "다른 도메인 쓰기 카드 해도 괜찮아"), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 할 것: `@AiTool` CARD 8개(domain pet). `draft_pet`(반려동물 등록)·`set_representative_pet`(대표 지정, 본문 없는 POST)·`draft_caregiver_invitation`(초대 발송)·`accept_caregiver_invitation`(수락, `petSns` 목록)·`reject_caregiver_invitation`·`cancel_caregiver_invitation`(본문 없는 POST)·`draft_equipped_items`(착용 저장 PUT)·`draft_item_purchase`(구매, `idmptDmndId` `@AiGenerated`)
+- 붙이지 않는 것: 반려동물 삭제·공동양육 해제·취소한 초대 삭제(앞 차수에서 뺌), 메인 바로가기 저장(본문이 최상위 배열이라 도구 목록이 싣지 못함)
+- 기다리는 것: 없음(Python 설명이 없는 도구는 Python이 싣지 않으므로 먼저 붙여도 지금 동작은 그대로. 설명·tool_eval은 ai 세션). pet 담당 SJM에게 알린다(DTO 표시·서비스 400 칸 이름만, 동작 변화 없음)
+- 완료 조건: `GET /internal/ai/tools`에 새 CARD 8개가 칸·필수·코드·규칙과 함께 실리고, 초대 수락 서비스 검사 400이 `data: [{field: "petSns"}]`를 담는다. 기존 도구 정의는 그대로, 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-27, 잠금 해제 뒤 1회차. 앞선 1회차는 기존 `PetCardAiToolCatalogTest`를 덮어써 실패, 사람이 잠금 해제 후 되돌리고 새 테스트는 `PetWriteCardAiToolCatalogTest`로), 사람 확인 2026-11-27(`GET /internal/ai/tools` 112개·새 8개 칸·코드·규칙, 수락 400 `data[0].field`=petSns). 정한 것: 번호 목록 칸 `List<Long>`·`List<Integer>`는 `array`+`itemType`(문자열 값 목록은 코드 값 모양을 정하기 전이라 여전히 뺀다), 기존 테스트 1개 도구 수 기대값 변경(PetAiToolCatalogTest 14→22). 계약은 `docs/api/ai.md`
+- 추가: 추가-1 도구 목록 번호 목록 칸 지원(`Param.itemType`, 사람 2026-11-27 B안)
+- 연결 남음: FN-AIM-012-05·06·07·13 (ai 저장소 `tool_prompts.yaml` 8개 설명·확인 말·스냅샷·`tool_eval`, 새 칸 모양 `array`+`itemType` 처리, ai 세션)
+- 연결 남음: FN-AIM-012-05·06·07·13 (프론트 연결 대화창 확인 카드로 새 8개 실행 확인(본문 없는 POST·번호 목록 칸 포함), 프론트 저장소에서 /start)
+
+## SCR-AIM-012 AI 일정 생성 확인 · 플레이스 즐겨찾기 저장 카드 — 끝
+- 기능: 명세 기능 ID 추가 없음(사이트 기능 전체 표 프론트 `docs/ai-coverage.md` place 쓰기 카드 후보 1개, 사람 2026-11-27 "다른 도메인 쓰기 카드 해도 괜찮아"), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 할 것: `@AiTool` CARD 1개(domain place). `draft_place_bookmark`(장소 즐겨찾기 저장, 본문 `plcSn`)
+- 붙이지 않는 것: 고객센터 1:1 문의 작성·수정·삭제(실제 문의가 접수되는 일이라 AI로 하지 않는다, 사람 2026-11-27)
+- 기다리는 것: 없음(Python 설명이 없는 도구는 Python이 싣지 않으므로 먼저 붙여도 지금 동작은 그대로. 설명·tool_eval은 ai 세션). place 담당 YAY에게 알린다(컨트롤러 표시만, 동작 변화 없음)
+- 완료 조건: `GET /internal/ai/tools`에 새 CARD `draft_place_bookmark`가 POST /api/place-bookmarks, 칸 `plcSn` long 필수와 함께 실린다. 기존 도구 정의는 그대로, 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-27, 1회차), 사람 확인 2026-11-27(테스트 2개 통과, 도구 113개). 정한 것: 고객센터 1:1 문의 쓰기 3개는 뺌(사람 2026-11-27), 기존 테스트 1개 도구 수 기대값 변경(PlaceAiToolCatalogTest 3→4). 계약은 `docs/api/ai.md`
+- 추가: 없음
+- 연결 남음: FN-AIM-012-05·06·07·13 (ai 저장소 `tool_prompts.yaml` `draft_place_bookmark` 설명·확인 말·스냅샷·`tool_eval`, ai 세션)
+- 연결 남음: FN-AIM-012-05·06·07·13 (프론트 연결 대화창 확인 카드로 `draft_place_bookmark` 실행 확인, 프론트 저장소에서 /start)
+
+## SCR-AIM-012 AI 일정 생성 확인 · 회원 닉네임·회원정보 수정 카드 — 끝
+- 기능: 명세 기능 ID 추가 없음(사이트 기능 전체 표 프론트 `docs/ai-coverage.md` member 쓰기 카드 후보 2개, 사람 2026-11-27), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 할 것: `@AiTool` CARD 2개(domain member). `draft_member_nickname_update`(닉네임 변경, 본문 `mbrNcnm`)·`draft_member_profile_update`(프로필 사진 변경 multipart, `mblTelno`는 `@AiExclude`)
+- 기다리는 것: 없음(Python 설명이 없는 도구는 싣지 않아 지금 동작은 그대로). member 담당 YAY, 회원정보 수정 담당 SJM에게 알린다
+- 완료 조건: `GET /internal/ai/tools`에 두 CARD가 칸과 함께 실린다(`mblTelno` 없음), 사진·기본 이미지 동시 400에 칸 이름, 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-27, 1회차), 사람 확인 2026-11-27(테스트 2개 통과, 도구 115개). 정한 것: 휴대전화번호 `mblTelno`는 `@AiExclude`(외부 AI에 보내지 않음, 기획 추천 그대로), 사진·되돌리기 동시 400은 코드 `BAD_REQUEST` 그대로 칸 이름만 추가, 기존 테스트 기대값 변경 없음. 계약은 `docs/api/ai.md`·`docs/api/member.md`
+- 추가: 없음
+- 연결 남음: FN-AIM-012-05·06·07·13 (ai 저장소 `tool_prompts.yaml` 두 도구 설명·확인 말·스냅샷·`tool_eval`, ai 세션)
+- 연결 남음: FN-AIM-012-05·06·07·13 (프론트 연결 대화창 확인 카드로 두 도구 실행, 프로필 사진은 사진 선택, 프론트 저장소에서 /start)
+
+## SCR-AIM-012 AI 일정 생성 확인 · 도구 목록 소수 최소·최대값 — 끝
+- 기능: 명세 기능 ID 추가 없음(핸드오프 "선택: 도구 목록이 `@DecimalMin`을 싣지 않는다"), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 할 것: `AiToolCatalogService`가 `@DecimalMin`·`@DecimalMax`를 `min`·`max`에 싣는다(값이 정수일 때만, `inclusive = false`이거나 소수면 싣지 않는다)
+- 기다리는 것: 없음(칸 모양은 그대로, 값만 늘어남)
+- 완료 조건: `GET /internal/ai/tools`에서 `draft_inspection_value_update.rsltNvl.min` 0, `draft_pet`·`draft_pet_update` 몸무게 칸 `max` 200, `list_places` 위도·경도 칸 `min`·`max` ±90·±180. 다른 도구 정의는 그대로, 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-27, 1회차), 사람 확인 2026-11-27(테스트 3개 통과, 도구 115개). 정한 것: 소수 경계값·`inclusive = false`는 싣지 않음, 기존 테스트 기대값 변경 없음. 계약은 `docs/api/ai.md`
+- 추가: 없음
+- 연결 남음: FN-AIM-012-05·06·07·13 (ai 저장소 `tools.snapshot.json` 갱신, `structureVersion` 바뀜, ai 세션)
+
+## SCR-AIM-012 AI 일정 생성 확인 · 도구 목록 enum 칸·알림 설정 저장 카드 — 끝
+- 기능: 명세 기능 ID 추가 없음(AI 매니저 대응 범위 다음, 사람 2026-11-27 "3번으로"), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 기다리는 것: 없음(Python 설명이 없는 도구는 싣지 않아 지금 동작은 그대로. 새 칸 모양 `values`는 백엔드가 먼저 정하고 ai 세션에 알린다)
+- 할 것:
+  - 도구 목록 enum 칸: Java enum 칸 → `type: string` + `values`(enum 상수 이름 목록, 선언 순서). `List<enum>` → `array` + `itemType: string` + `values`. `Param` 끝에 `values` 추가(값이 없으면 싣지 않아 기존 도구 모양·해시 그대로). `List<String>`은 여전히 뺀다. 바꿀 파일: `global/aitool/AiToolResponse.java`, `global/aitool/AiToolCatalogService.java`. 완료 조건: `명령:` `./gradlew build -q` 종료 코드 0, 새 테스트 `AiToolCatalogEnumParamTest`(enum 칸·enum 목록 칸·`List<String>` 도구 제외)
+  - 알림 설정 저장 CARD `draft_notification_settings`(domain notification, `PUT /api/members/me/notification-settings`, 본문 8칸 모두 필수, `leadTimes`는 `array`+`itemType: string`+`values` TODAY·D1·D3·D7). 바꿀 파일: `notification/controller/NotificationSettingController.java`(`@AiTool`만), `notification/service/NotificationService.java`(케어 일정 ON인데 `leadTimes` 빈 400에 `data[0].field`=leadTimes, 오류 코드 그대로). 완료 조건: `화면:` 8082 `GET /internal/ai/tools`에 새 CARD와 `leadTimes` 칸이 실리고 기동 로그에 `[AiTool] 제외`가 없다, PUT에 `careSchdlNotiRcptnYn`=true·`leadTimes`=[]이면 400 `data[0].field`=leadTimes. `명령:` 새 테스트 `NotificationSettingAiToolCatalogTest`(기존 `NotificationAiToolCatalogTest`는 그대로 둔다), 서비스 400 칸 이름 테스트
+  - 계약: `docs/api/ai.md` Param 절에 `values`, 145줄 "문자열 값 목록" 문장, 알림 CARD 2→3개, "알림 설정 저장은 도구가 아니다" 문장 지움. 31줄 `GET /internal/ai/tools` 설명에 enum 칸
+  - 기존 도구 수를 세는 테스트(`AiToolCatalogControllerTest` 등)가 새 도구 때문에 깨지면 기대값만 바꾸고 사람 승인을 받는다
+- 완료 조건: 위 둘
+- 새 의존성: 없음
+- 완료 조건 결과: 검증 `통과`(2026-11-27, 1회차, 8082 도구 123개·`[AiTool] 제외` 없음·PUT 400 `data[0].field`=leadTimes), 사람 확인 2026-11-27(테스트로만 확인하는 `AiToolCatalogEnumParamTest` 5개·`NotificationSettingLeadTimeFieldTest` 1개 통과). 정한 것: 칸 모양 `values`(enum 상수 이름, 선언 순서)는 백엔드가 먼저 정함, `List<String>`은 여전히 뺌, 기존 테스트 변경 없음. 계약은 `docs/api/ai.md` Param 절·알림 CARD 3개
+- 추가: 없음
+- 연결 남음: FN-AIM-012-05·06·07·13 (ai 세션: Param 파서에 `values`, `tool_prompts.yaml` `draft_notification_settings` 설명·확인 말·스냅샷·`tool_eval`, LJS)
+- 연결 남음: FN-AIM-012-05·06·07·13 (프론트 연결 범용 확인 카드에서 `values` 칸 선택 표시·알림 설정 저장 카드 실행 확인, 프론트 저장소에서 /start)
+
+## SCR-AIM-012 AI 일정 생성 확인 · 반려동물 삭제·연동 해제·초대 삭제 카드 — 끝
+- 기능: 명세 기능 ID 추가 없음(사이트 기능 전체 표 3번 "아직 정하지 않음" 7개를 모두 붙이기로 함, 사람 2026-11-27 "3번도 전부 하자"), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 기다리는 것: 없음(Python 설명이 없는 도구는 싣지 않아 지금 동작은 그대로. 설명·tool_eval은 ai 세션)
+- 할 것: `@AiTool` CARD 3개(domain pet). `DELETE /api/pets/{petSn}`(PetController), `DELETE /api/pets/{petSn}/caregivers/{brupRelSn}`(PetController), `DELETE /api/caregiver-invitations/{jntBrupInvtnSn}`(CaregiverInvitationController). 되돌리기 어려운 일이라 확인 카드로만. pet 담당 SJM에게 알린다
+- 완료 조건: `GET /internal/ai/tools`에 세 CARD가 경로 칸과 함께 실린다, 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-27, 1회차), 사람 확인 2026-11-27(테스트 2개 통과, 도구 118개). 정한 것: 이름 `delete_pet`·`unlink_caregiver`·`delete_caregiver_invitation`(DELETE 경로 칸만, 서비스·DTO 변경 없음), 기존 테스트 1개 도구 수 기대값 변경(PetAiToolCatalogTest 22→25). 계약은 `docs/api/ai.md`
+- 추가: 없음
+- 연결 남음: FN-AIM-012-05·06·07·13 (ai 저장소 `tool_prompts.yaml` 세 도구 설명·확인 말(삭제 결과 경고)·스냅샷·`tool_eval`, ai 세션)
+- 연결 남음: FN-AIM-012-05·06·07·13 (프론트 연결 대화창 확인 카드로 본문 없는 DELETE 세 개 실행 확인, 프론트 저장소에서 /start)
+
+## SCR-AIM-012 AI 일정 생성 확인 · 튜토리얼 봤음 저장 카드 — 끝
+- 기능: 명세 기능 ID 추가 없음(사이트 기능 전체 표 3번 "아직 정하지 않음" 7개를 모두 붙이기로 함, 사람 2026-11-27 "3번도 전부 하자"), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 기다리는 것: 없음(Python 설명이 없는 도구는 싣지 않아 지금 동작은 그대로. 설명·tool_eval은 ai 세션)
+- 할 것: `@AiTool` CARD 1개(domain member). `PUT /api/members/me/tutorial`(MemberController)
+- 완료 조건: `GET /internal/ai/tools`에 CARD가 실린다, 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-27, 1회차, 도구 119개), 사람 확인 2026-11-27(MemberCardAiToolCatalogTest 통과). 정한 것: 이름 `mark_service_tutorial_viewed`(PUT 본문 없음·칸 없음·멱등, 서비스·DTO 변경 없음). 계약은 `docs/api/ai.md` 회원 CARD 3개
+- 추가: 없음
+- 연결 남음: FN-AIM-012-05·06·07·13 (ai 저장소 `tool_prompts.yaml` `mark_service_tutorial_viewed` 설명·확인 말·스냅샷·`tool_eval`, ai 세션)
+
+## SCR-AIM-012 AI 일정 생성 확인 · 케어 캘린더 일정 목록 읽기 도구 — 끝
+- 기능: 명세 기능 ID 추가 없음(사이트 기능 전체 표 3번 "아직 정하지 않음" 7개를 모두 붙이기로 함, 사람 2026-11-27 "3번도 전부 하자"), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 기다리는 것: 없음(Python 설명이 없는 도구는 싣지 않아 지금 동작은 그대로. 설명·tool_eval은 ai 세션)
+- 할 것: 붙이지 않음(2026-11-27 기획 승인). `GET /api/pets/{petSn}/care-schedules`는 `list_my_care_schedules`(`GET /api/care-schedules`, `petSns=1`로 한 마리도 읽음)와 조건·정렬·응답이 같다. `docs/api/health.md`·`docs/api/ai.md`의 "1마리 주소는 AI 도구가 아니다(2026-11-11)" 그대로. 코드 변경 없음, JAJ에게 알릴 것 없음
+- 완료 조건: `./gradlew build -q` 종료 코드 0(코드 변경 없음)
+- 연결 남음: 없음(기능 ID 추가 없음) (프론트 연결 `docs/ai-coverage.md` 1마리 일정 목록 GET을 `EXCLUDES` 뺌으로, 프론트 저장소에서 /start)
+
+## SCR-AIM-012 AI 일정 생성 확인 · 가계부 중복 확인·영수증 저장 전 확인·영수증 직접 입력 검진 등록 도구 — 끝
+- 기능: 명세 기능 ID 추가 없음(사이트 기능 전체 표 3번 "아직 정하지 않음" 7개를 모두 붙이기로 함, 사람 2026-11-27 "3번도 전부 하자"), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 기다리는 것: 없음(Python 설명이 없는 도구는 싣지 않아 지금 동작은 그대로. 설명·tool_eval은 ai 세션)
+- 할 것: `@AiTool` 3개(domain expense). `POST /api/expenses/duplicate-check`(ExpenseController), `POST /api/receipts/{recptSn}/save-check`·`POST /api/receipts/{recptSn}/checkups`(ReceiptSaveController). 두 확인은 저장하지 않는 검사라 READ로 둘지 기획 때 정한다. 가계부 담당 SJM에게 알린다
+- 완료 조건: `GET /internal/ai/tools`에 세 도구가 칸과 함께 실린다, 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-27, 1회차, 도구 122개), 사람 확인 2026-11-27(테스트 3개 통과). 정한 것: 두 확인은 저장하지 않아 READ(`check_expense_duplicates`·`check_receipt_save`), 직접 입력 검진은 CARD `draft_receipt_checkup`(`ReceiptCheckupCreateRequest`에 `@AiGenerated`·`@AiCode("HLTG01")`), `docs/api/ai.md`의 "영수증 직접 입력 검진기록은 도구가 아니다" 문구 삭제, 기존 테스트 2개 기대값 변경(ExpenseAiToolCatalogTest 9→10·READ 6→7, ExpenseCardAiToolCatalogTest CARD 5→6)
+- 추가: 없음
+- 연결 남음: FN-AIM-012-05·13 (ai 저장소 `tool_prompts.yaml` 세 도구 설명·확인 말·스냅샷·`tool_eval`, ai 세션)
+
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
 - FN-COM-002-11: 채팅 안 읽은 수 API는 KSJ(채팅, 마일스톤 담당 표 COM-009)
@@ -933,3 +1033,69 @@
 - 완료 조건: `GET /api/admin/care-matches?mbrSn=`이 그 회원이 보호자(모집글 작성자)이거나 매칭 상대(채팅방 `CTPT_MBR_SN`)인 모집글만 준다. `mbrSn`이 없으면 지금과 같다
 - 완료 조건 결과: 검증 `통과`(2026-11-24, 1회차), 사람 확인 2026-11-24. 정한 것: 정상 글만(블라인드 글은 넣지 않음), 응답에 역할 칸 없음(행 `mbrSn`으로 보호자·돌보미 구분), 채팅만 한 회원은 넣지 않음, 없는 회원은 빈 목록, 0 이하 400. DB 변경 없음
 - 연결 남음: FN-ADM-042-08 (프론트 연결 관리자 1:1 문의 상세 `features/adminInquiry` 「분쟁」 문의 작성자 옆 「펫돌봄 매칭 보기」 → `features/adminCommunity` 펫돌봄 목록 `?mbrSn=`·보호자/돌보미 표시, 프론트 저장소에서 /start)
+
+## SCR-AIM-011 AI 대화창 (대화 요약 저장 내부 API) — 끝
+- 기능: 명세 기능 ID 없음. ai 세션 요청(2026-11-24, nyangmeong-ai-1a): 긴 대화의 앞부분 요약을 방마다 하나 저장하고 대화 상세에 실어 준다. 정본 초안 ai `docs/api/internal.md` "Python → Java"의 GET·PUT …/summary 행
+- 함께 만드는 것: 테이블 `AI_CNVRS_SMRY`(v0.15 변경 절), `AiConversationService`·`FieldCryptoService` 재사용
+- 기다리는 것: 없음(ai 저장소 Python 구현은 끝, 가짜 Java로 테스트 통과)
+- 완료 조건: `PUT /internal/ai/conversations/{aiCnvrsRoomSn}/summary`가 행이 없으면 넣고, 새 경계선이 더 클 때만 요약·경계선을 한 SQL 문으로 바꾸고 200. 남의·없는 방 404 `NOT_FOUND`. `GET …/{aiCnvrsRoomSn}`에 `smryCn`·`smryEndMsgSeq`(없으면 null). 방 삭제·회원 파기 때 요약 행도 지워짐
+- 연결 남음: 기능 ID 없음 (ai 저장소가 실제 Java PUT …/summary·GET 상세 요약 필드를 부르는 확인과 ai `docs/api/internal.md` 초안 행 확정, ai 세션)
+
+## SCR-AIM-012 AI 일정 생성 확인 · 대화창 수정·삭제 도구 — 끝
+- 기능: 명세 기능 ID 추가 없음(대조 수 그대로). ai 세션 요청(2026-11-25, ai-ce): ai tool-catalog.md 2-3절 "삭제는 navigate만"을 바꿔 회원 데이터 수정·삭제를 대화창 확인 카드로
+- 할 것: `@AiTool` 17개(모두 CARD, domain health·expense·place). 수정 6: `draft_daily_health_record_update`·`draft_checkup_update`·`draft_prescription_update`·`draft_etc_inspection_update`·`draft_inspection_value_update`(refRange 중첩 skip 허용)·`draft_observation_cycle_update`(multipart, clearFields skip 허용). 삭제 11: `delete_schedule`·`delete_care_item`·`cancel_care_completion`·`delete_daily_health_record`·`delete_checkup`·`delete_prescription`·`delete_etc_inspection`·`delete_observation_cycle`·`delete_repeat_prevention`·`delete_expense`·`delete_place_bookmark`. 이름은 ai `data/tool_prompts.yaml` 키와 짝이라 그대로
+- 함께 할 것: 일지·검진·처방·기타검사·검사 수치·관찰·반복 예방·지출·즐겨찾기 서비스 검사 400에 칸 이름 담기(ai tool-catalog.md 3-3절, PR #175 `CareScheduleService` 방식)
+- 붙이지 않는 것: 반려동물 삭제, 지출 전체 삭제, 공동양육 해제·초대 삭제, 회원정보·비밀번호·닉네임, 검사 수치 묶음 삭제, 검진 첨부, 커뮤니티 계열(다음 차수), 관리자·내부
+- 기다리는 것: 없음(ai 쪽은 스냅샷·가짜 도구 목록으로 구현 중)
+- 완료 조건: `GET /internal/ai/tools`에 17개가 CARD로 실리고, 경로 칸만 있는 삭제 도구도 정상으로 실린다. 위 서비스 검사 400에 칸 이름이 실린다
+- 완료 조건 결과: 검증 `통과`(2026-11-25, 1회차), 사람 확인 2026-11-25(Postman: `GET /internal/ai/tools` 71개·새 17개 CARD, 8080 재기동 뒤). 정한 것: 칸 제외 어노테이션 `@AiExclude`(지원 안 하는 칸이 있으면 도구 전체가 빠지던 것을 그 칸만 빼게, `refRange`·`clearFields`), 수정 DTO 코드 칸 `@AiCode` 4개, 400 칸 이름은 수정 경로만(삭제 경로는 서비스 400 없음, 처방 일괄 저장 행은 그대로). 기존 도구 목록 테스트 5개 기대값 변경(기획 승인)
+- 추가: 없음
+- 연결 남음: 대화창 수정·삭제 카드 (ai 세션 ai-ce에 PR 번호·`@AiExclude`·칸 이름 범위 알림, `data/tools.snapshot.json` 갱신은 ai 세션)
+- 연결 남음: 대화창 수정·삭제 카드 (프론트 연결 대화창 범용 확인 카드가 본문 없는 DELETE call을 실행하는지, 프론트 저장소에서 /start)
+
+## SCR-SEED 시연용 시드 데이터 재구성 (1차: 생성기·주인공·시연 화면) — 끝
+- 기능: 명세 기능 ID 없음(공용 DB 시연 데이터). 생성기(`src/seed`) 되살리기·고치기, 업무 데이터만 골라 비우기(기준값·장소·뉴스·관리자 기록·테스트 계정·백업 테이블·사람이 쓴 공지 1·FAQ 51은 남김, 아이템 전부 비움), 주인공(회원 1)과 반려동물 3마리 3개월치, 남긴 회원 6·93·201~216 엑스트라 데이터
+- 기다리는 것: 없음
+- 완료 조건: 공용 DB 덤프를 넣은 로컬 DB에서 `seedClean` → `seedData` 뒤 남기는 행 수 그대로, 회원 1 로그인으로 메인·건강·가계부·커뮤니티·알림·문의 API가 빈 아닌 목록, 생성기가 만든 `ATCH_FILE`·사진 테이블 행 0
+
+## SCR-SEED 시연용 시드 데이터 재구성 (2차: 엑스트라·관리자) — 끝
+- 기능: 명세 기능 ID 없음. 새 회원으로 엑스트라 50명 이상을 실제 사용자처럼(사람 2026-11-26): 회원마다 반려동물·지역·활동량(자주 씀·가끔·눈팅·휴면)·가입일이 서로 맞고, 닉네임·글·댓글은 사람이 쓴 말투로("회원23"·"시드용" 같은 티 나는 값 없음, 사진 없이 글만), 커뮤니티 양은 그 활동량에서 나온 만큼, 관리자 화면용(신고·자동 블라인드·자동 삭제, 정지·탈퇴 회원, 답변 대기 문의, 대시보드 통계)
+- 기다리는 것: 1차
+- 완료 조건: 관리자 목록 API(회원·신고·문의·대시보드)가 빈 아닌 목록, 자동 블라인드 탭에 시드 행이 보인다
+- 완료 조건 결과: 검증 `통과`(2026-11-26, 2회차), 사람 확인 2026-11-26(로컬 DB 시드로 관리자 신고·자동 블라인드·정지·탈퇴·문의·대시보드 API). 정한 것: 활동량 눈팅·휴면 추가, 정지·탈퇴는 새 회원만, 감사 로그·채팅 상대 신고는 넣지 않음, 조회수·좋아요는 글쓴이 활동량 비례(주인공 글 제외)
+- 추가: 없음
+
+## SCR-ADM-114 감사 로그 · 30일 보관 후 삭제 — 끝
+- 기능: FN-ADM-114-04 수정·삭제 불가(보관 기간을 영구에서 30일로, 30일 지난 행은 배치가 지운다. 사람 2026-11-26)
+- 기다리는 것: 없음
+- 완료 조건: 감사 로그 정리 배치(SYSC0034)가 30일 지난 행만 지우고 배치 실행 이력에 남는다
+
+## SCR-AIM-011 AI 대화창 · 전 도메인 읽기 도구·알림 카드 — 끝
+- 기능: 명세 기능 ID 추가 없음(사이트 기능 전체 표 프론트 `docs/ai-coverage.md` 읽기 후보 25개 + notification 카드 2개, 사람 2026-11-27 B안), 걸치는 기능 FN-AIM-004-02
+- 기다리는 것: 없음(Python 설명이 없는 도구는 Python이 싣지 않으므로 먼저 붙여도 지금 동작은 그대로. 설명·tool_eval은 ai 세션)
+- 완료 조건: `GET /internal/ai/tools`에 새 도구 27개(READ 25·CARD 2)가 실리고 기존 도구 정의는 그대로, 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-27, 1회차), 사람 확인 2026-11-27(`GET /internal/ai/tools` 200·도구 98개, 새 27개 call·칸, `[AiTool] 제외` 없음). 정한 것: 읽기 후보 12개 뺌(바이너리 7·채팅 3·`GET /members/me`·1마리 일정 목록), `list_notifications`의 `tab`은 `@AiExclude`, 알림 설정 저장은 `leadTimes` 때문에 뺌, 문의·공지 검색 조건에 `@ModelAttribute` 명시, 기존 테스트 3개 도구 수 기대값 변경(사람 승인, 별도 커밋). 계약은 `docs/api/ai.md`
+- 추가: 없음
+- 연결 남음: FN-AIM-004-02 (ai 저장소 `tool_prompts.yaml` 27개 설명·스냅샷·`tool_eval`, ai 세션)
+
+## SCR-ADM-111 배치 현황 · 배치 목록 API 설명 정정 — 끝
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-111-01
+- 기다리는 것: 없음
+- 완료 조건: `docs/api/global.md` `GET /admin/batches` 행 설명이 개수를 박지 않고 코드에 있는 배치 전부(`BatchType`)를 준다고 적는다. 코드 변경 없음
+- 완료 조건 결과: 검증 `통과`(2026-11-27, 1회차), 사람 확인 2026-11-27. 관리자 `GET /api/admin/batches` 13건(마지막 SYSC0034). DMS 기능명세서 12종 정정은 사람(핸드오프)
+
+## SCR-AIM-012 AI 일정 생성 확인 · 가계부 여러 건·조건 전체 삭제 카드 — 끝
+- 기능: 명세 기능 ID 추가 없음(AI 매니저 대응 범위 다음 남은 후보, 사람 2026-11-27 "1번으로 가자"), 걸치는 기능 FN-AIM-012-05·06·07·13, FN-MYP-030-17·18·19·21
+- 기다리는 것: 없음(Python 설명이 없는 도구는 싣지 않아 지금 동작은 그대로. 새 칸 모양 쿼리 배열은 백엔드가 먼저 정하고 ai 세션에 알린다)
+- 할 것:
+  - 도구 목록 쿼리 배열 칸: `@RequestParam List<Long>`·`List<Integer>` → `in: query` + `type: array` + `itemType`(long·int). 실행하는 쪽은 같은 이름을 되풀이해 보낸다(`?expndSn=1&expndSn=2`). 그 밖의 목록 타입은 지금처럼 뺀다. 바꿀 파일: `global/aitool/AiToolCatalogService.java`. 완료 조건: `명령:` `./gradlew build -q` 종료 코드 0, 새 테스트 `AiToolCatalogQueryArrayParamTest`(`List<Long>` 쿼리 칸, 지원하지 않는 목록 쿼리 칸 도구 제외)
+  - 여러 건 삭제 CARD `delete_expenses`(domain expense, `DELETE /api/expenses`, 쿼리 `expndSn` 번호 목록 필수). 번호는 `list_expenses`에서. 바꿀 파일: `expense/controller/ExpenseController.java`(`@AiTool`만). 완료 조건: `화면:` 8082 `GET /internal/ai/tools`에 `delete_expenses`가 `params.expndSn` = `in: query`·`type: array`·`itemType: long`·`required: true`로 실린다
+  - 조건 전체 삭제 CARD `delete_expenses_by_condition`(domain expense, `POST /api/expenses/bulk-delete`, 본문 `ExpenseBulkDeleteRequest` 그대로). `expectedCnt`는 같은 조건의 `get_expense_total` `expndCnt` − 제외 수, 다르면 409 `EXPENSE_BULK_DELETE_CHANGED`(그대로). 바꿀 파일: `expense/controller/ExpenseController.java`(`@AiTool`), `expense/dto/ExpenseBulkDeleteRequest.java`(`expndClsfCd`에 `@AiCode("MYPG05")`만, 검사 변경 없음). 완료 조건: `화면:` 8082 `GET /internal/ai/tools`에 실리고 `expectedCnt` 필수·`excludeExpndSn` `array`+`itemType: long`·`expndClsfCd` `code`+MYPG05, 기동 로그에 `[AiTool] 제외`가 없다
+  - 테스트: 새 `ExpenseBulkDeleteAiToolCatalogTest`(두 CARD 모양). 기존 `ExpenseDeleteAiToolCatalogTest.지출_여러_건_삭제는_도구로_싣지_않는다`는 이번 결정과 반대라 "여러 건 삭제가 쿼리 배열로 실린다"로 바꾸고, `ExpenseAiToolCatalogTest` 이름 목록·expense 수(10→12)는 기대값만 바꾼다. 둘 다 사람 승인을 받는다
+  - 계약: `docs/api/ai.md` Param 절에 쿼리 배열 칸, 136줄 가계부 CARD 6→8개(`delete_expense` 뒤 "여러 건 삭제는 도구가 아니다" 지움), 31줄 `GET /internal/ai/tools` 설명에 쿼리 배열
+- 완료 조건: 위 셋
+- 새 의존성: 없음
+- 완료 조건 결과: 검증 `통과`(2026-11-27. 1회차 실패는 기획 밖 기존 테스트 `ExpenseCardAiToolCatalogTest` 기대값 변경 → 추가-1로 받아 재검증, 8082 두 CARD 모양 확인·`[AiTool] 제외` 없음), 사람 확인 2026-11-27(`AiToolCatalogQueryArrayParamTest` 통과). 정한 것: 쿼리 번호 목록 칸은 `List<Long>`·`List<Integer>`만, 필수면 `minItems` 1, 실행은 같은 이름 되풀이. 서비스 변경 없음, DTO는 `@AiCode("MYPG05")`만. 기존 테스트 3개 기대값 변경(ExpenseDelete·ExpenseAi·ExpenseCard). 계약은 `docs/api/ai.md` Param 절·가계부 CARD 8개
+- 추가: 추가-1 `ExpenseCardAiToolCatalogTest` CARD 6→8·메서드 이름 `가계부_쓰기_CARD_8개가_실린다`(사람 2026-11-27 15:08 "추천안대로")
+- 연결 남음: FN-AIM-012-05·06·07·13 (ai 세션: Param 파서 쿼리 배열 칸, `tool_prompts.yaml` `delete_expenses`·`delete_expenses_by_condition` 설명·확인 말·스냅샷·`tool_eval`, LJS)
+- 연결 남음: FN-AIM-012-05·06·07·13 (프론트 연결 대화창 확인 카드의 쿼리 배열 DELETE·조건 전체 삭제 POST 실행 확인, 프론트 저장소에서 /start)

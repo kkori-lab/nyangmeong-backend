@@ -43,6 +43,7 @@ public class CaregiverInvitationController {
     private final CaregiverInvitationService caregiverInvitationService;
 
     @Operation(summary = "공동양육 초대 발송")
+    @AiTool(name = "draft_caregiver_invitation", domain = "pet", kind = AiToolKind.CARD)
     @PostMapping
     public ResponseEntity<ApiResponse<?>> createInvitation(@AuthenticationPrincipal LoginMember me,
             @Valid @RequestBody CaregiverInvitationCreateRequest req, HttpServletRequest request) {
@@ -64,6 +65,7 @@ public class CaregiverInvitationController {
     }
 
     @Operation(summary = "받은 공동양육 초대 상세")
+    @AiTool(name = "get_caregiver_invitation", domain = "pet", kind = AiToolKind.READ)
     @GetMapping("/{jntBrupInvtnSn}")
     public ResponseEntity<ApiResponse<CaregiverInvitationResponse>> getInvitation(
             @AuthenticationPrincipal LoginMember me, @PathVariable Long jntBrupInvtnSn) {
@@ -71,6 +73,7 @@ public class CaregiverInvitationController {
     }
 
     @Operation(summary = "공동양육 초대 수락")
+    @AiTool(name = "accept_caregiver_invitation", domain = "pet", kind = AiToolKind.CARD)
     @PostMapping("/{jntBrupInvtnSn}/accept")
     public ResponseEntity<ApiResponse<?>> acceptInvitation(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long jntBrupInvtnSn, @Valid @RequestBody CaregiverInvitationAcceptRequest req,
@@ -86,6 +89,7 @@ public class CaregiverInvitationController {
     }
 
     @Operation(summary = "공동양육 초대 거절")
+    @AiTool(name = "reject_caregiver_invitation", domain = "pet", kind = AiToolKind.CARD)
     @PostMapping("/{jntBrupInvtnSn}/reject")
     public ResponseEntity<ApiResponse<Void>> rejectInvitation(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long jntBrupInvtnSn) {
@@ -94,6 +98,7 @@ public class CaregiverInvitationController {
     }
 
     @Operation(summary = "보낸 공동양육 초대 취소")
+    @AiTool(name = "cancel_caregiver_invitation", domain = "pet", kind = AiToolKind.CARD)
     @PostMapping("/{jntBrupInvtnSn}/cancel")
     public ResponseEntity<ApiResponse<Void>> cancelInvitation(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long jntBrupInvtnSn) {
@@ -102,6 +107,7 @@ public class CaregiverInvitationController {
     }
 
     @Operation(summary = "취소한 공동양육 초대 삭제")
+    @AiTool(name = "delete_caregiver_invitation", domain = "pet", kind = AiToolKind.CARD)
     @DeleteMapping("/{jntBrupInvtnSn}")
     public ResponseEntity<ApiResponse<Void>> deleteInvitation(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long jntBrupInvtnSn) {

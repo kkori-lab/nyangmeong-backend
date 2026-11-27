@@ -71,15 +71,15 @@ public class PrescriptionService {
 
         Prescription prescription = new Prescription();
         prescription.setCkupRcdSn(req.ckupRcdSn());
-        prescription.setMdcnNm(requiredText(req.mdcnNm()));
+        prescription.setMdcnNm(requiredText(req.mdcnNm(), "mdcnNm"));
         prescription.setMdcnBgngYmd(req.mdcnBgngYmd());
         prescription.setMdcnEndYmd(req.mdcnEndYmd());
         prescription.setDayMdcnNmtm(req.dayMdcnNmtm());
-        prescription.setPrscSttsCd(statusOf(req.prscSttsCd()).getCode());
+        prescription.setPrscSttsCd(statusOf(req.prscSttsCd(), "prscSttsCd").getCode());
         prescription.setCareRfltYn(Boolean.TRUE.equals(req.careRfltYn()) ? "Y" : "N");
         prescription.setRgtrId(actorId);
         prescription.setMdfrId(actorId);
-        checkPeriod(prescription);
+        checkPeriod(prescription, "mdcnEndYmd");
 
         prescriptionMapper.insertPrescription(prescription);
         prescriptionMapper.insertStatusHistory(prescription.getPrscSn(), mbrSn, null, prescription.getPrscSttsCd());
@@ -98,7 +98,7 @@ public class PrescriptionService {
         String bfrSttsCd = prescription.getPrscSttsCd();
 
         if (req.mdcnNm() != null) {
-            prescription.setMdcnNm(requiredText(req.mdcnNm()));
+            prescription.setMdcnNm(requiredText(req.mdcnNm(), "mdcnNm"));
         }
         if (req.mdcnBgngYmd() != null) {
             prescription.setMdcnBgngYmd(req.mdcnBgngYmd());
@@ -110,12 +110,12 @@ public class PrescriptionService {
             prescription.setDayMdcnNmtm(req.dayMdcnNmtm());
         }
         if (req.prscSttsCd() != null) {
-            prescription.setPrscSttsCd(statusOf(req.prscSttsCd()).getCode());
+            prescription.setPrscSttsCd(statusOf(req.prscSttsCd(), "prscSttsCd").getCode());
         }
         if (req.careRfltYn() != null) {
             prescription.setCareRfltYn(req.careRfltYn() ? "Y" : "N");
         }
-        checkPeriod(prescription);
+        checkPeriod(prescription, "mdcnEndYmd");
 
         prescriptionMapper.updatePrescription(prescription, actorId);
         if (!bfrSttsCd.equals(prescription.getPrscSttsCd())) {
@@ -237,25 +237,28 @@ public class PrescriptionService {
         return prescription;
     }
 
-    private void checkPeriod(Prescription prescription) {
+    /**
+     * 복용 기간 검사 : fields는 400 data에 담을 칸 이름(일괄 저장 행은 그대로)
+     */
+    private void checkPeriod(Prescription prescription, String... fields) {
         if (prescription.getMdcnEndYmd().isBefore(prescription.getMdcnBgngYmd())) {
-            throw invalid();
+            throw invalid(fields);
         }
     }
 
-    private PrescriptionStatus statusOf(String prscSttsCd) {
-        return PrescriptionStatus.of(prscSttsCd).orElseThrow(this::invalid);
+    private PrescriptionStatus statusOf(String prscSttsCd, String... fields) {
+        return PrescriptionStatus.of(prscSttsCd).orElseThrow(() -> invalid(fields));
     }
 
-    private String requiredText(String value) {
+    private String requiredText(String value, String... fields) {
         if (value == null || value.isBlank()) {
-            throw invalid();
+            throw invalid(fields);
         }
         return value.trim();
     }
 
-    private CustomException invalid() {
-        return new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+    private CustomException invalid(String... fields) {
+        return new CustomException(ErrorCode.INVALID_INPUT_VALUE, fields);
     }
 
     /**

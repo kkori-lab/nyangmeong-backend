@@ -2,6 +2,8 @@ package com.nyangmeong.health.dto;
 
 import java.time.LocalDate;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
@@ -15,6 +17,6 @@ public record PrescriptionUpdateRequest(
         LocalDate mdcnBgngYmd,
         LocalDate mdcnEndYmd,
         @Min(1) @Max(9999) Integer dayMdcnNmtm,
-        String prscSttsCd,
+        @AiCode("HLTG06") String prscSttsCd,
         Boolean careRfltYn) {
 }

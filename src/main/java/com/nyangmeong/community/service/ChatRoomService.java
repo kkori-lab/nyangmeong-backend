@@ -30,6 +30,7 @@ import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.file.StoredFile;
 import com.nyangmeong.global.security.crypto.FieldCryptoService;
+import com.nyangmeong.notification.service.NotificationService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -57,6 +58,7 @@ public class ChatRoomService {
     private final ChatRealtimePublisher chatRealtimePublisher;
     private final FieldCryptoService fieldCryptoService;
     private final FileStore fileStore;
+    private final NotificationService notificationService;
 
     /**
      * 채팅방 조회 (참여자만)
@@ -99,6 +101,8 @@ public class ChatRoomService {
     @Transactional
     public void read(Long mbrSn, Long otoChatRoomSn, ChatRoomReadRequest req) {
         ChatRoomDetail room = chatRoomGuard.getRoom(mbrSn, otoChatRoomSn);
+        /** 방에서 본 거래는 헤더 알림에서도 읽음 : 이미 다 읽은 방을 다시 열어도 남은 알림을 지운다 */
+        notificationService.markReadByPath(mbrSn, String.format(CareMatchService.CHAT_ROOM_PATH, otoChatRoomSn));
         if (chatRoomMapper.updateLastRead(otoChatRoomSn, mbrSn, req.lastPrslMsgSeq()) == 0) {
             return;
         }
@@ -108,9 +112,10 @@ public class ChatRoomService {
     }
 
     /**
-     * 채팅방 나가기 (목록에서만 숨기고 기록은 유지, 수락 대기 매칭은 취소)
+     * 채팅방 나가기 (기록은 유지하고 내 화면만 리셋, 수락 대기 매칭은 취소)
      * - 매칭 완료~수령 대기에는 나갈 수 없다(409). 거래 취소 요청이 동의된 뒤에 나갈 수 있다
      * - 상대가 아직 방에 있으면 매칭 취소 안내가 없는 경우에도 나갔다는 시스템 메시지를 남긴다
+     * - 지금까지의 메시지는 나간 사람에게 다시 보이지 않는다(복귀해도 이후 메시지만). 거래 완료 방도 같다
      */
     @Transactional
     public void leave(Long mbrSn, Long otoChatRoomSn) {
@@ -135,6 +140,8 @@ public class ChatRoomService {
                 chatMessageService.createSystemMessage(otoChatRoomSn, LEFT_MESSAGE);
             }
         }
+        /** 나가며 남긴 안내까지 내 화면에서 지움 : 복귀해도 이후 메시지만 보인다, 상대 화면은 그대로 */
+        chatRoomMapper.updateVisibleStart(otoChatRoomSn, mbrSn);
     }
 
     /**
@@ -143,7 +150,7 @@ public class ChatRoomService {
     @Transactional(readOnly = true)
     public StoredFile getImage(Long mbrSn, Long otoChatRoomSn, Long atchFileSn) {
         chatRoomGuard.getRoom(mbrSn, otoChatRoomSn);
-        if (!chatRoomMapper.existsPhoto(otoChatRoomSn, atchFileSn)) {
+        if (!chatRoomMapper.existsPhoto(otoChatRoomSn, mbrSn, atchFileSn)) {
             throw new CustomException(ErrorCode.FILE_NOT_FOUND);
         }
         return fileStore.load(atchFileSn);

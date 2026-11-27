@@ -46,7 +46,7 @@ import com.nyangmeong.health.service.RepeatPreventionService;
 
 /**
  * [검사 - 건강 도메인 AI 도구 목록]
- * - 실제 건강 컨트롤러의 @AiTool이 빠짐없이 실리는지 (READ 12 + CARD 9)
+ * - 실제 건강 컨트롤러의 @AiTool이 빠짐없이 실리는지 (READ 14 + CARD 30)
  * - 반려동물 1마리 일정 목록은 도구가 아님 : 회원 단위 list_my_care_schedules 가 대신 (MyCareScheduleAiToolCatalogTest)
  */
 @WebMvcTest(controllers = {AiToolCatalogController.class, CareScheduleController.class, CareItemController.class,
@@ -103,19 +103,27 @@ class HealthAiToolCatalogTest {
     }
 
     @Test
-    void 건강_READ_12개와_CARD_9개가_빠짐없이_실린다() throws Exception {
+    void 건강_READ_14개와_CARD_30개가_빠짐없이_실린다() throws Exception {
         givenCodes();
         mockMvc.perform(get(PATH))
-                .andExpect(jsonPath("$.data.tools.length()").value(21))
-                .andExpect(jsonPath("$.data.tools[*].name", containsInAnyOrder("draft_care_completion", "draft_care_item",
+                .andExpect(jsonPath("$.data.tools.length()").value(44))
+                .andExpect(jsonPath("$.data.tools[*].name", containsInAnyOrder("cancel_care_completion",
+                        "cancel_last_dose", "draft_checkup", "draft_etc_inspection", "draft_prescription",
+                        "draft_repeat_prevention", "end_observation_item",
+                        "delete_care_item", "delete_checkup", "delete_daily_health_record", "delete_etc_inspection",
+                        "delete_observation_cycle", "delete_prescription", "delete_repeat_prevention",
+                        "delete_schedule", "draft_checkup_update", "draft_daily_health_record_update",
+                        "draft_etc_inspection_update", "draft_inspection_value_update",
+                        "draft_observation_cycle_update", "draft_prescription_update",
+                        "draft_care_completion", "draft_care_item",
                         "draft_care_item_update", "draft_daily_health_record", "draft_inspection_values",
                         "draft_observation_cycle", "draft_observation_item",
                         "draft_schedule", "draft_schedule_update",
-                        "get_checkup", "get_health_indicators", "list_care_completions", "list_care_items",
-                        "list_checkups", "list_daily_health_records",
+                        "get_care_mission_progress", "get_checkup", "get_health_indicators", "list_care_completions",
+                        "list_care_items", "list_checkup_attachments", "list_checkups", "list_daily_health_records",
                         "list_etc_inspections", "list_inspection_values", "list_observation_cycles",
                         "list_observation_items", "list_prescriptions", "list_repeat_preventions")))
-                .andExpect(jsonPath("$.data.tools[?(@.kind == 'READ')].name", hasSize(12)));
+                .andExpect(jsonPath("$.data.tools[?(@.kind == 'READ')].name", hasSize(14)));
     }
 
     @Test

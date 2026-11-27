@@ -58,6 +58,7 @@ public class CheckupController {
     }
 
     @Operation(summary = "검진기록 직접 등록")
+    @AiTool(name = "draft_checkup", domain = "health", kind = AiToolKind.CARD)
     @PostMapping
     public ResponseEntity<ApiResponse<CheckupResponse>> create(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @Valid @RequestBody CheckupCreateRequest req) {
@@ -66,6 +67,7 @@ public class CheckupController {
     }
 
     @Operation(summary = "검진기록 수정")
+    @AiTool(name = "draft_checkup_update", domain = "health", kind = AiToolKind.CARD)
     @PatchMapping("/{ckupRcdSn}")
     public ResponseEntity<ApiResponse<CheckupResponse>> update(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long ckupRcdSn, @Valid @RequestBody CheckupUpdateRequest req) {
@@ -73,6 +75,7 @@ public class CheckupController {
     }
 
     @Operation(summary = "검진기록 삭제")
+    @AiTool(name = "delete_checkup", domain = "health", kind = AiToolKind.CARD)
     @DeleteMapping("/{ckupRcdSn}")
     public ResponseEntity<ApiResponse<Void>> delete(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long ckupRcdSn) {

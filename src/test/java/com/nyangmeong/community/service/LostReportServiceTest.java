@@ -3,6 +3,7 @@ package com.nyangmeong.community.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -717,17 +718,17 @@ class LostReportServiceTest {
     @Test
     void 연장_창_안이면_연장한다() {
         when(lostReportMapper.selectDetail(LOST, NORMAL)).thenReturn(missing());
-        when(lostReportMapper.updateRenewed(LOST, MISSING)).thenReturn(1);
+        when(lostReportMapper.updateRenewed(LOST, MISSING, 30)).thenReturn(1);
 
         service.renew(MBR, LOST);
 
-        verify(lostReportMapper).updateRenewed(LOST, MISSING);
+        verify(lostReportMapper).updateRenewed(LOST, MISSING, 30);
     }
 
     @Test
     void 연장_창_밖이거나_이미_연장했으면_400() {
         when(lostReportMapper.selectDetail(LOST, NORMAL)).thenReturn(missing());
-        when(lostReportMapper.updateRenewed(LOST, MISSING)).thenReturn(0);
+        when(lostReportMapper.updateRenewed(LOST, MISSING, 30)).thenReturn(0);
 
         assertError(() -> service.renew(MBR, LOST), ErrorCode.LOST_REPORT_NOT_RENEWABLE);
     }
@@ -737,7 +738,7 @@ class LostReportServiceTest {
         when(lostReportMapper.selectDetail(LOST, NORMAL)).thenReturn(missing());
 
         assertError(() -> service.renew(OTHER, LOST), ErrorCode.NOT_OWNER);
-        verify(lostReportMapper, never()).updateRenewed(anyLong(), anyString());
+        verify(lostReportMapper, never()).updateRenewed(anyLong(), anyString(), anyInt());
     }
 
     private LostReportDetail alarmDetail() {

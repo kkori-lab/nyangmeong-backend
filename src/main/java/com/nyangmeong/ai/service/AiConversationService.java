@@ -8,12 +8,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.nyangmeong.ai.domain.AiConversationMessage;
 import com.nyangmeong.ai.domain.AiConversationRoom;
+import com.nyangmeong.ai.domain.AiConversationSmry;
 import com.nyangmeong.ai.domain.AiMessageRole;
 import com.nyangmeong.ai.dto.AdminDailyAiChatSummary;
 import com.nyangmeong.ai.dto.ConversationCreateRequest;
 import com.nyangmeong.ai.dto.ConversationMessageCreateRequest;
 import com.nyangmeong.ai.dto.ConversationMessageResponse;
 import com.nyangmeong.ai.dto.ConversationResponse;
+import com.nyangmeong.ai.dto.ConversationSmrySaveRequest;
 import com.nyangmeong.ai.dto.ConversationSummary;
 import com.nyangmeong.ai.dto.ConversationTitleUpdateRequest;
 import com.nyangmeong.ai.mapper.AiConversationMapper;
@@ -73,8 +75,33 @@ public class AiConversationService {
         AiConversationRoom room = getOwnedRoomOrThrow(mbrSn, aiCnvrsRoomSn);
         List<ConversationMessageResponse> messages = aiConversationMapper.selectMessageList(aiCnvrsRoomSn).stream()
                 .map(this::toMessageResponse).toList();
+        AiConversationSmry smry = aiConversationMapper.selectSmry(aiCnvrsRoomSn);
         return new ConversationResponse(room.getAiCnvrsRoomSn(), room.getPetSn(),
-                fieldCryptoService.decrypt(room.getCnvrsTtlEnc()), room.getRegDt(), messages);
+                fieldCryptoService.decrypt(room.getCnvrsTtlEnc()), room.getRegDt(), messages,
+                smry == null ? null : fieldCryptoService.decrypt(smry.getSmryCnEnc()),
+                smry == null ? null : smry.getSmryEndMsgSeq());
+    }
+
+    /**
+     * 대화 요약 저장 (방마다 한 행, 경계선이 커질 때만 바꿈)
+     */
+    @Transactional
+    public void saveSummary(Long mbrSn, Long aiCnvrsRoomSn, ConversationSmrySaveRequest req) {
+        /** 방 행 잠금으로 저장 중 방 삭제와 겹치지 않게 함 */
+        if (aiConversationMapper.selectRoomForUpdate(mbrSn, aiCnvrsRoomSn) == null) {
+            throw new CustomException(ErrorCode.NOT_FOUND);
+        }
+        /** 없는 메시지까지 요약했다는 경계선을 저장하면 이후의 정상 요약이 모두 무시됨 */
+        if (req.smryEndMsgSeq() > aiConversationMapper.selectLastMsgSeq(aiCnvrsRoomSn)) {
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        AiConversationSmry smry = new AiConversationSmry();
+        smry.setAiCnvrsRoomSn(aiCnvrsRoomSn);
+        smry.setSmryCnEnc(fieldCryptoService.encrypt(req.smryCn()));
+        smry.setSmryEndMsgSeq(req.smryEndMsgSeq());
+        /** 첫 저장이면 등록, 이미 있으면 새 경계선이 클 때만 수정 (같거나 작으면 그대로) */
+        aiConversationMapper.insertSmryIfAbsent(smry);
+        aiConversationMapper.updateSmryIfAfter(smry);
     }
 
     /**

@@ -29,10 +29,10 @@
 | POST | /members/recovery | 30일 이내 탈퇴 회원 기존 정보 복구 실행(탈퇴 → 정상, 상태 이력 "재가입 복구" 한 번). 로그인 없이 부르고 본문의 복구 확인 권한 토큰으로 본인확인하며 성공해도 로그인 쿠키를 만들지 않는다. 권한 문제는 400 MEMBER_RECOVERY_NOT_AVAILABLE, 보관 기간 지남은 400 MEMBER_RECOVERY_EXPIRED, 빠진 필수 약관 미동의는 400 REQUIRED_TERMS_NOT_AGREED, 번호는 INVALID_PHONE_NUMBER·409 PHONE_ALREADY_USED. 이미 쓴 권한이라도 그 회원이 지금 정상이면 바꾸는 것 없이 200(중복 클릭·응답 유실) | ACC-001-45 | YAY | MemberRecoverRequest | - |
 | POST | /members/me/withdraw | 회원탈퇴(상태·이력 반영, 모든 로그인·인증 권한 종료, 30일 보관) | ACC-020-03·14·16, AIM-011-19, MYP-002-08 (기능 분배 3.1절 5번) | YAY | MemberWithdrawRequest | - |
 | POST | /members/me/sns-links | SNS 계정 연동(로그인 필요). 프론트가 인가 창에서 받은 `code`(네이버는 `state`도)를 넘기면 서버가 제공자 계정 ID를 받아 로그인 회원에 연결하고, 응답은 연동 뒤의 `MemberResponse`다. 이미 내 연동이면 그대로 200. 다른 회원에게 연결된 계정은 409 SNS_ACCOUNT_LINKED_TO_OTHER, 내게 같은 제공자의 다른 계정이 이미 연결돼 있으면 409 SNS_PROVIDER_ALREADY_LINKED, 모르는 제공자 400 BAD_REQUEST, 제공자 실패 400 SNS_LINK_FAILED(로그인용 SNS_AUTH_FAILED와 문구만 다르다), 비로그인 401. 해제했던 같은 계정은 새 행 대신 되살린다(issues 로그인 2 (4)). 연동 해제는 없다(명세) | MYP-040-14 | YAY | MemberSnsLinkRequest | MemberResponse |
-| GET | /members/me/tutorial | 메인 서비스 튜토리얼 봤음 여부 조회. `false`면 프론트가 튜토리얼 모달을 띄운다. 신규 가입 회원은 `false`, 이 컬럼을 추가하기 전에 가입한 회원은 `true`. 비로그인 401 | 새 기능(ID 없음, 프론트 요청 2026-11-20, SCR-MAN-001) | LJS | - | MemberTutorialResponse |
-| PUT | /members/me/tutorial | 메인 서비스 튜토리얼 봤음 저장. 본문 없음. 모달이 닫힐 때마다 부르며 이미 봤어도 200과 같은 응답(멱등). 응답은 조회와 같다. 비로그인 401 | 새 기능(ID 없음, 프론트 요청 2026-11-20, SCR-MAN-001) | LJS | - | MemberTutorialResponse |
-| PATCH | /members/me | 회원정보 수정. 휴대전화(저장 시 중복 재검사)·프로필 사진 | MYP-040-02·05·08·11 | SJM | MemberUpdateRequest | MemberResponse |
-| PATCH | /members/me/nickname | 닉네임 설정 확정(로그인 회원 또는 가입 직후 받은 `ncnm_setup` 쿠키, 둘 다 없으면 401), 설정 완료 여부 반영 | ACC-001-26 | YAY | MemberNicknameUpdateRequest | MemberResponse |
+| GET | /members/me/tutorial | 메인 서비스 튜토리얼 봤음 여부 조회. `false`면 프론트가 튜토리얼 모달을 띄운다. 신규 가입 회원은 `false`, 이 컬럼을 추가하기 전에 가입한 회원은 `true`. 비로그인 401 | MAN-012 | LJS | - | MemberTutorialResponse |
+| PUT | /members/me/tutorial | 메인 서비스 튜토리얼 봤음 저장. 본문 없음. 모달이 닫힐 때마다 부르며 이미 봤어도 200과 같은 응답(멱등). 응답은 조회와 같다. 비로그인 401 | MAN-012 | LJS | - | MemberTutorialResponse |
+| PATCH | /members/me | 회원정보 수정. 휴대전화(저장 시 중복 재검사)·프로필 사진. 사진과 `profilePhotoReset=true`를 같이 보내면 400 `BAD_REQUEST`(`data[].field`에 `profilePhoto`·`profilePhotoReset`) | MYP-040-02·05·08·11 | SJM | MemberUpdateRequest | MemberResponse |
+| PATCH | /members/me/nickname | 닉네임 설정 확정(가입 직후 받은 `ncnm_setup` 쿠키가 있으면 로그인 회원보다 먼저 쓰고, 없으면 로그인 회원, 둘 다 없으면 401), 설정 완료 여부 반영. 성공하면 `ncnm_setup` 쿠키를 지운다(로그인 성공 때도 지운다) | ACC-001-26 | YAY | MemberNicknameUpdateRequest | MemberResponse |
 | PATCH | /members/me/password | 로그인 상태에서 비밀번호 변경. 현재 비밀번호를 같은 요청에서 다시 검사(틀리면 400 CURRENT_PASSWORD_MISMATCH), `pswd`와 `pswdCnfrm` 불일치 400 PASSWORD_MISMATCH, 새 비밀번호가 현재 비밀번호와 같으면 400 PASSWORD_SAME_AS_CURRENT, SNS 회원 400 SNS_ONLY_MEMBER. 성공하면 모든 기기의 로그인을 끝내고 요청한 기기에는 새 로그인 쿠키를 다시 준다 *통합 때 추가* | MYP-040-06 | YAY | PasswordChangeRequest | - |
 | GET | /admin/members | 관리자 회원 목록. 최신 가입순 20건씩, 정상·정지·탈퇴 전부. `q`에 @가 있으면 이메일 완전 일치, 없으면 닉네임 부분 일치. 시작일이 종료일보다 늦으면 400 INVALID_INPUT_VALUE, 일반 회원 403 ADMIN_ONLY | ADM-010-01·02·03·04 | LJS | AdminMemberSearchCond | PageResponse<AdminMemberSummary> |
 | GET | /admin/members/suspensions | 지금 정지 중인 회원 목록. 최근 정지순 20건씩. 일반 회원 403 ADMIN_ONLY | ADM-012 | LJS | AdminSuspensionSearchCond | PageResponse<AdminSuspensionSummary> |
@@ -394,7 +394,7 @@
 쓰는 API: GET /members/me/tutorial; PUT /members/me/tutorial
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
-| tutrlViewYn | boolean | Y | 서비스 튜토리얼을 본(모달을 닫은) 적 있으면 true. false면 메인에서 튜토리얼 모달을 띄운다 | MBR.TUTRL_VIEW_YN, SCR-MAN-001 |
+| tutrlViewYn | boolean | Y | 서비스 튜토리얼을 본(모달을 닫은) 적 있으면 true. false면 메인에서 튜토리얼 모달을 띄운다 | MBR.TUTRL_VIEW_YN, MAN-012 |
 
 ### MemberUpdateRequest
 쓰는 API: PATCH /members/me

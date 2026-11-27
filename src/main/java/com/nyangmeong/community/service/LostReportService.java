@@ -56,7 +56,7 @@ import lombok.RequiredArgsConstructor;
  * - SCR-CMU-002 목록·상세·등록·수정·삭제·찾았어요·게시 기간 연장
  * - 게시글(PST, 실종센터 게시판)과 제보(LOST_TPOF)가 1:1, 좋아요·댓글·신고는 /api/posts 와 같이 쓴다
  * - 실종지역은 목격 장소 좌표로 서버가 계산하고 전북 밖이면 거절한다
- * - 실종 상태는 등록 후 30일이 지나면 목록에서 빠지고 작성자만 상세를 본다(배치 없이 조회 조건으로 처리)
+ * - 실종 상태는 게시 종료일(등록 후 운영 설정 일수)이 지나면 목록에서 빠지고 작성자만 상세를 본다(배치 없이 조회 조건으로 처리)
  * - 종료 7일 전·1일 전 작성자 알림은 LostReportExpiryAlarmJob 이 글마다 sendExpiryAlarm 을 부른다
  */
 @Service
@@ -162,6 +162,8 @@ public class LostReportService {
         LostReport report = toReport(req, rgnSn);
         report.setPstSn(post.getPstSn());
         report.setLostTpofSttsCd(LostReportStatus.MISSING.getCode());
+        /** 게시 종료일 = 등록 시각 + 운영 설정 게시 기간 (설정을 바꾸면 그 뒤 등록하는 글부터) */
+        report.setExpryCrtrDt(LocalDateTime.now().plusDays(postingDays()));
         lostReportMapper.insertLostReport(report);
         insertReportHistory(report.getLostTpofSn(), mbrSn, null, LostReportStatus.MISSING);
 
@@ -261,13 +263,13 @@ public class LostReportService {
     }
 
     /**
-     * 게시 기간 30일 연장 (작성자, 종료 7일 전부터 종료 전까지 한 번)
+     * 게시 기간 연장 (작성자, 종료 7일 전부터 종료 전까지, 기존 종료일 + 운영 설정 게시 기간)
      */
     @Transactional
     public void renew(Long mbrSn, Long lostTpofSn) {
         LostReportDetail detail = getDetailOrThrow(lostTpofSn);
         ownerAuthorizer.checkOwner(mbrSn, detail.getMbrSn());
-        if (lostReportMapper.updateRenewed(lostTpofSn, LostReportStatus.MISSING.getCode()) == 0) {
+        if (lostReportMapper.updateRenewed(lostTpofSn, LostReportStatus.MISSING.getCode(), postingDays()) == 0) {
             throw new CustomException(ErrorCode.LOST_REPORT_NOT_RENEWABLE);
         }
     }
@@ -298,8 +300,8 @@ public class LostReportService {
             return false;
         }
         String when = days == 1 ? "내일" : days + "일 뒤";
-        String content = String.format("%s 제보가 %s(%s) 게시 종료돼요. 아직 찾고 계시면 30일 더 게시할 수 있어요.",
-                detail.getPetNm(), when, detail.getExpryCrtrDt().format(EXPIRY_DATE));
+        String content = String.format("%s 제보가 %s(%s) 게시 종료돼요. 아직 찾고 계시면 %d일 더 게시할 수 있어요.",
+                detail.getPetNm(), when, detail.getExpryCrtrDt().format(EXPIRY_DATE), postingDays());
         eventPublisher.publish(new NotificationEvent(detail.getMbrSn(), NotificationType.LOST_EXPIRY,
                 EXPIRY_ALARM_TTL, content, String.format(EXPIRY_ALARM_PATH, lostTpofSn)));
         return true;
@@ -463,5 +465,12 @@ public class LostReportService {
      */
     private String escapeLike(String keyword) {
         return keyword.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+    }
+
+    /**
+     * 실종 게시 기간(일) : 운영 설정 SYS_STNG.LOST_TPOF_EXPRY_CRTR_DAY_CNT
+     */
+    private int postingDays() {
+        return systemSettingService.get().getLostTpofExpryCrtrDayCnt().intValue();
     }
 }

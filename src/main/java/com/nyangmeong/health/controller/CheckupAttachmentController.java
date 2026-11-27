@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.file.StoredFile;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.response.PageQuery;
@@ -46,6 +48,7 @@ public class CheckupAttachmentController {
     private final CheckupAttachmentService checkupAttachmentService;
 
     @Operation(summary = "검진기록 첨부 목록")
+    @AiTool(name = "list_checkup_attachments", domain = "health", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<CheckupAttachmentSummary>>> search(
             @AuthenticationPrincipal LoginMember me, @PathVariable Long petSn,

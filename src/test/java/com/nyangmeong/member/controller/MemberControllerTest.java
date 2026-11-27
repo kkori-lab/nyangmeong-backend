@@ -296,7 +296,46 @@ class MemberControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.mbrNcnm").value("초코맘"))
                 .andExpect(jsonPath("$.data.ncnmStngCmptnYn").value(true))
-                .andExpect(header().doesNotExist("Set-Cookie"));
+                .andExpect(header().string("Set-Cookie", Matchers.allOf(Matchers.startsWith("ncnm_setup=;"),
+                        Matchers.containsString("Max-Age=0"), Matchers.containsString("Path=/api/members"))));
+    }
+
+    @Test
+    @WithMockLoginMember(id = 5L)
+    void 다른_계정으로_로그인한_채_가입해도_닉네임은_가입_쿠키의_회원에게_저장한다() throws Exception {
+        when(memberService.updateNickname(eq(11L), any(MemberNicknameUpdateRequest.class)))
+                .thenReturn(memberResponse);
+
+        mockMvc.perform(nickname("{\"mbrNcnm\":\"초코맘\"}").cookie(setupCookie(11L)))
+                .andExpect(status().isOk());
+
+        verify(memberService).updateNickname(eq(11L), any(MemberNicknameUpdateRequest.class));
+        verify(memberService, never()).updateNickname(eq(5L), any(MemberNicknameUpdateRequest.class));
+    }
+
+    @Test
+    @WithMockLoginMember(id = 5L)
+    void 로그인한_채_가입해도_닉네임_중복확인은_가입_쿠키의_회원_기준이다() throws Exception {
+        when(memberService.getNicknameAvailability("초코맘", 11L))
+                .thenReturn(new MemberNicknameAvailabilityResponse(true));
+
+        mockMvc.perform(get("/api/members/nickname-availability").param("mbrNcnm", "초코맘").cookie(setupCookie(11L)))
+                .andExpect(status().isOk());
+
+        verify(memberService).getNicknameAvailability("초코맘", 11L);
+        verify(memberService, never()).getNicknameAvailability("초코맘", 5L);
+    }
+
+    @Test
+    @WithMockLoginMember(id = 5L)
+    void 위조한_쿠키가_있어도_로그인_회원으로_닉네임을_저장한다() throws Exception {
+        Cookie forged = new Cookie(NicknameSetupTokenManager.COOKIE_NAME, "99.9999999999." + "0".repeat(64));
+        when(memberService.updateNickname(eq(5L), any(MemberNicknameUpdateRequest.class))).thenReturn(memberResponse);
+
+        mockMvc.perform(nickname("{\"mbrNcnm\":\"초코맘\"}").cookie(forged))
+                .andExpect(status().isOk());
+
+        verify(memberService).updateNickname(eq(5L), any(MemberNicknameUpdateRequest.class));
     }
 
     @Test
@@ -327,7 +366,8 @@ class MemberControllerTest {
 
         mockMvc.perform(nickname("{\"mbrNcnm\":\"초코맘\"}").cookie(setupCookie(11L)))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해 주세요."));
+                .andExpect(jsonPath("$.message").value("이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해 주세요."))
+                .andExpect(header().doesNotExist("Set-Cookie"));
     }
 
     @Test

@@ -13,14 +13,14 @@
 | 반려동물(pet) | [`pet.md`](pet.md) | 27 | 21 | SJM 16, LJS 10, KSJ 1 |
 | 건강기록(health) | [`health.md`](health.md) | 52 | 52 | JAJ 52 |
 | 장소(place) | [`place.md`](place.md) | 4 | 4 | YAY 4 |
-| 알림(notification) | [`notification.md`](notification.md) | 5 | 4 | LJS 5 |
+| 알림(notification) | [`notification.md`](notification.md) | 9 | 9 | LJS 9 |
 | 가계부(expense) | [`expense.md`](expense.md) | 10 | 10 | SJM 10 |
 | 영수증(expense 도메인) | [`receipt.md`](receipt.md) | 8 | 14 | LJS 8 |
 | 커뮤니티(community) | [`community.md`](community.md) | 41 | 35 | KSJ 41 |
 | 고객센터(support) | [`support.md`](support.md) | 13 | 14 | KSJ 7, LJS 6 |
 | AI 대화(ai, 내부 API) | [`ai.md`](ai.md) | 5 | 5 | LJS 5 |
 | 관리자(admin, 여러 도메인 조회) | [`admin.md`](admin.md) | 1 | 3 | LJS 1 |
-| 합계 | | 194 | 188 | |
+| 합계 | | 198 | 193 | |
 
 | 그 밖의 파일 | 내용 |
 | --- | --- |

@@ -51,6 +51,52 @@ tasks.named('test') {
 	maxParallelForks = (findProperty('testForks') ?: Math.min(4, Math.max(1, Runtime.runtime.availableProcessors().intdiv(2)))) as int
 }
 
+// 시연용 시드 생성기(src/seed). 서버 jar와 분리하고, build가 컴파일·테스트해서 깨지면 알린다(README "시드 데이터")
+sourceSets {
+	seed {
+		compileClasspath += sourceSets.main.output
+		runtimeClasspath += sourceSets.main.output
+	}
+	test {
+		compileClasspath += sourceSets.seed.output
+		runtimeClasspath += sourceSets.seed.output
+	}
+}
+
+configurations {
+	seedImplementation.extendsFrom implementation
+	seedRuntimeOnly.extendsFrom runtimeOnly
+	seedCompileOnly.extendsFrom compileOnly
+}
+
+// ./gradlew seedClean -Ptarget=shared|local [-Pconfirm=<DB이름>] [-Pdatabase=<로컬 DB이름>]. 업무 데이터만 골라 비운다
+tasks.register('seedClean', JavaExec) {
+	group = 'application'
+	description = '업무 데이터만 골라 비운다(README "시드 데이터")'
+	classpath = sourceSets.seed.runtimeClasspath
+	mainClass = 'com.nyangmeong.seed.SeedDataApplication'
+	workingDir = projectDir
+	jvmArgs = ['-Dstdout.encoding=UTF-8', '-Dstderr.encoding=UTF-8']
+	standardInput = System.in
+	args = ['clean'] + ['target', 'confirm', 'database']
+			.findAll { project.hasProperty(it) }
+			.collect { "--${it}=${project.property(it)}" }
+}
+
+// ./gradlew seedData -Ptarget=shared|local [-Pconfirm=<DB이름>] [-Pdatabase=<로컬 DB이름>]. 비운 DB에 시연 데이터를 넣는다
+tasks.register('seedData', JavaExec) {
+	group = 'application'
+	description = '비운 DB에 시연 데이터를 넣는다(README "시드 데이터")'
+	classpath = sourceSets.seed.runtimeClasspath
+	mainClass = 'com.nyangmeong.seed.SeedDataApplication'
+	workingDir = projectDir
+	jvmArgs = ['-Dstdout.encoding=UTF-8', '-Dstderr.encoding=UTF-8']
+	standardInput = System.in
+	args = ['data'] + ['target', 'confirm', 'database']
+			.findAll { project.hasProperty(it) }
+			.collect { "--${it}=${project.property(it)}" }
+}
+
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }

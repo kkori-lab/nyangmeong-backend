@@ -3,6 +3,7 @@ package com.nyangmeong.health.dto;
 import java.math.BigDecimal;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.nyangmeong.global.aitool.AiExclude;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
@@ -18,7 +19,7 @@ import jakarta.validation.constraints.Size;
 public record InspectionValueUpdateRequest(
         @DecimalMin("0") @Digits(integer = 7, fraction = 2) BigDecimal rsltNvl,
         @Size(max = 20) String unitNm,
-        @Valid RefRange refRange,
+        @AiExclude @Valid RefRange refRange,
         @Size(max = 200) String memoCn) {
 
     /**

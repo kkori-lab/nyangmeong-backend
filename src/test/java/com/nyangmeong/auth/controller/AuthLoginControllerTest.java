@@ -39,6 +39,7 @@ import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.error.GlobalExceptionHandler;
 import com.nyangmeong.global.log.SensitiveDataMasker;
 import com.nyangmeong.global.security.AuthMemberMapper;
+import com.nyangmeong.global.security.crypto.FieldCryptoService;
 import com.nyangmeong.global.security.SecurityConfig;
 import com.nyangmeong.global.security.crypto.TokenHashUtil;
 import com.nyangmeong.global.security.domain.RefreshToken;
@@ -50,6 +51,7 @@ import com.nyangmeong.global.security.jwt.JwtTokenProvider;
 import com.nyangmeong.global.security.jwt.TokenCookies;
 import com.nyangmeong.global.security.session.LoginSessionManager;
 import com.nyangmeong.global.security.session.RefreshTokenMapper;
+import com.nyangmeong.member.service.NicknameSetupTokenManager;
 
 /**
  * [검사 - 이메일 로그인 API]
@@ -59,7 +61,8 @@ import com.nyangmeong.global.security.session.RefreshTokenMapper;
 @WebMvcTest(controllers = AuthLoginController.class)
 @Import({SecurityConfig.class, JwtTokenProvider.class, JwtProperties.class, TokenCookies.class,
         ErrorResponseWriter.class, RestAuthenticationEntryPoint.class, RestAccessDeniedHandler.class,
-        SensitiveDataMasker.class, GlobalExceptionHandler.class, LoginSessionManager.class, TokenHashUtil.class})
+        SensitiveDataMasker.class, GlobalExceptionHandler.class, LoginSessionManager.class, TokenHashUtil.class,
+        NicknameSetupTokenManager.class})
 class AuthLoginControllerTest {
 
     @Autowired
@@ -70,6 +73,9 @@ class AuthLoginControllerTest {
 
     @MockitoBean
     SnsLoginService snsLoginService;
+
+    @MockitoBean
+    FieldCryptoService fieldCryptoService;
 
     @MockitoBean
     RefreshTokenMapper refreshTokenMapper;
@@ -106,6 +112,22 @@ class AuthLoginControllerTest {
     }
 
     @Test
+    void 로그인_성공은_남아_있던_가입_닉네임_설정_쿠키를_지운다() throws Exception {
+        doAnswer(invocation -> {
+            ((RefreshToken) invocation.getArgument(0)).setRfrshTknSn(11L);
+            return null;
+        }).when(refreshTokenMapper).insert(any(RefreshToken.class), anyLong());
+        when(loginService.login(any(LoginRequest.class)))
+                .thenReturn(LoginResult.success(7L, new LoginResponse(false, "초코맘")));
+
+        mockMvc.perform(login("{\"acntEml\":\"choco@example.com\",\"pswd\":\"pass1234\"}"))
+                .andExpect(status().isOk())
+                .andExpect(header().stringValues("Set-Cookie", Matchers.hasItem(
+                        Matchers.allOf(Matchers.startsWith("ncnm_setup=;"), Matchers.containsString("Max-Age=0"),
+                                Matchers.containsString("Path=/api/members")))));
+    }
+
+    @Test
     void 로그인_실패는_400이고_data에_실패_횟수와_보안코드_요구가_실린다() throws Exception {
         when(loginService.login(any(LoginRequest.class))).thenReturn(
                 LoginResult.fail(ErrorCode.LOGIN_FAILED, new LoginAttemptLimitResponse(false, 2)));
@@ -116,7 +138,8 @@ class AuthLoginControllerTest {
                 .andExpect(jsonPath("$.code").value("LOGIN_FAILED"))
                 .andExpect(jsonPath("$.message").value("일치하는 회원정보를 찾을 수 없습니다."))
                 .andExpect(jsonPath("$.data.scrtyCdRqtYn").value(false))
-                .andExpect(jsonPath("$.data.cntnuCertFailNmtm").value(2));
+                .andExpect(jsonPath("$.data.cntnuCertFailNmtm").value(2))
+                .andExpect(header().doesNotExist("Set-Cookie"));
 
         verify(refreshTokenMapper, never()).insert(any(), anyLong());
     }
@@ -241,7 +264,9 @@ class AuthLoginControllerTest {
                 .andExpect(jsonPath("$.data.ncnmReguide").value(true))
                 .andExpect(jsonPath("$.data.mbrNcnm").value("초코맘"))
                 .andExpect(header().stringValues("Set-Cookie", Matchers.hasItems(
-                        Matchers.startsWith("access_token="), Matchers.startsWith("refresh_token="))));
+                        Matchers.startsWith("access_token="), Matchers.startsWith("refresh_token="),
+                        Matchers.allOf(Matchers.startsWith("ncnm_setup=;"), Matchers.containsString("Max-Age=0"),
+                                Matchers.containsString("Path=/api/members")))));
     }
 
     @Test
