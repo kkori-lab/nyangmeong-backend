@@ -30,6 +30,7 @@ import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.notification.EventPublisher;
 import com.nyangmeong.global.security.crypto.FieldCryptoService;
 import com.nyangmeong.global.validation.ProfanityFilter;
+import com.nyangmeong.notification.service.NotificationService;
 
 /**
  * [검사 - 나간 사람 화면 리셋과 상대 나감 표시]
@@ -58,7 +59,7 @@ class ChatLeaveResetTest {
 
     private final ChatRoomService roomService = new ChatRoomService(chatRoomMapper, careRecruitmentMapper,
             new ChatRoomGuard(chatRoomMapper), careMatchServiceMock, chatMessageServiceMock,
-            mock(ChatRealtimePublisher.class), mock(FieldCryptoService.class), fileStore);
+            mock(ChatRealtimePublisher.class), mock(FieldCryptoService.class), fileStore, mock(NotificationService.class));
     private final ChatMessageService messageService = new ChatMessageService(chatRoomMapper, chatMessageMapper,
             careMatchMapper, new ChatRoomGuard(chatRoomMapper), mock(ChatRealtimePublisher.class), fileStore,
             mock(FieldCryptoService.class), mock(ProfanityFilter.class));

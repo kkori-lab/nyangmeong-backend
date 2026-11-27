@@ -35,6 +35,7 @@ import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.file.StoredFile;
 import com.nyangmeong.global.security.crypto.FieldCryptoService;
+import com.nyangmeong.notification.service.NotificationService;
 
 /**
  * [검사 - 펫돌봄 채팅하기]
@@ -57,7 +58,7 @@ class ChatRoomServiceTest {
     private final FileStore fileStore = mock(FileStore.class);
     private final ChatRoomService service = new ChatRoomService(chatRoomMapper, careRecruitmentMapper,
             new ChatRoomGuard(chatRoomMapper), careMatchService, chatMessageService, chatRealtimePublisher, fieldCryptoService,
-            fileStore);
+            fileStore, mock(NotificationService.class));
 
     private CareRecruitmentDetail recruitment(String sttsCd) {
         CareRecruitmentDetail detail = new CareRecruitmentDetail();
