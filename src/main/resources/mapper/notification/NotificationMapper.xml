@@ -296,4 +296,15 @@
            AND PRSL_DT IS NULL
            AND AUTO_HIDE_DT &gt; NOW()
     </update>
+
+    <update id="updateReadByMvmnPath">
+        /* 이동 경로가 같은 알림 읽음 처리 (채팅방 읽음 때 그 방 거래 알림) */
+        UPDATE INAPP_NOTI
+           SET PRSL_DT = NOW()
+             , MDFCN_DT = NOW()
+         WHERE MBR_SN = #{mbrSn}
+           AND MVMN_PATH = #{mvmnPath}
+           AND PRSL_DT IS NULL
+           AND AUTO_HIDE_DT &gt; NOW()
+    </update>
 </mapper>

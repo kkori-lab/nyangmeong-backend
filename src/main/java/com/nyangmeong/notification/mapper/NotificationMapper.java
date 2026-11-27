@@ -95,4 +95,9 @@ public interface NotificationMapper {
      * 숨김 기준 안의 본인 미읽음 알림 전부 읽음 처리
      */
     int updateReadAll(Long mbrSn);
+
+    /**
+     * 이동 경로가 같은 본인 미읽음 알림 읽음 처리 (숨김 기준 안)
+     */
+    int updateReadByMvmnPath(@Param("mbrSn") Long mbrSn, @Param("mvmnPath") String mvmnPath);
 }

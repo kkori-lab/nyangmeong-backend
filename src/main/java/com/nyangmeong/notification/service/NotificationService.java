@@ -114,6 +114,16 @@ public class NotificationService {
     }
 
     /**
+     * 이동 경로가 같은 본인 알림 읽음 처리 (채팅방 읽음 때 그 방 거래 알림, 0건이어도 성공)
+     *
+     * @return 읽음 처리한 건수
+     */
+    @Transactional
+    public int markReadByPath(Long mbrSn, String mvmnPath) {
+        return notificationMapper.updateReadByMvmnPath(mbrSn, mvmnPath);
+    }
+
+    /**
      * 알림 설정 조회 (SCR-COM-008, 계정 단위)
      */
     @Transactional(readOnly = true)

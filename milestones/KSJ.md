@@ -400,3 +400,10 @@
 - 완료 조건: 나간 사람이 복귀하면 나가기 전 메시지가 메시지 조회·목록 미리보기·안 읽음 수에 나오지 않고 상대 화면은 그대로다. 상대가 나간 방의 매칭 요청은 409. 방 응답·목록 항목에 상대 나감 여부가 있다
 - 결과(2026-11-26): 검증 2회차 확인 못 함 없음(`./gradlew build -q` 0, 1회차는 변경 절 ALTER 전이라 API 확인 못 함). 사람 확인 끝(방 291에서 나가기·`ctptLeft`·매칭 409→복귀 뒤 201·복귀한 사람 메시지·미리보기·안 읽음 수·사진 404 확인, 시험 데이터 삭제). 컬럼 `CHAT_PRTPNT.VSBL_BGNG_MSG_SEQ`(변경 절 v0.15 (3), 공용 DB 실행 끝), 오류 코드 `CARE_MATCH_COUNTERPART_LEFT`(409), 테스트 `ChatLeaveResetTest` 9개, API 초안·issues 22번 갱신. 결정: ERD는 다음 ERD 버전 때 사람이 반영
 - 연결 남음: 리셋-7 상대 나감 표시 (프론트 연결 `ChatRoomList.jsx` 배지·방 안 안내·매칭 요청 버튼 막기·409 토스트·나가기·삭제 모달 문구, 프론트 저장소에서 /start)
+
+## SCR-CMU-005 우리동네 펫돌봄 채팅 · 채팅방 읽음 때 거래 알림 읽음 — 끝
+- 기능: 명세 기능 ID 추가 없음(사람 요청 2026-11-26 「채팅을 모두 읽었는데 헤더 알림 숫자가 그대로」). 걸치는 FN-CMU-005-03 읽음, COM-004-06 알림 읽음
+- 기다리는 것: 없음
+- 완료 조건: 채팅방 읽음(`POST /chat-rooms/{sn}/read`) 때 그 방으로 가는 내 펫돌봄 거래 알림(이동 경로 `/chat?otoChatRoomSn={sn}`)이 읽음이 되고 알림 미읽음 수가 줄어든다. 다른 방·다른 회원의 알림은 그대로
+- 결과(2026-11-27): 검증 1회차 확인 못 함 없음(`./gradlew build -q` 0). 사람 확인 끝(3번 회원 방 270 읽음 → 알림 미읽음 8→5, 방 292로 Postman CLI 검사 8개 통과, 비참여자 403·알림 그대로). 알림 도메인 `NotificationService.markReadByPath`·`NotificationMapper.updateReadByMvmnPath` 추가(LJS 영향, 결정 추천안대로), 테스트 `ChatReadNotificationTest` 4개, API 초안 채팅 읽음·알림 읽음 행 갱신
+- 연결 남음: 알림읽음-2 헤더 알림 배지 즉시 갱신 (프론트 연결 `useReadChatRoom` onSuccess에서 알림 미읽음 수·목록 무효화, 프론트 저장소에서 /start)
