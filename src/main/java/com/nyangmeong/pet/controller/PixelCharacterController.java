@@ -59,6 +59,7 @@ public class PixelCharacterController {
     }
 
     @Operation(summary = "착용 상태 저장")
+    @AiTool(name = "draft_equipped_items", domain = "pet", kind = AiToolKind.CARD)
     @PutMapping("/{pixelCharSn}/equipped-items")
     public ResponseEntity<ApiResponse<PixelCharacterResponse>> saveEquippedItems(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long pixelCharSn, @Valid @RequestBody EquippedItemSaveRequest req) {
@@ -74,6 +75,7 @@ public class PixelCharacterController {
     }
 
     @Operation(summary = "아이템 구매")
+    @AiTool(name = "draft_item_purchase", domain = "pet", kind = AiToolKind.CARD)
     @PostMapping("/{pixelCharSn}/held-items")
     public ResponseEntity<ApiResponse<PixelCharacterResponse>> purchase(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long pixelCharSn, @Valid @RequestBody ItemPurchaseRequest req) {
