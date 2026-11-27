@@ -86,7 +86,7 @@
         CONCAT_WS(' ', R.CTPV_NM, NULLIF(R.SGG_NM, ''), R.EMD_NM)
     </sql>
 
-    <!-- 찾았어요 카드는 작성자가 아니면 제목·상태·전환 시각 외를 비움 -->
+    <!-- 찾았어요 카드는 작성자가 아니면 제목·상태·전환 시각·이름 외를 비움 (이름은 실종 때 이미 공개돼 목록에 둔다, 사람 결정 2026-11-27) -->
     <sql id="hiddenCard">
         (L.LOST_TPOF_STTS_CD = #{foundCd} AND P.MBR_SN != #{mbrSn})
     </sql>
@@ -105,7 +105,7 @@
              , P.REG_DT
              , (P.MBR_SN = #{mbrSn}) AS OWNER_YN
              , CASE WHEN <include refid="hiddenCard" /> THEN NULL ELSE L.PET_SE_CD END AS PET_SE_CD
-             , CASE WHEN <include refid="hiddenCard" /> THEN NULL ELSE L.PET_NM END AS PET_NM
+             , L.PET_NM
              , CASE WHEN <include refid="hiddenCard" /> THEN NULL
                     ELSE COALESCE(V.VRTY_NM, L.VRTY_DRCT_INPT_NM) END AS VRTY_NM
              , CASE WHEN <include refid="hiddenCard" /> THEN NULL

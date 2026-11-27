@@ -96,6 +96,18 @@ class LostReportMapperSqlTest {
     }
 
     @Test
+    void 목록은_남의_찾았어요_글도_이름을_주고_나머지는_비운다() {
+        String hidden = "CASE WHEN (L.LOST_TPOF_STTS_CD = ? AND P.MBR_SN != ?) THEN NULL";
+        String sql = listSql(null);
+
+        assertThat(sql).contains(", L.PET_NM ").doesNotContain(hidden + " ELSE L.PET_NM");
+        assertThat(sql).contains(hidden + " ELSE L.PET_SE_CD END AS PET_SE_CD")
+                .contains(hidden + " ELSE L.COLR_NM END AS COLR_NM")
+                .contains(hidden + " ELSE L.CHRC_CN END AS CHRC_CN")
+                .contains(hidden + " ELSE COALESCE(V.VRTY_NM, L.VRTY_DRCT_INPT_NM) END AS VRTY_NM");
+    }
+
+    @Test
     void 찾았어요는_코드_조건과_만료_기준일_null() {
         assertThat(adminListSql(FOUND))
                 .contains("CASE WHEN L.LOST_TPOF_STTS_CD = ? THEN NULL ELSE L.EXPRY_CRTR_DT END");
