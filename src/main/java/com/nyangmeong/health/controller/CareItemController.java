@@ -129,6 +129,7 @@ public class CareItemController {
     }
 
     @Operation(summary = "투약 오늘 마지막 1회 취소")
+    @AiTool(name = "cancel_last_dose", domain = "health", kind = AiToolKind.CARD)
     @DeleteMapping("/care-items/{careArtclSn}/today-completion/last")
     public ResponseEntity<ApiResponse<Void>> cancelLastToday(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long careArtclSn) {

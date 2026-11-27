@@ -50,6 +50,7 @@ public class EtcInspectionController {
     }
 
     @Operation(summary = "기타검사 입력")
+    @AiTool(name = "draft_etc_inspection", domain = "health", kind = AiToolKind.CARD)
     @PostMapping
     public ResponseEntity<ApiResponse<EtcInspectionResponse>> create(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @Valid @RequestBody EtcInspectionCreateRequest req) {

@@ -474,7 +474,7 @@ public class MemberService {
         boolean hasPhoto = req.profilePhoto() != null && !req.profilePhoto().isEmpty();
         boolean photoReset = Boolean.TRUE.equals(req.profilePhotoReset());
         if (hasPhoto && photoReset) {
-            throw new CustomException(ErrorCode.BAD_REQUEST);
+            throw new CustomException(ErrorCode.BAD_REQUEST, "profilePhoto", "profilePhotoReset");
         }
         String mblTelnoEnc = null;
         String mblTelnoHmac = null;

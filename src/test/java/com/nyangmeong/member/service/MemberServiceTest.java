@@ -469,6 +469,16 @@ class MemberServiceTest {
     }
 
     @Test
+    void 회원정보_수정_사진과_되돌리기_동시_400은_두_칸_이름을_담는다() {
+        givenNormalMember(5L);
+
+        Throwable thrown = catchThrowable(
+                () -> service.updateMember(5L, new MemberUpdateRequest(null, png(), true)));
+
+        assertThat(((BaseException) thrown).getFields()).containsExactly("profilePhoto", "profilePhotoReset");
+    }
+
+    @Test
     void 회원정보_수정은_보낸_값이_없으면_바꾸지_않는다() {
         givenNormalMember(5L);
 

@@ -48,6 +48,7 @@ public class PlaceBookmarkController {
     }
 
     @Operation(summary = "장소 즐겨찾기 저장")
+    @AiTool(name = "draft_place_bookmark", domain = "place", kind = AiToolKind.CARD)
     @PostMapping
     public ResponseEntity<ApiResponse<PlaceBookmarkResponse>> create(@AuthenticationPrincipal LoginMember me,
             @Valid @RequestBody PlaceBookmarkCreateRequest req) {
