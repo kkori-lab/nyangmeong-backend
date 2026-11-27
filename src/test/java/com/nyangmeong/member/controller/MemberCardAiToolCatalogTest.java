@@ -45,6 +45,7 @@ import com.nyangmeong.member.service.TermsService;
  * [검사 - 회원 AI 쓰기 카드 도구]
  * - draft_member_nickname_update : PATCH 본문 mbrNcnm 하나(필수·10자·패턴)
  * - draft_member_profile_update : PATCH multipart, 사진·기본 이미지 되돌리기 2칸, 휴대전화번호는 싣지 않음
+ * - mark_service_tutorial_viewed : PUT 본문 없음(멱등), 칸 없음
  */
 @WebMvcTest(controllers = {AiToolCatalogController.class, MemberController.class, TermsController.class})
 @Import({SecurityConfig.class, JwtTokenProvider.class, JwtProperties.class, TokenCookies.class,
@@ -124,5 +125,18 @@ class MemberCardAiToolCatalogTest {
                 .andExpect(jsonPath(t + ".params.profilePhotoReset.type").value("boolean"))
                 .andExpect(jsonPath(t + ".params.mblTelno").doesNotExist())
                 .andExpect(jsonPath(t + ".params.*", hasSize(2)));
+    }
+
+    @Test
+    void 튜토리얼_봤음_저장_도구는_PUT이고_칸이_없다() throws Exception {
+        givenCodes();
+        String t = tool("mark_service_tutorial_viewed");
+        mockMvc.perform(get(PATH))
+                .andExpect(jsonPath(t + ".kind").value("CARD"))
+                .andExpect(jsonPath(t + ".domain").value("member"))
+                .andExpect(jsonPath(t + ".call.method").value("PUT"))
+                .andExpect(jsonPath(t + ".call.path").value("/api/members/me/tutorial"))
+                .andExpect(jsonPath(t + ".call.contentType").doesNotExist())
+                .andExpect(jsonPath(t + ".params.*", hasSize(0)));
     }
 }

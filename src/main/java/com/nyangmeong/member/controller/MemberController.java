@@ -177,6 +177,7 @@ public class MemberController {
     }
 
     @Operation(summary = "서비스 튜토리얼 봤음 저장")
+    @AiTool(name = "mark_service_tutorial_viewed", domain = "member", kind = AiToolKind.CARD)
     @PutMapping("/me/tutorial")
     public ResponseEntity<ApiResponse<MemberTutorialResponse>> markTutorialViewed(
             @AuthenticationPrincipal LoginMember me) {
