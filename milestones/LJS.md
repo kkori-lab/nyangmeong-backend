@@ -1062,3 +1062,9 @@
 - 완료 조건 결과: 검증 `통과`(2026-11-27, 1회차), 사람 확인 2026-11-27(`GET /internal/ai/tools` 200·도구 98개, 새 27개 call·칸, `[AiTool] 제외` 없음). 정한 것: 읽기 후보 12개 뺌(바이너리 7·채팅 3·`GET /members/me`·1마리 일정 목록), `list_notifications`의 `tab`은 `@AiExclude`, 알림 설정 저장은 `leadTimes` 때문에 뺌, 문의·공지 검색 조건에 `@ModelAttribute` 명시, 기존 테스트 3개 도구 수 기대값 변경(사람 승인, 별도 커밋). 계약은 `docs/api/ai.md`
 - 추가: 없음
 - 연결 남음: FN-AIM-004-02 (ai 저장소 `tool_prompts.yaml` 27개 설명·스냅샷·`tool_eval`, ai 세션)
+
+## SCR-ADM-111 배치 현황 · 배치 목록 API 설명 정정 — 끝
+- 기능: 명세 기능 ID 추가 없음, 걸치는 기능 FN-ADM-111-01
+- 기다리는 것: 없음
+- 완료 조건: `docs/api/global.md` `GET /admin/batches` 행 설명이 개수를 박지 않고 코드에 있는 배치 전부(`BatchType`)를 준다고 적는다. 코드 변경 없음
+- 완료 조건 결과: 검증 `통과`(2026-11-27, 1회차), 사람 확인 2026-11-27. 관리자 `GET /api/admin/batches` 13건(마지막 SYSC0034). DMS 기능명세서 12종 정정은 사람(핸드오프)
