@@ -52,12 +52,14 @@ public class CareRecruitmentController {
     }
 
     @Operation(summary = "펫돌봄 최저시급 조회")
+    @AiTool(name = "get_minimum_wage", domain = "community", kind = AiToolKind.READ)
     @GetMapping("/minimum-wage")
     public ResponseEntity<ApiResponse<MinimumWageResponse>> getMinimumWage() {
         return ResponseEntity.ok(ApiResponse.success(careRecruitmentService.getMinimumWage()));
     }
 
     @Operation(summary = "펫돌봄 모집 상세")
+    @AiTool(name = "get_care_recruitment", domain = "community", kind = AiToolKind.READ)
     @GetMapping("/{petPrtcRcrtSn}")
     public ResponseEntity<ApiResponse<CareRecruitmentResponse>> getRecruitment(
             @AuthenticationPrincipal LoginMember me, @PathVariable Long petPrtcRcrtSn) {

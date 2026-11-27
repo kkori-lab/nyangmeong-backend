@@ -21,6 +21,8 @@ import com.nyangmeong.community.dto.ChatRoomSearchCond;
 import com.nyangmeong.community.dto.ChatRoomSummary;
 import com.nyangmeong.community.dto.ChatUnreadCountResponse;
 import com.nyangmeong.community.service.ChatRoomService;
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.file.StoredFile;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
@@ -49,6 +51,7 @@ public class ChatRoomController {
     }
 
     @Operation(summary = "읽지 않은 메시지 총수")
+    @AiTool(name = "get_chat_unread_count", domain = "community", kind = AiToolKind.READ)
     @GetMapping("/unread-count")
     public ResponseEntity<ApiResponse<ChatUnreadCountResponse>> getUnreadCount(
             @AuthenticationPrincipal LoginMember me) {

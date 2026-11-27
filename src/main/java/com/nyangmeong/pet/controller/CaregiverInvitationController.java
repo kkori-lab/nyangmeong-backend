@@ -64,6 +64,7 @@ public class CaregiverInvitationController {
     }
 
     @Operation(summary = "받은 공동양육 초대 상세")
+    @AiTool(name = "get_caregiver_invitation", domain = "pet", kind = AiToolKind.READ)
     @GetMapping("/{jntBrupInvtnSn}")
     public ResponseEntity<ApiResponse<CaregiverInvitationResponse>> getInvitation(
             @AuthenticationPrincipal LoginMember me, @PathVariable Long jntBrupInvtnSn) {

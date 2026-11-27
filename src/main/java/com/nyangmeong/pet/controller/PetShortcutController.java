@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
 import com.nyangmeong.pet.dto.PetShortcutSaveRequest;
@@ -32,6 +34,7 @@ public class PetShortcutController {
     private final PetShortcutService petShortcutService;
 
     @Operation(summary = "메인 반려동물 바로가기 조회(저장한 적 없거나 전부 숨기면 빈 목록)")
+    @AiTool(name = "list_main_shortcuts", domain = "pet", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<List<PetShortcutSummary>>> search(@AuthenticationPrincipal LoginMember me) {
         return ResponseEntity.ok(ApiResponse.success(petShortcutService.search(me.id())));

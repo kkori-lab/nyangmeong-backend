@@ -65,6 +65,7 @@ public class CareItemController {
     }
 
     @Operation(summary = "케어리스트 오늘 케어미션 진행")
+    @AiTool(name = "get_care_mission_progress", domain = "health", kind = AiToolKind.READ)
     @GetMapping("/care-items/mission-progress")
     public ResponseEntity<ApiResponse<CareMissionProgressResponse>> searchMissionProgress(
             @AuthenticationPrincipal LoginMember me, @PathVariable Long petSn) {

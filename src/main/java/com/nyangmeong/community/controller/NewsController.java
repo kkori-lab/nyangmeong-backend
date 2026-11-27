@@ -40,6 +40,7 @@ public class NewsController {
     }
 
     @Operation(summary = "펫뉴스 상세")
+    @AiTool(name = "get_news", domain = "community", kind = AiToolKind.READ)
     @GetMapping("/{newsSn}")
     public ResponseEntity<ApiResponse<NewsResponse>> getNews(@PathVariable Long newsSn) {
         return ResponseEntity.ok(ApiResponse.success(newsService.getNews(newsSn)));

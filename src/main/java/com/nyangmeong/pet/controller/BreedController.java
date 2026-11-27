@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiCode;
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.pet.dto.BreedSummary;
 import com.nyangmeong.pet.service.BreedService;
@@ -27,8 +30,10 @@ public class BreedController {
     private final BreedService breedService;
 
     @Operation(summary = "구분별 품종 목록")
+    @AiTool(name = "list_breeds", domain = "pet", kind = AiToolKind.READ)
     @GetMapping
-    public ResponseEntity<ApiResponse<List<BreedSummary>>> search(@RequestParam String petSeCd) {
+    public ResponseEntity<ApiResponse<List<BreedSummary>>> search(
+            @AiCode("PETG01") @RequestParam String petSeCd) {
         return ResponseEntity.ok(ApiResponse.success(breedService.getBreeds(petSeCd)));
     }
 }

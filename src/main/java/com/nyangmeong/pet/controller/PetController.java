@@ -51,6 +51,7 @@ public class PetController {
     }
 
     @Operation(summary = "내 반려동물 한도 (운영 설정 최대 수와 남은 자리)")
+    @AiTool(name = "get_pet_limit", domain = "pet", kind = AiToolKind.READ)
     @GetMapping("/limit")
     public ResponseEntity<ApiResponse<PetLimitResponse>> getPetLimit(@AuthenticationPrincipal LoginMember me) {
         return ResponseEntity.ok(ApiResponse.success(petService.getPetLimit(me.id())));

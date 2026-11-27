@@ -51,6 +51,7 @@ public class LostReportController {
     }
 
     @Operation(summary = "실종 제보 상세")
+    @AiTool(name = "get_lost_report", domain = "community", kind = AiToolKind.READ)
     @GetMapping("/{lostTpofSn}")
     public ResponseEntity<ApiResponse<LostReportResponse>> getReport(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long lostTpofSn) {

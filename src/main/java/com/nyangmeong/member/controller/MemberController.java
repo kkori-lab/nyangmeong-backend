@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.error.CustomException;
 import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.response.ApiResponse;
@@ -167,6 +169,7 @@ public class MemberController {
     }
 
     @Operation(summary = "서비스 튜토리얼 봤음 여부 조회")
+    @AiTool(name = "get_service_tutorial", domain = "member", kind = AiToolKind.READ)
     @GetMapping("/me/tutorial")
     public ResponseEntity<ApiResponse<MemberTutorialResponse>> getTutorial(@AuthenticationPrincipal LoginMember me) {
         return ResponseEntity.ok(ApiResponse.success(memberService.getTutorial(me.id())));
