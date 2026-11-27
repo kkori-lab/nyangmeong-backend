@@ -142,7 +142,7 @@ public class NotificationService {
     @Transactional
     public NotificationSettingResponse updateSetting(Long mbrSn, NotificationSettingUpdateRequest req) {
         if (Boolean.TRUE.equals(req.careSchdlNotiRcptnYn()) && req.leadTimes().isEmpty()) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, "leadTimes");
         }
         NotificationReceiveSetting setting = new NotificationReceiveSetting();
         setting.setMbrSn(mbrSn);

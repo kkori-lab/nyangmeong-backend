@@ -40,6 +40,7 @@ public class NotificationSettingController {
     }
 
     @Operation(summary = "알림 설정 저장")
+    @AiTool(name = "draft_notification_settings", domain = "notification", kind = AiToolKind.CARD)
     @PutMapping
     public ResponseEntity<ApiResponse<NotificationSettingResponse>> updateSetting(
             @AuthenticationPrincipal LoginMember me, @Valid @RequestBody NotificationSettingUpdateRequest req) {
