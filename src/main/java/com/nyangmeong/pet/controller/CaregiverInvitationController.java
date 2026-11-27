@@ -107,6 +107,7 @@ public class CaregiverInvitationController {
     }
 
     @Operation(summary = "취소한 공동양육 초대 삭제")
+    @AiTool(name = "delete_caregiver_invitation", domain = "pet", kind = AiToolKind.CARD)
     @DeleteMapping("/{jntBrupInvtnSn}")
     public ResponseEntity<ApiResponse<Void>> deleteInvitation(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long jntBrupInvtnSn) {
