@@ -2,6 +2,8 @@ package com.nyangmeong.health.dto;
 
 import java.time.LocalDate;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -13,7 +15,7 @@ import jakarta.validation.constraints.Size;
 public record CheckupCreateRequest(
         @NotNull LocalDate ckupYmd,
         @NotBlank @Size(max = 80) String hsptlNm,
-        @NotBlank String ckupTypeCd,
+        @NotBlank @AiCode("HLTG01") String ckupTypeCd,
         @Size(max = 500) String ckupCn,
         @Size(max = 200) String ckupMemoCn,
         Long schdlSn) {

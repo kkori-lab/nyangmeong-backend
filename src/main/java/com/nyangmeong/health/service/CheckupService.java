@@ -243,13 +243,14 @@ public class CheckupService {
      */
     private Long insert(Long mbrSn, Long petSn, ReceiptCheckupCommand command, CheckupSource source) {
         petAuthorizer.checkCaregiver(mbrSn, petSn);
-        String hsptlNm = requiredText(command.hsptlNm());
-        checkType(command.ckupTypeCd());
+        String hsptlNm = requiredText(command.hsptlNm(), directField(source, "hsptlNm"));
+        checkType(command.ckupTypeCd(), directField(source, "ckupTypeCd"));
         String actorId = String.valueOf(mbrSn);
 
         Long schdlSn;
         if (command.schdlSn() != null) {
-            schdlSn = moveAndLinkSchedule(petSn, command.schdlSn(), command.ckupYmd(), actorId);
+            schdlSn = moveAndLinkSchedule(petSn, command.schdlSn(), command.ckupYmd(), actorId,
+                    directField(source, "schdlSn"));
         } else {
             schdlSn = findOrCreateSchedule(petSn, command.ckupYmd(), command.ckupTypeCd(), hsptlNm, actorId);
         }
@@ -275,12 +276,19 @@ public class CheckupService {
     }
 
     /**
+     * 400 data에 담을 칸 이름 : 직접 등록만 요청 칸 이름과 같다. 영수증 저장은 칸 이름(pets[i]…)이 달라 비운다
+     */
+    private static String[] directField(CheckupSource source, String field) {
+        return source == CheckupSource.DIRECT ? new String[] {field} : new String[0];
+    }
+
+    /**
      * [옮겨 연결하기] 대상 일정 검사 후 일정 날짜를 검진일로 옮긴다 (시각 유지)
      */
-    private Long moveAndLinkSchedule(Long petSn, Long schdlSn, LocalDate ymd, String actorId) {
+    private Long moveAndLinkSchedule(Long petSn, Long schdlSn, LocalDate ymd, String actorId, String... fields) {
         Schedule schedule = movableSchedule(petSn, schdlSn, ymd);
         if (schedule == null) {
-            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new CustomException(ErrorCode.INVALID_INPUT_VALUE, fields);
         }
         LocalDateTime moved = "Y".equals(schedule.getHrInptYn()) ? ymd.atTime(schedule.getSchdlDt().toLocalTime())
                 : ymd.atStartOfDay();
@@ -310,7 +318,7 @@ public class CheckupService {
     }
 
     /**
-     * 검진유형 코드 검사 : fields는 400 data에 담을 칸 이름(수정 경로만 준다)
+     * 검진유형 코드 검사 : fields는 400 data에 담을 칸 이름
      */
     private void checkType(String ckupTypeCd, String... fields) {
         if (!careScheduleMapper.existsChildCode(HealthCodeGroup.CHECKUP_TYPE.getCode(), ckupTypeCd)) {

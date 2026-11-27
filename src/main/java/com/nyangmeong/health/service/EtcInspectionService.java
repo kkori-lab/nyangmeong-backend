@@ -49,8 +49,8 @@ public class EtcInspectionService {
 
         EtcInspection inspection = new EtcInspection();
         inspection.setCkupRcdSn(req.ckupRcdSn());
-        inspection.setInspNm(requiredText(req.inspNm()));
-        inspection.setInspRsltCn(requiredText(req.inspRsltCn()));
+        inspection.setInspNm(requiredText(req.inspNm(), "inspNm"));
+        inspection.setInspRsltCn(requiredText(req.inspRsltCn(), "inspRsltCn"));
         inspection.setMemoCn(emptyToNull(req.memoCn()));
         inspection.setRgtrId(actorId);
         inspection.setMdfrId(actorId);
@@ -100,7 +100,7 @@ public class EtcInspectionService {
     }
 
     /**
-     * 빈 값 불가 칸 : fields는 400 data에 담을 칸 이름(수정 경로만 준다)
+     * 빈 값 불가 칸 : fields는 400 data에 담을 칸 이름
      */
     private String requiredText(String value, String... fields) {
         String text = emptyToNull(value);
