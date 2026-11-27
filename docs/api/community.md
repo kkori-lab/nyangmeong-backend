@@ -985,7 +985,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 
 ### LostReportSummary
 쓰는 API: GET /lost-reports
-찾았어요 상태 카드는 작성자가 아니면 N 필드가 null이다(CMU-002-09).
+찾았어요 상태 카드는 작성자가 아니면 `petNm`을 뺀 N 필드가 null이다(CMU-002-09. 이름은 실종 때 이미 공개돼 목록에서는 준다, 사람 결정 2026-11-27).
 | 필드 | 타입 | 필수 | 검증·설명 | 근거 |
 | --- | --- | --- | --- | --- |
 | lostTpofSn | Long | Y | | LOST_TPOF.LOST_TPOF_SN |
@@ -993,7 +993,7 @@ REST는 보내기·과거 조회·읽음 처리만 맡고, 새 메시지와 읽�
 | lostTpofSttsCd | String | Y | 배지·톤다운 구분. 공통코드 CMUG03. 만료(CMUC0008)는 `mineYn=true` 목록에서만 나온다 | LOST_TPOF.LOST_TPOF_STTS_CD, CMU-002-02 |
 | dscvSwtcDt | LocalDateTime | N | | LOST_TPOF.DSCV_SWTC_DT, CMU-002-09 |
 | petSeCd | String | N | 공통코드 PETG01. 카드의 강아지·고양이 구분 | LOST_TPOF.PET_SE_CD, CMU-002-01 |
-| petNm | String | N | 이름 | LOST_TPOF.PET_NM, CMU-002-01 |
+| petNm | String | N | 이름. 남의 찾았어요 글에도 준다(「최근 찾은 반려동물」 문형 「{이름}이/가 무사히 가족의 품으로 돌아갔어요」). 상세 `GET /lost-reports/{sn}`은 지금처럼 비공개 | LOST_TPOF.PET_NM, CMU-002-01, 사람 결정 2026-11-27 |
 | vrtyNm | String | N | 품종. 마스터 품종명, 없으면 직접입력명(카드 "보리 (몰티즈)") | VRTY.VRTY_NM, LOST_TPOF.VRTY_DRCT_INPT_NM, 화면설계서 SCR-CMU-002-01 |
 | thumbAtchFileSn | Long | N | 대표 사진(첫 번째). 사진이 없으면 null | PST_IMG.ATCH_FILE_SN, 화면설계서 SCR-CMU-002-01 4번 |
 | regDt | LocalDateTime | Y | 게시글 등록 일시(카드 "2시간 전") | PST.REG_DT, 화면설계서 SCR-CMU-002-01 |
