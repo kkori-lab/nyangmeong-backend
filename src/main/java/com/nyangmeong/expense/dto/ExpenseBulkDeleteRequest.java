@@ -7,6 +7,8 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import com.nyangmeong.global.aitool.AiCode;
+
 /**
  * [지출 조건 전체 삭제 요청] (FN-MYP-030-18·19·21)
  * - 조회 결과 전체 선택 : 범위·필터에 맞는 전체 건
@@ -19,7 +21,7 @@ public record ExpenseBulkDeleteRequest(
         LocalDate endYmd,
         Long petSn,
         Boolean common,
-        String expndClsfCd,
+        @AiCode("MYPG05") String expndClsfCd,
         @Size(max = 1000) List<@NotNull Long> excludeExpndSn) {
 
     public ExpenseSearchCond toCond() {

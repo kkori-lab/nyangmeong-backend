@@ -66,6 +66,7 @@ import tools.jackson.databind.json.JsonMapper;
  * - 쿼리 칸 : @RequestParam, @ModelAttribute 검색 조건 필드, PageQuery(page·size)
  * - 본문 칸 : @RequestBody record, multipart @ModelAttribute record(MultipartFile -> file)
  * - List<record> 칸 -> array + items(같은 칸 모양), List<Long>·List<Integer> 칸 -> array + itemType
+ * - @RequestParam List<Long>·List<Integer> -> 쿼리 array + itemType(같은 이름을 되풀이해 보냄)
  * - Java enum 칸 -> string + values, List<enum> 칸 -> array + itemType string + values
  * - 지원하지 않는 칸(List<String> 등 값 목록·중첩 객체 등)이 있는 도구는 빼고 WARN 로그
  * - @AiExclude 칸은 싣지 않음(도구는 그대로)
@@ -195,6 +196,9 @@ public class AiToolCatalogService {
             String name = nameOf(requestParam.name(), parameter);
             boolean required = requestParam.required()
                     && ValueConstants.DEFAULT_NONE.equals(requestParam.defaultValue());
+            if (parameter.getParameterType() == List.class) {
+                return put(params, name, toQueryListParam(parameter, required));
+            }
             return put(params, name, toParam(QUERY, parameter.getParameterType(), annotated(parameter), required));
         }
         if (parameter.hasParameterAnnotation(RequestBody.class)) {
@@ -350,6 +354,20 @@ public class AiToolCatalogService {
         return new ParamDraft(new Param(location, ARRAY, null, isRequired ? Boolean.TRUE : null, null, null, null,
                 null, null, null, null, null, null, minItems, null, items.isEmpty() ? null : items, scalarItemType,
                 itemType.isEnum() ? enumValuesOf(itemType) : null), null);
+    }
+
+    /**
+     * 쿼리 번호 목록 -> array + itemType : 실행하는 쪽이 같은 이름을 되풀이해 보냄(?expndSn=1&expndSn=2)
+     * - List<Long>·List<Integer>만, 필수면 1개 이상
+     */
+    private ParamDraft toQueryListParam(MethodParameter parameter, boolean isRequired) {
+        Class<?> itemType = listItemTypeOf(parameter.getGenericParameterType());
+        if (itemType != Long.class && itemType != Integer.class) {
+            return ParamDraft.skip("타입 미지원: " + parameter.getGenericParameterType().getTypeName());
+        }
+        return new ParamDraft(new Param(QUERY, ARRAY, null, isRequired ? Boolean.TRUE : null, null, null, null,
+                null, null, null, null, null, null, isRequired ? Integer.valueOf(1) : null, null, null,
+                scalarItemTypeOf(itemType), null), null);
     }
 
     /**

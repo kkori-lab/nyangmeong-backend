@@ -130,6 +130,7 @@ public class ExpenseController {
     }
 
     @Operation(summary = "가계부 지출 여러 건 삭제(개별 선택)")
+    @AiTool(name = "delete_expenses", domain = "expense", kind = AiToolKind.CARD)
     @DeleteMapping
     public ResponseEntity<ApiResponse<Void>> deleteAll(@AuthenticationPrincipal LoginMember me,
             @RequestParam("expndSn") List<Long> expndSns) {
@@ -138,6 +139,7 @@ public class ExpenseController {
     }
 
     @Operation(summary = "가계부 지출 조건 전체 삭제(조회 결과 전체 선택)")
+    @AiTool(name = "delete_expenses_by_condition", domain = "expense", kind = AiToolKind.CARD)
     @PostMapping("/bulk-delete")
     public ResponseEntity<ApiResponse<Void>> bulkDelete(@AuthenticationPrincipal LoginMember me,
             @Valid @RequestBody ExpenseBulkDeleteRequest req) {

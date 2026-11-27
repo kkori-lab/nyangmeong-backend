@@ -81,13 +81,14 @@ class ExpenseAiToolCatalogTest {
     void 가계부_READ_7개가_빠짐없이_실린다() throws Exception {
         givenCodes();
         mockMvc.perform(get(PATH))
-                .andExpect(jsonPath("$.data.tools.length()").value(10))
-                .andExpect(jsonPath("$.data.tools[*].name", containsInAnyOrder("check_expense_duplicates", "delete_expense", "draft_expense", "draft_expense_update",
+                .andExpect(jsonPath("$.data.tools.length()").value(12))
+                .andExpect(jsonPath("$.data.tools[*].name", containsInAnyOrder("check_expense_duplicates", "delete_expense", "delete_expenses",
+                        "delete_expenses_by_condition", "draft_expense", "draft_expense_update",
                         "get_expense_statistics",
                         "get_expense_total", "get_receipt", "list_expense_months", "list_expense_pets",
                         "list_expenses")))
                 .andExpect(jsonPath("$.data.tools[?(@.kind == 'READ')].name", hasSize(7)))
-                .andExpect(jsonPath("$.data.tools[?(@.domain == 'expense')].name", hasSize(10)));
+                .andExpect(jsonPath("$.data.tools[?(@.domain == 'expense')].name", hasSize(12)));
     }
 
     @Test
