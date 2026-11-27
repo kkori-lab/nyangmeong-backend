@@ -44,6 +44,7 @@ public class PointLedgerController {
     }
 
     @Operation(summary = "포인트 내역이 있는 연월(월 선택 창)")
+    @AiTool(name = "list_point_ledger_months", domain = "pet", kind = AiToolKind.READ)
     @GetMapping("/months")
     public ResponseEntity<ApiResponse<List<PointLedgerMonthSummary>>> searchLedgerMonths(
             @AuthenticationPrincipal LoginMember me) {

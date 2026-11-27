@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
 import com.nyangmeong.notification.dto.NotificationSettingResponse;
@@ -30,6 +32,7 @@ public class NotificationSettingController {
     private final NotificationService notificationService;
 
     @Operation(summary = "알림 설정 조회")
+    @AiTool(name = "get_notification_settings", domain = "notification", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<NotificationSettingResponse>> getSetting(
             @AuthenticationPrincipal LoginMember me) {
