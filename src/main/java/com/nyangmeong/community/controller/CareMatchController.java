@@ -19,6 +19,8 @@ import com.nyangmeong.community.dto.CareMatchCreateRequest;
 import com.nyangmeong.community.dto.CareMatchReceiptConfirmRequest;
 import com.nyangmeong.community.dto.CareMatchResponse;
 import com.nyangmeong.community.service.CareMatchService;
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.security.domain.LoginMember;
 
@@ -38,6 +40,7 @@ public class CareMatchController {
     private final CareMatchService careMatchService;
 
     @Operation(summary = "매칭 조건·완료 요청 회차·수령 상태 조회(참여자만)")
+    @AiTool(name = "get_care_match", domain = "community", kind = AiToolKind.READ)
     @GetMapping("/{petPrtcMtchSn}")
     public ResponseEntity<ApiResponse<CareMatchResponse>> getMatch(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petPrtcMtchSn) {

@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.nyangmeong.global.aitool.AiTool;
+import com.nyangmeong.global.aitool.AiToolKind;
 import com.nyangmeong.global.response.ApiResponse;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.response.PageResponse;
@@ -35,12 +37,14 @@ public class NotificationController {
     private final NotificationService notificationService;
 
     @Operation(summary = "미읽음 알림 개수(헤더 배지)")
+    @AiTool(name = "get_unread_notification_count", domain = "notification", kind = AiToolKind.READ)
     @GetMapping("/unread-count")
     public ResponseEntity<ApiResponse<UnreadCountResponse>> getUnreadCount(@AuthenticationPrincipal LoginMember me) {
         return ResponseEntity.ok(ApiResponse.success(notificationService.getUnreadCount(me.id())));
     }
 
     @Operation(summary = "알림 드롭다운 목록 페이지(탭별, 기본 5건)")
+    @AiTool(name = "list_notifications", domain = "notification", kind = AiToolKind.READ)
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<NotificationSummary>>> search(
             @AuthenticationPrincipal LoginMember me, @Valid @ModelAttribute NotificationListRequest req,
@@ -49,6 +53,7 @@ public class NotificationController {
     }
 
     @Operation(summary = "알림 모두 읽음 처리(탭 무관, 숨김 기준 안의 미읽음 전부)")
+    @AiTool(name = "mark_all_notifications_read", domain = "notification", kind = AiToolKind.CARD)
     @PostMapping("/read-all")
     public ResponseEntity<ApiResponse<NotificationReadAllResponse>> markAllRead(
             @AuthenticationPrincipal LoginMember me) {
@@ -56,6 +61,7 @@ public class NotificationController {
     }
 
     @Operation(summary = "알림 읽음 처리")
+    @AiTool(name = "mark_notification_read", domain = "notification", kind = AiToolKind.CARD)
     @PostMapping("/{inappNotiSn}/read")
     public ResponseEntity<ApiResponse<Void>> markRead(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long inappNotiSn) {

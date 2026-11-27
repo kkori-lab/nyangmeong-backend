@@ -1,10 +1,11 @@
 package com.nyangmeong.notification.dto;
 
+import com.nyangmeong.global.aitool.AiExclude;
 import com.nyangmeong.global.notification.NotificationTab;
 
 /**
  * [알림 목록 조회 조건]
  * - tab 생략 -> ALL
  */
-public record NotificationListRequest(NotificationTab tab) {
+public record NotificationListRequest(@AiExclude NotificationTab tab) {
 }

@@ -41,7 +41,7 @@ import com.nyangmeong.pet.service.PointService;
 
 /**
  * [검사 - 반려동물 도메인 AI 도구 목록]
- * - 실제 반려동물 컨트롤러의 @AiTool이 빠짐없이 실리는지 (READ 10)
+ * - 실제 반려동물 컨트롤러의 @AiTool이 빠짐없이 실리는지 (READ 13 + CARD 1)
  */
 @WebMvcTest(controllers = {AiToolCatalogController.class, PetController.class, CaregiverInvitationController.class,
         CareMissionController.class, PointController.class, PointLedgerController.class,
@@ -86,15 +86,16 @@ class PetAiToolCatalogTest {
     }
 
     @Test
-    void 반려동물_READ_10개가_빠짐없이_실린다() throws Exception {
+    void 반려동물_READ_13개와_CARD_1개가_빠짐없이_실린다() throws Exception {
         givenCodes();
         mockMvc.perform(get(PATH))
-                .andExpect(jsonPath("$.data.tools.length()").value(11))
-                .andExpect(jsonPath("$.data.tools[*].name", containsInAnyOrder("draft_pet_update", "get_pet", "get_pixel_character",
-                        "get_points", "list_caregivers", "list_daily_missions", "list_pets", "list_pixel_characters",
-                        "list_point_ledgers", "list_sent_caregiver_invitations", "list_shop_items")))
-                .andExpect(jsonPath("$.data.tools[?(@.kind == 'READ')].name", hasSize(10)))
-                .andExpect(jsonPath("$.data.tools[?(@.domain == 'pet')].name", hasSize(11)));
+                .andExpect(jsonPath("$.data.tools.length()").value(14))
+                .andExpect(jsonPath("$.data.tools[*].name", containsInAnyOrder("draft_pet_update", "get_caregiver_invitation",
+                        "get_pet", "get_pet_limit", "get_pixel_character", "get_points", "list_caregivers", "list_daily_missions",
+                        "list_pets", "list_pixel_characters",
+                        "list_point_ledger_months", "list_point_ledgers", "list_sent_caregiver_invitations", "list_shop_items")))
+                .andExpect(jsonPath("$.data.tools[?(@.kind == 'READ')].name", hasSize(13)))
+                .andExpect(jsonPath("$.data.tools[?(@.domain == 'pet')].name", hasSize(14)));
     }
 
     @Test
