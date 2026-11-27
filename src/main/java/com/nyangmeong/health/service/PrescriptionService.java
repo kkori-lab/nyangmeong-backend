@@ -71,15 +71,15 @@ public class PrescriptionService {
 
         Prescription prescription = new Prescription();
         prescription.setCkupRcdSn(req.ckupRcdSn());
-        prescription.setMdcnNm(requiredText(req.mdcnNm()));
+        prescription.setMdcnNm(requiredText(req.mdcnNm(), "mdcnNm"));
         prescription.setMdcnBgngYmd(req.mdcnBgngYmd());
         prescription.setMdcnEndYmd(req.mdcnEndYmd());
         prescription.setDayMdcnNmtm(req.dayMdcnNmtm());
-        prescription.setPrscSttsCd(statusOf(req.prscSttsCd()).getCode());
+        prescription.setPrscSttsCd(statusOf(req.prscSttsCd(), "prscSttsCd").getCode());
         prescription.setCareRfltYn(Boolean.TRUE.equals(req.careRfltYn()) ? "Y" : "N");
         prescription.setRgtrId(actorId);
         prescription.setMdfrId(actorId);
-        checkPeriod(prescription);
+        checkPeriod(prescription, "mdcnEndYmd");
 
         prescriptionMapper.insertPrescription(prescription);
         prescriptionMapper.insertStatusHistory(prescription.getPrscSn(), mbrSn, null, prescription.getPrscSttsCd());
@@ -238,7 +238,7 @@ public class PrescriptionService {
     }
 
     /**
-     * 복용 기간 검사 : fields는 400 data에 담을 칸 이름(수정 경로만 준다, 일괄 저장 행은 그대로)
+     * 복용 기간 검사 : fields는 400 data에 담을 칸 이름(일괄 저장 행은 그대로)
      */
     private void checkPeriod(Prescription prescription, String... fields) {
         if (prescription.getMdcnEndYmd().isBefore(prescription.getMdcnBgngYmd())) {

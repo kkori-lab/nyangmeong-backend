@@ -51,6 +51,7 @@ public class PrescriptionController {
     }
 
     @Operation(summary = "처방약 추가")
+    @AiTool(name = "draft_prescription", domain = "health", kind = AiToolKind.CARD)
     @PostMapping
     public ResponseEntity<ApiResponse<PrescriptionResponse>> create(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @Valid @RequestBody PrescriptionCreateRequest req) {

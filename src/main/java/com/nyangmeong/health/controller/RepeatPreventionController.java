@@ -48,6 +48,7 @@ public class RepeatPreventionController {
     }
 
     @Operation(summary = "반복 예방 등록")
+    @AiTool(name = "draft_repeat_prevention", domain = "health", kind = AiToolKind.CARD)
     @PostMapping
     public ResponseEntity<ApiResponse<RepeatPreventionResponse>> create(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @Valid @RequestBody RepeatPreventionCreateRequest req) {

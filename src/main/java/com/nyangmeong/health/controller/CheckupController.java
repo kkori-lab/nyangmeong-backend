@@ -58,6 +58,7 @@ public class CheckupController {
     }
 
     @Operation(summary = "검진기록 직접 등록")
+    @AiTool(name = "draft_checkup", domain = "health", kind = AiToolKind.CARD)
     @PostMapping
     public ResponseEntity<ApiResponse<CheckupResponse>> create(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @Valid @RequestBody CheckupCreateRequest req) {

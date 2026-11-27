@@ -78,12 +78,12 @@ public class RepeatPreventionService {
         checkupService.getCheckup(mbrSn, petSn, req.ckupRcdSn());
         if (!careScheduleMapper.existsChildCode(HealthCodeGroup.REPEAT_PREVENTION_ARTICLE.getCode(),
                 req.reptPrvntArtclCd())) {
-            throw invalid();
+            throw invalid("reptPrvntArtclCd");
         }
-        CareCycle cycle = CareCycle.of(req.reptCycleCd()).orElseThrow(this::invalid);
+        CareCycle cycle = CareCycle.of(req.reptCycleCd()).orElseThrow(() -> invalid("reptCycleCd"));
         Integer dayCnt = req.cycleDrctInptDayCnt();
         if (cycle == CareCycle.CUSTOM && (dayCnt == null || dayCnt < 1 || dayCnt > CareCycle.MAX_CUSTOM_DAY_CNT)) {
-            throw invalid();
+            throw invalid("cycleDrctInptDayCnt");
         }
         String actorId = String.valueOf(mbrSn);
 
@@ -118,7 +118,10 @@ public class RepeatPreventionService {
         careItemService.deletePreventionItem(reptPrvntMngSn, actorId);
     }
 
-    private CustomException invalid() {
-        return new CustomException(ErrorCode.INVALID_INPUT_VALUE);
+    /**
+     * fields는 400 data에 담을 칸 이름
+     */
+    private CustomException invalid(String... fields) {
+        return new CustomException(ErrorCode.INVALID_INPUT_VALUE, fields);
     }
 }

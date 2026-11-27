@@ -69,6 +69,7 @@ public class ObservationController {
     }
 
     @Operation(summary = "관찰 종료")
+    @AiTool(name = "end_observation_item", domain = "health", kind = AiToolKind.CARD)
     @PostMapping("/observation-items/{obsrvArtclSn}/end")
     public ResponseEntity<ApiResponse<Void>> endItem(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long obsrvArtclSn) {
