@@ -162,6 +162,7 @@ public class MemberController {
     }
 
     @Operation(summary = "회원정보 수정(휴대전화번호·프로필 사진)")
+    @AiTool(name = "draft_member_profile_update", domain = "member", kind = AiToolKind.CARD)
     @PatchMapping(value = "/me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<MemberResponse>> updateMe(@AuthenticationPrincipal LoginMember me,
             @ModelAttribute MemberUpdateRequest req) {
@@ -183,6 +184,7 @@ public class MemberController {
     }
 
     @Operation(summary = "닉네임 설정 완료")
+    @AiTool(name = "draft_member_nickname_update", domain = "member", kind = AiToolKind.CARD)
     @PatchMapping("/me/nickname")
     public ResponseEntity<ApiResponse<MemberResponse>> updateNickname(@AuthenticationPrincipal LoginMember me,
             HttpServletRequest request, @Valid @RequestBody MemberNicknameUpdateRequest req) {
