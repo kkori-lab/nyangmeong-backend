@@ -789,17 +789,24 @@
 - 추가: 없음
 - 연결 남음: FN-AIM-012-05·06·07·13 (ai 저장소 `tools.snapshot.json` 갱신, `structureVersion` 바뀜, ai 세션)
 
-## SCR-AIM-012 AI 일정 생성 확인 · 반려동물 삭제·연동 해제·초대 삭제 카드 — 대기
+## SCR-AIM-012 AI 일정 생성 확인 · 반려동물 삭제·연동 해제·초대 삭제 카드 — 끝
 - 기능: 명세 기능 ID 추가 없음(사이트 기능 전체 표 3번 "아직 정하지 않음" 7개를 모두 붙이기로 함, 사람 2026-11-27 "3번도 전부 하자"), 걸치는 기능 FN-AIM-012-05·06·07·13
 - 기다리는 것: 없음(Python 설명이 없는 도구는 싣지 않아 지금 동작은 그대로. 설명·tool_eval은 ai 세션)
 - 할 것: `@AiTool` CARD 3개(domain pet). `DELETE /api/pets/{petSn}`(PetController), `DELETE /api/pets/{petSn}/caregivers/{brupRelSn}`(PetController), `DELETE /api/caregiver-invitations/{jntBrupInvtnSn}`(CaregiverInvitationController). 되돌리기 어려운 일이라 확인 카드로만. pet 담당 SJM에게 알린다
 - 완료 조건: `GET /internal/ai/tools`에 세 CARD가 경로 칸과 함께 실린다, 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-27, 1회차), 사람 확인 2026-11-27(테스트 2개 통과, 도구 118개). 정한 것: 이름 `delete_pet`·`unlink_caregiver`·`delete_caregiver_invitation`(DELETE 경로 칸만, 서비스·DTO 변경 없음), 기존 테스트 1개 도구 수 기대값 변경(PetAiToolCatalogTest 22→25). 계약은 `docs/api/ai.md`
+- 추가: 없음
+- 연결 남음: FN-AIM-012-05·06·07·13 (ai 저장소 `tool_prompts.yaml` 세 도구 설명·확인 말(삭제 결과 경고)·스냅샷·`tool_eval`, ai 세션)
+- 연결 남음: FN-AIM-012-05·06·07·13 (프론트 연결 대화창 확인 카드로 본문 없는 DELETE 세 개 실행 확인, 프론트 저장소에서 /start)
 
-## SCR-AIM-012 AI 일정 생성 확인 · 튜토리얼 봤음 저장 카드 — 대기
+## SCR-AIM-012 AI 일정 생성 확인 · 튜토리얼 봤음 저장 카드 — 끝
 - 기능: 명세 기능 ID 추가 없음(사이트 기능 전체 표 3번 "아직 정하지 않음" 7개를 모두 붙이기로 함, 사람 2026-11-27 "3번도 전부 하자"), 걸치는 기능 FN-AIM-012-05·06·07·13
 - 기다리는 것: 없음(Python 설명이 없는 도구는 싣지 않아 지금 동작은 그대로. 설명·tool_eval은 ai 세션)
 - 할 것: `@AiTool` CARD 1개(domain member). `PUT /api/members/me/tutorial`(MemberController)
 - 완료 조건: `GET /internal/ai/tools`에 CARD가 실린다, 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-27, 1회차, 도구 119개), 사람 확인 2026-11-27(MemberCardAiToolCatalogTest 통과). 정한 것: 이름 `mark_service_tutorial_viewed`(PUT 본문 없음·칸 없음·멱등, 서비스·DTO 변경 없음). 계약은 `docs/api/ai.md` 회원 CARD 3개
+- 추가: 없음
+- 연결 남음: FN-AIM-012-05·06·07·13 (ai 저장소 `tool_prompts.yaml` `mark_service_tutorial_viewed` 설명·확인 말·스냅샷·`tool_eval`, ai 세션)
 
 ## SCR-AIM-012 AI 일정 생성 확인 · 케어 캘린더 일정 목록 읽기 도구 — 대기
 - 기능: 명세 기능 ID 추가 없음(사이트 기능 전체 표 3번 "아직 정하지 않음" 7개를 모두 붙이기로 함, 사람 2026-11-27 "3번도 전부 하자"), 걸치는 기능 FN-AIM-012-05·06·07·13

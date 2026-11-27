@@ -83,6 +83,7 @@ public class PetController {
     }
 
     @Operation(summary = "반려동물 삭제")
+    @AiTool(name = "delete_pet", domain = "pet", kind = AiToolKind.CARD)
     @DeleteMapping("/{petSn}")
     public ResponseEntity<ApiResponse<Void>> deletePet(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn) {
@@ -108,6 +109,7 @@ public class PetController {
     }
 
     @Operation(summary = "공동양육 연동 해제")
+    @AiTool(name = "unlink_caregiver", domain = "pet", kind = AiToolKind.CARD)
     @DeleteMapping("/{petSn}/caregivers/{brupRelSn}")
     public ResponseEntity<ApiResponse<Void>> unlinkCaregiver(@AuthenticationPrincipal LoginMember me,
             @PathVariable Long petSn, @PathVariable Long brupRelSn) {
