@@ -759,6 +759,17 @@
 - 연결 남음: FN-AIM-012-05·06·07·13 (ai 저장소 `tool_prompts.yaml` 8개 설명·확인 말·스냅샷·`tool_eval`, 새 칸 모양 `array`+`itemType` 처리, ai 세션)
 - 연결 남음: FN-AIM-012-05·06·07·13 (프론트 연결 대화창 확인 카드로 새 8개 실행 확인(본문 없는 POST·번호 목록 칸 포함), 프론트 저장소에서 /start)
 
+## SCR-AIM-012 AI 일정 생성 확인 · 플레이스 즐겨찾기 저장 카드 — 끝
+- 기능: 명세 기능 ID 추가 없음(사이트 기능 전체 표 프론트 `docs/ai-coverage.md` place 쓰기 카드 후보 1개, 사람 2026-11-27 "다른 도메인 쓰기 카드 해도 괜찮아"), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 할 것: `@AiTool` CARD 1개(domain place). `draft_place_bookmark`(장소 즐겨찾기 저장, 본문 `plcSn`)
+- 붙이지 않는 것: 고객센터 1:1 문의 작성·수정·삭제(실제 문의가 접수되는 일이라 AI로 하지 않는다, 사람 2026-11-27)
+- 기다리는 것: 없음(Python 설명이 없는 도구는 Python이 싣지 않으므로 먼저 붙여도 지금 동작은 그대로. 설명·tool_eval은 ai 세션). place 담당 YAY에게 알린다(컨트롤러 표시만, 동작 변화 없음)
+- 완료 조건: `GET /internal/ai/tools`에 새 CARD `draft_place_bookmark`가 POST /api/place-bookmarks, 칸 `plcSn` long 필수와 함께 실린다. 기존 도구 정의는 그대로, 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-27, 1회차), 사람 확인 2026-11-27(테스트 2개 통과, 도구 113개). 정한 것: 고객센터 1:1 문의 쓰기 3개는 뺌(사람 2026-11-27), 기존 테스트 1개 도구 수 기대값 변경(PlaceAiToolCatalogTest 3→4). 계약은 `docs/api/ai.md`
+- 추가: 없음
+- 연결 남음: FN-AIM-012-05·06·07·13 (ai 저장소 `tool_prompts.yaml` `draft_place_bookmark` 설명·확인 말·스냅샷·`tool_eval`, ai 세션)
+- 연결 남음: FN-AIM-012-05·06·07·13 (프론트 연결 대화창 확인 카드로 `draft_place_bookmark` 실행 확인, 프론트 저장소에서 /start)
+
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
 - FN-COM-002-11: 채팅 안 읽은 수 API는 KSJ(채팅, 마일스톤 담당 표 COM-009)
