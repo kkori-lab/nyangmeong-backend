@@ -407,3 +407,10 @@
 - 완료 조건: 채팅방 읽음(`POST /chat-rooms/{sn}/read`) 때 그 방으로 가는 내 펫돌봄 거래 알림(이동 경로 `/chat?otoChatRoomSn={sn}`)이 읽음이 되고 알림 미읽음 수가 줄어든다. 다른 방·다른 회원의 알림은 그대로
 - 결과(2026-11-27): 검증 1회차 확인 못 함 없음(`./gradlew build -q` 0). 사람 확인 끝(3번 회원 방 270 읽음 → 알림 미읽음 8→5, 방 292로 Postman CLI 검사 8개 통과, 비참여자 403·알림 그대로). 알림 도메인 `NotificationService.markReadByPath`·`NotificationMapper.updateReadByMvmnPath` 추가(LJS 영향, 결정 추천안대로), 테스트 `ChatReadNotificationTest` 4개, API 초안 채팅 읽음·알림 읽음 행 갱신
 - 연결 남음: 알림읽음-2 헤더 알림 배지 즉시 갱신 (프론트 연결 `useReadChatRoom` onSuccess에서 알림 미읽음 수·목록 무효화, 프론트 저장소에서 /start)
+
+## SCR-CMU-002 실종센터 · 찾았어요 글 목록 이름 공개 — 끝
+- 기능: 명세 기능 ID 추가 없음(프론트 요청 2026-11-27 「최근 찾은 반려동물」 레일 문형 통일, 사람 결정 2026-11-27 이름 공개). 걸치는 FN-CMU-002-01 목록, FN-CMU-002-09 찾았어요 비공개 범위
+- 기다리는 것: 없음
+- 완료 조건: 다른 회원이 `GET /lost-reports`(찾았어요 포함)를 부르면 남의 찾았어요 글에 `petNm`이 채워지고, 품종·사진·지역·색상·특징 등 나머지 비공개 필드는 지금처럼 null이다. 실종 글·내 글 응답과 상세(`GET /lost-reports/{sn}`)는 그대로
+- 결과(2026-11-27): 검증 1회차 확인 못 함 없음(`./gradlew build -q` 0). 사람 확인 끝(1번 회원 목록에서 남의 찾았어요 글 110 `petNm` 「모찌」·나머지 null, 내 글 107 전부, 상세 110 비공개 그대로). 테스트 `LostReportMapperSqlTest` 1개 추가, API 초안 `LostReportSummary`·issues 23번 갱신. 조사는 프론트 `MissingRail.jsx` `pickJosa`가 이미 처리
+- 연결 남음: 이름공개-1 레일 문형 통일 (프론트 연결 `MissingRail.jsx` 제목 분기 삭제·목록 카드 확인, 프론트 저장소에서 /start)
