@@ -780,6 +780,39 @@
 - 연결 남음: FN-AIM-012-05·06·07·13 (ai 저장소 `tool_prompts.yaml` 두 도구 설명·확인 말·스냅샷·`tool_eval`, ai 세션)
 - 연결 남음: FN-AIM-012-05·06·07·13 (프론트 연결 대화창 확인 카드로 두 도구 실행, 프로필 사진은 사진 선택, 프론트 저장소에서 /start)
 
+## SCR-AIM-012 AI 일정 생성 확인 · 도구 목록 소수 최소·최대값 — 끝
+- 기능: 명세 기능 ID 추가 없음(핸드오프 "선택: 도구 목록이 `@DecimalMin`을 싣지 않는다"), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 할 것: `AiToolCatalogService`가 `@DecimalMin`·`@DecimalMax`를 `min`·`max`에 싣는다(값이 정수일 때만, `inclusive = false`이거나 소수면 싣지 않는다)
+- 기다리는 것: 없음(칸 모양은 그대로, 값만 늘어남)
+- 완료 조건: `GET /internal/ai/tools`에서 `draft_inspection_value_update.rsltNvl.min` 0, `draft_pet`·`draft_pet_update` 몸무게 칸 `max` 200, `list_places` 위도·경도 칸 `min`·`max` ±90·±180. 다른 도구 정의는 그대로, 기동 로그에 `[AiTool] 제외`가 없다
+- 완료 조건 결과: 검증 `통과`(2026-11-27, 1회차), 사람 확인 2026-11-27(테스트 3개 통과, 도구 115개). 정한 것: 소수 경계값·`inclusive = false`는 싣지 않음, 기존 테스트 기대값 변경 없음. 계약은 `docs/api/ai.md`
+- 추가: 없음
+- 연결 남음: FN-AIM-012-05·06·07·13 (ai 저장소 `tools.snapshot.json` 갱신, `structureVersion` 바뀜, ai 세션)
+
+## SCR-AIM-012 AI 일정 생성 확인 · 반려동물 삭제·연동 해제·초대 삭제 카드 — 대기
+- 기능: 명세 기능 ID 추가 없음(사이트 기능 전체 표 3번 "아직 정하지 않음" 7개를 모두 붙이기로 함, 사람 2026-11-27 "3번도 전부 하자"), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 기다리는 것: 없음(Python 설명이 없는 도구는 싣지 않아 지금 동작은 그대로. 설명·tool_eval은 ai 세션)
+- 할 것: `@AiTool` CARD 3개(domain pet). `DELETE /api/pets/{petSn}`(PetController), `DELETE /api/pets/{petSn}/caregivers/{brupRelSn}`(PetController), `DELETE /api/caregiver-invitations/{jntBrupInvtnSn}`(CaregiverInvitationController). 되돌리기 어려운 일이라 확인 카드로만. pet 담당 SJM에게 알린다
+- 완료 조건: `GET /internal/ai/tools`에 세 CARD가 경로 칸과 함께 실린다, 기동 로그에 `[AiTool] 제외`가 없다
+
+## SCR-AIM-012 AI 일정 생성 확인 · 튜토리얼 봤음 저장 카드 — 대기
+- 기능: 명세 기능 ID 추가 없음(사이트 기능 전체 표 3번 "아직 정하지 않음" 7개를 모두 붙이기로 함, 사람 2026-11-27 "3번도 전부 하자"), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 기다리는 것: 없음(Python 설명이 없는 도구는 싣지 않아 지금 동작은 그대로. 설명·tool_eval은 ai 세션)
+- 할 것: `@AiTool` CARD 1개(domain member). `PUT /api/members/me/tutorial`(MemberController)
+- 완료 조건: `GET /internal/ai/tools`에 CARD가 실린다, 기동 로그에 `[AiTool] 제외`가 없다
+
+## SCR-AIM-012 AI 일정 생성 확인 · 케어 캘린더 일정 목록 읽기 도구 — 대기
+- 기능: 명세 기능 ID 추가 없음(사이트 기능 전체 표 3번 "아직 정하지 않음" 7개를 모두 붙이기로 함, 사람 2026-11-27 "3번도 전부 하자"), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 기다리는 것: 없음(Python 설명이 없는 도구는 싣지 않아 지금 동작은 그대로. 설명·tool_eval은 ai 세션)
+- 할 것: `@AiTool` READ 1개(domain health). `GET /api/pets/{petSn}/care-schedules`(CareScheduleController). 기존 `MyCareScheduleController` 읽기 도구와 겹치는지 기획 때 확인. health 담당 JAJ에게 알린다
+- 완료 조건: `GET /internal/ai/tools`에 READ가 칸과 함께 실린다, 기동 로그에 `[AiTool] 제외`가 없다
+
+## SCR-AIM-012 AI 일정 생성 확인 · 가계부 중복 확인·영수증 저장 전 확인·영수증 직접 입력 검진 등록 도구 — 대기
+- 기능: 명세 기능 ID 추가 없음(사이트 기능 전체 표 3번 "아직 정하지 않음" 7개를 모두 붙이기로 함, 사람 2026-11-27 "3번도 전부 하자"), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 기다리는 것: 없음(Python 설명이 없는 도구는 싣지 않아 지금 동작은 그대로. 설명·tool_eval은 ai 세션)
+- 할 것: `@AiTool` 3개(domain expense). `POST /api/expenses/duplicate-check`(ExpenseController), `POST /api/receipts/{recptSn}/save-check`·`POST /api/receipts/{recptSn}/checkups`(ReceiptSaveController). 두 확인은 저장하지 않는 검사라 READ로 둘지 기획 때 정한다. 가계부 담당 SJM에게 알린다
+- 완료 조건: `GET /internal/ai/tools`에 세 도구가 칸과 함께 실린다, 기동 로그에 `[AiTool] 제외`가 없다
+
 ## 제외
 - FN-COM-002-01·03·04·05·06·07·08·10·12·13·14·16·17·18·19·20·21·22·23: 화면만 있다(서버 동작 없음)
 - FN-COM-002-11: 채팅 안 읽은 수 API는 KSJ(채팅, 마일스톤 담당 표 COM-009)

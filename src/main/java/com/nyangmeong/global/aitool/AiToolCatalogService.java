@@ -44,6 +44,8 @@ import com.nyangmeong.global.code.CommonCodeService;
 import com.nyangmeong.global.response.PageQuery;
 import com.nyangmeong.global.security.crypto.TokenHashUtil;
 
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -403,13 +405,35 @@ public class AiToolCatalogService {
                 isRequired ? Boolean.TRUE : null,
                 size != null && size.min() > 0 ? size.min() : null,
                 size != null && size.max() != Integer.MAX_VALUE ? size.max() : null,
-                min != null ? min.value() : null,
-                max != null ? max.value() : null,
+                min != null ? Long.valueOf(min.value()) : decimalBound(element.getAnnotation(DecimalMin.class)),
+                max != null ? Long.valueOf(max.value()) : decimalBound(element.getAnnotation(DecimalMax.class)),
                 element.isAnnotationPresent(Positive.class) ? Boolean.TRUE : null,
                 pattern != null ? pattern.regexp() : type == YearMonth.class ? YEAR_MONTH_PATTERN : null,
                 digits != null ? digits.integer() + digits.fraction() : null,
                 digits != null ? digits.fraction() : null,
                 null, null, generated != null ? generated.value() : null, null, null), null);
+    }
+
+    /**
+     * @DecimalMin 경계값 : 경계를 포함하고 값이 정수일 때만(min은 Long), 아니면 싣지 않음
+     */
+    private static Long decimalBound(DecimalMin bound) {
+        return bound != null && bound.inclusive() ? integerOf(bound.value()) : null;
+    }
+
+    /**
+     * @DecimalMax 경계값 : 경계를 포함하고 값이 정수일 때만(max는 Long), 아니면 싣지 않음
+     */
+    private static Long decimalBound(DecimalMax bound) {
+        return bound != null && bound.inclusive() ? integerOf(bound.value()) : null;
+    }
+
+    private static Long integerOf(String value) {
+        try {
+            return new BigDecimal(value).longValueExact();
+        } catch (ArithmeticException | NumberFormatException e) {
+            return null;
+        }
     }
 
     private static String typeNameOf(Class<?> type) {
