@@ -66,7 +66,8 @@ import tools.jackson.databind.json.JsonMapper;
  * - 쿼리 칸 : @RequestParam, @ModelAttribute 검색 조건 필드, PageQuery(page·size)
  * - 본문 칸 : @RequestBody record, multipart @ModelAttribute record(MultipartFile -> file)
  * - List<record> 칸 -> array + items(같은 칸 모양), List<Long>·List<Integer> 칸 -> array + itemType
- * - 지원하지 않는 칸(값 목록·중첩 객체 등)이 있는 도구는 빼고 WARN 로그
+ * - Java enum 칸 -> string + values, List<enum> 칸 -> array + itemType string + values
+ * - 지원하지 않는 칸(List<String> 등 값 목록·중첩 객체 등)이 있는 도구는 빼고 WARN 로그
  * - @AiExclude 칸은 싣지 않음(도구는 그대로)
  */
 @Slf4j
@@ -257,12 +258,12 @@ public class AiToolCatalogService {
      */
     private String addPageQuery(Map<String, Param> params) {
         String skipReason = put(params, "page", new ParamDraft(new Param(QUERY, "int", null, null, null, null,
-                (long) PageQuery.DEFAULT_PAGE, null, null, null, null, null, null, null, null, null, null), null));
+                (long) PageQuery.DEFAULT_PAGE, null, null, null, null, null, null, null, null, null, null, null), null));
         if (skipReason != null) {
             return skipReason;
         }
         return put(params, "size", new ParamDraft(new Param(QUERY, "int", null, null, null, null, 1L,
-                (long) PageQuery.MAX_SIZE, null, null, null, null, null, null, null, null, null), null));
+                (long) PageQuery.MAX_SIZE, null, null, null, null, null, null, null, null, null, null), null));
     }
 
     /**
@@ -347,14 +348,20 @@ public class AiToolCatalogService {
             minItems = minItems == null ? size.min() : Math.max(minItems, size.min());
         }
         return new ParamDraft(new Param(location, ARRAY, null, isRequired ? Boolean.TRUE : null, null, null, null,
-                null, null, null, null, null, null, minItems, null, items.isEmpty() ? null : items, scalarItemType),
-                null);
+                null, null, null, null, null, null, minItems, null, items.isEmpty() ? null : items, scalarItemType,
+                itemType.isEnum() ? enumValuesOf(itemType) : null), null);
     }
 
     /**
-     * 값 하나짜리 줄 타입 : 번호 목록(Long·Integer)만, 문자열 목록은 코드 값 모양을 정하기 전이라 뺀다
+     * 값 하나짜리 줄 타입 : 번호 목록(Long·Integer)과 enum 목록(string + values)만, List<String>은 고를 값을 모르니 뺀다
      */
     private static String scalarItemTypeOf(Class<?> itemType) {
+        if (itemType == null) {
+            return null;
+        }
+        if (itemType.isEnum()) {
+            return "string";
+        }
         if (itemType == Long.class) {
             return "long";
         }
@@ -411,7 +418,20 @@ public class AiToolCatalogService {
                 pattern != null ? pattern.regexp() : type == YearMonth.class ? YEAR_MONTH_PATTERN : null,
                 digits != null ? digits.integer() + digits.fraction() : null,
                 digits != null ? digits.fraction() : null,
-                null, null, generated != null ? generated.value() : null, null, null), null);
+                null, null, generated != null ? generated.value() : null, null, null,
+                type.isEnum() ? enumValuesOf(type) : null), null);
+    }
+
+    /**
+     * enum 상수 이름 목록(선언 순서) : 요청 본문 JSON 값과 같음
+     */
+    private static List<String> enumValuesOf(Class<?> enumType) {
+        Object[] constants = enumType.getEnumConstants();
+        List<String> values = new ArrayList<>(constants.length);
+        for (Object constant : constants) {
+            values.add(((Enum<?>) constant).name());
+        }
+        return List.copyOf(values);
     }
 
     /**
@@ -437,7 +457,7 @@ public class AiToolCatalogService {
     }
 
     private static String typeNameOf(Class<?> type) {
-        if (type == String.class || type == YearMonth.class) {
+        if (type == String.class || type == YearMonth.class || type.isEnum()) {
             return "string";
         }
         if (type == Long.class || type == long.class) {

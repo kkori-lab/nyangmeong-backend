@@ -789,6 +789,21 @@
 - 추가: 없음
 - 연결 남음: FN-AIM-012-05·06·07·13 (ai 저장소 `tools.snapshot.json` 갱신, `structureVersion` 바뀜, ai 세션)
 
+## SCR-AIM-012 AI 일정 생성 확인 · 도구 목록 enum 칸·알림 설정 저장 카드 — 끝
+- 기능: 명세 기능 ID 추가 없음(AI 매니저 대응 범위 다음, 사람 2026-11-27 "3번으로"), 걸치는 기능 FN-AIM-012-05·06·07·13
+- 기다리는 것: 없음(Python 설명이 없는 도구는 싣지 않아 지금 동작은 그대로. 새 칸 모양 `values`는 백엔드가 먼저 정하고 ai 세션에 알린다)
+- 할 것:
+  - 도구 목록 enum 칸: Java enum 칸 → `type: string` + `values`(enum 상수 이름 목록, 선언 순서). `List<enum>` → `array` + `itemType: string` + `values`. `Param` 끝에 `values` 추가(값이 없으면 싣지 않아 기존 도구 모양·해시 그대로). `List<String>`은 여전히 뺀다. 바꿀 파일: `global/aitool/AiToolResponse.java`, `global/aitool/AiToolCatalogService.java`. 완료 조건: `명령:` `./gradlew build -q` 종료 코드 0, 새 테스트 `AiToolCatalogEnumParamTest`(enum 칸·enum 목록 칸·`List<String>` 도구 제외)
+  - 알림 설정 저장 CARD `draft_notification_settings`(domain notification, `PUT /api/members/me/notification-settings`, 본문 8칸 모두 필수, `leadTimes`는 `array`+`itemType: string`+`values` TODAY·D1·D3·D7). 바꿀 파일: `notification/controller/NotificationSettingController.java`(`@AiTool`만), `notification/service/NotificationService.java`(케어 일정 ON인데 `leadTimes` 빈 400에 `data[0].field`=leadTimes, 오류 코드 그대로). 완료 조건: `화면:` 8082 `GET /internal/ai/tools`에 새 CARD와 `leadTimes` 칸이 실리고 기동 로그에 `[AiTool] 제외`가 없다, PUT에 `careSchdlNotiRcptnYn`=true·`leadTimes`=[]이면 400 `data[0].field`=leadTimes. `명령:` 새 테스트 `NotificationSettingAiToolCatalogTest`(기존 `NotificationAiToolCatalogTest`는 그대로 둔다), 서비스 400 칸 이름 테스트
+  - 계약: `docs/api/ai.md` Param 절에 `values`, 145줄 "문자열 값 목록" 문장, 알림 CARD 2→3개, "알림 설정 저장은 도구가 아니다" 문장 지움. 31줄 `GET /internal/ai/tools` 설명에 enum 칸
+  - 기존 도구 수를 세는 테스트(`AiToolCatalogControllerTest` 등)가 새 도구 때문에 깨지면 기대값만 바꾸고 사람 승인을 받는다
+- 완료 조건: 위 둘
+- 새 의존성: 없음
+- 완료 조건 결과: 검증 `통과`(2026-11-27, 1회차, 8082 도구 123개·`[AiTool] 제외` 없음·PUT 400 `data[0].field`=leadTimes), 사람 확인 2026-11-27(테스트로만 확인하는 `AiToolCatalogEnumParamTest` 5개·`NotificationSettingLeadTimeFieldTest` 1개 통과). 정한 것: 칸 모양 `values`(enum 상수 이름, 선언 순서)는 백엔드가 먼저 정함, `List<String>`은 여전히 뺌, 기존 테스트 변경 없음. 계약은 `docs/api/ai.md` Param 절·알림 CARD 3개
+- 추가: 없음
+- 연결 남음: FN-AIM-012-05·06·07·13 (ai 세션: Param 파서에 `values`, `tool_prompts.yaml` `draft_notification_settings` 설명·확인 말·스냅샷·`tool_eval`, LJS)
+- 연결 남음: FN-AIM-012-05·06·07·13 (프론트 연결 범용 확인 카드에서 `values` 칸 선택 표시·알림 설정 저장 카드 실행 확인, 프론트 저장소에서 /start)
+
 ## SCR-AIM-012 AI 일정 생성 확인 · 반려동물 삭제·연동 해제·초대 삭제 카드 — 끝
 - 기능: 명세 기능 ID 추가 없음(사이트 기능 전체 표 3번 "아직 정하지 않음" 7개를 모두 붙이기로 함, 사람 2026-11-27 "3번도 전부 하자"), 걸치는 기능 FN-AIM-012-05·06·07·13
 - 기다리는 것: 없음(Python 설명이 없는 도구는 싣지 않아 지금 동작은 그대로. 설명·tool_eval은 ai 세션)
