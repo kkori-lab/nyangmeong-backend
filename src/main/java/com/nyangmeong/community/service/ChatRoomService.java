@@ -30,6 +30,7 @@ import com.nyangmeong.global.error.ErrorCode;
 import com.nyangmeong.global.file.FileStore;
 import com.nyangmeong.global.file.StoredFile;
 import com.nyangmeong.global.security.crypto.FieldCryptoService;
+import com.nyangmeong.notification.service.NotificationService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -57,6 +58,7 @@ public class ChatRoomService {
     private final ChatRealtimePublisher chatRealtimePublisher;
     private final FieldCryptoService fieldCryptoService;
     private final FileStore fileStore;
+    private final NotificationService notificationService;
 
     /**
      * 채팅방 조회 (참여자만)
@@ -99,6 +101,8 @@ public class ChatRoomService {
     @Transactional
     public void read(Long mbrSn, Long otoChatRoomSn, ChatRoomReadRequest req) {
         ChatRoomDetail room = chatRoomGuard.getRoom(mbrSn, otoChatRoomSn);
+        /** 방에서 본 거래는 헤더 알림에서도 읽음 : 이미 다 읽은 방을 다시 열어도 남은 알림을 지운다 */
+        notificationService.markReadByPath(mbrSn, String.format(CareMatchService.CHAT_ROOM_PATH, otoChatRoomSn));
         if (chatRoomMapper.updateLastRead(otoChatRoomSn, mbrSn, req.lastPrslMsgSeq()) == 0) {
             return;
         }
