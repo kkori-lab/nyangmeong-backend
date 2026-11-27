@@ -2,13 +2,14 @@
 
 ## 지금 하는 것
 
-SCR-AIM-012 AI 일정 생성 확인 · 회원 닉네임·회원정보 수정 카드 — 끝 (2026-11-27). `MemberController`에 `@AiTool` CARD `draft_member_nickname_update`(본문 `mbrNcnm`)·`draft_member_profile_update`(multipart 사진 2칸, `mblTelno`는 `@AiExclude`), 사진·되돌리기 동시 400에 칸 이름, 도구 113→115. 검증 `통과`(1회차), 사람 확인 2026-11-27, 시작 2026-11-27 11:24
+SCR-AIM-012 AI 일정 생성 확인 · 도구 목록 소수 최소·최대값 — 끝 (2026-11-27). `AiToolCatalogService`가 `@DecimalMin`·`@DecimalMax`를 경계 포함·정수 값일 때만 `min`·`max`에 싣는다(`@Min`·`@Max`가 먼저). 도구 115개 그대로. 검증 `통과`(1회차), 사람 확인 2026-11-27, 시작 2026-11-27 11:43
 
 ## 다음에 할 것
 
+- AI 도구 남은 후보 7개 모두 붙이기(사람 2026-11-27 "3번도 전부 하자"): 마일스톤 대기 절 4개(pet 삭제 3·member 튜토리얼 1·health 케어 캘린더 목록 1·expense 확인·등록 3), 도메인마다 /start
 - SCR-AIM-012 회원·플레이스 쓰기 카드 연결 남음: FN-AIM-012-05·06·07·13 (ai 세션 `tool_prompts.yaml` `draft_member_nickname_update`·`draft_member_profile_update`·`draft_place_bookmark` 설명·확인 말·스냅샷·`tool_eval`, 회원정보 수정은 휴대전화번호를 싣지 않음. 프론트 연결은 프론트 `milestones/LJS.md` `회원 닉네임·회원정보 수정 카드 실행 확인 — 대기`·`플레이스 즐겨찾기 저장 카드 실행 확인 — 대기` 절, 프론트 저장소에서 /start). YAY(닉네임·place 컨트롤러 표시만)·SJM(`PATCH /members/me` 사진·되돌리기 동시 400에 `data[].field` 추가)에게 알린다
 - SCR-AIM-012 반려동물 쓰기 카드 연결 남음(ai 세션): 8개 이름·칸(`docs/api/ai.md` 반려동물 CARD 9개 줄)과 새 칸 모양(번호 목록 `type: array`+`itemType: long`, `items` 없음)을 알리고 `tool_prompts.yaml` 설명·확인 말·스냅샷·`tool_eval`. 프론트 연결은 프론트 `milestones/LJS.md` `반려동물 쓰기 카드 실행 확인 — 대기` 절(프론트 저장소에서 /start). SJM에게 `PetCreateRequest` 표시·초대 수락 400 칸 이름만 바뀌었다고 알린다
-- SCR-AIM-011·012 도구 연결 남음(ai 세션): SCR-AIM-012 건강 등록·종료 카드 6개(`docs/api/ai.md` 건강 CARD 30개 줄, 2026-11-27)와 SCR-AIM-011 새 도구 27개 이름·칸(`docs/api/ai.md` AiToolResponse `name`)을 알리고, 도메인 거르기 순서대로 `tool_prompts.yaml` 설명·`tools.snapshot.json`·`tool_eval`. 설명이 없으면 Python이 싣지 않아 지금 동작은 그대로. 프론트 `docs/ai-coverage.md`는 프론트 세션이 `node scripts/ai-coverage.mjs`로 다시 만든다
+- SCR-AIM-011·012 도구 연결 남음(ai 세션): 도구 목록 소수 최소·최대값(2026-11-27, `@DecimalMin`·`@DecimalMax` → `min`·`max`, `structureVersion` 바뀜, `draft_inspection_value_update`·`draft_pet`·`draft_pet_update`·`list_places`)도 `tools.snapshot.json`에 반영. SCR-AIM-012 건강 등록·종료 카드 6개(`docs/api/ai.md` 건강 CARD 30개 줄, 2026-11-27)와 SCR-AIM-011 새 도구 27개 이름·칸(`docs/api/ai.md` AiToolResponse `name`)을 알리고, 도메인 거르기 순서대로 `tool_prompts.yaml` 설명·`tools.snapshot.json`·`tool_eval`. 설명이 없으면 Python이 싣지 않아 지금 동작은 그대로. 프론트 `docs/ai-coverage.md`는 프론트 세션이 `node scripts/ai-coverage.mjs`로 다시 만든다
 - AI 매니저 대응 범위 다음(사람 결정 2026-11-26·27): 도메인별 쓰기 카드 후보를 도메인마다 /start(pet은 2026-11-27 8개 끝·메인 바로가기 저장은 최상위 배열이라 뺌, health는 2026-11-27 6개 끝, 나머지 health 후보 8개는 뺌, place는 2026-11-27 즐겨찾기 저장 1개 끝, support 1:1 문의 쓰기 3개는 뺌(사람 2026-11-27). 회원은 2026-11-27 닉네임·프로필 사진 2개 끝(휴대전화번호는 뺌). 남은 후보: 가계부 여러 건·조건 전체 삭제(뺌 쪽). JAJ에게 표시·400 칸 이름만 바뀌었다고 알린다. 프론트 `milestones/LJS.md`에 `건강 등록·종료 카드 실행 확인 — 대기` 절 넣음. 서비스 400 칸 이름 포함, 남의 도메인은 담당과 먼저). 알림 설정 저장 카드는 도구 목록 enum·값 목록 지원(ai와 칸 모양 합의) 뒤. 멀티모달 GET(사진·파일 응답 7개)은 관찰 사진부터, 도구 목록 응답 종류 칸과 ai image 블록을 ai와 정한 뒤. 채팅 읽기·`GET /members/me`는 일부러 뺌(상대 회원 글·복호화 개인정보). 표의 뺌(인증·탈퇴·비밀번호·이메일 변경·채팅 쓰기·신고·차단·좋아요·커뮤니티 글·댓글 쓰기·펫돌봄 거래 단계)에는 붙이지 않는다
 - 사람(DMS, SCR-ADM-114): 관리자 기능명세서 FN-ADM-114-04 설명을 "관리자는 고치거나 지울 수 없고, 30일이 지난 로그는 배치가 매일 지운다"로. 요구사항정의서에 감사 로그 보관 문구가 있으면 같이
 - 선택: `docs/api/global.md` 배치 목록 행의 "배치 6종" 문구가 실제(14종)와 다르다
@@ -17,7 +18,6 @@ SCR-AIM-012 AI 일정 생성 확인 · 회원 닉네임·회원정보 수정 카
 - 도메인별 시드 확인 요청(PR에서): member YAY, pet·expense SJM, health JAJ, community·support KSJ
 - 정리(사람): 로컬 확인용 DB `nyangmeong_demo_seed`·`nyangmeong_seedcheck`와 로컬에 받은 공용 DB 덤프(암호문 있음)를 지운다
 - SCR-AIM-012 대화창 수정·삭제 도구 연결 남음: ai 세션(ai-ce)에 PR 번호·`@AiExclude`로 `refRange`·`clearFields`만 빠짐(도구는 실림)·400 칸 이름은 수정 경로만(삭제는 서비스 400 없음) 알림, `data/tools.snapshot.json` 갱신은 ai 세션. 프론트 연결 대화창 범용 확인 카드의 DELETE·본문 없는 call 실행 (프론트 저장소에서 /start, 프론트 `milestones/LJS.md`에 `대화창 수정·삭제 카드 실행 — 대기` 절 넣음)
-- 선택: 도구 목록이 `@DecimalMin`을 싣지 않아 `draft_inspection_value_update.rsltNvl`에 `min: 0`이 없다(등록 도구에는 있음). 요청 검증 400은 그대로라 동작 영향 없음
 - SCR-AIM-011 대화 요약 연결 남음: ai 세션(nyangmeong-ai-1a)에 커밋 해시·칸 이름(요청 그대로)·요청과 다른 점(마지막 msgSeq 초과 400, SQL 두 문장) 알리고, Python이 실제 Java를 부르는 확인과 ai `docs/api/internal.md` 초안 행 확정(ai 세션). PR 본문에 "DB 변경 있음 v0.15 (2), 공용 DB에는 PR 전에 실행함"
 - 채팅 상대 회원 신고 관리자 화면(KSJ 요청, 2026-11-24): 프론트 연결 관리자 신고 화면 ① 대상 종류 「회원」 필터·표시(`targetType=MEMBER`) ② 회원 신고 상세에서 「블라인드」 선택지 숨김 ③ 회원 신고 상세에 대상 회원·채팅방(`otoChatRoomSn`, 목록 대상 내용은 그 방의 돌봄 글 제목) 표시, LJS 프론트 저장소에서 /start. 백엔드(`ReportMapper.xml` 대상 3분기, `AdminReportService` 회원 정지·블라인드 400·복구 409, `MemberSuspensionService.suspendBySystem`, DCLR v0.15 변경 절)는 KSJ가 고친다. KSJ 백엔드는 develop에 병합됨(1b477ce, 2026-11-24 확인), 연결 가능
 - SCR-AIM-013 피부 분석 지속 관찰 카드 연결 남음: 걸치는 기능 FN-HLT-002-20~25·32 (ai 저장소 `data/tools.snapshot.json` 갱신, 피부 분석 뒤 새 항목은 `draft_observation_item`·관찰 중인 같은 항목은 `list_observation_items` 뒤 `draft_observation_cycle` 확인 카드, 판정 사진 1024px JPEG을 `file`로, 분석 결과는 `memoCn` 200자 글, 부위 HLTG16은 회원이 고름. 안구 분석(ai #108)도 같은 카드로 저장하고, 부위는 얼굴 HLTC0044, `obsrvRegnDtlNm`에 "왼쪽 눈"/"오른쪽 눈"을 적는다. 눈 코드는 불편이 생기면 그때 추가한다(사람 2026-11-24). ai-23, ai 세션)
@@ -44,7 +44,6 @@ SCR-AIM-012 AI 일정 생성 확인 · 회원 닉네임·회원정보 수정 카
 - 판단 필요(SCR-ADM-113): 지정 기록이 없는 기존 관리자는 `apntDt`가 null이다. `MBR_AUTHRT_CD`에 인덱스가 없어 해제 트랜잭션 동안 `MBR`의 많은 행이 잠길 수 있다(부하 상황 확인 안 함)
 - 탈퇴 파기 남은 범위: 채팅 원문(REQ-NFR-002, 채팅 구현 뒤 KSJ와 `scheduler`로 묶는다), 프로필 파일 실물(`FileStore`에 삭제 없음, 지금은 연결만 끊는다), 게시물·댓글·포인트·반려동물·건강기록(정책 미확정, `docs/api/issues.md` 8번)
 - 판단 필요: 구현 계획에는 정지 안내 알림이 있으나 기능명세서에 없어 넣지 않았다. `suspnDayCnt`가 빠진 정지 요청은 영구 정지로 처리된다(프론트 계약). 만료 배치는 하루 한 번이라 00:00에 서버가 내려가 있으면 수동 실행 전까지 정지가 이어진다
-- 확인 못 함: 검증의 `dev-tokens`(회원 1·2)가 공용 DB에 세션을 남겼는지 확인 못 함
 - SCR-ADM-112 연결 남음: FN-ADM-112-02 ai 연결(프론트 화면은 끝, 프론트 #491): Python이 `POST /internal/ai/external-api-calls`를 부른다, 호출마다 쿠키가 있어야 하고 쿠키 없는 백그라운드 호출은 기록되지 않는다, ai 세션. 토큰은 수만 본다: 입력 = input + 캐시 읽기 + 캐시 쓰기, 출력 = output, 캐시 칸은 추가하지 않는다(사람 2026-11-24, ai-23에 전달). 2026-11-24 ai develop에 호출 없음
 - 배치 위험(판단 필요): 서버 기동 때 공용 DB의 실행중 행을 서버 구분 없이 실패로 바꾼다(끝나면 실제 결과로 덮어씀)
 - PR 전 확인(사람): `LoginService`에 관리자 로그인 기록을 넣은 것을 YAY와 협의. 저장소에 협의 기록 없음
