@@ -2,7 +2,7 @@
 
 ## 지금 하는 것
 
-SCR-AIM-012 AI 일정 생성 확인 · 가계부 중복 확인·영수증 저장 전 확인·영수증 직접 입력 검진 등록 도구 — 끝 (2026-11-27). `check_expense_duplicates`·`check_receipt_save`(READ)·`draft_receipt_checkup`(CARD), 도구 122개. 검증 `통과`(1회차), 사람 확인 2026-11-27, 시작 2026-11-27 14:02
+SCR-ADM-111 배치 현황 · 배치 목록 API 설명 정정 — 끝 (2026-11-27). `docs/api/global.md` `GET /admin/batches` 설명을 "코드에 있는 배치 전부(`BatchType`)"로. 검증 `통과`(1회차), 사람 확인 2026-11-27, 시작 2026-11-27 14:21
 
 ## 다음에 할 것
 
@@ -13,7 +13,7 @@ SCR-AIM-012 AI 일정 생성 확인 · 가계부 중복 확인·영수증 저장
 - SCR-AIM-011·012 도구 연결 남음(ai 세션): 도구 목록 소수 최소·최대값(2026-11-27, `@DecimalMin`·`@DecimalMax` → `min`·`max`, `structureVersion` 바뀜, `draft_inspection_value_update`·`draft_pet`·`draft_pet_update`·`list_places`)도 `tools.snapshot.json`에 반영. SCR-AIM-012 건강 등록·종료 카드 6개(`docs/api/ai.md` 건강 CARD 30개 줄, 2026-11-27)와 SCR-AIM-011 새 도구 27개 이름·칸(`docs/api/ai.md` AiToolResponse `name`)을 알리고, 도메인 거르기 순서대로 `tool_prompts.yaml` 설명·`tools.snapshot.json`·`tool_eval`. 설명이 없으면 Python이 싣지 않아 지금 동작은 그대로. 프론트 `docs/ai-coverage.md`는 프론트 세션이 `node scripts/ai-coverage.mjs`로 다시 만든다
 - AI 매니저 대응 범위 다음(사람 결정 2026-11-26·27): 도메인별 쓰기 카드 후보를 도메인마다 /start(pet은 2026-11-27 8개 끝·메인 바로가기 저장은 최상위 배열이라 뺌, health는 2026-11-27 6개 끝, 나머지 health 후보 8개는 뺌, place는 2026-11-27 즐겨찾기 저장 1개 끝, support 1:1 문의 쓰기 3개는 뺌(사람 2026-11-27). 회원은 2026-11-27 닉네임·프로필 사진 2개 끝(휴대전화번호는 뺌). 남은 후보: 가계부 여러 건·조건 전체 삭제(뺌 쪽). JAJ에게 표시·400 칸 이름만 바뀌었다고 알린다. 프론트 `milestones/LJS.md`에 `건강 등록·종료 카드 실행 확인 — 대기` 절 넣음. 서비스 400 칸 이름 포함, 남의 도메인은 담당과 먼저). 알림 설정 저장 카드는 도구 목록 enum·값 목록 지원(ai와 칸 모양 합의) 뒤. 멀티모달 GET(사진·파일 응답 7개)은 관찰 사진부터, 도구 목록 응답 종류 칸과 ai image 블록을 ai와 정한 뒤. 채팅 읽기·`GET /members/me`는 일부러 뺌(상대 회원 글·복호화 개인정보). 표의 뺌(인증·탈퇴·비밀번호·이메일 변경·채팅 쓰기·신고·차단·좋아요·커뮤니티 글·댓글 쓰기·펫돌봄 거래 단계)에는 붙이지 않는다
 - 사람(DMS, SCR-ADM-114): 관리자 기능명세서 FN-ADM-114-04 설명을 "관리자는 고치거나 지울 수 없고, 30일이 지난 로그는 배치가 매일 지운다"로. 요구사항정의서에 감사 로그 보관 문구가 있으면 같이
-- 선택: `docs/api/global.md` 배치 목록 행의 "배치 6종" 문구가 실제(14종)와 다르다
+- 사람(DMS, SCR-ADM-111): 관리자 기능명세서 v0.8 FN-ADM-111-01 설명·비고가 12종이라 감사 로그 정리(SYSC0034)가 빠졌다. 배치 13종(`BatchType`)으로 맞춘다
 - 사람(공용 DB 적용, 발표 2026-12-08의 3~4일 전): README "시연용 시드 데이터" 11단계대로. 먼저 팀에 알린다(테스트 계정 201~216의 반려동물·글이 새 데이터로 바뀌고 가짜 장소 512곳이 지워진다), 공용 DB 전체 mysqldump 백업
 - 정하기(사람): 남긴 테스트 계정 닉네임(냥멍44975548·bbbbbbbbbb·냥멍TEST·dev60 등)이 주인공 알림·댓글에 보인다. 시연 전에 바꿀지
 - 도메인별 시드 확인 요청(PR에서): member YAY, pet·expense SJM, health JAJ, community·support KSJ
