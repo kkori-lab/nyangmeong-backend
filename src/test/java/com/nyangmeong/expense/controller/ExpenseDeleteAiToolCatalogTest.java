@@ -1,5 +1,6 @@
 package com.nyangmeong.expense.controller;
 
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
@@ -38,7 +39,7 @@ import com.nyangmeong.expense.service.ReceiptService;
 
 /**
  * [검사 - 가계부 AI 삭제 도구]
- * - 지출 한 건 삭제가 DELETE에 경로 칸만으로 실리고, 여러 건 삭제(쿼리 배열)는 도구가 아닌지
+ * - 지출 한 건 삭제가 DELETE에 경로 칸만으로 실리고, 여러 건 삭제는 쿼리 번호 목록으로 실리는지
  */
 @WebMvcTest(controllers = {AiToolCatalogController.class, ExpenseController.class, ReceiptController.class})
 @Import({SecurityConfig.class, JwtTokenProvider.class, JwtProperties.class, TokenCookies.class,
@@ -91,10 +92,10 @@ class ExpenseDeleteAiToolCatalogTest {
     }
 
     @Test
-    void 지출_여러_건_삭제는_도구로_싣지_않는다() throws Exception {
+    void 지출_여러_건_삭제는_쿼리_번호_목록으로_싣는다() throws Exception {
         givenCodes();
         mockMvc.perform(get(PATH))
-                .andExpect(jsonPath("$.data.tools[?(@.call.path == '/api/expenses' && @.call.method == 'DELETE')]",
-                        hasSize(0)));
+                .andExpect(jsonPath("$.data.tools[?(@.call.path == '/api/expenses' && @.call.method == 'DELETE')].name",
+                        contains("delete_expenses")));
     }
 }

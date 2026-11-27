@@ -1083,3 +1083,19 @@
 - 기다리는 것: 없음
 - 완료 조건: `docs/api/global.md` `GET /admin/batches` 행 설명이 개수를 박지 않고 코드에 있는 배치 전부(`BatchType`)를 준다고 적는다. 코드 변경 없음
 - 완료 조건 결과: 검증 `통과`(2026-11-27, 1회차), 사람 확인 2026-11-27. 관리자 `GET /api/admin/batches` 13건(마지막 SYSC0034). DMS 기능명세서 12종 정정은 사람(핸드오프)
+
+## SCR-AIM-012 AI 일정 생성 확인 · 가계부 여러 건·조건 전체 삭제 카드 — 끝
+- 기능: 명세 기능 ID 추가 없음(AI 매니저 대응 범위 다음 남은 후보, 사람 2026-11-27 "1번으로 가자"), 걸치는 기능 FN-AIM-012-05·06·07·13, FN-MYP-030-17·18·19·21
+- 기다리는 것: 없음(Python 설명이 없는 도구는 싣지 않아 지금 동작은 그대로. 새 칸 모양 쿼리 배열은 백엔드가 먼저 정하고 ai 세션에 알린다)
+- 할 것:
+  - 도구 목록 쿼리 배열 칸: `@RequestParam List<Long>`·`List<Integer>` → `in: query` + `type: array` + `itemType`(long·int). 실행하는 쪽은 같은 이름을 되풀이해 보낸다(`?expndSn=1&expndSn=2`). 그 밖의 목록 타입은 지금처럼 뺀다. 바꿀 파일: `global/aitool/AiToolCatalogService.java`. 완료 조건: `명령:` `./gradlew build -q` 종료 코드 0, 새 테스트 `AiToolCatalogQueryArrayParamTest`(`List<Long>` 쿼리 칸, 지원하지 않는 목록 쿼리 칸 도구 제외)
+  - 여러 건 삭제 CARD `delete_expenses`(domain expense, `DELETE /api/expenses`, 쿼리 `expndSn` 번호 목록 필수). 번호는 `list_expenses`에서. 바꿀 파일: `expense/controller/ExpenseController.java`(`@AiTool`만). 완료 조건: `화면:` 8082 `GET /internal/ai/tools`에 `delete_expenses`가 `params.expndSn` = `in: query`·`type: array`·`itemType: long`·`required: true`로 실린다
+  - 조건 전체 삭제 CARD `delete_expenses_by_condition`(domain expense, `POST /api/expenses/bulk-delete`, 본문 `ExpenseBulkDeleteRequest` 그대로). `expectedCnt`는 같은 조건의 `get_expense_total` `expndCnt` − 제외 수, 다르면 409 `EXPENSE_BULK_DELETE_CHANGED`(그대로). 바꿀 파일: `expense/controller/ExpenseController.java`(`@AiTool`), `expense/dto/ExpenseBulkDeleteRequest.java`(`expndClsfCd`에 `@AiCode("MYPG05")`만, 검사 변경 없음). 완료 조건: `화면:` 8082 `GET /internal/ai/tools`에 실리고 `expectedCnt` 필수·`excludeExpndSn` `array`+`itemType: long`·`expndClsfCd` `code`+MYPG05, 기동 로그에 `[AiTool] 제외`가 없다
+  - 테스트: 새 `ExpenseBulkDeleteAiToolCatalogTest`(두 CARD 모양). 기존 `ExpenseDeleteAiToolCatalogTest.지출_여러_건_삭제는_도구로_싣지_않는다`는 이번 결정과 반대라 "여러 건 삭제가 쿼리 배열로 실린다"로 바꾸고, `ExpenseAiToolCatalogTest` 이름 목록·expense 수(10→12)는 기대값만 바꾼다. 둘 다 사람 승인을 받는다
+  - 계약: `docs/api/ai.md` Param 절에 쿼리 배열 칸, 136줄 가계부 CARD 6→8개(`delete_expense` 뒤 "여러 건 삭제는 도구가 아니다" 지움), 31줄 `GET /internal/ai/tools` 설명에 쿼리 배열
+- 완료 조건: 위 셋
+- 새 의존성: 없음
+- 완료 조건 결과: 검증 `통과`(2026-11-27. 1회차 실패는 기획 밖 기존 테스트 `ExpenseCardAiToolCatalogTest` 기대값 변경 → 추가-1로 받아 재검증, 8082 두 CARD 모양 확인·`[AiTool] 제외` 없음), 사람 확인 2026-11-27(`AiToolCatalogQueryArrayParamTest` 통과). 정한 것: 쿼리 번호 목록 칸은 `List<Long>`·`List<Integer>`만, 필수면 `minItems` 1, 실행은 같은 이름 되풀이. 서비스 변경 없음, DTO는 `@AiCode("MYPG05")`만. 기존 테스트 3개 기대값 변경(ExpenseDelete·ExpenseAi·ExpenseCard). 계약은 `docs/api/ai.md` Param 절·가계부 CARD 8개
+- 추가: 추가-1 `ExpenseCardAiToolCatalogTest` CARD 6→8·메서드 이름 `가계부_쓰기_CARD_8개가_실린다`(사람 2026-11-27 15:08 "추천안대로")
+- 연결 남음: FN-AIM-012-05·06·07·13 (ai 세션: Param 파서 쿼리 배열 칸, `tool_prompts.yaml` `delete_expenses`·`delete_expenses_by_condition` 설명·확인 말·스냅샷·`tool_eval`, LJS)
+- 연결 남음: FN-AIM-012-05·06·07·13 (프론트 연결 대화창 확인 카드의 쿼리 배열 DELETE·조건 전체 삭제 POST 실행 확인, 프론트 저장소에서 /start)
